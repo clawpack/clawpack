@@ -1,1 +1,1 @@
-This repository will host the classic single-grid Clawpack code.
+This repository will host the GeoClaw code.
