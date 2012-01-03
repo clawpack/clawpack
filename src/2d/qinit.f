@@ -10,7 +10,7 @@ c      # an initial perturbation of the q(i,j,1) is specified and has
 c      # been strored in qinitwork.
 
 
-       use amr_module
+       use qinit_module
        use geoclaw_module
 
        implicit double precision (a-h,o-z)

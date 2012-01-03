@@ -152,6 +152,7 @@ c        #If eta max/min are saved on this grid initialized if necessary
          endif
 
 c        # check wich task to perform
+         print *, '+++ mvarsfg,ifg,jfg',mvarsfg,ifg,jfg
          if (maxcheck.eq.0) then 
            fgrid(indeta,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
            fgrid(mvarsfg,ifg,jfg) = t

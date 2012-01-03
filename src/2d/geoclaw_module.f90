@@ -174,7 +174,7 @@ contains
         write(GEO_PARM_UNIT,*) '   Manning coefficient:',coeffmanning
         write(GEO_PARM_UNIT,*) '   frictiondepth:',frictiondepth
 
-    end subroutine set_tsunami
+    end subroutine set_shallow
     ! ========================================================================
 
 
