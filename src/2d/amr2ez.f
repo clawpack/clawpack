@@ -69,12 +69,11 @@ c ----------------------------------------------------------------
 c
       use geoclaw_module
       use topo_module
-
+      use amr_module
+      use regions_module
+      use gauges_module
       implicit double precision (a-h,o-z)
 
-      include "call.i"
-      include "regions.i"
-      include "gauges.i"
 
       common /combc2/ mthbc(4)
       common /comfine/ dxmin,dymin

@@ -24,11 +24,12 @@ c -----------------------------------------------------
 c
       subroutine valout (lst, lend, time, nvar, naux)
 c
+      use amr_module
+      use netcdf      ! does this work????
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2
 
-      include  "call.i"
-      include 'netcdf.inc'
+c     include 'netcdf.inc'
       real(kind=8) time
       integer ncid,rcode
       integer timeid,tVarID,meqnID,ngridsVarID,nauxVarID,ndimVarID

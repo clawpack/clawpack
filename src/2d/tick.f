@@ -5,10 +5,9 @@ c
      &                naux,nout,tout,tchk,t0,rest)
 c
       use  geoclaw_module
-
+      use amr_module
       implicit double precision (a-h,o-z)
 
-      include  "call.i"
 
       logical    vtime, dumpout, dumpchk, rest
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)

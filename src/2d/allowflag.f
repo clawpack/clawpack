@@ -16,11 +16,10 @@ c     # is also called from errf1.
       use geoclaw_module
       use topo_module
       use dtopo_module
+      use regions_module
+      use qinit_module
 
       implicit double precision (a-h,o-z)
-
-      include 'regions.i'
-      include 'qinit.i'
 
 c========================================================================
 

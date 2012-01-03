@@ -10,13 +10,13 @@ c      # an initial perturbation of the q(i,j,1) is specified and has
 c      # been strored in qinitwork.
 
 
+       use amr_module
        use geoclaw_module
 
        implicit double precision (a-h,o-z)
        dimension q(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
        dimension aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
-       include 'qinit.i'
 
 
        do i=1-mbc,mx+mbc

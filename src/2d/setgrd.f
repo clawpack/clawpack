@@ -5,9 +5,9 @@ c
 c
       use geoclaw_module
 c
+      use amr_module
       implicit double precision (a-h,o-z)
 
-      include  "call.i"
       dimension spoh(maxlv)
 
       integer verbosity_regrid

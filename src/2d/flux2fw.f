@@ -80,9 +80,8 @@ c     to revert to the original version, set relimit = .false.
 c---------------------last modified 1/04/05-----------------------------
 
       use geoclaw_module
-
+      use amr_module
       implicit double precision (a-h,o-z)
-      include "call.i"
 
       external rpn2, rpt2
       dimension  q1d(meqn, 1-mbc:maxm+mbc)

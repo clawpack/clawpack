@@ -4,10 +4,9 @@ c
       subroutine gfixup(lbase, lfnew, nvar, naux)
 c
       use geoclaw_module
-
+      use amr_module
       implicit double precision (a-h,o-z)
 
-      include  "call.i"
       dimension spoh(maxlv)
 
 c

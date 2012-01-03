@@ -15,12 +15,11 @@ c
 
       use geoclaw_module
       use topo_module
-      
+      use amr_module
       implicit double precision (a-h,o-z)
 
       dimension aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
-      include "call.i"
 
       if (icoordsys.eq.2) then
          if (mcapa .ne. 2 .or. maux.lt.3) then
