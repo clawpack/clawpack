@@ -40,8 +40,8 @@ c
       !input
       integer maxm,meqn,mwaves,mbc,mx,ixy
 
-      double precision  fwave(meqn, 1-mbc:maxm+mbc, mwaves)
-      double precision  s(1-mbc:maxm+mbc, mwaves)
+      double precision  fwave(meqn, mwaves, 1-mbc:maxm+mbc)
+      double precision  s(mwaves, 1-mbc:maxm+mbc)
       double precision  ql(meqn, 1-mbc:maxm+mbc)
       double precision  qr(meqn, 1-mbc:maxm+mbc)
       double precision  apdq(meqn,1-mbc:maxm+mbc)
@@ -83,9 +83,9 @@ c
 
          !Initialize Riemann problem for grid interface
          do mw=1,mwaves
-              s(i,mw)=0.d0
+              s(mw,i)=0.d0
               do m=1,meqn
-                 fwave(m,i,mw)=0.d0
+                 fwave(m,mw,i)=0.d0
               enddo
          enddo
 
@@ -229,10 +229,10 @@ c        !eliminate ghost fluxes for wall
          enddo
 
          do mw=1,mwaves
-            s(i,mw)=sw(mw)
-            fwave(1,i,mw)=fw(1,mw)
-            fwave(mu,i,mw)=fw(2,mw)
-            fwave(nv,i,mw)=fw(3,mw)
+            s(mw,i)=sw(mw)
+            fwave(1,mw,i)=fw(1,mw)
+            fwave(mu,mw,i)=fw(2,mw)
+            fwave(nv,mw,i)=fw(3,mw)
          enddo
 
  30      continue
@@ -250,13 +250,13 @@ c==========Capacity for mapping from latitude longitude to physical space====
           endif
 
           do mw=1,mwaves
-c             if (s(i,mw) .gt. 316.d0) then
+c             if (s(mw,i) .gt. 316.d0) then
 c               # shouldn't happen unless h > 10 km!
-c                write(6,*) 'speed > 316: i,mw,s(i,mw): ',i,mw,s(i,mw)
+c                write(6,*) 'speed > 316: i,mw,s(mw,i): ',i,mw,s(mw,i)
 c                endif
-	           s(i,mw)=dxdc*s(i,mw)
+	           s(mw,i)=dxdc*s(mw,i)
              do m=1,meqn
-               fwave(m,i,mw)=dxdc*fwave(m,i,mw)
+               fwave(m,mw,i)=dxdc*fwave(m,mw,i)
              enddo
           enddo
          enddo
@@ -271,13 +271,13 @@ c============= compute fluctuations=============================================
                amdq(m,i)=0.0d0
                apdq(m,i)=0.0d0
                do  mw=1,mwaves
-                  if (s(i,mw).lt.0.d0) then
-                     amdq(m,i)=amdq(m,i) + fwave(m,i,mw)
-                  elseif (s(i,mw).gt.0.d0) then
-                     apdq(m,i)=apdq(m,i) + fwave(m,i,mw)
+                  if (s(mw,i).lt.0.d0) then
+                     amdq(m,i)=amdq(m,i) + fwave(m,mw,i)
+                  elseif (s(mw,i).gt.0.d0) then
+                     apdq(m,i)=apdq(m,i) + fwave(m,mw,i)
                   else
-	            amdq(m,i) = amdq(m,i) + .5d0*fwave(m,i,mw)
-	            apdq(m,i) = apdq(m,i) + .5d0*fwave(m,i,mw)
+	            amdq(m,i) = amdq(m,i) + .5d0*fwave(m,mw,i)
+	            apdq(m,i) = apdq(m,i) + .5d0*fwave(m,mw,i)
                   endif
                enddo
             enddo
