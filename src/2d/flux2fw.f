@@ -99,8 +99,8 @@ c---------------------last modified 1/04/05-----------------------------
       dimension  aux2(maux, 1-mbc:maxm+mbc)
       dimension  aux3(maux, 1-mbc:maxm+mbc)
 c
-      dimension  s(1-mbc:maxm+mbc, mwaves)
-      dimension  fwave(meqn, 1-mbc:maxm+mbc, mwaves)
+      dimension  s(mwaves, 1-mbc:maxm+mbc)
+      dimension  fwave(meqn, mwaves, 1-mbc:maxm+mbc)
 c
       logical limit, relimit
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
@@ -162,8 +162,8 @@ c     # compute maximum wave speed for checking Courant number:
          do 50 i=1,mx+1
 c          # if s>0 use dtdx1d(i) to compute CFL,
 c          # if s<0 use dtdx1d(i-1) to compute CFL:
-            cfl1d = dmax1(cfl1d, dtdx1d(i)*s(i,mw),
-     &                          -dtdx1d(i-1)*s(i,mw))
+            cfl1d = dmax1(cfl1d, dtdx1d(i)*s(mw,i),
+     &                          -dtdx1d(i-1)*s(mw,i))
 
    50       continue
 c
@@ -187,8 +187,8 @@ c
             do 119 mw=1,mwaves
 c
 c              # second order corrections:
-               cqxx(m,i) = cqxx(m,i) + dsign(1.d0,s(i,mw))
-     &            * (1.d0 - dabs(s(i,mw))*dtdx1d(i-1)) * fwave(m,i,mw)
+               cqxx(m,i) = cqxx(m,i) + dsign(1.d0,s(mw,i))
+     &            * (1.d0 - dabs(s(mw,i))*dtdx1d(i-1)) * fwave(m,mw,i)
 c
   119          continue
             faddm(m,i) = faddm(m,i) + 0.5d0 * cqxx(m,i)

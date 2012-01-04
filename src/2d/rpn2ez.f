@@ -36,6 +36,8 @@ c
       use geoclaw_module
 
       implicit none
+      integer maux  ! should be passed in or put into a module
+      parameter (maux=3)
 
       !input
       integer maxm,meqn,mwaves,mbc,mx,ixy
@@ -53,7 +55,6 @@ c
 
       !local only
       integer m,i,mw,maxiter,mu,nv,mcapa
-      integer maux  ! should be passed in or put into a module
       double precision wall(3)
       double precision fw(3,3)
       double precision sw(3)
@@ -67,7 +68,6 @@ c
       logical rare1,rare2
 
       common /cmcapa/  mcapa
-      common /cmmaux/  maux
 
       g=grav
       drytol=drytolerance
