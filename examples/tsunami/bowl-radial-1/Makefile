@@ -22,7 +22,7 @@ CLAW_PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran   # default if not set as environment variable
 # Add any desired compiler flags such as -g here:
-FFLAGS ?=  -g
+FFLAGS ?=  -O2
 
 # If you want to include NetCDF output add these flags
 # FFLAGS ?=-I/usr/include  -lnetcdf -lnetcdff

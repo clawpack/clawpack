@@ -112,8 +112,8 @@ def setrun(claw_pkg='geoclaw'):
 
     elif clawdata.outstyle == 3:
         # Output every iout timesteps with a total of ntot time steps:
-        iout = 1
-        ntot = 5
+        iout = 10
+        ntot = 100
         clawdata.iout = [iout, ntot]
     
 
@@ -125,7 +125,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 4
+    clawdata.verbosity = 2
     
     
 
@@ -270,8 +270,8 @@ def setgeo(rundata):
     geodata.wavetolerance = 1.e-2
     geodata.depthdeep = 1.e2
     geodata.maxleveldeep = 3
-    geodata.ifriction = 0
-    geodata.coeffmanning = 0.
+    geodata.ifriction = 1
+    geodata.coeffmanning = 0.025
     geodata.frictiondepth = 20.
 
     # == settopo.data values ==
