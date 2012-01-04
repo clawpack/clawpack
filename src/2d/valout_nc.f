@@ -143,7 +143,7 @@ c        ###  make the file names and open output files
 
       do j = nghost+1, mjtot-nghost
          do i = nghost+1, mitot-nghost
-            do ivar=1,nvar
+            do ivar=1,nvar+1
                if (dabs(alloc(iadd(ivar,i,j))) .lt. 1d-90) then
                   alloc(iadd(ivar,i,j)) = 0.d0
                endif
