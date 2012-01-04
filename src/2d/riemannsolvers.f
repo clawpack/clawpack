@@ -17,12 +17,12 @@ c-----------------------------------------------------------------------
       implicit none
 
       !input
+      integer meqn,mwaves,maxiter
       double precision fw(meqn,mwaves)
       double precision sw(mwaves)
       double precision hL,hR,huL,huR,bL,bR,uL,uR,phiL,phiR,sE1,sE2
       double precision hvL,hvR,vL,vR
       double precision drytol,g
-      integer meqn,mwaves,maxiter
 
 
       !local
@@ -89,6 +89,7 @@ c     !determine the middle entropy corrector wave------------------------
          if (hstarHLL.lt.min(hL,hR)/5.d0) rarecorrector=.false.
       endif
 
+      if (dabs(lambda(2)) .lt. 1.d-20) lambda(2) = 0.d0
       do mw=1,mwaves
          r(1,mw)=1.d0
          r(2,mw)=lambda(mw)
@@ -97,6 +98,7 @@ c     !determine the middle entropy corrector wave------------------------
       if (.not.rarecorrector) then
          lambda(2) = 0.5d0*(lambda(1)+lambda(3))
 c         lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
+         if (dabs(lambda(2)) .lt. 1.d-20) lambda(2) = 0.d0
          r(1,2)=0.d0
          r(2,2)=0.d0
          r(3,2)=1.d0
@@ -130,6 +132,7 @@ c     !determine a few quanitites needed for steady state wave if iterated
             huRstar=uRstar*hRstar
             lambda(2) = 0.5d0*(lambda(1)+lambda(3))
 c           lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
+            if (dabs(lambda(2)) .lt. 1.d-20) lambda(2) = 0.d0
             r(1,2)=0.d0
             r(2,2)=0.d0
             r(3,2)=1.d0
