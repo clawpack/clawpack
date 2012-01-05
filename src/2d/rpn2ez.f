@@ -34,7 +34,7 @@ c
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       use geoclaw_module
-
+      use amr_module, only: mcapa
       implicit none
       integer maux  ! should be passed in or put into a module
       parameter (maux=3)
@@ -54,7 +54,7 @@ c
       double precision drytol,g
 
       !local only
-      integer m,i,mw,maxiter,mu,nv,mcapa
+      integer m,i,mw,maxiter,mu,nv
       double precision wall(3)
       double precision fw(3,3)
       double precision sw(3)
@@ -67,7 +67,8 @@ c
 
       logical rare1,rare2
 
-      common /cmcapa/  mcapa
+!     used from module instead:
+!     common /cmcapa/  mcapa
 
       g=grav
       drytol=drytolerance
