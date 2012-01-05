@@ -2,9 +2,9 @@ c=========================================================================
       subroutine readqinit(mx,my,dx,dy,xlow,xhi,ylow,yhi,fname)
 c=========================================================================
 
+      use amr_module
+      use qinit_module
       implicit double precision (a-h,o-z)
-      include "call.i"
-      include "qinit.i"
 
       character*150 fname
 

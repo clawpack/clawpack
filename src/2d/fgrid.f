@@ -7,11 +7,13 @@ c:::::::::::::::FGRID_ADVANCE:::::::::::::::::::::::::::::::::::::::::::::::::
 c   advance (output) all fgrids at all times that have not yet been output
 c   but that have been bracketed by computational times.
 
+      use amr_module
+      use regions_module
+      use qinit_module
+      use fixedgrids_module
+      use gauges_module
       implicit double precision (a-h,o-z)
         
-      include  "call.i"
-      include  "fixedgrids.i"
-      
 
       tc0=time !# start of computational step
       tcf=tc0+dt !# end of computational step

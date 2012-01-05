@@ -3,10 +3,10 @@ c -------------------------------------------------------------
 c
       subroutine ginit(msave, first, nvar, naux, t0)
 c
+      use amr_module
       implicit double precision (a-h,o-z)
       logical first
 
-      include  "call.i"
 
 c ::::::::::::::::::::::::::::: GINIT ::::::::::::::::::::::::
 c

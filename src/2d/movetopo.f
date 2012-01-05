@@ -13,6 +13,7 @@ c
 c
       use geoclaw_module
       use topo_module
+      use amr_module
       
       implicit double precision (a-h,o-z)
       dimension aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
@@ -20,7 +21,6 @@ c
 
       logical topoaltered
 
-      include "call.i"
       dimension auxorig(maux,-1:mx+mbc,-1:my+mbc)
 c      dimension auxorig(maxaux,-1:max1d+mbc,-1:max1d+mbc)
 

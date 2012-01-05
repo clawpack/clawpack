@@ -32,7 +32,7 @@ c     The only modification is the 101 loop
 c------------last modified 12/30/04--------------------------
 c
       use geoclaw_module
-    
+      use amr_module
       implicit double precision (a-h,o-z)
 
 
@@ -56,7 +56,6 @@ c
 
       logical relimit
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
-      include "call.i"
 c
 
 c     # to relimit fluxes to maintain positivity

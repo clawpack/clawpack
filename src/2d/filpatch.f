@@ -19,11 +19,11 @@ c  obtain the remaining values from  coarser levels.
 c
 c :::::::::::::::::::::::::::::::::::::::;:::::::::::::::::::::::;
 
+      use amr_module
       use geoclaw_module
 
       implicit double precision (a-h,o-z)
 
-      include  "call.i"
 
       logical   set, sticksout
       dimension valbig(nvar,mitot,mjtot), aux(naux,mitot,mjtot)

@@ -27,12 +27,11 @@ c      fixed grids specified in setfixedgrids.data
 c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       use geoclaw_module
-
+      use amr_module
+      use fixedgrids_module
       implicit double precision (a-h,o-z)
-      external rpn2,rpt2
 
-      include  "call.i"
-      include  "fixedgrids.i"
+      external rpn2,rpt2
 
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 

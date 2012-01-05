@@ -4,11 +4,10 @@ c
       subroutine dumpgauge(q,aux,xlow,ylow,nvar,mitot,mjtot,naux,mptr)
 c
       use geoclaw_module
-
+      use amr_module
+      use gauges_module
       implicit double precision (a-h,o-z)
 
-      include "gauges.i"
-      include "call.i"
 
       integer bsearch
       dimension q(nvar,mitot,mjtot), var(maxvar)
@@ -118,10 +117,10 @@ c  ## lbase is grid level that didn't change but since fine
 c  ## grid may have disappeared, still have to look starting
 c  ## at coarsest level 1.
 c
+      use amr_module
+      use gauges_module
       implicit double precision (a-h,o-z)
 
-      include "gauges.i"
-      include "call.i"
 c
 c ##  set source grid for each loc from coarsest level to finest.
 c ##  that way finest src grid left and old ones overwritten
@@ -164,8 +163,8 @@ c ------------------------------------------------------------------------
 c
       integer function bsearch(mptr)
 
+      use gauges_module
       implicit double precision (a-h,o-z)
-      include "gauges.i"
 
       bsearch = -1           ! signal if not found
 

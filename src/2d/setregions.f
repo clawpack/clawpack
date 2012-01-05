@@ -2,12 +2,11 @@ c=========================================================================
       subroutine setregions
 c=========================================================================
 
+      use amr_module
+      use regions_module
       implicit double precision (a-h,o-z)
       character*25 fname
       logical foundFile
-
-      include "regions.i"
-      include "call.i"
 
       write(parmunit,*) ' '
       write(parmunit,*) '--------------------------------------------'

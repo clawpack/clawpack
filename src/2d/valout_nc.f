@@ -24,11 +24,12 @@ c -----------------------------------------------------
 c
       subroutine valout (lst, lend, time, nvar, naux)
 c
+      use amr_module
+      use netcdf      ! does this work????
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2
 
-      include  "call.i"
-      include 'netcdf.inc'
+c     include 'netcdf.inc'
       real(kind=8) time
       integer ncid,rcode
       integer timeid,tVarID,meqnID,ngridsVarID,nauxVarID,ndimVarID
@@ -142,7 +143,7 @@ c        ###  make the file names and open output files
 
       do j = nghost+1, mjtot-nghost
          do i = nghost+1, mitot-nghost
-            do ivar=1,nvar
+            do ivar=1,nvar+1
                if (dabs(alloc(iadd(ivar,i,j))) .lt. 1d-90) then
                   alloc(iadd(ivar,i,j)) = 0.d0
                endif

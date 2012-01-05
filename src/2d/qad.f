@@ -5,9 +5,9 @@ c
      .                svdflx,qc1d,lenbc,lratiox,lratioy,hx,hy,
      .                maux,aux,auxc1d,delt,mptr)
 
+       use amr_module
        implicit double precision (a-h, o-z)
 
-       include "call.i"
 
        logical qprint
 

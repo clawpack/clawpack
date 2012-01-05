@@ -2,12 +2,12 @@ c=========================================================================
       subroutine setfixedgrids
 c=========================================================================
 
+      use amr_module
+      use fixedgrids_module
       implicit double precision (a-h,o-z)
       character*25, parameter :: fname = 'setfixedgrids.data'
       logical foundFile
 
-      include "fixedgrids.i"
-      include "call.i"
 
       write(parmunit,*) ' '
       write(parmunit,*) '--------------------------------------------'

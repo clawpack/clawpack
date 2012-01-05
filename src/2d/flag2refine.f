@@ -31,6 +31,8 @@ c
       use geoclaw_module
       use topo_module
       use dtopo_module
+      use regions_module
+      use qinit_module
 
       implicit double precision (a-h, o-z)
 
@@ -41,8 +43,6 @@ c
       external  allowflag
       logical shoreregion,wave,shoreline
 
-      include 'regions.i'
-      include 'qinit.i'
 
 c     # loop over interior points on this grid:
 

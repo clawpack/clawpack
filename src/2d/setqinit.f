@@ -21,13 +21,13 @@ c     Longitude and latitude advance in the standard GIS way from
 c     upper left corner across in x and then down in y.
 
 
+      use amr_module
+      use qinit_module
       implicit double precision (a-h,o-z)
       character*25 fname
       character*150 qinitfname
       logical foundFile
 
-      include "call.i"
-      include "qinit.i"
 
       write(parmunit,*) ' '
       write(parmunit,*) '--------------------------------------------'

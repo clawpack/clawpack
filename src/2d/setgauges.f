@@ -2,12 +2,12 @@ c=========================================================================
       subroutine setgauges
 c=========================================================================
 
+      use amr_module
+      use gauges_module
       implicit double precision (a-h,o-z)
       character*25, parameter :: fname = 'setgauges.data'
       logical foundFile
 
-      include "gauges.i"
-      include "call.i"
 
       write(parmunit,*) ' '
       write(parmunit,*) '--------------------------------------------'

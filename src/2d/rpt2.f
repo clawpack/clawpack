@@ -15,6 +15,8 @@ c     Jacobian.
 c-----------------------last modified 1/10/05----------------------
 
       integer ixy,maxm,meqn,mwaves,mbc,mx,ilr
+      integer maux  ! should be passed in or put into a module
+      parameter (maux=3)
 
       double precision  ql(meqn,1-mbc:maxm+mbc)
       double precision  qr(meqn,1-mbc:maxm+mbc)
@@ -35,8 +37,6 @@ c-----------------------last modified 1/10/05----------------------
       double precision  dxdcm,dxdcp,topo1,topo3,eta
 
       integer i,m,mw,mu,mv
-      integer maux
-      common /cmmaux/  maux
 
       g=grav
       tol=drytolerance

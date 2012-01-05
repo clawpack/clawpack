@@ -44,6 +44,7 @@ contains
     ! ========================================================================
     subroutine set_geo(fname)
 
+        use amr_module, only: mcapa
         implicit none
 
         ! Input
@@ -55,9 +56,9 @@ contains
         character*25 :: file_name
         logical :: found_file
 
-        ! Common block
-        integer :: mcapa
-        common /cmcapa/ mcapa
+        ! Common block  !!! replaced by use amr_module above !!!
+!       integer :: mcapa
+!       common /cmcapa/ mcapa
 
         open(unit=GEO_PARM_UNIT,file='fort.geo',status="unknown",action="write")
 
@@ -174,7 +175,7 @@ contains
         write(GEO_PARM_UNIT,*) '   Manning coefficient:',coeffmanning
         write(GEO_PARM_UNIT,*) '   frictiondepth:',frictiondepth
 
-    end subroutine set_tsunami
+    end subroutine set_shallow
     ! ========================================================================
 
 
