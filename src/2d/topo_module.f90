@@ -213,9 +213,13 @@ contains
             case(1)
                 i = 0
                 status = 0
-                do while (status == 0)
-                    i = i + 1
+                do i=1,mx*my
                     read(iunit,fmt=*,iostat=status) x,y,topo(i)
+                    if (status /= 0) then
+                        print *,"Error reading topography file, reached EOF."
+                        print *,"  File = ",fname
+                        stop
+                    endif
                 enddo
 
             ! ================================================================
