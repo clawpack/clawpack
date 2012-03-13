@@ -31,8 +31,8 @@ ifeq ($(MAKELEVEL),0)
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
 	# Threading flags
-	FFLAGS += -D GRID_THREADING
-	FFLAGS += -D MAX1D=200
+	# FFLAGS += -D GRID_THREADING
+	# FFLAGS += -D MAX1D=200
 endif
 
 # ---------------------------------
