@@ -3,7 +3,7 @@
 Module to create topo and qinit data files for this example.
 """
 
-from pyclaw.geotools.topotools import topo1writer, topo2writer
+from geoclaw.topotools import topo1writer, topo2writer
 from numpy import *
 
 #from pyclaw.data import Data
