@@ -5,7 +5,7 @@ Create topo files needed for this example:
     
 """
 
-from pyclaw.geotools import topotools
+from geoclaw import topotools
 import os,sys
 
 def gettopo():
@@ -23,7 +23,7 @@ def makedtopo():
     Uses the Okada model with fault parameters and mesh specified in the
     .cfg file.
     """
-    from pyclaw.geotools import okada
+    from geoclaw import okada
     dtopo_fname = 'usgs100227.tt1'
     dtopo_cfg = 'usgs100227.cfg'
     if os.path.exists(dtopo_fname):
