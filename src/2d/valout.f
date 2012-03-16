@@ -4,8 +4,12 @@ c
       subroutine valout (lst, lend, time, nvar, naux)
 c
       use amr_module
+      use geoclaw_module, only: layers,rho
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2
+
+c     Work arrays
+      dimension eta(layers+1),h(layers),hu(layers),hv(layers)
 
 
 c OLD INDEXING
@@ -80,9 +84,27 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
                   alloc(iadd(ivar,i,j)) = 0.d0
                endif
             enddo
-            surface = alloc(iadd(1,i,j)) + alloc(iaddaux(1,i,j))
-            write(matunit1,109) (alloc(iadd(ivar,i,j)), ivar=1,nvar),
-     &         surface
+
+            if (layers > 1) then
+                do k=1,layers
+                    index = 3*(k-1)
+                    h(k) = alloc(iadd(index+1,i,j)) / rho(k)
+                    hu(k) = alloc(iadd(index+2,i,j)) / rho(k)
+                    hv(k) = alloc(iadd(index+3,i,j)) / rho(k)
+                enddo
+                eta(2) = h(2) + alloc(iaddaux(i,j,1))
+            else
+                k = 1
+                index = 3*(k-1)
+                h(k) = alloc(iadd(index+1,i,j))
+                hu(k) = alloc(iadd(index+2,i,j))
+                hv(k) = alloc(iadd(index+3,i,j))
+                eta(2) = alloc(iaddaux(1,i,j))
+            endif
+            eta(1) = h(1) + eta(2)
+            
+            write(matunit1,109) (h(k),hu(k),hv(k), k=1,layers),
+     &                          (eta(k),k=1,layers)
          enddo
          write(matunit1,*) ' '
       enddo
@@ -101,7 +123,7 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
 
 c     # nvar+1 variable printed since surface also printed
 
-      write(matunit2,1000) time,nvar+1,ngrids,3,2
+      write(matunit2,1000) time,4*layers,ngrids,naux,2
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

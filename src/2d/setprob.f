@@ -17,6 +17,7 @@ c=========================================================================
       call setregions       !# specifies where refinement is allowed/forced
       call setgauges        !# locations of measuring gauges
       call setfixedgrids    !# specifies output on arbitrary uniform fixed grids
+      call set_multilayer   !# Specifies parameters for multiple layers
 
       return
       end
