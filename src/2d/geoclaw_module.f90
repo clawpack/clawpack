@@ -14,7 +14,8 @@
 module geoclaw_module
 
     implicit none
-
+    save
+    
     ! ========================================================================
     ! General geoclaw parameters
     ! ========================================================================
@@ -34,6 +35,13 @@ module geoclaw_module
     integer, allocatable :: iflowgradevariable(:), iflowgradetype(:)
     integer, allocatable :: iflowgrademinlevel(:)
     integer :: mflowgrades
+    
+    ! ========================================================================
+    !  Multi-layer support
+    ! ========================================================================
+    integer :: layers
+    double precision, allocatable :: rho(:)
+    double precision, allocatable :: r(:)
 
 contains
 
@@ -121,6 +129,51 @@ contains
 
     end subroutine set_geo
 
+    ! ========================================================================
+    !  set_multilayer(fname)
+    ! ========================================================================
+    subroutine set_multilayer(fname)
+        implicit none
+        character(len=25), optional, intent(in) :: fname
+        
+        ! Locals
+        character(len=25) :: file_name
+        logical :: found_file
+        integer, parameter :: unit = 124
+
+        write(GEO_PARM_UNIT,*) ' '
+        write(GEO_PARM_UNIT,*) '--------------------------------------------'
+        write(GEO_PARM_UNIT,*) 'SET_MULTILAYER:'
+        write(GEO_PARM_UNIT,*) '-----------'
+
+        if (present(fname)) then
+            file_name = fname
+        else
+            file_name = 'multilayer.data'
+        endif
+        inquire(file=file_name,exist=found_file)
+        if (.not. found_file) then
+            print *,'You must provide a file ', file_name
+            stop
+        endif
+
+        call opendatafile(iunit, file_name)
+
+        read(unit,"(i2)") layers
+        allocate(rho(layers),r(layers-1))
+        read(unit,*) rho
+        close(unit,*) 
+        
+        ! Calculate ratios of densities
+        do i=1,layers-1
+            r(i) = rho(i) / rho(i+1)
+        enddo
+        
+        write(GEO_PARM_UNIT,*) '   layers:',layers
+        write(GEO_PARM_UNIT,*) '   rho:',(rho(i),i=1,layers)
+        write(GEO_PARM_UNIT,*) '   r (calculated):', (r,i=1,layers-1)
+        
+    end subroutine set_multilayer
 
     ! ========================================================================
     !  set_shallow(fname)
