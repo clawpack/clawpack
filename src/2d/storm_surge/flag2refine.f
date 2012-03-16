@@ -162,7 +162,7 @@ c            # by adding sealevel to surface or something.
 c            # determine region type and refinement params
             
              shoreregion = dabs(aux(1,i,j)) .lt. depthdeep
-             wave = (dabs(surface-eta(1)).gt.wavetolerance.and.
+             wave = (dabs(surface-eta_init(1)).gt.wavetolerance.and.
      &                q(1,i,j).gt.drytolerance)
 c             #DLG: changing following: didn't work so well for non-lat-lon grids
 c              shoretol = depthdeep*(dx*dy)

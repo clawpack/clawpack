@@ -23,7 +23,7 @@ c      # been strored in qinitwork.
           x = xlower + (i-0.5d0)*dx
           do j=1-mbc,my+mbc
              y = ylower + (j-0.5d0)*dy
-             q(1,i,j)=dmax1(0.d0,eta(1)-aux(1,i,j))
+             q(1,i,j)=dmax1(0.d0,eta_init(1)-aux(1,i,j))
              q(2,i,j)=0.d0
              q(3,i,j)=0.d0
              enddo

@@ -41,7 +41,7 @@ module geoclaw_module
     ! ========================================================================
     integer :: layers
     double precision, allocatable :: rho(:)
-    double precision, allocatable :: eta(:)
+    double precision, allocatable :: eta_init(:)
 !     double precision, allocatable :: r(:)
 
 contains
@@ -164,8 +164,8 @@ contains
         read(unit,"(i2)") layers
         allocate(rho(layers))
         read(unit,*) rho
-        allocate(eta(layers))
-        read(unit,*) eta
+        allocate(eta_init(layers))
+        read(unit,*) eta_init
         close(unit) 
         
         ! Calculate ratios of densities

@@ -91,7 +91,7 @@ c     #prepare slopes - use min-mod limiters
          do ii=-1,1
             coarseval(2+ii) = valc(i+ii,j,1)+ auxc(i+ii,j,1)
             if (valc(i+ii,j,1).le.toldry) then
-               coarseval(2+ii)=eta(1)
+               coarseval(2+ii)=eta_init(1)
                endif
             enddo
          s1p=coarseval(3)-coarseval(2)
@@ -102,7 +102,7 @@ c     #prepare slopes - use min-mod limiters
          do jj=-1,1
             coarseval(2+jj) = valc(i,j+jj,1)+ auxc(i,j+jj,1)
             if (valc(i,j+jj,1).le.toldry) then
-               coarseval(2+jj)=eta(1)
+               coarseval(2+jj)=eta_init(1)
                endif
             enddo
          s1p=coarseval(3)-coarseval(2)
