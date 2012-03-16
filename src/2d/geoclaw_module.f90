@@ -26,6 +26,11 @@ module geoclaw_module
     integer :: icoriolis,ifriction
     integer, parameter :: GEO_PARM_UNIT = 78
     logical            :: varRefTime = .FALSE.
+    
+    ! Speed/Momentum based refinement
+    integer :: max_speed_nest
+    double precision, allocatable :: speed_refine(:)
+    logical :: momentum_refinement
 
     ! ========================================================================
     !  Flow grades flagging support
@@ -208,6 +213,7 @@ contains
         ! Locals
         character*25 :: file_name
         logical :: found_file
+        integer :: i
         integer, parameter :: iunit = 127
 
         write(GEO_PARM_UNIT,*) ' '
@@ -218,7 +224,7 @@ contains
         if (present(fname)) then
             file_name = fname
         else
-            file_name = 'settsunami.data'
+            file_name = 'setshallow.data'
         endif
         inquire(file=file_name,exist=found_file)
         if (.not. found_file) then
@@ -237,6 +243,10 @@ contains
         read(iunit,*) ifriction
         read(iunit,*) coeffmanning
         read(iunit,*) frictiondepth
+        read(iunit,"(i2)") max_speed_nest
+        read(iunit,*) momentum_refinement
+        allocate(speed_refine(max_speed_nest))
+        read(iunit,*) (speed_refine(i),i=1,max_speed_nest)
         close(iunit)
 
         write(GEO_PARM_UNIT,*) '   drytolerance:',drytolerance

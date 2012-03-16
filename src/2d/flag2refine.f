@@ -180,6 +180,25 @@ c               endif
              endif
 
           endif
+          
+c        Refine based on momentum or speed of water
+c        Had to remove this form the allow flag block as it checks for t > 0
+c        and was not allowing refinement before t = 0, we need this as the 
+c        storm surge has ramp up time that may need refinement (KTM 2010-8-4)
+          speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2)
+          ! This is only important for layers > 1, otherwise this is already speed
+          if (.not.momentum_refinement) then
+              if (q(1,i,j) > drytolerance) then
+                  speed = speed / q(1,i,j)
+              endif
+          endif
+          do m=1,max_speed_nest
+              if ((speed > speed_refine(m)).and.(level <= m)) then
+                  amrflags(i,j) = DOFLAG
+                  go to 100
+              endif
+          enddo
+          
 
  100     continue  !# end loop on i
  200    continue   !# end loop on j
