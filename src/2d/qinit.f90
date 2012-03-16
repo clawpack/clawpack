@@ -7,12 +7,24 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     ! Subroutine arguments
     integer, intent(in) :: maxmx,maxmy,meqn,mbc,mx,my,maux
-    double precision(in) :: xlower,ylower,dx,dy
-    double precision(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    double precision(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    double precision, intent(in) :: xlower,ylower,dx,dy
+    double precision, intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
     
     ! Locals
-    integer :: i,j
+    integer :: i,j,m,layer_index,bottom_layer
+    double precision :: xim,xip,xipc,ximc,xc,x,yim,yip,yjp,yjm,yjpc,yjmc,yc,y
+    double precision :: dq
+    
+    ! Not sure why this is not working as of yet, be cautious when using iqinit > 0
+!     interface
+!         double precision function topointegral(xim,xcell,xip,yjm,ycell,yjp,xxlow,yylow,dxx,dyy,mxx,myy,zz,intmethod)
+!             integer, intent(in) :: mxx,myy,intmethod
+!             double precision, intent(in) :: xim,xcell,xip,yjm,ycell,yjp,xxlow,yylow,dxx,dyy
+!             double precision, intent(in) :: z(1:mxx,1:myy)
+!         end function topointegral
+!     end interface
+    double precision :: topointegral
     
     ! Set flat state based on eta_init
     do i=1,mx
@@ -39,6 +51,7 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     ! Add perturbation to surfaces (only handles layers == 1 case)
     if (iqinit > 0) then
+        print *,"WARNING:  This may not work any more!"
         do i=1-mbc,mx+mbc
             x = xlower + (i-0.5d0)*dx
             xim = x - 0.5d0*dx
@@ -60,7 +73,9 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
                     yjmc=max(yjm,ylowqinit)
                     yc=0.5d0*(yjmc+yjpc)
 
-                    dq = topointegral(ximc,xc,xipc,yjmc,yc,yjpc,xlowqinit,ylowqinit,dxqinit,dyqinit,mxqinit,myqinit,qinitwork,1)
+                    dq = topointegral(ximc,xc,xipc,yjmc,yc,yjpc,xlowqinit, &
+                                      ylowqinit,dxqinit,dyqinit,mxqinit, &
+                                      myqinit,qinitwork,1)
                     dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(2,i,j))
 
                     if (iqinit < 4) then 
