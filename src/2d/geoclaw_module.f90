@@ -19,7 +19,7 @@ module geoclaw_module
     ! ========================================================================
     ! General geoclaw parameters
     ! ========================================================================
-    double precision :: grav,drytolerance,Rearth,R1,R2,pi,sealevel
+    double precision :: grav,drytolerance,Rearth,R1,R2,pi
     double precision :: wavetolerance,coeffmanning,depthdeep
     double precision :: frictiondepth
     integer :: icoordsys,maxleveldeep,minlevelwet,maxleveldry
@@ -41,6 +41,7 @@ module geoclaw_module
     ! ========================================================================
     integer :: layers
     double precision, allocatable :: rho(:)
+    double precision, allocatable :: eta(:)
 !     double precision, allocatable :: r(:)
 
 contains
@@ -163,6 +164,8 @@ contains
         read(unit,"(i2)") layers
         allocate(rho(layers))
         read(unit,*) rho
+        allocate(eta(layers))
+        read(unit,*) eta
         close(unit) 
         
         ! Calculate ratios of densities
@@ -211,7 +214,8 @@ contains
 
         call opendatafile(iunit, file_name)
 
-        read(iunit,*) sealevel
+! Has been moved to multilayer data eta[1]
+!         read(iunit,*) sealevel 
         read(iunit,*) drytolerance
         read(iunit,*) wavetolerance
         read(iunit,*) depthdeep

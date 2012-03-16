@@ -219,7 +219,7 @@ c       interpolate back up
                etacrse(icrse(ic+i,jc)) = valcrse(ivalc(1,ic+i,jc))
      &            +  auxcrse(iauxc(ic+i,jc))
                if (valcrse(ivalc(1,ic+i,jc)).lt.toldry) then
-                  etacrse(icrse(ic+i,jc)) = sealevel
+                  etacrse(icrse(ic+i,jc)) = eta(1)
                   endif
                enddo
             s1 = etacrse(icrse(ic,jc))- etacrse(icrse(ic-1,jc))
@@ -234,7 +234,7 @@ c       interpolate back up
                etacrse(icrse(ic,jc+j)) = valcrse(ivalc(1,ic,jc+j))
      &            +  auxcrse(iauxc(ic,jc+j))
                if (valcrse(ivalc(1,ic,jc+j)).lt.toldry) then
-                  etacrse(icrse(ic,jc+j)) = sealevel
+                  etacrse(icrse(ic,jc+j)) = eta(1)
                   endif
                enddo
             s1 = etacrse(icrse(ic,jc))  - etacrse(icrse(ic,jc-1))

@@ -134,48 +134,6 @@ contains
         close(13)
 
     end subroutine set_hurricane_params
-    
-    !
-    !
-    subroutine read_hurricane_track_file(file_path)
-
-        implicit none
-    
-        ! Input
-        character*150, intent(in) :: file_path
-    
-        ! Local 
-        integer :: i,ios,num_points
-        integer, parameter :: log_unit = 42
-        integer, parameter :: data_unit = 43
-        character*50 :: line_format
-    
-        ! Line format
-        line_format = "(5d16.8)"
-    
-        ! Open log file
-        open(unit=log_unit, file='./fort.hurricane', iostat=ios, status="unknown", action="write")
-        if ( ios /= 0 ) stop "Error opening file ./fort.hurricane"
-    
-        ! Open hurricane data file
-        open(unit=data_unit, file=file_path, iostat=ios, status="old", action="read")
-        if ( ios /= 0 ) then
-            print *, "Error opening file ", file_path
-            stop
-        endif
-    
-        ! Read header
-        read(data_unit,'(i3)') num_points
-    
-        ! Allocate arrays
-        allocate(time(num_points),position(num_points,2))
-        allocate(max_wind(num_points),min_pressure(num_points))
-    
-        do i=1,num_points
-            read(data_unit,*) time(i),position(i,1),position(i,2),max_wind(i),min_pressure(i)
-        enddo
-    
-    end subroutine read_hurricane_track_file
 
     ! ========================================================================
     !   subroutine hurricane_wind(mbc,mx,my,xlower,ylower,dx,dy,R_eye,wind)
