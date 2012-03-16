@@ -41,7 +41,7 @@ module geoclaw_module
     ! ========================================================================
     integer :: layers
     double precision, allocatable :: rho(:)
-    double precision, allocatable :: r(:)
+!     double precision, allocatable :: r(:)
 
 contains
 
@@ -139,6 +139,7 @@ contains
         ! Locals
         character(len=25) :: file_name
         logical :: found_file
+        integer :: i
         integer, parameter :: unit = 124
 
         write(GEO_PARM_UNIT,*) ' '
@@ -157,21 +158,21 @@ contains
             stop
         endif
 
-        call opendatafile(iunit, file_name)
+        call opendatafile(unit, file_name)
 
         read(unit,"(i2)") layers
-        allocate(rho(layers),r(layers-1))
+        allocate(rho(layers))
         read(unit,*) rho
-        close(unit,*) 
+        close(unit) 
         
         ! Calculate ratios of densities
-        do i=1,layers-1
-            r(i) = rho(i) / rho(i+1)
-        enddo
+!         do i=1,layers-1
+!             r(i) = rho(i) / rho(i+1)
+!         enddo
         
         write(GEO_PARM_UNIT,*) '   layers:',layers
         write(GEO_PARM_UNIT,*) '   rho:',(rho(i),i=1,layers)
-        write(GEO_PARM_UNIT,*) '   r (calculated):', (r,i=1,layers-1)
+!         write(GEO_PARM_UNIT,*) '   r (calculated):', (r,i=1,layers-1)
         
     end subroutine set_multilayer
 
