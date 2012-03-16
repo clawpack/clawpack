@@ -7,9 +7,8 @@ function setplot is called to set the plot parameters.
     
 """ 
 
-from pyclaw.geotools import topotools
-from pyclaw.data import Data
-
+from geoclaw import topotools
+from clawutil import clawdata
 
 #--------------------------
 def setplot(plotdata):
@@ -23,7 +22,7 @@ def setplot(plotdata):
     """ 
 
 
-    from pyclaw.plotters import colormaps, geoplot
+    from visclaw import colormaps, geoplot
     from numpy import linspace
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
@@ -33,7 +32,7 @@ def setplot(plotdata):
     # an afteraxis function:
 
     def addgauges(current_data):
-        from pyclaw.plotters import gaugetools
+        from visclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=True)
     
@@ -60,14 +59,14 @@ def setplot(plotdata):
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    #plotitem.plot_var = geoplot.surface
+    # plotitem.plot_var = geoplot.surface
     plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -76,8 +75,8 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [1,1,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [1,1,0]
+    plotitem.patchedges_show = 1
     plotaxes.xlimits = [-120,-60]
     plotaxes.ylimits = [-60,0]
 
@@ -89,8 +88,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['y']  # color on each level
     plotitem.kwargs = {'linestyles':'solid','linewidths':2}
     plotitem.amr_contour_show = [1,0,0]  
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
 
 
     #-----------------------------------------
@@ -117,8 +116,8 @@ def setplot(plotdata):
 
     def gaugetopo(current_data):
         q = current_data.q
-        h = q[:,0]
-        eta = q[:,3]
+        h = q[0,:]
+        eta = q[3,:]
         topo = eta - h
         return topo
         

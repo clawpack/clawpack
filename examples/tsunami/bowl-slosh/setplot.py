@@ -27,7 +27,7 @@ def setplot(plotdata):
     """ 
 
 
-    from pyclaw.plotters import colormaps, geoplot
+    from visclaw import colormaps, geoplot
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
@@ -58,8 +58,8 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = -0.1
     plotitem.pcolor_cmax = 0.1
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -68,8 +68,8 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
     plotaxes.xlimits = [-2,2]
     plotaxes.ylimits = [-2,2]
 
@@ -81,8 +81,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['k']  # color on each level
     plotitem.kwargs = {'linestyles':'solid'}
     plotitem.amr_contour_show = [1]  
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
     plotitem.show = True
 
     #-----------------------------------------
@@ -101,7 +101,7 @@ def setplot(plotdata):
         y = current_data.y
         t = current_data.t
         q = current_data.q
-        my2 = q.shape[1] / 2.
+        my2 = q.shape[2] / 2.
         x = x[:,my2]
         y = y[:,my2]
         hold(True)
@@ -122,13 +122,13 @@ def setplot(plotdata):
         # Return x value and surface eta at this point, along y=0
         x = current_data.x
         q = current_data.q
-        my2 = q.shape[1] / 2.
-        eta_slice = q[:,my2,3]
+        my2 = q.shape[2] / 2.
+        eta_slice = q[3,:,my2]
         return x[:,my2], eta_slice
 
     plotitem.map_2d_to_1d = xsec
     plotitem.plotstyle = 'b-'
-    plotitem.amr_plot_show = [0,1]  # only plot on level 2
+    plotitem.amr_show = [0,1]  # only plot on level 2
 
 
     #-----------------------------------------
@@ -145,10 +145,10 @@ def setplot(plotdata):
     plotaxes.scaled = True
 
     # Set up for item on these axes:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_grid')
-    plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-    plotitem.amr_gridlines_show = [1,1,0]   
-    plotitem.amr_gridedges_show = [1]     
+    plotitem = plotaxes.new_plotitem(plot_type='2d_edges')
+    plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+    plotitem.amr_celledges_show = [1,1,0]   
+    plotitem.amr_patchedges_show = [1]     
 
 
 

@@ -20,16 +20,20 @@ CLAW_setplot_file = setplot.py      # File containing function to set plots
 CLAW_PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran   # default if not set as environment variable
-#FC = /opt/local/bin/gfortran-mp-4.5
+FC ?= gfortran
+FFLAGS ?=
+MAKELEVEL ?= 0
+ifeq ($(MAKELEVEL),0)
+	# If you want to include NetCDF output add these flags
+	# Note that the NETCDF_INC should point to the location of the hearder files
+	# for NetCDF
+	# NETCDF_INC ?= /usr/include
+	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
-# Add any desired compiler flags such as -g here:
-FFLAGS =  -W -Wall -fbounds-check  -ffpe-trap=zero,overflow -g
-#FFLAGS =  -W -Wall -fbounds-check -pedantic-errors -std=f2003 -Wunderflow -O -ffpe-trap=zero,overflow,underflow -g
-
-# If you want to include NetCDF output add these flags
-# FFLAGS ?=-I/usr/include  -lnetcdf -lnetcdff
-
+	# Threading flags
+	# FFLAGS += -D GRID_THREADING
+	# FFLAGS += -D MAX1D=200
+endif
 
 # ---------------------------------
 # List of sources for this program:
@@ -156,19 +160,16 @@ SOURCES = \
   $(AMRLIB)/opendatafile.f \
   $(AMRLIB)/init_alloc.f90 \
   $(AMRLIB)/restrt_alloc.f90 \
-  $(AMRLIB)/resize_alloc.f90 \
-# $(AMRLIB)/resize_alloc_static.f90 \
-
-.PHONY: topo
-
-topo: .data
-	python maketopo.py
-
+  $(AMRLIB)/resize_alloc.f90
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
 
+# Construct the topography data
+.PHONY: topo
+topo: .data
+	python maketopo.py
 
 ### DO NOT remove this line - make depends on it ###
 

@@ -19,7 +19,7 @@ def setplot(plotdata):
     """ 
 
 
-    from pyclaw.plotters import colormaps, geoplot
+    from visclaw import colormaps, geoplot
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
@@ -37,7 +37,7 @@ def setplot(plotdata):
     # an afteraxis function:
 
     def addgauges(current_data):
-        from pyclaw.plotters import gaugetools
+        from visclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=True)
     
@@ -60,8 +60,8 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = -0.9
     plotitem.pcolor_cmax = 0.9
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [1,1,0]
-    plotitem.amr_gridedges_show = [1]
+    plotitem.amr_celledges_show = [1,1,0]
+    plotitem.amr_patchedges_show = [1]
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -70,7 +70,7 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [1,1,0]
+    plotitem.amr_celledges_show = [1,1,0]
     plotaxes.xlimits = [-100,100]
     plotaxes.ylimits = [-100,100]
 
@@ -100,8 +100,8 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = -0.9
     plotitem.pcolor_cmax = 0.9
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [1,1,0]
-    plotitem.amr_gridedges_show = [1]
+    plotitem.amr_celledges_show = [1,1,0]
+    plotitem.amr_patchedges_show = [1]
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -110,7 +110,7 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [1,1,0]
+    plotitem.amr_celledges_show = [1,1,0]
 
     # Add contour lines of bathymetry:
     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
@@ -120,8 +120,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['k']  # color on each level
     plotitem.kwargs = {'linestyles':'solid'}
     plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
     plotitem.show = True
 
     # Add contour lines of topography:
@@ -132,8 +132,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['g']  # color on each level
     plotitem.kwargs = {'linestyles':'solid'}
     plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
     plotitem.show = True
 
     # Add dashed contour line for shoreline
@@ -143,8 +143,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['k']  # color on each level
     plotitem.kwargs = {'linestyles':'dashed'}
     plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
     plotitem.show = True
 
 
@@ -173,8 +173,8 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = -0.9
     plotitem.pcolor_cmax = 0.9
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [1,1,0]
-    plotitem.amr_gridedges_show = [1]
+    plotitem.amr_celledges_show = [1,1,0]
+    plotitem.amr_patchedges_show = [1]
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -183,7 +183,7 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [1,1,0]
+    plotitem.amr_celledges_show = [1,1,0]
 
 
     # Add contour lines of bathymetry:
@@ -194,8 +194,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['k']  # color on each level
     plotitem.kwargs = {'linestyles':'solid'}
     plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
     plotitem.show = True
 
     # Add contour lines of topography:
@@ -206,8 +206,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['g']  # color on each level
     plotitem.kwargs = {'linestyles':'solid'}
     plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
     plotitem.show = True
 
     # Add dashed contour line for shoreline
@@ -217,8 +217,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['k']  # color on each level
     plotitem.kwargs = {'linestyles':'dashed'}
     plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
     plotitem.show = True
 
 
@@ -251,7 +251,7 @@ def setplot(plotdata):
         return topo
         
     plotitem.plot_var = gaugetopo
-    plotitem.clf_each_gauge = False
+    plotfigure.clf_each_gauge = False
     plotitem.plotstyle = 'g-'
     def add_zeroline(current_data):
         from pylab import plot, legend
@@ -277,9 +277,9 @@ def setplot(plotdata):
 
     # Set up for item on these axes:
     plotitem = plotaxes.new_plotitem(plot_type='2d_grid')
-    plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-    plotitem.amr_gridlines_show = [1,1,0]   
-    plotitem.amr_gridedges_show = [1]     
+    plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+    plotitem.amr_celledges_show = [1,1,0]   
+    plotitem.amr_patchedges_show = [1]     
 
     #-----------------------------------------
     # Scatter plot of surface for radially symmetric

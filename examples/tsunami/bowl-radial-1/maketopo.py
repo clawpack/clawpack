@@ -3,7 +3,7 @@
 Module to create topo and qinit data files for this example.
 """
 
-from pyclaw.geotools import topotools
+from geoclaw import topotools
 from numpy import *
 
 def maketopo():
