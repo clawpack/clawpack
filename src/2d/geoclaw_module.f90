@@ -44,6 +44,11 @@ module geoclaw_module
     double precision, allocatable :: eta_init(:)
 !     double precision, allocatable :: r(:)
 
+    ! Loss of hyperbolicity 
+    integer, parameter :: KAPPA_UNIT = 42
+    double precision :: richardson_tolerance
+
+
 contains
 
     ! ========================================================================
@@ -140,7 +145,7 @@ contains
         ! Locals
         character(len=25) :: file_name
         logical :: found_file
-        integer :: i
+        integer :: i,ios
         integer, parameter :: unit = 124
 
         write(GEO_PARM_UNIT,*) ' '
@@ -166,6 +171,7 @@ contains
         read(unit,*) rho
         allocate(eta_init(layers))
         read(unit,*) eta_init
+        read(unit,*) richardson_tolerance
         close(unit) 
         
         ! Calculate ratios of densities
@@ -176,6 +182,14 @@ contains
         write(GEO_PARM_UNIT,*) '   layers:',layers
         write(GEO_PARM_UNIT,*) '   rho:',(rho(i),i=1,layers)
 !         write(GEO_PARM_UNIT,*) '   r (calculated):', (r,i=1,layers-1)
+
+        ! Open Kappa output file if layers > 1
+        ! Open file for writing hyperbolicity warnings if multiple layers
+        if (layers > 1) then
+            open(unit=KAPPA_UNIT, file='fort.kappa', iostat=ios, &
+                    status="unknown", action="write")
+            if ( ios /= 0 ) stop "Error opening file name fort.kappa"
+        endif
         
     end subroutine set_multilayer
 

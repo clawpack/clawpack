@@ -21,7 +21,10 @@ c     Also calls movetopo if topography might be moving.
 
       dimension q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
       dimension aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-
+      
+      integer :: layer,layer_index
+      double precision :: h(2),u(2),v(2),g,kappa
+      logical :: dry_state(2)
 
 c=====================Parameters===========================================
 
@@ -54,6 +57,44 @@ c     # set hu = hv = 0 in all these cells
      &      mxdtopo(i),mydtopo(i),mtdtopo(i),mdtopo(i),
      &      minleveldtopo(i),maxleveldtopo(i),topoaltered(i))
       enddo
+
+      ! Check Richardson number
+      if (layers > 1) then
+      do i=1,mx
+          do j=1,my
+              dry_state = .false.
+              do layer=1,2
+                  m = 3*(layer-1)
+                  h(layer) = q(m+1,i,j)
+                  if (h(layer) > drytolerance) then
+                      u(layer) = q(m+2,i,j) / q(m+1,i,j)
+                      v(layer) = q(m+3,i,j)/ q(m+1,i,j)
+                  else
+                      dry_state(layer) = .true.
+                      u(layer) = 0.d0
+                      v(layer) = 0.d0
+                  endif
+              enddo
+              if (sum(h) > drytolerance) then
+                  kappa=(u(1) - u(2))**2 / (g*one_minus_r*sum(h))
+                  if ((kappa > RICHARDSON_TOLERANCE)
+     &                  .and.(.not.dry_state(2))) then
+                      write(kappa_file,100) i,j,kappa
+                      print 100,i,j,kappa
+                  endif
+                  aux(10,i,j)=(v(1) - v(2))**2 / (g*one_minus_r*sum(h))
+                  if ((kappa > RICHARDSON_TOLERANCE)
+     &                  .and.(.not.dry_state(2))) then
+                      write(kappa_file,100),i,j,kappa
+                      print 100,i,j,kappa
+                  endif
+               endif
+          enddo
+      enddo
+      endif
+      
+100   format ("Hyperbolicity may have failed (",i4,",",i4,") = ",d16.8)
+      
 
       return
       end
