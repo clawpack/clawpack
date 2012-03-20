@@ -12,6 +12,13 @@ c======================================================================
       dimension q(meqn,1-mbc:mxc+mbc,1-mbc:myc+mbc)
       dimension aux(maux,1-mbc:mxc+mbc,1-mbc:myc+mbc)
       dimension fgrid(mvarsfg,1:mxfg,1:myfg)
+          
+c     Construct NaN for filling empty spots
+      integer(kind=16) NaN_descriptor
+      real(kind=8) :: NaN
+
+      data NaN_descriptor/B'01111111100000100000000000000000'/
+      NaN = transfer(NaN,NaN_descriptor)
 
 c=====================FGRIDINTERP=======================================
 c         # This routine interpolates q and aux on a computational grid
@@ -133,7 +140,7 @@ c        # using a surface that only uses the wet eta points near the shoreline
              endif            
          endif
          if (totaldepth.le.4.d0*tol) then
-            z22=d_nan()
+            z22=NaN
          endif
 
          a=z21-z11

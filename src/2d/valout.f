@@ -80,7 +80,7 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
       do j = nghost+1, mjtot-nghost
          do i = nghost+1, mitot-nghost
             do ivar=1,nvar
-               if (dabs(alloc(iadd(ivar,i,j))) .lt. 1d-90) then
+               if (abs(alloc(iadd(ivar,i,j))) < 1d-90) then
                   alloc(iadd(ivar,i,j)) = 0.d0
                endif
             enddo

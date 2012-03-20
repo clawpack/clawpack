@@ -25,10 +25,9 @@ module hurricane_module
     logical :: pressure_forcing
     double precision :: pressure_tolerance
     
-    ! Algorithm parameters
-    logical :: momentum_refinement
-    integer :: max_speed_nest,max_R_nest
-    double precision, allocatable :: speed_refine(:), R_refine(:)
+    ! Refinement parameters
+    integer :: max_R_nest
+    double precision, allocatable :: R_refine(:)
     
     ! Hurricane Parameters
     double precision :: ramp_up_time,hurricane_velocity(2),R_eye_init(2)
@@ -93,10 +92,6 @@ contains
         read(13,*) max_wind_nest
         allocate(wind_refine(max_wind_nest))
         read(13,*) (wind_refine(i),i=1,max_wind_nest)
-        read(13,*) max_speed_nest
-        allocate(speed_refine(max_speed_nest))
-        read(13,*) (speed_refine(i),i=1,max_speed_nest)
-        read(13,*) momentum_refinement
         read(13,*) max_R_nest
         allocate(R_refine(max_R_nest))
         read(13,*) (R_refine(i),i=1,max_R_nest)

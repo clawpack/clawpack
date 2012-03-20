@@ -13,7 +13,6 @@ c     This should occur only because of rounding error.
 
 c     Also calls movetopo if topography might be moving.
 
-      use multilayer_module
       use hurricane_module
       use geoclaw_module
       use topo_module
@@ -22,7 +21,7 @@ c     Also calls movetopo if topography might be moving.
       implicit double precision (a-h,o-z)
 
       dimension q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-      dimension vel(2,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+C       dimension vel(2,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
       double precision :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
       
       integer :: layer,layer_index

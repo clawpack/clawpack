@@ -53,9 +53,8 @@ MODULES = \
  $(GEOLIB)/fixedgrids_module.f90 \
 
 SOURCES = \
-  $(GEOLIB)/setprob.f \
-  $(GEOLIB)/qinit.f \
-  $(GEOLIB)/readqinit.f \
+  $(GEOLIB)/setprob.f90 \
+  $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
@@ -78,7 +77,6 @@ SOURCES = \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setaux.f \
-  $(GEOLIB)/setqinit.f \
   $(GEOLIB)/setregions.f \
   $(GEOLIB)/setgauges.f \
   $(GEOLIB)/setfixedgrids.f \
@@ -99,6 +97,7 @@ SOURCES = \
   $(AMRLIB)/bound.f \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
+  $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \

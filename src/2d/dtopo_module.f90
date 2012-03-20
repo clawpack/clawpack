@@ -66,15 +66,15 @@ contains
         character*25 :: file_name
         integer, parameter :: iunit = 79
         logical :: found_file
-        double precision :: xcell, xim, xip, ycell, yjm, yjp, ztopoij
-        double precision :: capac_area, deg2rad
+        real(kind=8) :: xcell, xim, xip, ycell, yjm, yjp, ztopoij
+        real(kind=8) :: capac_area, deg2rad
         integer :: i,m,ib,jb,ij,ijdtopo,jbr
 
         ! Function
-        double precision :: topointegral
+        real(kind=8) :: topointegral
 
         ! Common block
-        double precision :: tstart
+        real(kind=8) :: tstart
         common /ctstart/ tstart
 
         write(GEO_PARM_UNIT,*) ' '

@@ -71,8 +71,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells:
-    clawdata.mx = 30
-    clawdata.my = 30
+    clawdata.mx = 10
+    clawdata.my = 10
 
 
     # ---------------
@@ -274,7 +274,6 @@ def setgeo(rundata):
     geodata.icoriolis = 0
 
     # == settsunami.data values ==
-    geodata.sealevel = 0.
     geodata.drytolerance = 1.e-3
     geodata.wavetolerance = 1.e-1
     geodata.depthdeep = 1.e2
@@ -321,7 +320,13 @@ def setgeo(rundata):
     # for fixed grids append lines of the form
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
-
+    
+    # == Multilayer ==
+    geodata.layers = 1
+    geodata.rho = 1.0
+    geodata.eta_init = 0.0
+    geodata.richardson_tolerance = 0.95
+    
     return rundata
     # end of function setgeo
     # ----------------------

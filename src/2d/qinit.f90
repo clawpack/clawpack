@@ -7,24 +7,14 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     ! Subroutine arguments
     integer, intent(in) :: maxmx,maxmy,meqn,mbc,mx,my,maux
-    double precision, intent(in) :: xlower,ylower,dx,dy
-    double precision, intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    real(kind=8), intent(in) :: xlower,ylower,dx,dy
+    real(kind=8), intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
     
     ! Locals
     integer :: i,j,m,layer_index,bottom_layer
-    double precision :: xim,xip,xipc,ximc,xc,x,yim,yip,yjp,yjm,yjpc,yjmc,yc,y
-    double precision :: dq
-    
-    ! Not sure why this is not working as of yet, be cautious when using iqinit > 0
-!     interface
-!         double precision function topointegral(xim,xcell,xip,yjm,ycell,yjp,xxlow,yylow,dxx,dyy,mxx,myy,zz,intmethod)
-!             integer, intent(in) :: mxx,myy,intmethod
-!             double precision, intent(in) :: xim,xcell,xip,yjm,ycell,yjp,xxlow,yylow,dxx,dyy
-!             double precision, intent(in) :: z(1:mxx,1:myy)
-!         end function topointegral
-!     end interface
-    double precision :: topointegral
+    real(kind=8) :: xim,xip,xipc,ximc,xc,x,yim,yip,yjp,yjm,yjpc,yjmc,yc,y
+    real(kind=8) :: dq
     
     ! Set flat state based on eta_init
     do i=1,mx
@@ -38,7 +28,7 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
             enddo
             ! Take care of last layer
             bottom_layer = 3*layers-2
-            q(bottom_layer,i,j) = max(0.d0,eta_init(m) - aux(1,i,j))
+            q(bottom_layer,i,j) = max(0.d0,eta_init(m) - aux(1,i,j)) * rho(bottom_layer)
             q(bottom_layer+1,i,j) = 0.d0
             q(bottom_layer+2,i,j) = 0.d0
             
@@ -49,45 +39,7 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
         enddo
     enddo
     
-    ! Add perturbation to surfaces (only handles layers == 1 case)
-    if (iqinit > 0) then
-        print *,"WARNING:  This may not work any more!"
-        do i=1-mbc,mx+mbc
-            x = xlower + (i-0.5d0)*dx
-            xim = x - 0.5d0*dx
-            xip = x + 0.5d0*dx
-            do j=1-mbc,my+mbc
-                y = ylower + (j-0.5d0)*dy
-                yjm = y - 0.5d0*dy
-                yjp = y + 0.5d0*dy
-
-
-                if ((xip > xlowqinit).and.(xim < xhiqinit).and.  &
-                    (yjp > ylowqinit).and.(yjm < yhiqinit)) then
-
-                    xipc=min(xip,xhiqinit)
-                    ximc=max(xim,xlowqinit)
-                    xc=0.5d0*(xipc+ximc)
-
-                    yjpc=min(yjp,yhiqinit)
-                    yjmc=max(yjm,ylowqinit)
-                    yc=0.5d0*(yjmc+yjpc)
-
-                    dq = topointegral(ximc,xc,xipc,yjmc,yc,yjpc,xlowqinit, &
-                                      ylowqinit,dxqinit,dyqinit,mxqinit, &
-                                      myqinit,qinitwork,1)
-                    dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(2,i,j))
-
-                    if (iqinit < 4) then 
-                        if (aux(1,i,j) <= 0.d0) then
-                            q(iqinit,i,j) = q(iqinit,i,j) + dq
-                        endif
-                    else if (iqinit == 4) then
-                      q(1,i,j) = max(dq-aux(1,i,j),0.d0)
-                    endif
-                endif
-            enddo
-        enddo
-    endif
+    ! Add perturbation to initial conditions
+    call add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
 end subroutine qinit

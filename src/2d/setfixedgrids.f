@@ -5,9 +5,15 @@ c=========================================================================
       use amr_module
       use fixedgrids_module
       implicit double precision (a-h,o-z)
-      character*25, parameter :: fname = 'setfixedgrids.data'
+      character(len=25), parameter :: fname = 'setfixedgrids.data'
       logical foundFile
+          
+c     Construct NaN for filling empty spots
+      integer(kind=16) NaN_descriptor
+      real(kind=8) :: NaN
 
+      data NaN_descriptor/B'01111111100000100000000000000000'/
+      NaN = transfer(NaN,NaN_descriptor)
 
       write(parmunit,*) ' '
       write(parmunit,*) '--------------------------------------------'
@@ -121,9 +127,9 @@ c      # make sure enough space has been alotted for fixed grids in memory
 c      #initialize fixed grid work arrays to NaN
 c      #this will prevent non-filled values from being misinterpreted
        do k=1,maxfgridsize
-          fgridearly(k)=d_nan()
-          fgridlate(k)=d_nan()
-          fgridoften(k)=d_nan()
+          fgridearly(k) = NaN
+          fgridlate(k) = NaN
+          fgridoften(k) = NaN
        enddo
        tcfmax=-1.d16
       write(parmunit,*) '  mfgrids = ',mfgrids
@@ -133,15 +139,5 @@ c      #this will prevent non-filled values from being misinterpreted
   701    format(2i4,6d12.3)
          enddo
 
-      return
-      end
-
-      real*8 function d_nan()
-      real*8 dnan
-      integer inan(2)
-      equivalence (dnan,inan)
-      inan(1)=2147483647
-      inan(2)=2147483647
-      d_nan=dnan
       return
       end

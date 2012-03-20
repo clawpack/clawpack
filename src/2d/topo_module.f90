@@ -20,7 +20,7 @@ module topo_module
     double precision, allocatable :: topowork(:)
 
     ! Topography file data
-    character*150, allocatable :: topofname(:)
+    character(len=150), allocatable :: topofname(:)
     integer :: mtopofiles,mtoposize
     double precision, allocatable :: xlowtopo(:), ylowtopo(:), tlowtopo(:)
     double precision, allocatable :: xhitopo(:), yhitopo(:), thitopo(:)
@@ -57,13 +57,13 @@ contains
         implicit none
 
         ! Input arguments
-        character*25, intent(in), optional :: fname
+        character(len=25), intent(in), optional :: fname
 
         ! Locals
         integer, parameter :: iunit = 7
         integer :: i,j,itopo,finer_than,rank
         double precision :: area_i,area_j,x_junk,y_junk
-        character*25 :: file_name
+        character(len=25) :: file_name
         logical :: found_file
 
         ! Open and begin parameter file output
@@ -158,13 +158,14 @@ contains
                     area_i=dxtopo(i)*dytopo(i)
                     area_j=dxtopo(j)*dytopo(j)
                     if (area_i < area_j) finer_than = finer_than + 1
-!                   if two files have the same resolution, order is arbitrarily chosen
+                    ! if two files have the same resolution, order is
+                    ! arbitrarily chosen
                     if ((area_i == area_j).and.(j < i)) then
                         finer_than = finer_than + 1
                     endif
                 endif
             enddo
-!         # ifinerthan tells how many other files i is finer than
+            ! ifinerthan tells how many other files i is finer than
             rank = mtopofiles - finer_than
             mtopoorder(rank) = i
         enddo
@@ -191,7 +192,7 @@ contains
 
         ! Arguments
         integer, intent(in) :: mx,my,topo_type
-        character*150, intent(in) :: fname
+        character(len=150), intent(in) :: fname
         double precision, intent(inout) :: topo(1:mx*my)
 
         ! Locals
@@ -282,6 +283,7 @@ contains
         ! set maketype2 to true to create a file new.topo_type2 with only z
         ! values, so next time it will take less time to read in.
         ! only works if dx = dy.
+        ! Currently we don't have the right info in this routine to do this
 !         if ((topo_type == 1).and.maketype2) then
 !             open(unit=29,file='new.tt2',status='unknown',form='formatted')
 !             write(29,*) mx, '       mx'
@@ -300,7 +302,7 @@ contains
 !                 print *,  ' dx = ',dx,'  dy = ',dy
 !             endif
 !         endif
-!         ! ====================================================================
+        ! ====================================================================
 
     end subroutine read_topo
 
@@ -325,7 +327,7 @@ contains
         implicit none
 
         ! Input and Output
-        character*150, intent(in) :: fname
+        character(len=150), intent(in) :: fname
         integer, intent(in) :: topo_type
         integer, intent(out) :: mx,my
         double precision, intent(out) :: xll,yll,xhi,yhi,dx,dy
@@ -367,13 +369,13 @@ contains
                 enddo
                 mx = mx - 1
                 ! Continue to count the rest of the lines
-                status = 0
-                do while (status == 0)
+                do
                     read(iunit,fmt=*,iostat=status) x,y,z
+                    if (status /= 0) exit
                     topo_size = topo_size + 1
                 enddo
                 if (status > 0) then
-                    print *, "IO error occured in ",fname,", aborting!"
+                    print *,"ERROR:  Error reading header of topography file ",fname
                     stop
                 endif
 

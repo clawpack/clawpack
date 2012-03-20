@@ -1,10 +1,7 @@
 ! ============================================================================
-!  Program:     /Users/mandli/src/claw44/branches/ktm-geoclaw-mod/2dxy/lib
 !  File:        geoclaw_mod
-!  Created:     2010-04-21
-!  Author:      Kyle Mandli
 ! ============================================================================
-!      Copyright (C) 2010-04-21 Kyle Mandli <mandli@amath.washington.edu>
+!    Copyright (C) 2010-04-21 Clawpack Developers http://www.clawpack.org
 !
 !  Distributed under the terms of the Berkeley Software Distribution (BSD)
 !  license
