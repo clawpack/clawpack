@@ -38,12 +38,11 @@ c     # set hu = hv = 0 in all these cells
 
       do i=1-mbc,mx+mbc
         do j=1-mbc,my+mbc
-          if (q(1,i,j).lt.drytolerance) then
-             q(1,i,j) = max(q(1,i,j),0.d0)
-             do m=2,meqn
-                q(m,i,j)=0.d0
-                enddo
-             endif
+            do k=1,layers
+                if (q(1,i,j) / rho(k) < drytolerance) then
+                    q(2:meqn,i,j) = 0.d0
+                endif
+            enddo
         enddo
       enddo
 
@@ -58,43 +57,52 @@ c     # set hu = hv = 0 in all these cells
      &      minleveldtopo(i),maxleveldtopo(i),topoaltered(i))
       enddo
 
-      ! Check Richardson number
-      if (layers > 1) then
+      ! Check Richardson number -- Only implemented for 2 layers
+      if (layers == 2 .and. check_richardson) then
       do i=1,mx
           do j=1,my
               dry_state = .false.
-              do layer=1,2
-                  m = 3*(layer-1)
-                  h(layer) = q(m+1,i,j)
-                  if (h(layer) > drytolerance) then
-                      u(layer) = q(m+2,i,j) / q(m+1,i,j)
-                      v(layer) = q(m+3,i,j)/ q(m+1,i,j)
+              do k=1,layers
+                  index = 3*(k-1)
+                  h(k) = q(index+1,i,j) / rho(k)
+                  if (h(k) > drytolerance) then
+                      u(k) = q(index+2,i,j) / q(index+1,i,j)
+                      v(k) = q(index+3,i,j) / q(index+1,i,j)
                   else
-                      dry_state(layer) = .true.
-                      u(layer) = 0.d0
-                      v(layer) = 0.d0
+                      dry_state(k) = .true.
+                      u(k) = 0.d0
+                      v(k) = 0.d0
                   endif
               enddo
-              if (sum(h) > drytolerance) then
-                  kappa=(u(1) - u(2))**2 / (g*one_minus_r*sum(h))
-                  if ((kappa > RICHARDSON_TOLERANCE)
-     &                  .and.(.not.dry_state(2))) then
-                      write(kappa_file,100) i,j,kappa
-                      print 100,i,j,kappa
+              
+              ! Calculate for each layer pairing
+              do k=1,layers-1
+                  if (sum(h(k:k+1)) > drytolerance) then
+                      one_minus_r = rho(k) / rho(k+1)
+                      kappa = (u(k) - u(k+1))**2
+     &                          / (g*one_minus_r*sum(h(k:k+1)))
+                      if (kappa > richardson_tolerance) then
+                          write(kappa_file,100) i,j
+                          write(kappa_file,101) k,kappa
+                          print 100, i,j
+                          print 101, k,kappa
+                      endif
+                      kappa = (v(k) - v(k+1))**2
+     &                          / (g*one_minus_r*sum(h(k:k+1)))
+                      if (kappa > richardson_tolerance) then
+                          write(kappa_file,100) i,j
+                          write(kappa_file,101) k,kappa
+                          print 100, i,j
+                          print 101, k,kappa
+                      endif
                   endif
-                  aux(10,i,j)=(v(1) - v(2))**2 / (g*one_minus_r*sum(h))
-                  if ((kappa > RICHARDSON_TOLERANCE)
-     &                  .and.(.not.dry_state(2))) then
-                      write(kappa_file,100),i,j,kappa
-                      print 100,i,j,kappa
-                  endif
-               endif
+              enddo
           enddo
       enddo
       endif
       
-100   format ("Hyperbolicity may have failed (",i4,",",i4,") = ",d16.8)
-      
+100   format ("Hyperbolicity may have failed at index (",i4,",",i4,")")
+101   format("  layer = ",i2,"  kappa = ",d16.8)
 
       return
       end

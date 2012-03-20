@@ -9,7 +9,7 @@ c
       character*10  matname1, matname2
 
 c     Work arrays
-      dimension eta(layers+1),h(layers),hu(layers),hv(layers)
+      dimension eta(layers),h(layers),hu(layers),hv(layers)
 
 
 c OLD INDEXING
@@ -98,7 +98,7 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
             hv(layers) = alloc(iadd(index+3,i,j)) / rho(layers)
             
             ! Calculate surfaces
-            eta(layers) = h(layers) + alloc(iaddaux(i,j,1))
+            eta(layers) = h(layers) + alloc(iaddaux(1,i,j))
             do k=layers-1,1,-1
                 eta(k) = h(k) + eta(k+1)
             enddo

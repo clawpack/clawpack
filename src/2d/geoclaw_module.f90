@@ -50,6 +50,7 @@ module geoclaw_module
 
     ! Loss of hyperbolicity 
     integer, parameter :: KAPPA_UNIT = 42
+    logical :: check_richardson
     double precision :: richardson_tolerance
 
 contains
@@ -174,6 +175,7 @@ contains
         read(unit,*) rho
         allocate(eta_init(layers))
         read(unit,*) eta_init
+        read(unit,*) check_richardson
         read(unit,"(d16.8)") richardson_tolerance
         read(unit,"(i1)") eigen_method
         read(unit,"(i1)") inundation_method
