@@ -27,7 +27,7 @@ c=========================================================================
       if (mregions.gt.maxregions) then
            write(*,*) 'SETREGIONS: ERROR mregions > maxregions'
            write(*,*) 'Decrease the number of regions or'
-           write(*,*) 'Increase maxregions in regions.i'
+           write(*,*) 'Increase maxregions in regions_module.f90'
            stop
            endif
 

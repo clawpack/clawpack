@@ -33,7 +33,7 @@ c     Construct NaN for filling empty spots
       if (mfgrids.gt.maxfgrids) then
            write(*,*) 'SETFIXEDGRIDS: ERROR mfgrids > maxfgrids'
            write(*,*) 'Decrease the number of fixed grids or'
-           write(*,*) 'Increase maxfgrids in fixedgrids.i'
+           write(*,*) 'Increase maxfgrids in fixedgrids_module.f90'
            stop
            endif
 
@@ -118,9 +118,9 @@ c      # make sure enough space has been alotted for fixed grids in memory
      &          mfgridvars2(mfgrids)*mxfg(mfgrids)*myfg(mfgrids)
        mspace=mspace+mspace2
        if (mspace.gt.maxfgridsize) then
-         write(*,*) 'SETFIXEDGRIDS: ERROR not enough memory allocated'
-         write(*,*) 'Decrease the number and size of fixed grids or'
-         write(*,*) 'set maxfgridsize in fixedgrids.i to:', mspace
+         print *,'SETFIXEDGRIDS: ERROR not enough memory allocated'
+         print *,'Decrease the number and size of fixed grids or'
+         print *,'set maxfgridsize in fixedgrids_module.f90 to:',mspace
          stop
        endif
 
