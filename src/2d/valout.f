@@ -84,24 +84,24 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
                   alloc(iadd(ivar,i,j)) = 0.d0
                endif
             enddo
-
-            if (layers > 1) then
-                do k=1,layers
-                    index = 3*(k-1)
-                    h(k) = alloc(iadd(index+1,i,j)) / rho(k)
-                    hu(k) = alloc(iadd(index+2,i,j)) / rho(k)
-                    hv(k) = alloc(iadd(index+3,i,j)) / rho(k)
-                enddo
-                eta(2) = h(2) + alloc(iaddaux(i,j,1))
-            else
-                k = 1
-                index = 3*(k-1)
-                h(k) = alloc(iadd(index+1,i,j))
-                hu(k) = alloc(iadd(index+2,i,j))
-                hv(k) = alloc(iadd(index+3,i,j))
-                eta(2) = alloc(iaddaux(1,i,j))
-            endif
-            eta(1) = h(1) + eta(2)
+            
+            ! Extract all but bottom layer depth and momenta
+            do k=1,layers-1
+                index = 3 * (k - 1)
+                h(k) = alloc(iadd(index+1,i,j)) / rho(k)
+                hu(k) = alloc(iadd(index+2,i,j)) / rho(k)
+                hv(k) = alloc(iadd(index+3,i,j)) / rho(k)
+            enddo
+            index = 3 * (layers - 1)
+            h(layers) = alloc(iadd(index+1,i,j)) / rho(layers)
+            hu(layers) = alloc(iadd(index+2,i,j)) / rho(layers)
+            hv(layers) = alloc(iadd(index+3,i,j)) / rho(layers)
+            
+            ! Calculate surfaces
+            eta(layers) = h(layers) + alloc(iaddaux(i,j,1))
+            do k=layers-1,1,-1
+                eta(k) = h(k) + eta(k+1)
+            enddo
             
             write(matunit1,109) (h(k),hu(k),hv(k), k=1,layers),
      &                          (eta(k),k=1,layers)
