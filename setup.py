@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 
+try:
+    from numpy.distutils.core import setup
+except Exception, err:
+    sys.stderr.write('Unable to import numpy, please install numpy first before installing clawpack!')
+
+from numpy.distutils.command.build import build
+from numpy.distutils.exec_command import exec_command
+
+import os.path
+
 class build_with_submodules(build):
     def run(self):
-        if path.exists('.git'):
-            check_call(['git', 'submodule', 'init'])
-            check_call(['git', 'submodule', 'update'])
+        if os.path.exists('.git'):
+            exec_command(['git', 'submodule', 'init'])
+            exec_command(['git', 'submodule', 'update'])
         build.run(self)
 
 def configuration(parent_package='',top_path=None):
@@ -18,9 +28,5 @@ def configuration(parent_package='',top_path=None):
     return config
 
 if __name__ == '__main__':
-    try:
-        from numpy.distutils.core import setup
-    except Exception, err:
-        sys.stderr.write('Unable to import numpy, please install numpy first before installing clawpack!')
     setup(cmdclass={"build": build_with_submodules},
           **configuration(top_path='').todict())
