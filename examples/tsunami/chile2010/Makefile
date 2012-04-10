@@ -79,7 +79,6 @@ SOURCES = \
   $(GEOLIB)/setaux.f \
   $(GEOLIB)/setregions.f \
   $(GEOLIB)/setgauges.f \
-  $(GEOLIB)/setfixedgrids.f \
   $(GEOLIB)/b4step2.f \
   $(GEOLIB)/flag2refine.f  \
   $(GEOLIB)/allowflag.f  \

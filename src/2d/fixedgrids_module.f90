@@ -1,54 +1,202 @@
-
 module fixedgrids_module
 
-!     # arrays and common blocks for fixed output grids
+    implicit none
+    save
 
-      implicit none
-      save
+    type fixed_grid_data_type
+        real(kind=8), pointer :: data(:,:,:)
+    end type fixed_grid_data_type
 
-      integer, parameter :: maxfgrids=1
-      integer, parameter :: maxfgridsize=6
-      integer :: mfgrids
-      integer :: ioutarrivaltimes(maxfgrids)
-      integer :: ioutsurfacemax(maxfgrids)
-      integer :: mxfg(maxfgrids)
-      integer :: myfg(maxfgrids)
-      integer :: i0fg(maxfgrids)
-      integer :: i0fg2(maxfgrids)
-      integer :: noutfg(maxfgrids)
-      integer :: ilastoutfg(maxfgrids)
-      integer :: mfgridvars(maxfgrids)
-      integer :: mfgridvars2(maxfgrids)
-      
-      real(kind=8) fgridearly(maxfgridsize)
-      real(kind=8) fgridlate(maxfgridsize)
-      real(kind=8) fgridoften(maxfgridsize)
-     
-      real(kind=8) xlowfg(maxfgrids)
-      real(kind=8) xhifg(maxfgrids)
-      real(kind=8) ylowfg(maxfgrids)
-      real(kind=8) yhifg(maxfgrids)
-
-      
-      real(kind=8) tlastoutfg(maxfgrids)
-      real(kind=8) tstartfg(maxfgrids)
-      real(kind=8) tendfg(maxfgrids)
+    ! Number of fixed grids
+    integer :: num_fixed_grids
     
-      real(kind=8) dtfg(maxfgrids)
-      real(kind=8) dxfg(maxfgrids)
-      real(kind=8) dyfg(maxfgrids)
-      
-      real(kind=8) tcfmax
+    ! Primary data storage, these are each an array of pointers
+    integer, allocatable :: num_grid_vars(:,:)
+    type(fixed_grid_data_type), allocatable :: early_data_fg(:)
+    type(fixed_grid_data_type), allocatable :: often_data_fg(:)
+    type(fixed_grid_data_type), allocatable :: late_data_fg(:)
+    
+    ! Parameters for output of each fixed grid
+    integer, allocatable :: arrival_times_output(:),surface_max_output(:)
+    integer, allocatable :: num_output_fg(:)
+    real(kind=8), allocatable :: t_start_fg(:),t_end_fg(:)
 
-! OLD ==================================================================
-!
-!     common /fgrid1/ fgridearly
-!     common /fgrid2/ fgridlate
-!     common /fgrid3/ fgridoften
-!     common /fgridparams/
-!    &       ylowfg, xhifg, yhifg, tstartfg, tendfg, dtfg, dxfg, dyfg,
-!    &       tlastoutfg, tcfmax, xlowfg, i0fg, mxfg, myfg, noutfg, 
-!    &       ilastoutfg, ioutarrivaltimes, ioutsurfacemax, i0fg2, 
-!    &       mfgridvars, mfgridvars2, mfgrids
+    ! Output tracking
+    integer, allocatable :: t_last_output_index_fg(:)
+    real(kind=8), allocatable :: t_last_output_fg(:)
+    real(kind=8) :: max_fg_time
+     
+    ! Geometry and time step size
+    integer, allocatable :: mx_fg(:),my_fg(:)
+    real(kind=8), allocatable :: x_low_fg(:),x_hi_fg(:)
+    real(kind=8), allocatable :: y_low_fg(:),y_hi_fg(:)
+    real(kind=8), allocatable :: dt_fg(:),dx_fg(:),dy_fg(:)
+       
+contains
+
+    ! Read in fixed grid settings and setup data structures
+    subroutine set_fixed_grids(fname)
+
+        use amr_module, only: parmunit
+
+        implicit none
+        
+        ! Subroutine arguments
+        character(len=25), optional :: fname
+        
+        ! File opening
+        integer, parameter :: unit = 7
+        character(len=*), parameter :: fg_line_format = "(2d16.8,1i2,4d16.8,2i4,2d16.8)"
+          
+        ! Construct NaN for filling empty spots
+        integer(kind=16) NaN_descriptor
+        real(kind=8) :: NaN
+
+        ! Allocation pointer for fixed grid data
+        real(kind=8), pointer :: temp_data(:,:,:)
+
+        ! Other locals
+        integer :: i
+
+        data NaN_descriptor/B'01111111100000100000000000000000'/
+        NaN = transfer(NaN,NaN_descriptor)
+
+        write(parmunit,*) ' '
+        write(parmunit,*) '--------------------------------------------'
+        write(parmunit,*) 'SETFIXEDGRIDS:'
+        write(parmunit,*) '-----------'
+
+        ! Open file
+        if (present(fname)) then
+            call opendatafile(unit,fname)
+        else
+            call opendatafile(unit,'setfixedgrids.data')
+        endif
+
+        ! Read in data
+        read(7,"(i2)") num_fixed_grids
+        write(parmunit,*) '  num_fixed_grids = ',num_fixed_grids
+        if (num_fixed_grids == 0) then
+            write(parmunit,*) "  No fixed grids specified for output"
+            return
+        endif
+        
+        ! Allocate all fixed grid data and info arrays
+        allocate(t_start_fg(num_fixed_grids),t_end_fg(num_fixed_grids))
+        allocate(num_output_fg(num_fixed_grids))
+        allocate(x_low_fg(num_fixed_grids),x_hi_fg(num_fixed_grids))
+        allocate(y_low_fg(num_fixed_grids),y_hi_fg(num_fixed_grids))
+        allocate(mx_fg(num_fixed_grids),my_fg(num_fixed_grids))
+        allocate(dt_fg(num_fixed_grids))
+        allocate(dx_fg(num_fixed_grids),dy_fg(num_fixed_grids))
+        allocate(arrival_times_output(num_fixed_grids))
+        allocate(surface_max_output(num_fixed_grids))
+        allocate(num_grid_vars(num_fixed_grids,2))
+        allocate(t_last_output_index_fg(num_fixed_grids))
+        allocate(t_last_output_fg(num_fixed_grids))
+        
+        ! These are the data arrays themselves (only pointers)
+        allocate(early_data_fg(num_fixed_grids))
+        allocate(late_data_fg(num_fixed_grids))
+        allocate(often_data_fg(num_fixed_grids))
+        
+        ! Read in parameters for each fixed grid
+        do i=1,num_fixed_grids
+            read(unit,*) t_start_fg(i),t_end_fg(i),num_output_fg(i), &
+                                   x_low_fg(i),x_hi_fg(i),y_low_fg(i),y_hi_fg(i), &
+                                   mx_fg(i),my_fg(i), &
+                                   arrival_times_output(i),surface_max_output(i)
+            write(parmunit,*) t_start_fg(i),t_end_fg(i),num_output_fg(i), &
+                                   x_low_fg(i),x_hi_fg(i),y_low_fg(i),y_hi_fg(i), &
+                                   mx_fg(i),my_fg(i), &
+                                   arrival_times_output(i),surface_max_output(i)
+        enddo
+        close(unit)
+       
+        ! Set some parameters for each grid
+        do i=1,num_fixed_grids
+            ! Set time step length between outputs
+            if (t_end_fg(i) <= t_start_fg(i)) then
+                if (num_output_fg(i) > 1) then
+                    print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
+                    print *,'tstartfg=tendfg yet noutfg>1'
+                    print *,'set tendfg > tstartfg or set noutfg = 1'
+                    stop
+                else
+                    dt_fg(i) = 0.d0
+                endif
+            else
+                if (num_output_fg(i) < 2) then
+                    print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
+                    print *,'tendfg>tstartfg, yet noutfg=1'
+                    print *,'set noutfg > 2'
+                    stop
+                else
+                    dt_fg(i) = (t_end_fg(i) - t_start_fg(i)) / real(num_output_fg(i)-1,kind=8)
+                endif
+            endif
+            
+            ! Counters for keeping track of output times
+            t_last_output_fg(i) = t_start_fg(i) - dt_fg(i)
+            t_last_output_index_fg(i) = 0
+
+            ! Set spatial intervals dx and dy on each grid
+            if (mx_fg(i) > 1) then
+                dx_fg(i) = (x_hi_fg(i) - x_low_fg(i)) / real(mx_fg(i) - 1,kind=8)
+            else if (mx_fg(i) == 1) then
+                dx_fg(i) = 0.d0
+            else
+                print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
+                print *,'x grid points mxfg<=0, set mxfg>= 1'
+            endif
+            if (my_fg(i) > 1) then
+                dy_fg(i) = (y_hi_fg(i) - y_low_fg(i)) / real(my_fg(i) - 1,kind=8)
+            else if (my_fg(i) == 1) then
+                dy_fg(i) = 0.d0
+            else
+                print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
+                print *,'y grid points myfg<=0, set myfg>= 1'
+            endif
+
+        enddo
+
+      ! Set the number of variables stored for each grid
+      ! this should be (the number of variables you want to write out + 1)
+      do i=1, num_fixed_grids 
+         num_grid_vars(i,1)  = 6  
+         num_grid_vars(i,2) = 3 * surface_max_output(i) + arrival_times_output(i)
+      enddo
+
+      ! Allocate data arrays, here we use allocate data to the temprorary
+      ! pointer and transfer the data to the array of pointers stored in
+      ! each of the individual arrays of pointers.  Since we only do this once
+      ! this seems like it should not be intolerable in terms of performance
+      !
+      ! Also, initialize to Nan to prevent non-filled values from being 
+      ! misinterpreted
+      do i=1,num_fixed_grids
+          allocate(temp_data(num_grid_vars(i,1),mx_fg(i),my_fg(i)))
+          temp_data = NaN
+!           call move_alloc(temp_data,early_data_fg(i))
+          early_data_fg(i)%data => temp_data
+      enddo
+      do i=1,num_fixed_grids
+          allocate(temp_data(num_grid_vars(i,2),mx_fg(i),my_fg(i)))
+          temp_data = NaN
+!           call move_alloc(temp_data,late_data_fg(i))
+          late_data_fg(i)%data => temp_data
+      enddo
+      do i=1,num_fixed_grids
+          allocate(temp_data(num_grid_vars(i,2),mx_fg(i),my_fg(i)))
+          temp_data = NaN
+!           call move_alloc(temp_data,often_data_fg(i))
+          often_data_fg(i)%data => temp_data
+      enddo
+      
+      ! Set convenience maximum output for fixed grid time
+      max_fg_time = 1d-16
+
+    end subroutine set_fixed_grids
+
 
 end module
