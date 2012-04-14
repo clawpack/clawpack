@@ -1,12 +1,12 @@
-[submodule "pyclaw"]
-	path = pyclaw
-	url = git://github.com/ahmadia/pyclaw
 [submodule "visclaw"]
-	path = visclaw
+	path = clawpack/visclaw
 	url = git://github.com/ahmadia/visclaw
 [submodule "clawutil"]
-	path = clawutil
+	path = clawpack/clawutil
 	url = git://github.com/ahmadia/clawutil
 [submodule "riemann"]
-	path = riemann
+	path = clawpack/riemann
 	url = git://github.com/ahmadia/riemann
+[submodule "pyclaw"]
+	path = clawpack/pyclaw
+	url = git://github.com/ahmadia/pyclaw
