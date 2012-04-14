@@ -177,6 +177,8 @@ def setup_package():
                         exec_command(['git', 'submodule', 'update'])
                         build.run(self)
                         # now build symbolic links to repositories
+                        os.symlink(os.path.abspath('clawutil/src/python/clawutil'),
+                                                   'clawpack/clawutil')
                         os.symlink(os.path.abspath('riemann/src/python/riemann'),
                                                    'clawpack/riemann')
                         # need this one to build Fortran sources naturally
