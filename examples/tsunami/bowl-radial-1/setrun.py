@@ -332,6 +332,12 @@ def setgeo(rundata):
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
 
+    # == Multilayer ==
+    geodata.layers = 1
+    geodata.rho = 1.0
+    geodata.eta_init = 0.0
+    geodata.richardson_tolerance = 0.95
+
     return rundata
     # end of function setgeo
     # ----------------------

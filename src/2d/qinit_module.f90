@@ -97,7 +97,7 @@ contains
         implicit none
         
         ! Subroutine arguments
-        character(len=25), optional, intent(in) :: fname
+        character(len=*), optional, intent(in) :: fname
         
         ! File handling
         integer, parameter :: unit = 7

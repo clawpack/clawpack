@@ -20,12 +20,20 @@ CLAW_setplot_file = setplot.py      # File containing function to set plots
 CLAW_PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran   # default if not set as environment variable
-# Add any desired compiler flags such as -g here:
-FFLAGS ?=  -O2
+FC ?= gfortran
+FFLAGS ?=
+MAKELEVEL ?= 0
+ifeq ($(MAKELEVEL),0)
+	# If you want to include NetCDF output add these flags
+	# Note that the NETCDF_INC should point to the location of the hearder files
+	# for NetCDF
+	# NETCDF_INC ?= /usr/include
+	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
-# If you want to include NetCDF output add these flags
-# FFLAGS ?=-I/usr/include  -lnetcdf -lnetcdff
+	# Threading flags
+	# FFLAGS += -D GRID_THREADING
+	# FFLAGS += -D MAX1D=200
+endif
 
 
 # ---------------------------------
@@ -48,14 +56,11 @@ MODULES = \
 SOURCES = \
   $(GEOLIB)/setprob.f \
   $(GEOLIB)/qinit.f \
-  $(GEOLIB)/readqinit.f \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(GEOLIB)/fgridinterp.f \
-  $(GEOLIB)/fgridout.f \
   $(GEOLIB)/rpn2ez.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
@@ -71,10 +76,8 @@ SOURCES = \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setaux.f \
-  $(GEOLIB)/setqinit.f \
   $(GEOLIB)/setregions.f \
   $(GEOLIB)/setgauges.f \
-  $(GEOLIB)/setfixedgrids.f \
   $(GEOLIB)/b4step2.f \
   $(GEOLIB)/flag2refine.f  \
   $(GEOLIB)/allowflag.f  \
@@ -92,6 +95,7 @@ SOURCES = \
   $(AMRLIB)/bound.f \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
+  $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \
