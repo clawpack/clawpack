@@ -167,7 +167,7 @@ c        # levelcheck > 0.
 
       endif
       enddo
-      tcfmax=max(tcfmax,tcf)
+      max_fg_time=max(max_fg_time,tcf)
 c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 c

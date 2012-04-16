@@ -47,19 +47,12 @@ contains
         ! File opening
         integer, parameter :: unit = 7
         character(len=*), parameter :: fg_line_format = "(2d16.8,1i2,4d16.8,2i4,2d16.8)"
-          
-        ! Construct NaN for filling empty spots
-        integer(kind=16) NaN_descriptor
-        real(kind=8) :: NaN
-
+        
         ! Allocation pointer for fixed grid data
         real(kind=8), pointer :: temp_data(:,:,:)
 
         ! Other locals
         integer :: i
-
-        data NaN_descriptor/B'01111111100000100000000000000000'/
-        NaN = transfer(NaN,NaN_descriptor)
 
         write(parmunit,*) ' '
         write(parmunit,*) '--------------------------------------------'
@@ -172,23 +165,24 @@ contains
       ! each of the individual arrays of pointers.  Since we only do this once
       ! this seems like it should not be intolerable in terms of performance
       !
-      ! Also, initialize to Nan to prevent non-filled values from being 
-      ! misinterpreted
+      ! This code used to fill grid data with NaNs to prevent non-filled values
+      ! from being misinterpreted, this was not portable and so the arrays are
+      ! filled with the intrinsic `huge` instead (largest representable number)
       do i=1,num_fixed_grids
           allocate(temp_data(num_grid_vars(i,1),mx_fg(i),my_fg(i)))
-          temp_data = NaN
+          temp_data = huge(1.d0)
 !           call move_alloc(temp_data,early_data_fg(i))
           early_data_fg(i)%data => temp_data
       enddo
       do i=1,num_fixed_grids
           allocate(temp_data(num_grid_vars(i,2),mx_fg(i),my_fg(i)))
-          temp_data = NaN
+          temp_data = huge(1.d0)
 !           call move_alloc(temp_data,late_data_fg(i))
           late_data_fg(i)%data => temp_data
       enddo
       do i=1,num_fixed_grids
           allocate(temp_data(num_grid_vars(i,2),mx_fg(i),my_fg(i)))
-          temp_data = NaN
+          temp_data = huge(1.d0)
 !           call move_alloc(temp_data,often_data_fg(i))
           often_data_fg(i)%data => temp_data
       enddo
@@ -230,13 +224,6 @@ contains
         integer :: eta_index,eta_index_min,eta_index_max,eta_index_now
         real(kind=8), parameter :: arrival_tol = 1d-2
         real(kind=8) :: x_hi_c,y_hi_c,tol
-     
-        ! NaN for filling empty spots
-        integer(kind=16) NaN_descriptor
-        real(kind=8) :: NaN
-
-        data NaN_descriptor/B'01111111100000100000000000000000'/
-        NaN = transfer(NaN,NaN_descriptor)
      
         ! Calculate and extract some important data
         x_hi_c = x_low_c + dx_c * mx_c

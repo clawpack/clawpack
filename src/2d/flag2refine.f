@@ -110,7 +110,7 @@ c           # force refinement to level minleveldtopo
          enddo
 
 
-         if (iqinit.gt.0 .and. t.eq.0.d0) then
+         if (qinit_type > 0 .and. t == 0.d0) then
 c           # check if we're in the region where initial perturbation is
 c           # specified and need to force refinement:
             if (level.lt.minlevelqinit.and.
