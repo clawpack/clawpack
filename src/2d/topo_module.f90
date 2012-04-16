@@ -74,18 +74,11 @@ contains
 
 
         if (present(fname)) then
-            file_name = fname
+            call opendatafile(iunit, fname)
         else
-            file_name  = 'settopo.data'
+            call opendatafile(iunit, 'settopo.data')
         endif
-        inquire(file=file_name,exist=found_file)
-        if (.not. found_file) then
-            print *, 'You must provide a file ', file_name
-            stop
-        endif
-
-        call opendatafile(iunit, file_name)
-
+        
         read(iunit,*) mtopofiles
 
         if (mtopofiles == 0) then

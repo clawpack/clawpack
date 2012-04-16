@@ -60,8 +60,6 @@ SOURCES = \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(GEOLIB)/fgridinterp.f90 \
-  $(GEOLIB)/fgridout.f90 \
   $(GEOLIB)/rpn2ez.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \

@@ -30,6 +30,8 @@ module dtopo_module
     integer :: num_dtopo
     double precision dz
     logical, allocatable :: topoaltered(:)
+    
+    double precision, private :: dtopo_t_start
 
 contains
     ! ========================================================================
@@ -73,27 +75,16 @@ contains
         ! Function
         real(kind=8) :: topointegral
 
-        ! Common block
-        real(kind=8) :: tstart
-        common /ctstart/ tstart
-
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '--------------------------------------------'
         write(GEO_PARM_UNIT,*) 'SETDTOPO:'
         write(GEO_PARM_UNIT,*) '-------------'
 
         if (present(fname)) then
-            file_name = fname
+            call opendatafile(iunit,fname)
         else
-            file_name  = 'setdtopo.data'
+            call opendatafile(iunit,'setdtopo.data')
         endif
-        inquire(file=file_name,exist=found_file)
-        if (.not. found_file) then
-            print *,'You must provide a file ', file_name
-            stop
-        endif
-
-        call opendatafile(iunit, file_name)
 
         read(iunit,*) num_dtopo
         write(GEO_PARM_UNIT,*) '   num dtopo files = ',num_dtopo
@@ -150,12 +141,12 @@ contains
         ! the topo arrays are altered here to match the final topo + dtopo.
         ! ====================================================================
         do i=1,num_dtopo
-            if (tstart <= tfdtopo(i)) then
+            if (dtopo_t_start <= tfdtopo(i)) then
                 topoaltered(i) = .false.
-            elseif (tstart > tfdtopo(i)) then
+            elseif (dtopo_t_start > tfdtopo(i)) then
                 topoaltered(i) = .true.
-                write(GEO_PARM_UNIT,*) '  Altering topo arrays at t=', tstart
-                print *, 'SETDTOPO Resetting topo arrays at t=',tstart
+                write(GEO_PARM_UNIT,*) '  Altering topo arrays at t=', dtopo_t_start
+                print *, 'SETDTOPO Resetting topo arrays at t=',dtopo_t_start
                 do m=1,mtopofiles
                     if ((xlowtopo(m) <= xhidtopo(i)).and. &
                             (xhitopo(m) >= xlowdtopo(i)).and. &
