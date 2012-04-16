@@ -76,7 +76,6 @@ SOURCES = \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setaux.f \
-  $(GEOLIB)/setregions.f \
   $(GEOLIB)/setgauges.f \
   $(GEOLIB)/b4step2.f \
   $(GEOLIB)/flag2refine.f  \

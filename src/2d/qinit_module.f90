@@ -10,19 +10,19 @@ module qinit_module
     real(kind=8), private, allocatable :: qinit(:)
       
     ! Geometry
-    real(kind=8), private :: x_low_qinit
-    real(kind=8), private :: y_low_qinit
-    real(kind=8), private :: t_low_qinit
-    real(kind=8), private :: x_hi_qinit
-    real(kind=8), private :: y_hi_qinit
-    real(kind=8), private :: t_hi_qinit
-    real(kind=8), private :: dx_qinit
-    real(kind=8), private :: dy_qinit
+    real(kind=8) :: x_low_qinit
+    real(kind=8) :: y_low_qinit
+    real(kind=8) :: t_low_qinit
+    real(kind=8) :: x_hi_qinit
+    real(kind=8) :: y_hi_qinit
+    real(kind=8) :: t_hi_qinit
+    real(kind=8) :: dx_qinit
+    real(kind=8) :: dy_qinit
     
     integer, private :: mx_qinit
     integer, private :: my_qinit
-    integer, private :: min_level_qinit
-    integer, private :: max_level_qinit
+    integer :: min_level_qinit
+    integer :: max_level_qinit
 
 contains
 
@@ -122,6 +122,8 @@ contains
             print *,'  qinit_type = 0, no perturbation'
             return
         endif
+        read(unit,*) qinit_fname
+        read(unit,"(2i2)") min_level_qinit, max_level_qinit
 
         write(GEO_PARM_UNIT,*) '   min_level, max_level, qinit_fname:'
         write(GEO_PARM_UNIT,*)  min_level_qinit, max_level_qinit, qinit_fname
@@ -172,14 +174,14 @@ contains
         mx_qinit = 0
         
         ! Read in first values, determines x_low and y_hi
-        read(unit,"(2d16.8)") x_low_qinit,y_hi_qinit
+        read(unit,*) x_low_qinit,y_hi_qinit
         num_points = num_points + 1
         mx_qinit = mx_qinit + 1
         
         ! Sweep through first row figuring out mx
         y = y_hi_qinit
         do while (y_hi_qinit == y)
-            read(unit,"(2d16.8)") x,y
+            read(unit,*) x,y
             num_points = num_points + 1
             mx_qinit = mx_qinit + 1
         enddo
@@ -188,7 +190,7 @@ contains
         
         ! Continue to count the rest of the lines
         do
-            read(unit,fmt="(2d16.8)",iostat=status) x,y
+            read(unit,*,iostat=status) x,y
             if (status /= 0) exit
             num_points = num_points + 1
         enddo
@@ -209,7 +211,7 @@ contains
         
         ! Read and store the data this time
         do i=1,num_points
-            read(unit,"(3d16.8)") x,y,qinit(i)
+            read(unit,*) x,y,qinit(i)
         enddo
         close(unit)
         

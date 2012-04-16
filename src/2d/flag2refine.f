@@ -34,15 +34,30 @@ c
       use regions_module
       use qinit_module
 
-      implicit double precision (a-h, o-z)
+      implicit none
 
-      dimension   q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
-      dimension   aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-      dimension   amrflags(1-mbc:mx+mbc,1-mbc:my+mbc)
-      logical     allowflag
-      external  allowflag
-      logical shoreregion,wave,shoreline
-
+      ! Subroutine arguments
+      integer, intent(in) :: mx,my,mbc,meqn,maux,level
+      real(kind=8), intent(in) :: xlower,ylower,dx,dy,t,tolsp
+      
+      real(kind=8), intent(in) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+      real(kind=8), intent(in) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
+      
+      ! Flagging
+      real(kind=8),intent(inout) :: amrflags(1-mbc:mx+mbc,1-mbc:my+mbc)
+      real(kind=8), intent(in) :: DONTFLAG
+      real(kind=8), intent(in) :: DOFLAG
+      
+      logical :: allowflag
+      external allowflag
+      
+      ! Generic locals
+      integer :: i,j,m
+      integer :: minleveldt,maxleveldt
+      logical :: shoreregion,wave,shoreline
+      real(kind=8) :: x,x1,x2,xlow,xhi,y,y1,y2,ylow,yhi
+      real(kind=8) :: t0dt,tfdt
+      real(kind=8) :: surface,shoretol,speed
 
 c     # loop over interior points on this grid:
 
@@ -64,8 +79,8 @@ c         # below is satisfied:
 
           do 30 m=1,mtopofiles
 c           # check to see if refinement is forced in any topo file region:
-            if (level .lt. minleveltopo(m) .and.
-     &          t.ge.tlowtopo(m) .and. t.le.thitopo(m)) then
+            if (level < minleveltopo(m) .and.
+     &          t >= tlowtopo(m) .and. t <= thitopo(m)) then
               xlow = xlowtopo(m)
               xhi = xhitopo(m)
               ylow = ylowtopo(m)
@@ -78,32 +93,33 @@ c           # check to see if refinement is forced in any topo file region:
               endif
    30       continue
 
-           do 40 m=1,mregions
+           do m=1,num_regions
 c           # check to see if refinement is forced in any other region:
-            if (level .lt. minlevelregion(m) .and.
-     &          t.ge.tlowregion(m) .and. t.le.thiregion(m)) then
-              xlow = xlowregion(m)
-              xhi  = xhiregion(m)
-              ylow = ylowregion(m)
-              yhi  = yhiregion(m)
-                 if (x2.gt.xlow.and.x1.lt.xhi.and.
-     &               y2.gt.ylow.and.y1.lt.yhi) then
+            if (level < min_level_region(m) .and.
+     &          t >= t_low_region(m) .and. t <= t_hi_region(m)) then
+              xlow = x_low_region(m)
+              xhi  = x_hi_region(m)
+              ylow = y_low_region(m)
+              yhi  = y_hi_region(m)
+                 if (x2 > xlow .and. x1 < xhi .and.
+     &               y2 > ylow .and. y1 < yhi) then
                     amrflags(i,j) = DOFLAG
                     go to 100 !# flagged, so no need to check anything else
                     endif
               endif
-   40       continue
+            enddo
 
          do m = 1,num_dtopo
 c           # check if we're in the dtopo region and need to refine:
 c           # force refinement to level minleveldtopo
             t0dt = t0dtopo(m)
             tfdt = tfdtopo(m)
-            minlevldt = minleveldtopo(m)
+            minleveldt = minleveldtopo(m)
             if (level.lt.minleveldtopo(m).and.
      &              t.le.tfdtopo(m).and. !t.ge.t0dtopo(m).and.
      &              x2.gt.xlowdtopo(m).and.x1.lt.xhidtopo(m).and.
      &              y2.gt.ylowdtopo(m).and.y1.lt.yhidtopo(m)) then
+                stop
                 amrflags(i,j)=DOFLAG
                 go to 100 !# flagged, so no need to check anything else
                 endif
@@ -113,9 +129,9 @@ c           # force refinement to level minleveldtopo
          if (qinit_type > 0 .and. t == 0.d0) then
 c           # check if we're in the region where initial perturbation is
 c           # specified and need to force refinement:
-            if (level.lt.minlevelqinit.and.
-     &              x2.gt.xlowqinit.and.x1.lt.xhiqinit.and.
-     &              y2.gt.ylowqinit.and.y1.lt.yhiqinit) then
+            if (level < min_level_qinit.and.
+     &              x2 > x_low_qinit .and. x1 < x_hi_qinit.and.
+     &              y2 > y_low_qinit .and. y1 < y_hi_qinit) then
                 amrflags(i,j)=DOFLAG
                 go to 100 !# flagged, so no need to check anything else
                 endif
@@ -185,19 +201,19 @@ c        Refine based on momentum or speed of water
 c        Had to remove this form the allow flag block as it checks for t > 0
 c        and was not allowing refinement before t = 0, we need this as the 
 c        storm surge has ramp up time that may need refinement (KTM 2010-8-4)
-          speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2)
-          ! This is only important for layers > 1, otherwise this is already speed
-          if (.not.momentum_refinement) then
-              if (q(1,i,j) > drytolerance) then
-                  speed = speed / q(1,i,j)
-              endif
-          endif
-          do m=1,max_speed_nest
-              if ((speed > speed_refine(m)).and.(level <= m)) then
-                  amrflags(i,j) = DOFLAG
-                  go to 100
-              endif
-          enddo
+C           speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2)
+C           ! This is only important for layers > 1, otherwise this is already speed
+C           if (.not.momentum_refinement) then
+C               if (q(1,i,j) > drytolerance) then
+C                   speed = speed / q(1,i,j)
+C               endif
+C           endif
+C           do m=1,max_speed_nest
+C               if ((speed > speed_refine(m)).and.(level <= m)) then
+C                   amrflags(i,j) = DOFLAG
+C                   go to 100
+C               endif
+C           enddo
           
 
  100     continue  !# end loop on i

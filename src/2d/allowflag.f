@@ -19,10 +19,14 @@ c     # is also called from errf1.
       use regions_module
       use qinit_module
 
-      implicit double precision (a-h,o-z)
+      implicit none
 
-c========================================================================
-
+C     Function arguments
+      real(kind=8), intent(in) :: x,y,t
+      integer, intent(in) :: level
+      
+C     Locals
+      integer :: m
 
       allowflag=.false.
 
@@ -40,21 +44,21 @@ c          go to 900  !# no need to check anything else
 c          endif
 
       do m=1,mtopofiles
-     	if (level.lt.maxleveltopo(m)) then
-      	  if (x.gt.xlowtopo(m).and.x.lt.xhitopo(m) .and.
-     &	      y.gt.ylowtopo(m).and.y.lt.yhitopo(m) .and.
-     &	      t.gt.tlowtopo(m).and.t.lt.thitopo(m)) then
+     	if (level < maxleveltopo(m)) then
+      	  if (x > xlowtopo(m) .and. x < xhitopo(m) .and.
+     &	      y > ylowtopo(m) .and .y < yhitopo(m) .and.
+     &	      t > tlowtopo(m) .and .t < thitopo(m)) then
      		  allowflag=.true.
                   go to 900  !# no need to check anything else
 	  endif
 	endif
       enddo
 
-      do m=1,mregions
-     	if (level.lt.maxlevelregion(m)) then
-      	  if (x.gt.xlowregion(m).and.x.lt.xhiregion(m).and.
-     &	      y.gt.ylowregion(m).and.y.lt.yhiregion(m).and.
-     &	      t.ge.tlowregion(m).and.t.le.thiregion(m)) then
+      do m=1,num_regions
+     	if (level < max_level_region(m)) then
+      	  if (x.gt.x_low_region(m) .and. x <  x_hi_region(m).and.
+     &	      y.gt.y_low_region(m) .and. y <  y_hi_region(m).and.
+     &	      t.ge.t_low_region(m) .and. t <= t_hi_region(m)) then
      		  allowflag=.true.
                   go to 900  !# no need to check anything else
 	  endif
@@ -72,10 +76,10 @@ c          endif
         endif
       enddo
 
-      if (t.eq.0.d0 .and. iqinit.gt.0) then
-        if (x.gt.xlowqinit.and.x.lt.xhiqinit.and.
-     &	    y.gt.ylowqinit.and.y.lt.yhiqinit) then
-     		if (level.lt.maxlevelqinit) then
+      if (t == 0.d0 .and. qinit_type > 0) then
+        if (x > x_low_qinit .and. x < x_hi_qinit .and.
+     &	    y > y_low_qinit .and. y < y_hi_qinit) then
+     		if (level.lt.max_level_qinit) then
                   allowflag=.true.
                   go to 900  !# no need to check anything else
                   endif

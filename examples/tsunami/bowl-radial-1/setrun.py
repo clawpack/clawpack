@@ -299,9 +299,9 @@ def setgeo(rundata):
     geodata.regions.append([1, 1, 0., 1.e10, -100.,100., -100.,100.])
     geodata.regions.append([1, 2, 0., 1.e10,    0.,100.,    0.,100.])
     geodata.regions.append([2, 3, 3., 1.e10,   52., 72.,   52., 72.])
-    #geodata.regions.append([2, 3, 3., 1.e10,   75., 95.,   -10.,  10.])
+    geodata.regions.append([2, 3, 3., 1.e10,   75., 95.,   -10.,  10.])
     geodata.regions.append([2, 4, 3.4, 1.e10,   57., 68.,   57., 68.])
-    #geodata.regions.append([2, 4, 3.4, 1.e10,   83., 92.,   -4.,  4.])
+    geodata.regions.append([2, 4, 3.4, 1.e10,   83., 92.,   -4.,  4.])
 
     # == setgauges.data values ==
     geodata.gauges = []
