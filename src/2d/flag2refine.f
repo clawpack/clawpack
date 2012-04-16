@@ -119,7 +119,6 @@ c           # force refinement to level minleveldtopo
      &              t.le.tfdtopo(m).and. !t.ge.t0dtopo(m).and.
      &              x2.gt.xlowdtopo(m).and.x1.lt.xhidtopo(m).and.
      &              y2.gt.ylowdtopo(m).and.y1.lt.yhidtopo(m)) then
-                stop
                 amrflags(i,j)=DOFLAG
                 go to 100 !# flagged, so no need to check anything else
                 endif
