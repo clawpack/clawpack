@@ -1,0 +1,16 @@
+# ignore symlinked in-place builds
+
+clawpack/clawutil
+clawpack/petclaw
+clawpack/pyclaw
+clawpack/riemann
+clawpack/visclaw
+clawpack/version.py
+
+# ignore silly log files
+
+*.log
+
+# ignore silly egg files
+
+*.egg-info
