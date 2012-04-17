@@ -4,6 +4,7 @@ c
       subroutine advanc (level,nvar,dtlevnew,vtime,naux)
 c
       use amr_module
+      use fixedgrids_module
       implicit double precision (a-h,o-z)
 
 
