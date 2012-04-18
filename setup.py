@@ -171,7 +171,9 @@ def setup_package():
         if os.path.exists('.git'):
             from numpy.distutils.exec_command import exec_command
             exec_command(['git', 'submodule', 'init'])
-            exec_command(['git', 'submodule', 'update'])
+            fails = 0
+            while fails < 10 and exec_command(['git', 'submodule', 'update'])[1]:
+                fails = fails+1
             # *always* need these
             # now build symbolic links to repositories
             if not os.path.exists('clawpack/clawutil'):
@@ -197,8 +199,7 @@ def setup_package():
             from numpy.distutils.core import setup
             setup(configuration=configuration,
                   **setup_dict)
-        else:
-            print os.getcwd()
+
     except Exception as err:
         print err
     finally:
