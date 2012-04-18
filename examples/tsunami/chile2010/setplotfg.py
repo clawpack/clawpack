@@ -18,7 +18,7 @@ def setplotfg(fgno=1, outdir='_output'):
     from numpy import arange
 
     # max used for surface and inundation colormaps below:
-    etamax = 2.0  
+    etamax = 0.5
 
     fgdata = plotfg.ClawPlotFGData()
 

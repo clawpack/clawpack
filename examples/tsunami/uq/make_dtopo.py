@@ -1,11 +1,9 @@
 
 from pylab import *
 import os
-from pyclaw.geotools import topotools
+from geoclaw import topotools, okada
 import dtopotools
 
-
-from pyclaw.geotools import okada
 dtopo_fname = 'fault1.tt1'
 dtopo_cfg = 'fault1.cfg'
 if os.path.exists(dtopo_fname):

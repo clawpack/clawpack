@@ -71,7 +71,7 @@ c save coarse level values if there is a finer level for wave fixup
       endif
 c
       time = rnode(timemult,lstart(level))
-      call fgrid_advance(time,delt) 
+c      call fgrid_advance(time,delt)
       
       dtlevnew = rinfinity
       cfl_level = 0.d0    !# to keep track of max cfl seen on each level
