@@ -175,9 +175,9 @@ contains
         integer, intent(in) :: ioutarrivaltimes,ioutsurfacemax,maxcheck
         real(kind=8), intent(in) :: xlowfg,ylowfg,xhifg,yhifg,dxfg,dyfg
         real(kind=8), intent(in) :: t,dxc,dyc,xlowc,ylowc
-        real(kind=8), intent(inout) :: fgrid(1:mxfg,1:myfg,mvarsfg)
-        real(kind=8), intent(in) :: q(1-mbc:mxc+mbc,1-mbc:myc+mbc, meqn)
-        real(kind=8), intent(in) :: aux(1-mbc:mxc+mbc,1-mbc:myc+mbc, maux)
+        real(kind=8), intent(inout) :: fgrid(mvarsfg,1:mxfg,1:myfg)
+        real(kind=8), intent(in) :: q(meqn,1-mbc:mxc+mbc,1-mbc:myc+mbc)
+        real(kind=8), intent(in) :: aux(maux,1-mbc:mxc+mbc,1-mbc:myc+mbc)
     
         ! Locals
         integer :: ifg,jfg,m,ic1,ic2,jc1,jc2
@@ -243,42 +243,43 @@ contains
         
                     if (maxcheck.eq.0) then 
                         do m=1,meqn
-                            z11=q(ic1,jc1,m)
-                            z21=q(ic2,jc1,m)
-                            z12=q(ic1,jc2,m)
-                            z22=q(ic2,jc2,m)
+                            z11=q(m,ic1,jc1)
+                            z21=q(m,ic2,jc1)
+                            z12=q(m,ic1,jc2)
+                            z22=q(m,ic2,jc2)
                             a=z21-z11
                             b=z12-z11
                             d=z11
                             c=z22-(a+b+d)
-                            fgrid(ifg,jfg,m) = a*xterm + b*yterm + c*xyterm + d
+                            fgrid(m,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
                         enddo
-                        z11=aux(ic1,jc1,1)
-                        z21=aux(ic2,jc1,1)
-                        z12=aux(ic1,jc2,1)
-                        z22=aux(ic2,jc2,1) 
+                        z11=aux(1,ic1,jc1)
+                        z21=aux(1,ic2,jc1)
+                        z12=aux(1,ic1,jc2)
+                        z22=aux(1,ic2,jc2)
                         a=z21-z11
                         b=z12-z11
                         d=z11
                         c=z22-(a+b+d)
-                        fgrid(ifg,jfg,indb) = a*xterm + b*yterm + c*xyterm + d
+                        fgrid(indb,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
                     endif
                     ! This next output variable is the surface using bilinear interpolation,
                     ! using a surface that only uses the wet eta points near the shoreline
         
-                    z11=aux(ic1,jc1,1)+q(ic1,jc1,1)
-                    z21=aux(ic2,jc1,1)+q(ic2,jc1,1)
-                    z12=aux(ic1,jc2,1)+q(ic1,jc2,1)
-                    z22=aux(ic2,jc2,1)+q(ic2,jc2,1)
+                    z11 = aux(1,ic1,jc1) + q(1,ic1,jc1)
+                    z21 = aux(1,ic2,jc1) + q(1,ic2,jc1)
+                    z12 = aux(1,ic1,jc2) + q(1,ic1,jc2)
+                    z22 = aux(1,ic2,jc2) + q(1,ic2,jc2)
                         
-                    h11=q(ic1,jc1,1)
-                    h21=q(ic2,jc1,1)
-                    h12=q(ic1,jc2,1)
-                    h22=q(ic2,jc2,1)
+                    h11 = q(1,ic1,jc1)
+                    h21 = q(1,ic2,jc1)
+                    h12 = q(1,ic1,jc2)
+                    h22 = q(1,ic2,jc2)
                     depthindicator= min(h11,h12,h21,h22)
                     totaldepth= h11+h22+h21+h12
     
-                    if (depthindicator.lt.tol.and.totaldepth.gt.4.d0*tol) then !near shoreline
+                    ! Near shoreline
+                    if (depthindicator.lt.tol.and.totaldepth.gt.4.d0*tol) then
                         if (h11.lt.tol) then
                             z11w=  (h12*z12 + h21*z21 + h22*z22)/totaldepth
                             z11=z11w
@@ -306,29 +307,33 @@ contains
                     c=z22-(a+b+d)
     
                     ! If eta max/min are saved on this grid initialized if necessary
-                    if (ioutsurfacemax.gt.0.and.maxcheck.eq.2) then 
-                        if (.not.(fgrid(ifg,jfg,indetamin).eq.fgrid(ifg,jfg,indetamin))) fgrid(ifg,jfg,indetamin)=0.d0
-                        if (.not.(fgrid(ifg,jfg,indetamax).eq.fgrid(ifg,jfg,indetamax))) fgrid(ifg,jfg,indetamax)=0.d0
+                    if (ioutsurfacemax > 0 .and. maxcheck == 2) then 
+                        if (.not.(fgrid(indetamin,ifg,jfg) == fgrid(indetamin,ifg,jfg))) then
+                            fgrid(indetamin,ifg,jfg) = 0.d0
+                        endif
+                        if (.not.(fgrid(indetamax,ifg,jfg) == fgrid(indetamax,ifg,jfg))) then
+                            fgrid(indetamax,ifg,jfg) = 0.d0
+                        endif
                     endif
     
-                ! check which task to perform
-                    if (maxcheck.eq.0) then 
-                        fgrid(ifg,jfg,indeta) = a*xterm + b*yterm + c*xyterm + d
-                        fgrid(ifg,jfg,mvarsfg) = t
+                    ! check which task to perform
+                    if (maxcheck == 0) then 
+                        fgrid(indeta,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
+                        fgrid(mvarsfg,ifg,jfg) = t
                     else if (maxcheck.eq.1.and.ioutsurfacemax.gt.0) then
-                        fgrid(ifg,jfg,indetanow) = a*xterm + b*yterm + c*xyterm + d   
+                        fgrid(indetanow,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d   
                     else if (maxcheck.eq.2.and.ioutsurfacemax.gt.0) then
-                        fgrid(ifg,jfg,indetamin) = min(fgrid(ifg,jfg,indetamin),fgrid(ifg,jfg,indetanow))
-                        fgrid(ifg,jfg,indetamax) = max(fgrid(ifg,jfg,indetamax),fgrid(ifg,jfg,indetanow))            
+                        fgrid(indetamin,ifg,jfg) = min(fgrid(indetamin,ifg,jfg),fgrid(indetanow,ifg,jfg))
+                        fgrid(indetamax,ifg,jfg) = max(fgrid(indetamax,ifg,jfg),fgrid(indetanow,ifg,jfg))            
                     endif
     
                     ! If arrival times are saved on this grid
-                    if (maxcheck.eq.1.and.ioutarrivaltimes.gt.0) then
-                        check=fgrid(ifg,jfg,indarrive)
+                    if (maxcheck == 1 .and. ioutarrivaltimes > 0) then
+                        check=fgrid(indarrive,ifg,jfg)
                         !# check=NaN: Waves haven't arrived previously
                         if (.not.(check == check)) then
-                            if (abs(fgrid(ifg,jfg,indeta)).gt.arrivaltol) then
-                                fgrid(ifg,jfg,indarrive)= t
+                            if (abs(fgrid(indeta,ifg,jfg)) > arrivaltol) then
+                                fgrid(indarrive,ifg,jfg)= t
                             endif
                         endif
                     endif
@@ -354,9 +359,9 @@ contains
         integer, intent(in) :: mxfg,myfg,mvarsfg,mvarsfg2,ioutfg,ng
         integer, intent(in) :: ioutarrival,ioutflag
         real(kind=8), intent(in) :: xlowfg,xhifg,ylowfg,yhifg,toutfg
-        real(kind=8), intent(inout) :: fgrid1(1:mxfg,1:myfg,mvarsfg)
-        real(kind=8), intent(inout) :: fgrid2(1:mxfg,1:myfg,mvarsfg)
-        real(kind=8), intent(inout) :: fgrid3(1:mxfg,1:myfg,mvarsfg2)
+        real(kind=8), intent(inout) :: fgrid1(mvarsfg,1:mxfg,1:myfg)
+        real(kind=8), intent(inout) :: fgrid2(mvarsfg,1:mxfg,1:myfg)
+        real(kind=8), intent(inout) :: fgrid3(mvarsfg2,1:mxfg,1:myfg)
               
         ! Locals
         integer, parameter :: unit = 95
@@ -418,22 +423,22 @@ contains
         ! solution on the fixed grid at the two nearest computational times
         do jfg=1,myfg
             do ifg=1,mxfg
-                t0=fgrid1(ifg,jfg,mvarsfg)
-                tf=fgrid2(ifg,jfg,mvarsfg)
+                t0=fgrid1(mvarsfg,ifg,jfg)
+                tf=fgrid2(mvarsfg,ifg,jfg)
                 tau=(toutfg-t0)/(tf-t0)
                 
                 do iv=1,mvarsfg-1
-                    if (dabs(fgrid1(ifg,jfg,iv)) .lt. 1d-90) fgrid1(ifg,jfg,iv) = 0.d0
-                    if (dabs(fgrid2(ifg,jfg,iv)) .lt. 1d-90) fgrid2(ifg,jfg,iv) = 0.d0
+                    if (dabs(fgrid1(iv,ifg,jfg)) .lt. 1d-90) fgrid1(iv,ifg,jfg) = 0.d0
+                    if (dabs(fgrid2(iv,ifg,jfg)) .lt. 1d-90) fgrid2(iv,ifg,jfg) = 0.d0
                 enddo
                 if (icolumns.eq.mvarsfg-1) then 
-                    write(unit,data_format) ((1.d0 - tau)*fgrid1(ifg,jfg,iv)+tau*fgrid2(ifg,jfg,iv), iv=1,mvarsfg-1)
+                    write(unit,data_format) ((1.d0 - tau)*fgrid1(iv,ifg,jfg)+tau*fgrid2(iv,ifg,jfg), iv=1,mvarsfg-1)
                 else
-                    if (abs(fgrid3(ifg,jfg,indetamin)) .lt. 1d-90) fgrid3(ifg,jfg,indetamin) = 0.d0
-                    if (abs(fgrid3(ifg,jfg,indetamax)) .lt. 1d-90) fgrid3(ifg,jfg,indetamax) = 0.d0
-                    write(unit,data_format) ((1.d0 - tau)*fgrid1(ifg,jfg,iv)+tau*fgrid2(ifg,jfg,iv), iv=1,mvarsfg-1), &
-                                          fgrid3(ifg,jfg,indetamin), &
-                                          fgrid3(ifg,jfg,indetamax)
+                    if (abs(fgrid3(indetamin,ifg,jfg)) < 1d-90) fgrid3(indetamin,ifg,jfg) = 0.d0
+                    if (abs(fgrid3(indetamax,ifg,jfg)) < 1d-90) fgrid3(indetamax,ifg,jfg) = 0.d0
+                    write(unit,data_format) ((1.d0 - tau)*fgrid1(iv,ifg,jfg)+tau*fgrid2(iv,ifg,jfg), iv=1,mvarsfg-1), &
+                                          fgrid3(indetamin,ifg,jfg), &
+                                          fgrid3(indetamax,ifg,jfg)
                 endif
             enddo
         enddo
@@ -457,7 +462,7 @@ contains
 
             do jfg=1,myfg
                 do ifg=1,mxfg
-                    write(unit,"(1e26.16)") fgrid3(ifg,jfg,1)
+                    write(unit,"(1e26.16)") fgrid3(1,ifg,jfg)
                 enddo
             enddo
             close(unit)
