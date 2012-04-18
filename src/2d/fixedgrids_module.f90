@@ -3,25 +3,27 @@ module fixedgrids_module
     implicit none
     save
 
-    ! Parameters for fixed grid data arrays
-    integer, parameter :: maxfgrids = 3
-    integer, parameter :: maxfgridsize = 423803
+    type fixed_grid_data_type
+        real(kind=8), pointer :: data(:,:,:)
+    end type fixed_grid_data_type    
 
     ! Fixed grid arrays and sizes
-    integer :: mfgrids
-    real(kind=8), dimension(maxfgridsize) :: fgridearly,fgridlate,fgridoften
-    integer, dimension(maxfgrids) :: mfgridvars,mfgridvars2,mxfg,myfg
+    integer :: num_fixed_grids
+    type(fixed_grid_data_type), allocatable :: fgrid_early(:)
+    type(fixed_grid_data_type), allocatable :: fgrid_late(:)
+    type(fixed_grid_data_type), allocatable :: fgrid_often(:)
+    integer, allocatable :: num_fgrid_vars(:,:),mxfg(:),myfg(:)
 
     ! Geometry
-    real(kind=8), dimension(maxfgrids) :: xlowfg,xhifg,ylowfg,yhifg,dxfg,dyfg
-
-    ! Work array indices
-    integer, dimension(maxfgrids) :: i0fg,i0fg2
+    real(kind=8), allocatable :: xlowfg(:),xhifg(:),ylowfg(:),yhifg(:)
+    real(kind=8), allocatable :: dxfg(:),dyfg(:)
       
     ! Time tracking and output
-    integer, dimension(maxfgrids) :: noutfg,ilastoutfg
-    integer, dimension(maxfgrids) :: ioutarrivaltimes,ioutsurfacemax
-    real(kind=8), dimension(maxfgrids) :: tlastoutfg,tstartfg,tendfg,dtfg,tcfmax
+    integer, allocatable :: noutfg(:),ilastoutfg(:)
+    integer, allocatable :: ioutarrivaltimes(:),ioutsurfacemax(:)
+    real(kind=8), allocatable :: tlastoutfg(:),tstartfg(:),tendfg(:)
+    real(kind=8), allocatable :: dtfg(:)
+    real(kind=8) :: tcfmax
 
 contains
     
@@ -29,7 +31,7 @@ contains
     ! appropriate data structures
     subroutine set_fixed_grids(fname)
 
-        use amr_module
+        use amr_module, only: parmunit
 
         implicit none
         
@@ -38,8 +40,7 @@ contains
         
         ! Local storage
         integer, parameter :: unit = 7
-        integer :: i,mspace,mspace2
-
+        integer :: i
 
         write(parmunit,*) ' '
         write(parmunit,*) '--------------------------------------------'
@@ -54,26 +55,29 @@ contains
         endif
 
         ! Read in data
-        read(unit,'(i2)') mfgrids
-        write(parmunit,*) '  mfgrids = ',mfgrids
-        if (mfgrids > maxfgrids) then
-            print *,'SETFIXEDGRIDS: ERROR mfgrids > maxfgrids'
-            print *,'Decrease the number of fixed grids or'
-            print *,'Increase maxfgrids in fixedgrids.i'
-            stop
-        endif
-
-        if (mfgrids == 0) then
+        read(unit,'(i2)') num_fixed_grids
+        write(parmunit,*) '  mfgrids = ',num_fixed_grids
+        if (num_fixed_grids == 0) then
             write(parmunit,*) '  No fixed grids specified for output'
             return
         endif
         
-        ! Initialize work array indices
-        i0fg(1) = 1
-        i0fg2(1) = 1
+        ! Allocate parameter arrays
+        allocate(num_fgrid_vars(num_fixed_grids,2))
+        allocate(mxfg(num_fixed_grids),myfg(num_fixed_grids))
+        allocate(xlowfg(num_fixed_grids),xhifg(num_fixed_grids))
+        allocate(ylowfg(num_fixed_grids),yhifg(num_fixed_grids))
+        allocate(dxfg(num_fixed_grids),dyfg(num_fixed_grids))
+        allocate(noutfg(num_fixed_grids),ilastoutfg(num_fixed_grids))
+        allocate(ioutarrivaltimes(num_fixed_grids),ioutsurfacemax(num_fixed_grids))
+        allocate(tlastoutfg(num_fixed_grids),tstartfg(num_fixed_grids))
+        allocate(tendfg(num_fixed_grids),dtfg(num_fixed_grids))
+        allocate(fgrid_early(num_fixed_grids))
+        allocate(fgrid_late(num_fixed_grids))
+        allocate(fgrid_often(num_fixed_grids))
 
         ! Read in data for each fixed grid
-        do i=1,mfgrids
+        do i=1,num_fixed_grids
             ! Read in this grid's data
             read(unit,*) tstartfg(i),tendfg(i),noutfg(i),xlowfg(i),xhifg(i), &
                    ylowfg(i),yhifg(i),mxfg(i),myfg(i), &
@@ -126,31 +130,18 @@ contains
        
             ! set the number of variables stored for each grid
             ! this should be (the number of variables you want to write out + 1)
-            mfgridvars(i)  = 6  
-            mfgridvars2(i) = 3*ioutsurfacemax(i) + ioutarrivaltimes(i)
+            num_fgrid_vars(i,1)  = 6  
+            num_fgrid_vars(i,2) = 3*ioutsurfacemax(i) + ioutarrivaltimes(i)
             
-            ! find entry point into work arrays for each fixed grid
-            i0fg(i)= i0fg(i-1)   + mfgridvars(i-1)*mxfg(i-1)*myfg(i-1)
-            i0fg2(i)= i0fg2(i-1) + mfgridvars2(i-1)*mxfg(i-1)*myfg(i-1)
+            ! Allocate new fixed grid data array
+            allocate(fgrid_early(i)%data(num_fgrid_vars(i,1),mxfg(i),myfg(i)))
+            fgrid_early(i)%data = nan()
+            allocate(fgrid_late(i)%data(num_fgrid_vars(i,1),mxfg(i),myfg(i)))
+            fgrid_late(i)%data = nan()
+            allocate(fgrid_often(i)%data(num_fgrid_vars(i,2),mxfg(i),myfg(i)))
+            fgrid_often(i)%data = nan()
        enddo
        close(unit)
-       
-       ! Make sure enough space has been alotted for fixed grids in memory
-       mspace=i0fg(mfgrids) + mfgridvars(mfgrids)*mxfg(mfgrids)*myfg(mfgrids)
-       mspace2=i0fg2(mfgrids) + mfgridvars2(mfgrids)*mxfg(mfgrids)*myfg(mfgrids)
-       mspace=mspace+mspace2
-       if (mspace > maxfgridsize) then
-           print *,'SETFIXEDGRIDS: ERROR not enough memory allocated'
-           print *,'Decrease the number and size of fixed grids or'
-           print *,'set maxfgridsize in fixedgrids.i to:', mspace
-           stop
-       endif
-
-       ! Initialize fixed grid work arrays to huge, this will prevent 
-       ! non-filled values from being misinterpreted
-       fgridearly = nan()
-       fgridlate = nan()
-       fgridoften = nan()
        
        tcfmax=-1.d16
 
