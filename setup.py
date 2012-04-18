@@ -175,7 +175,8 @@ def setup_package():
             while fails < 20 and exec_command(['git', 'submodule', 'update'])[1]:
                 fails = fails+1
                 import time
-                time.sleep(3)
+                print "having difficulties updating submodules, waiting 5s and trying again [fail %d/20]" % fails
+                time.sleep(5)
             # *always* need these
             # now build symbolic links to repositories
             if not os.path.exists('clawpack/clawutil'):
