@@ -148,15 +148,15 @@ contains
     
     
     !=====================FGRIDINTERP=======================================
-    !         # This routine interpolates q and aux on a computational grid
-    !         # to a fgrid not necessarily aligned with the computational grid
-    !         # using bilinear interpolation defined on computation grid
+    ! This routine interpolates q and aux on a computational grid
+    ! to a fgrid not necessarily aligned with the computational grid
+    ! using bilinear interpolation defined on computation grid
     !=======================================================================
     subroutine fgrid_interp(fgrid_type,fgrid, &
                             t,q,meqn,mxc,myc,mbc,dxc,dyc,xlowc,ylowc, &
                             maux,aux,maxcheck)
     
-        use geoclaw_module
+        use geoclaw_module, only: drytolerance
     
         implicit none
     
@@ -168,15 +168,22 @@ contains
         real(kind=8), intent(in) :: q(meqn,1-mbc:mxc+mbc,1-mbc:myc+mbc)
         real(kind=8), intent(in) :: aux(maux,1-mbc:mxc+mbc,1-mbc:myc+mbc)
     
-        ! Locals
+        ! Indices
         integer :: ifg,jfg,m,ic1,ic2,jc1,jc2
-        integer :: indb,indeta,indarrive,indetamin,indetamax,indetanow
-        real(kind=8) :: xfg,yfg,xc1,xc2,yc1,yc2,xhic,yhic,xterm,yterm,xyterm
-        real(kind=8) :: tol,arrivaltol,totaldepth,depthindicator,check
-        real(kind=8) :: z11,z12,z21,z22,z11w,z12w,z21w,z22w
-        real(kind=8) :: a,b,c,d,h11,h12,h21,h22
-        
+        integer :: bathy_index,eta_index,arrival_index
+        integer :: eta_min_index,eta_max_index,eta_now_index
+
+        ! Tolerances
+        real(kind=8), parameter :: arrival_tolerance = 1.d-2
+        real(kind=8) :: total_depth,depth_indicator,nan_check
+
+        ! Geometry
+        real(kind=8) :: xfg,yfg,xc1,xc2,yc1,yc2,xhic,yhic
         real(kind=8) :: geometry(4)
+        
+        ! Work arrays for eta interpolation
+        real(kind=8) :: eta(2,2),h(2,2)
+        
         
         ! Alias to data in fixed grid
         integer :: num_vars
@@ -194,29 +201,27 @@ contains
             fg_data => fgrid%often
         endif
             
-        xhic=xlowc + dxc*mxc  
-        yhic=ylowc + dyc*myc    
+        xhic = xlowc + dxc*mxc  
+        yhic = ylowc + dyc*myc    
         
-        tol=drytolerance
-        arrivaltol=1.d-2
-        
-        indb=meqn+1
-        indeta=meqn+2
+        ! Find indices of various quantities in the fgrid arrays
+        bathy_index = meqn + 1
+        eta_index = meqn + 2
     
-        if (maxcheck.gt.0) then 
-            indarrive=0
-            indetamin=0
-            indetamax=0
-            indetanow=0
+        if (maxcheck > 0) then 
+            arrival_index = 0
+            eta_now_index = 0
+            eta_min_index = 0
+            eta_max_index = 0
     
-            if (fgrid%output_arrival_times.gt.0) then
-                indarrive = 1
+            if (fgrid%output_arrival_times > 0) then
+                arrival_index = 1
             endif
         
-            if (fgrid%output_surface_max.gt.0) then
-                indetanow = indarrive+1
-                indetamin = indarrive+2
-                indetamax = indarrive+3
+            if (fgrid%output_surface_max > 0) then
+                eta_now_index = arrival_index + 1
+                eta_min_index = arrival_index + 2
+                eta_max_index = arrival_index + 3
             endif
         endif
     
@@ -226,113 +231,121 @@ contains
             do jfg=1,fgrid%my
                 yfg=fgrid%y_low + (jfg-1)*fgrid%dy
     
-                if (.not.((xfg.lt.xlowc.or.xfg.gt.xhic).or.(yfg.lt.ylowc.or.yfg.gt.yhic))) then
+                ! Check to see if this coordinate is inside of this grid
+                if (.not.((xfg < xlowc.or.xfg > xhic).or.(yfg < ylowc.or.yfg > yhic))) then
     
-                    ! find where xfg,yfg is in the computational grid
+                    ! find where xfg,yfg is in the computational grid and compute the indices
+                    ! and relevant coordinates of each corner
                     ic1 = int((xfg-(xlowc+0.5d0*dxc))/(dxc))+1
                     jc1 = int((yfg-(ylowc+0.5d0*dyc))/(dyc))+1
                     if (ic1.eq.mxc) ic1=mxc-1
                     if (jc1.eq.myc) jc1=myc-1 
-                    ic2= ic1+1
-                    jc2= jc1+1
+                    ic2 = ic1 + 1
+                    jc2 = jc1 + 1
                         
-                    xc1= xlowc + dxc*(ic1-0.5d0)
-                    yc1= ylowc + dyc*(jc1-0.5d0)
-                    xc2= xlowc + dxc*(ic2-0.5d0)
-                    yc2= ylowc + dyc*(jc2-0.5d0)
+                    xc1 = xlowc + dxc * (ic1 - 0.5d0)
+                    yc1 = ylowc + dyc * (jc1 - 0.5d0)
+                    xc2 = xlowc + dxc * (ic2 - 0.5d0)
+                    yc2 = ylowc + dyc * (jc2 - 0.5d0)
          
+                    ! Calculate geometry of interpolant
                     ! interpolate bilinear used to interpolate to xfg,yfg
                     ! define constant parts of bilinear
-                    xterm=(xfg-xc1)/dxc
-                    yterm=(yfg-yc1)/dyc
-                    xyterm= xterm*yterm
-                    geometry = [xterm,yterm,xyterm,1.d0]
+                    geometry = [(xfg - xc1) / dxc, &
+                                (yfg - yc1) / dyc, &
+                                (xfg - xc1) * (yfg - yc1) / (dxc*dyc), &
+                                1.d0]
         
-                    if (maxcheck.eq.0) then 
+                    ! Interpolate for all conserved quantities and bathymetry
+                    if (maxcheck == 0) then 
                         forall (m=1:meqn)
                             fg_data(m,ifg,jfg) = interpolate([[q(m,ic1,jc1),q(m,ic1,jc2)], &
                                                               [q(m,ic2,jc1),q(m,ic2,jc2)]], geometry)
                         end forall
-                        fg_data(indb,ifg,jfg) = interpolate([[aux(1,ic1,jc1),aux(1,ic1,jc2)], &
-                                                             [aux(1,ic2,jc1),aux(1,ic2,jc2)]], geometry)
+                        fg_data(bathy_index,ifg,jfg) = interpolate([[aux(1,ic1,jc1),aux(1,ic1,jc2)], &
+                                                                    [aux(1,ic2,jc1),aux(1,ic2,jc2)]], geometry)
+                    endif
+
+                    ! If eta max/min are saved on this grid initialize if necessary
+                    if (fgrid%output_surface_max > 0 .and. maxcheck == 2) then 
+                        if (.not.(fg_data(eta_min_index,ifg,jfg) == fg_data(eta_min_index,ifg,jfg))) then
+                            fg_data(eta_min_index,ifg,jfg) = 0.d0
+                        endif
+                        if (.not.(fg_data(eta_max_index,ifg,jfg) == fg_data(eta_max_index,ifg,jfg))) then
+                            fg_data(eta_max_index,ifg,jfg) = 0.d0
+                        endif
                     endif
                     
-                    ! This next output variable is the surface using bilinear interpolation,
-                    ! using a surface that only uses the wet eta points near the shoreline
-                    z11 = aux(1,ic1,jc1) + q(1,ic1,jc1)
-                    z21 = aux(1,ic2,jc1) + q(1,ic2,jc1)
-                    z12 = aux(1,ic1,jc2) + q(1,ic1,jc2)
-                    z22 = aux(1,ic2,jc2) + q(1,ic2,jc2)
-                        
-                    h11 = q(1,ic1,jc1)
-                    h21 = q(1,ic2,jc1)
-                    h12 = q(1,ic1,jc2)
-                    h22 = q(1,ic2,jc2)
-                    depthindicator= min(h11,h12,h21,h22)
-                    totaldepth= h11+h22+h21+h12
+                    ! Interpolate surface eta, only use wet eta points near the shoreline
+                    eta(1,:) = [aux(1,ic1,jc1) + q(1,ic1,jc1), aux(1,ic1,jc2) + q(1,ic1,jc2)]
+                    eta(2,:) = [aux(1,ic2,jc1) + q(1,ic2,jc1), aux(1,ic2,jc2) + q(1,ic2,jc2)]
+                    h(1,:) = [q(1,ic1,jc1),q(1,ic1,jc2)]
+                    h(2,:) = [q(1,ic2,jc1),q(1,ic2,jc2)]
+                         
+                    depth_indicator= min(h(1,1),h(1,2),h(2,1),h(2,2))
+                    total_depth = sum(h)
     
-                    ! Near shoreline
-                    if (depthindicator.lt.tol.and.totaldepth.gt.4.d0*tol) then
-                        if (h11.lt.tol) then
-                            z11w=  (h12*z12 + h21*z21 + h22*z22)/totaldepth
-                            z11=z11w
+                    ! We are near shoreline
+                    if (depth_indicator < drytolerance .and. total_depth > 4.d0*drytolerance) then
+                        ! Check to see if each cell around fixed grid point is 
+                        ! wet, if not re-balance
+                        if (h(1,1) < drytolerance) then
+                            eta(1,1) =  (h(1,2)*eta(1,2) &
+                                       + h(2,1)*eta(2,1) &
+                                       + h(2,2)*eta(2,2)) / total_depth
                         endif
-                        if (h12.lt.tol) then
-                            z12w=  (h11*z11 + h21*z21 + h22*z22)/totaldepth
-                            z12=z12w
+                        if (h(1,2) < drytolerance) then
+                            eta(1,2) =  (h(1,1)*eta(1,1) &
+                                       + h(2,1)*eta(2,1) &
+                                       + h(2,2)*eta(2,2)) / total_depth
                         endif
-                        if (h21.lt.tol) then
-                            z21w=  (h11*z11 + h12*z12 + h22*z22)/totaldepth
-                            z21=z21w
+                        if (h(2,1) < drytolerance) then
+                            eta(2,1) =  (h(1,1)*eta(1,1) &
+                                       + h(1,2)*eta(1,2) &
+                                       + h(2,2)*eta(2,2)) / total_depth
                         endif
-                        if (h22.lt.tol) then
-                            z22w=  (h12*z12 + h21*z21 + h11*z11)/totaldepth
-                            z22=z22w
+                        if (h(2,2) < drytolerance) then
+                            eta(2,2)=  (h(1,2)*eta(1,2) &
+                                      + h(2,1)*eta(2,1) &
+                                      + h(1,1)*eta(1,1)) / total_depth
                         endif            
                     endif
-                    if (totaldepth.le.4.d0*tol) then
-                        z22=nan()
+                    if (total_depth <= 4.d0*drytolerance) then
+                        eta(2,2) = nan()
                     endif
     
-                    a=z21-z11
-                    b=z12-z11
-                    d=z11
-                    c=z22-(a+b+d)
-    
-                    ! If eta max/min are saved on this grid initialized if necessary
-                    if (fgrid%output_surface_max > 0 .and. maxcheck == 2) then 
-                        if (.not.(fg_data(indetamin,ifg,jfg) == fg_data(indetamin,ifg,jfg))) then
-                            fg_data(indetamin,ifg,jfg) = 0.d0
-                        endif
-                        if (.not.(fg_data(indetamax,ifg,jfg) == fg_data(indetamax,ifg,jfg))) then
-                            fg_data(indetamax,ifg,jfg) = 0.d0
-                        endif
-                    endif
-    
-                    ! check which task to perform
+                    ! Check which task to perform and evaluate the interpolant
+                    ! or evaluate the eta min and max functions
                     if (maxcheck == 0) then 
-                        fg_data(indeta,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
+                        fg_data(eta_index,ifg,jfg) = interpolate(eta,geometry)
                         fg_data(num_vars,ifg,jfg) = t
                     else if (maxcheck.eq.1.and.fgrid%output_surface_max.gt.0) then
-                        fg_data(indetanow,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d   
+                        fg_data(eta_now_index,ifg,jfg) = interpolate(eta,geometry)
                     else if (maxcheck.eq.2.and.fgrid%output_surface_max.gt.0) then
-                        fg_data(indetamin,ifg,jfg) = min(fg_data(indetamin,ifg,jfg),fg_data(indetanow,ifg,jfg))
-                        fg_data(indetamax,ifg,jfg) = max(fg_data(indetamax,ifg,jfg),fg_data(indetanow,ifg,jfg))            
+                        fg_data(eta_min_index,ifg,jfg) = min(fg_data(eta_min_index,ifg,jfg), &
+                                                             fg_data(eta_now_index,ifg,jfg))
+                        fg_data(eta_max_index,ifg,jfg) = max(fg_data(eta_max_index,ifg,jfg), &
+                                                             fg_data(eta_now_index,ifg,jfg))            
                     endif
     
                     ! If arrival times are saved on this grid
                     if (maxcheck == 1 .and. fgrid%output_arrival_times > 0) then
-                        check=fg_data(indarrive,ifg,jfg)
-                        !# check=NaN: Waves haven't arrived previously
-                        if (.not.(check == check)) then
-                            if (abs(fg_data(indeta,ifg,jfg)) > arrivaltol) then
-                                fg_data(indarrive,ifg,jfg)= t
+                        ! TODO: It would be nice to replace this with an
+                        ! intrinsic such as ieee_is_nan but this is not widely
+                        ! implemented yet
+                        nan_check = fg_data(arrival_index,ifg,jfg)
+                        ! if nan_check = NaN: Waves haven't arrived previously
+                        if (.not.(nan_check == nan_check)) then
+                            if (abs(fg_data(eta_index,ifg,jfg)) > arrival_tolerance) then
+                                fg_data(arrival_index,ifg,jfg)= t
                             endif
                         endif
                     endif
-                endif
-            enddo
-        enddo
+                    
+                endif ! Enclosing if statement to see if fixed grid point is
+                      ! in this computational grid
+            enddo ! Fixed grid y-coordinate loop
+        enddo ! Fixed grid x-coordinte loop
     
     end subroutine fgrid_interp
     
