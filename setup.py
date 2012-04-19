@@ -147,7 +147,7 @@ def setup_package():
         description = DOCLINES[0],
         long_description = "\n".join(DOCLINES[2:]),
         url = "http://www.clawpack.org",
-        download_url = "http://github.com/clawpack/clawpack/tarball/master#egg=clawpack-dev", 
+        download_url = "git+git://github.com/clawpack/clawpack.git#egg=clawpack-dev", 
         license = 'BSD',
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms = ["Linux", "Solaris", "Mac OS-X", "Unix"],
