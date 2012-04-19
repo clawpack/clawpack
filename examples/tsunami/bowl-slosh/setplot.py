@@ -7,12 +7,12 @@ function setplot is called to set the plot parameters.
     
 """ 
 
-from numpy import sqrt
+import numpy
 a = 1.
 sigma = 0.5
 h0 = 0.1
 grav = 9.81
-omega = sqrt(2.*grav*h0) / a 
+omega = numpy.sqrt(2.*grav*h0) / a 
 
 
 #--------------------------
@@ -53,7 +53,7 @@ def setplot(plotdata):
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = geoplot.surface
+    plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.1
     plotitem.pcolor_cmax = 0.1

@@ -1,7 +1,7 @@
-! qinit routine for parabolic bowl problem
+! qinit routine for parabolic bowl problem, only single layer
 subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
 
-    use geoclaw_module, only: grav
+    use geoclaw_module, only: grav,rho
 
     implicit none
 
@@ -21,7 +21,7 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     real(kind=8) :: omega,x,y,eta
     
     omega = sqrt(2.d0 * grav * h0) / a
-    print *,'omega = ',omega
+!     print *,'omega = ',omega
     
     do i=1-mbc,mx+mbc
         x = xlower + (i - 0.5d0)*dx
@@ -29,9 +29,9 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
             y = ylower + (j - 0.5d0) * dx
             eta = sigma * h0 / a**2 * (2.d0 * x - sigma)
             
-            q(1,i,j) = max(0.d0,eta - aux(1,i,j))
+            q(1,i,j) = max(0.d0,eta - aux(1,i,j)) * rho(1)
             q(2,i,j) = 0.d0
-            q(3,i,j) = sigma * omega * q(1,i,j)
+            q(3,i,j) = sigma * omega * q(1,i,j) * rho(1)
         enddo
     enddo
     

@@ -44,16 +44,16 @@ GEOLIB = $(GEOCLAW)/src/2d
 
 MODULES = \
  $(AMRLIB)/amr_module.f90 \
- $(GEOLIB)/geoclaw_module.f \
- $(GEOLIB)/topo_module.f \
- $(GEOLIB)/dtopo_module.f \
- $(GEOLIB)/qinit_module.f \
- $(GEOLIB)/gauges_module.f \
- $(GEOLIB)/regions_module.f \
- $(GEOLIB)/fixedgrids_module.f \
+ $(GEOLIB)/geoclaw_module.f90 \
+ $(GEOLIB)/topo_module.f90 \
+ $(GEOLIB)/dtopo_module.f90 \
+ $(GEOLIB)/qinit_module.f90 \
+ $(GEOLIB)/gauges_module.f90 \
+ $(GEOLIB)/regions_module.f90 \
+ $(GEOLIB)/fixedgrids_module.f90 \
 
 SOURCES = \
-  qinit.f \
+  qinit.f90 \
   $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/cellgridintegrate.f \
