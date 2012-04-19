@@ -176,31 +176,21 @@ contains
         real(kind=8) :: z11,z12,z21,z22,z11w,z12w,z21w,z22w
         real(kind=8) :: a,b,c,d,h11,h12,h21,h22
         
+        real(kind=8) :: geometry(4)
+        
         ! Alias to data in fixed grid
-        integer :: mxfg,myfg,mvarsfg,ioutarrivaltimes,ioutsurfacemax
-        real(kind=8) :: xlowfg,ylowfg,xhifg,yhifg,dxfg,dyfg
+        integer :: num_vars
         real(kind=8), pointer :: fg_data(:,:,:)
         
-        ! Setup aliases
-        mxfg = fgrid%mx
-        myfg = fgrid%my
-        ioutarrivaltimes = fgrid%output_arrival_times
-        ioutsurfacemax = fgrid%output_surface_max
-        xlowfg = fgrid%x_low
-        ylowfg = fgrid%y_low
-        xhifg = fgrid%x_hi
-        yhifg = fgrid%y_hi
-        dxfg = fgrid%dx
-        dyfg = fgrid%dy
-        
+        ! Setup aliases for specific fixed grid
         if (fgrid_type == 1) then
-            mvarsfg = fgrid%num_vars(1)
+            num_vars = fgrid%num_vars(1)
             fg_data => fgrid%early
         else if (fgrid_type == 2) then
-            mvarsfg = fgrid%num_vars(1)
+            num_vars = fgrid%num_vars(1)
             fg_data => fgrid%late
         else
-            mvarsfg = fgrid%num_vars(2)
+            num_vars = fgrid%num_vars(2)
             fg_data => fgrid%often
         endif
             
@@ -219,11 +209,11 @@ contains
             indetamax=0
             indetanow=0
     
-            if (ioutarrivaltimes.gt.0) then
+            if (fgrid%output_arrival_times.gt.0) then
                 indarrive = 1
             endif
         
-            if (ioutsurfacemax.gt.0) then
+            if (fgrid%output_surface_max.gt.0) then
                 indetanow = indarrive+1
                 indetamin = indarrive+2
                 indetamax = indarrive+3
@@ -231,10 +221,10 @@ contains
         endif
     
         ! Primary interpolation loops 
-        do ifg=1,mxfg
-            xfg=xlowfg + (ifg-1)*dxfg
-            do jfg=1,myfg
-                yfg=ylowfg + (jfg-1)*dyfg
+        do ifg=1,fgrid%mx
+            xfg=fgrid%x_low + (ifg-1)*fgrid%dx
+            do jfg=1,fgrid%my
+                yfg=fgrid%y_low + (jfg-1)*fgrid%dy
     
                 if (.not.((xfg.lt.xlowc.or.xfg.gt.xhic).or.(yfg.lt.ylowc.or.yfg.gt.yhic))) then
     
@@ -256,32 +246,19 @@ contains
                     xterm=(xfg-xc1)/dxc
                     yterm=(yfg-yc1)/dyc
                     xyterm= xterm*yterm
+                    geometry = [xterm,yterm,xyterm,1.d0]
         
                     if (maxcheck.eq.0) then 
-                        do m=1,meqn
-                            z11=q(m,ic1,jc1)
-                            z21=q(m,ic2,jc1)
-                            z12=q(m,ic1,jc2)
-                            z22=q(m,ic2,jc2)
-                            a=z21-z11
-                            b=z12-z11
-                            d=z11
-                            c=z22-(a+b+d)
-                            fg_data(m,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
-                        enddo
-                        z11=aux(1,ic1,jc1)
-                        z21=aux(1,ic2,jc1)
-                        z12=aux(1,ic1,jc2)
-                        z22=aux(1,ic2,jc2)
-                        a=z21-z11
-                        b=z12-z11
-                        d=z11
-                        c=z22-(a+b+d)
-                        fg_data(indb,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
+                        forall (m=1:meqn)
+                            fg_data(m,ifg,jfg) = interpolate([[q(m,ic1,jc1),q(m,ic1,jc2)], &
+                                                              [q(m,ic2,jc1),q(m,ic2,jc2)]], geometry)
+                        end forall
+                        fg_data(indb,ifg,jfg) = interpolate([[aux(1,ic1,jc1),aux(1,ic1,jc2)], &
+                                                             [aux(1,ic2,jc1),aux(1,ic2,jc2)]], geometry)
                     endif
+                    
                     ! This next output variable is the surface using bilinear interpolation,
                     ! using a surface that only uses the wet eta points near the shoreline
-        
                     z11 = aux(1,ic1,jc1) + q(1,ic1,jc1)
                     z21 = aux(1,ic2,jc1) + q(1,ic2,jc1)
                     z12 = aux(1,ic1,jc2) + q(1,ic1,jc2)
@@ -323,7 +300,7 @@ contains
                     c=z22-(a+b+d)
     
                     ! If eta max/min are saved on this grid initialized if necessary
-                    if (ioutsurfacemax > 0 .and. maxcheck == 2) then 
+                    if (fgrid%output_surface_max > 0 .and. maxcheck == 2) then 
                         if (.not.(fg_data(indetamin,ifg,jfg) == fg_data(indetamin,ifg,jfg))) then
                             fg_data(indetamin,ifg,jfg) = 0.d0
                         endif
@@ -335,16 +312,16 @@ contains
                     ! check which task to perform
                     if (maxcheck == 0) then 
                         fg_data(indeta,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
-                        fg_data(mvarsfg,ifg,jfg) = t
-                    else if (maxcheck.eq.1.and.ioutsurfacemax.gt.0) then
+                        fg_data(num_vars,ifg,jfg) = t
+                    else if (maxcheck.eq.1.and.fgrid%output_surface_max.gt.0) then
                         fg_data(indetanow,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d   
-                    else if (maxcheck.eq.2.and.ioutsurfacemax.gt.0) then
+                    else if (maxcheck.eq.2.and.fgrid%output_surface_max.gt.0) then
                         fg_data(indetamin,ifg,jfg) = min(fg_data(indetamin,ifg,jfg),fg_data(indetanow,ifg,jfg))
                         fg_data(indetamax,ifg,jfg) = max(fg_data(indetamax,ifg,jfg),fg_data(indetanow,ifg,jfg))            
                     endif
     
                     ! If arrival times are saved on this grid
-                    if (maxcheck == 1 .and. ioutarrivaltimes > 0) then
+                    if (maxcheck == 1 .and. fgrid%output_arrival_times > 0) then
                         check=fg_data(indarrive,ifg,jfg)
                         !# check=NaN: Waves haven't arrived previously
                         if (.not.(check == check)) then
@@ -358,6 +335,28 @@ contains
         enddo
     
     end subroutine fgrid_interp
+    
+    ! Interpolation function
+    ! Given 4 points (points) and geometry from x,y,and cross terms
+    real(kind=8) pure function interpolate(points,geometry)
+                            
+        implicit none
+                                
+        ! Function signature
+        real(kind=8), intent(in) :: points(2,2)
+        real(kind=8), intent(in) :: geometry(4)
+        
+        ! This is set up as a dot product between the approrpriate terms in 
+        ! the input data.  This routine could be vectorized or a BLAS routine
+        ! used instead of the intrinsics to ensure that the fastest routine
+        ! possible is being used
+        interpolate = sum([points(2,1)-points(1,1), &
+                           points(1,2)-points(1,1), &
+                           points(1,1) + points(2,2) - (points(2,1) + points(1,2)), &
+                           points(1,1)] * geometry)
+                           
+    end function interpolate
+    
 
     !=====================FGRIDOUT==========================================
     ! This routine interpolates in time and then outputs a grid at
