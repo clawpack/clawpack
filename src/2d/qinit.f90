@@ -31,11 +31,6 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
             q(bottom_layer,i,j) = max(0.d0,eta_init(m) - aux(1,i,j)) * rho(bottom_layer)
             q(bottom_layer+1,i,j) = 0.d0
             q(bottom_layer+2,i,j) = 0.d0
-            
-            ! Multiply by rho if this is a multi-layer run
-            if (layers > 1) then
-                q(bottom_layer,i,j) = q(bottom_layer,i,j) * rho(layers)
-            endif
         enddo
     enddo
     
