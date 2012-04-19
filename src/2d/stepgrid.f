@@ -180,12 +180,8 @@ c     # fill in values at fixed grid points effected at time tc0
 
 c        # fixedgrid ng has an output time within [tc0,tcf] interval
 c        # and it overlaps this computational grid spatially
-         call fgrid_interp(fgrids(ng)%early,fgrids(ng)%x_low,
-     &    fgrids(ng)%y_low,fgrids(ng)%x_hi,fgrids(ng)%y_hi,
-     &    fgrids(ng)%dx,fgrids(ng)%dy,fgrids(ng)%mx,fgrids(ng)%my,tc0,
-     &    fgrids(ng)%num_vars(1),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,fgrids(ng)%output_arrival_times,
-     &    fgrids(ng)%output_surface_max,0)
+         call fgrid_interp(1,fgrids(ng),tc0,q,nvar,mx,my,mbc,dx,dy,
+     &                     xlowmbc,ylowmbc,maux,aux,0)
      
 c         # routine to spatially interpolate computational solution
 c         # at tc0 to the fixed grid spatial points,
@@ -204,12 +200,8 @@ c        # levelcheck > 0.
          if (fgrids(ng)%output_surface_max 
      &       + fgrids(ng)%output_arrival_times > 0) then
      
-         call fgrid_interp(fgrids(ng)%often,fgrids(ng)%x_low,
-     &    fgrids(ng)%y_low,fgrids(ng)%x_hi,fgrids(ng)%y_hi,
-     &    fgrids(ng)%dx,fgrids(ng)%dy,fgrids(ng)%mx,fgrids(ng)%my,tc0,
-     &    fgrids(ng)%num_vars(2),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,fgrids(ng)%output_arrival_times,
-     &    fgrids(ng)%output_surface_max,2)
+         call fgrid_interp(3,fgrids(ng),tc0,q,nvar,mx,my,mbc,dx,dy,
+     &                     xlowmbc,ylowmbc,maux,aux,2)
      
          endif
          endif
@@ -301,12 +293,8 @@ c        # fixedgrid ng has an output time within [tc0,tcf] interval
 c        # and it overlaps this computational grid spatially
 C         i0=i0fg(ng) !# index into the ng grid in the work array
 
-        call fgrid_interp(fgrids(ng)%late,fgrids(ng)%x_low,
-     &    fgrids(ng)%y_low,fgrids(ng)%x_hi,fgrids(ng)%y_hi,
-     &    fgrids(ng)%dx,fgrids(ng)%dy,fgrids(ng)%mx,fgrids(ng)%my,tcf,
-     &    fgrids(ng)%num_vars(1),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,fgrids(ng)%output_arrival_times,
-     &    fgrids(ng)%output_surface_max,0)
+        call fgrid_interp(2,fgrids(ng),tcf,q,nvar,mx,my,mbc,dx,dy,
+     &                    xlowmbc,ylowmbc,maux,aux,0)
 
 c            # routine to interpolate solution
 c            # at tcf to the fixed grid storage array,
@@ -319,12 +307,8 @@ c        # check for arrival times
         if (fgrids(ng)%output_surface_max 
      &      + fgrids(ng)%output_arrival_times > 0) then
 
-        call fgrid_interp(fgrids(ng)%often,fgrids(ng)%x_low,
-     &    fgrids(ng)%y_low,fgrids(ng)%x_hi,fgrids(ng)%y_hi,
-     &    fgrids(ng)%dx,fgrids(ng)%dy,fgrids(ng)%mx,fgrids(ng)%my,tc0,
-     &    fgrids(ng)%num_vars(2),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,fgrids(ng)%output_arrival_times,
-     &    fgrids(ng)%output_surface_max,1)
+        call fgrid_interp(3,fgrids(ng),tc0,q,nvar,mx,my,mbc,dx,dy, 
+     &                    xlowmbc,ylowmbc,maux,aux,1)
      
         endif
          
@@ -342,12 +326,8 @@ c        # will be updated only at start of next level 1 step.
         if (fgrids(ng)%output_arrival_times 
      &      + fgrids(ng)%output_surface_max > 0) then
 
-        call fgrid_interp(fgrids(ng)%often,fgrids(ng)%x_low,
-     &    fgrids(ng)%y_low,fgrids(ng)%x_hi,fgrids(ng)%y_hi,
-     &    fgrids(ng)%dx,fgrids(ng)%dy,fgrids(ng)%mx,fgrids(ng)%my,tc0,
-     &    fgrids(ng)%num_vars(2),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,fgrids(ng)%output_arrival_times,
-     &    fgrids(ng)%output_surface_max,2)
+        call fgrid_interp(3,fgrids(ng),tc0,q,nvar,mx,my,mbc,dx,dy,
+     &    xlowmbc,ylowmbc,maux,aux,2)
          endif
          endif
 

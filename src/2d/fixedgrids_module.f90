@@ -6,9 +6,9 @@ module fixedgrids_module
     ! Container for fixed grid data, geometry and output settings
     type fixedgrid_type
         ! Grid data
-        real(kind=8), allocatable :: early(:,:,:)
-        real(kind=8), allocatable :: late(:,:,:)
-        real(kind=8), allocatable :: often(:,:,:)
+        real(kind=8), pointer :: early(:,:,:)
+        real(kind=8), pointer :: late(:,:,:)
+        real(kind=8), pointer :: often(:,:,:)
         
         ! Geometry
         integer :: num_vars(2),mx,my
@@ -152,21 +152,19 @@ contains
     !         # to a fgrid not necessarily aligned with the computational grid
     !         # using bilinear interpolation defined on computation grid
     !=======================================================================
-    subroutine fgrid_interp(fgrid,xlowfg,ylowfg, &
-                            xhifg,yhifg,dxfg,dyfg,mxfg,myfg,t,mvarsfg,q,meqn, &
-                            mxc,myc,mbc,dxc,dyc,nvar,xlowc,ylowc,maux,aux, &
-                            ioutarrivaltimes,ioutsurfacemax,maxcheck)
+    subroutine fgrid_interp(fgrid_type,fgrid, &
+                            t,q,meqn,mxc,myc,mbc,dxc,dyc,xlowc,ylowc, &
+                            maux,aux,maxcheck)
     
         use geoclaw_module
     
         implicit none
     
         ! Subroutine arguments
-        integer, intent(in) :: mxfg,myfg,mvarsfg,meqn,mxc,myc,mbc,nvar,maux
-        integer, intent(in) :: ioutarrivaltimes,ioutsurfacemax,maxcheck
-        real(kind=8), intent(in) :: xlowfg,ylowfg,xhifg,yhifg,dxfg,dyfg
+        integer, intent(in) :: fgrid_type
+        type(fixedgrid_type), intent(inout) :: fgrid
+        integer, intent(in) :: meqn,mxc,myc,mbc,maux,maxcheck
         real(kind=8), intent(in) :: t,dxc,dyc,xlowc,ylowc
-        real(kind=8), intent(inout) :: fgrid(mvarsfg,1:mxfg,1:myfg)
         real(kind=8), intent(in) :: q(meqn,1-mbc:mxc+mbc,1-mbc:myc+mbc)
         real(kind=8), intent(in) :: aux(maux,1-mbc:mxc+mbc,1-mbc:myc+mbc)
     
@@ -177,6 +175,34 @@ contains
         real(kind=8) :: tol,arrivaltol,totaldepth,depthindicator,check
         real(kind=8) :: z11,z12,z21,z22,z11w,z12w,z21w,z22w
         real(kind=8) :: a,b,c,d,h11,h12,h21,h22
+        
+        ! Alias to data in fixed grid
+        integer :: mxfg,myfg,mvarsfg,ioutarrivaltimes,ioutsurfacemax
+        real(kind=8) :: xlowfg,ylowfg,xhifg,yhifg,dxfg,dyfg
+        real(kind=8), pointer :: fg_data(:,:,:)
+        
+        ! Setup aliases
+        mxfg = fgrid%mx
+        myfg = fgrid%my
+        ioutarrivaltimes = fgrid%output_arrival_times
+        ioutsurfacemax = fgrid%output_surface_max
+        xlowfg = fgrid%x_low
+        ylowfg = fgrid%y_low
+        xhifg = fgrid%x_hi
+        yhifg = fgrid%y_hi
+        dxfg = fgrid%dx
+        dyfg = fgrid%dy
+        
+        if (fgrid_type == 1) then
+            mvarsfg = fgrid%num_vars(1)
+            fg_data => fgrid%early
+        else if (fgrid_type == 2) then
+            mvarsfg = fgrid%num_vars(1)
+            fg_data => fgrid%late
+        else
+            mvarsfg = fgrid%num_vars(2)
+            fg_data => fgrid%often
+        endif
             
         xhic=xlowc + dxc*mxc  
         yhic=ylowc + dyc*myc    
@@ -241,7 +267,7 @@ contains
                             b=z12-z11
                             d=z11
                             c=z22-(a+b+d)
-                            fgrid(m,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
+                            fg_data(m,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
                         enddo
                         z11=aux(1,ic1,jc1)
                         z21=aux(1,ic2,jc1)
@@ -251,7 +277,7 @@ contains
                         b=z12-z11
                         d=z11
                         c=z22-(a+b+d)
-                        fgrid(indb,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
+                        fg_data(indb,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
                     endif
                     ! This next output variable is the surface using bilinear interpolation,
                     ! using a surface that only uses the wet eta points near the shoreline
@@ -298,32 +324,32 @@ contains
     
                     ! If eta max/min are saved on this grid initialized if necessary
                     if (ioutsurfacemax > 0 .and. maxcheck == 2) then 
-                        if (.not.(fgrid(indetamin,ifg,jfg) == fgrid(indetamin,ifg,jfg))) then
-                            fgrid(indetamin,ifg,jfg) = 0.d0
+                        if (.not.(fg_data(indetamin,ifg,jfg) == fg_data(indetamin,ifg,jfg))) then
+                            fg_data(indetamin,ifg,jfg) = 0.d0
                         endif
-                        if (.not.(fgrid(indetamax,ifg,jfg) == fgrid(indetamax,ifg,jfg))) then
-                            fgrid(indetamax,ifg,jfg) = 0.d0
+                        if (.not.(fg_data(indetamax,ifg,jfg) == fg_data(indetamax,ifg,jfg))) then
+                            fg_data(indetamax,ifg,jfg) = 0.d0
                         endif
                     endif
     
                     ! check which task to perform
                     if (maxcheck == 0) then 
-                        fgrid(indeta,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
-                        fgrid(mvarsfg,ifg,jfg) = t
+                        fg_data(indeta,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d
+                        fg_data(mvarsfg,ifg,jfg) = t
                     else if (maxcheck.eq.1.and.ioutsurfacemax.gt.0) then
-                        fgrid(indetanow,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d   
+                        fg_data(indetanow,ifg,jfg) = a*xterm + b*yterm + c*xyterm + d   
                     else if (maxcheck.eq.2.and.ioutsurfacemax.gt.0) then
-                        fgrid(indetamin,ifg,jfg) = min(fgrid(indetamin,ifg,jfg),fgrid(indetanow,ifg,jfg))
-                        fgrid(indetamax,ifg,jfg) = max(fgrid(indetamax,ifg,jfg),fgrid(indetanow,ifg,jfg))            
+                        fg_data(indetamin,ifg,jfg) = min(fg_data(indetamin,ifg,jfg),fg_data(indetanow,ifg,jfg))
+                        fg_data(indetamax,ifg,jfg) = max(fg_data(indetamax,ifg,jfg),fg_data(indetanow,ifg,jfg))            
                     endif
     
                     ! If arrival times are saved on this grid
                     if (maxcheck == 1 .and. ioutarrivaltimes > 0) then
-                        check=fgrid(indarrive,ifg,jfg)
+                        check=fg_data(indarrive,ifg,jfg)
                         !# check=NaN: Waves haven't arrived previously
                         if (.not.(check == check)) then
-                            if (abs(fgrid(indeta,ifg,jfg)) > arrivaltol) then
-                                fgrid(indarrive,ifg,jfg)= t
+                            if (abs(fg_data(indeta,ifg,jfg)) > arrivaltol) then
+                                fg_data(indarrive,ifg,jfg)= t
                             endif
                         endif
                     endif
