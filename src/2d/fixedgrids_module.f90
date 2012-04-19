@@ -349,27 +349,6 @@ contains
     
     end subroutine fgrid_interp
     
-    ! Interpolation function
-    ! Given 4 points (points) and geometry from x,y,and cross terms
-    real(kind=8) pure function interpolate(points,geometry)
-                            
-        implicit none
-                                
-        ! Function signature
-        real(kind=8), intent(in) :: points(2,2)
-        real(kind=8), intent(in) :: geometry(4)
-        
-        ! This is set up as a dot product between the approrpriate terms in 
-        ! the input data.  This routine could be vectorized or a BLAS routine
-        ! used instead of the intrinsics to ensure that the fastest routine
-        ! possible is being used
-        interpolate = sum([points(2,1)-points(1,1), &
-                           points(1,2)-points(1,1), &
-                           points(1,1) + points(2,2) - (points(2,1) + points(1,2)), &
-                           points(1,1)] * geometry)
-                           
-    end function interpolate
-    
 
     !=====================FGRIDOUT==========================================
     ! This routine interpolates in time and then outputs a grid at
@@ -377,28 +356,21 @@ contains
     !
     ! files have a header, followed by columns of data
     !=======================================================================
-    subroutine fgrid_out(fgrid1,fgrid2,fgrid3,xlowfg,xhifg,ylowfg,yhifg, &
-                        mxfg,myfg,mvarsfg,mvarsfg2,toutfg,ioutfg,ng, &
-                        ioutarrival,ioutflag)
+    subroutine fgrid_out(grid_index,fgrid,out_time,out_index,out_flag)
 
         implicit none
         
         ! Subroutine arguments
-        integer, intent(in) :: mxfg,myfg,mvarsfg,mvarsfg2,ioutfg,ng
-        integer, intent(in) :: ioutarrival,ioutflag
-        real(kind=8), intent(in) :: xlowfg,xhifg,ylowfg,yhifg,toutfg
-        real(kind=8), intent(inout) :: fgrid1(mvarsfg,1:mxfg,1:myfg)
-        real(kind=8), intent(inout) :: fgrid2(mvarsfg,1:mxfg,1:myfg)
-        real(kind=8), intent(inout) :: fgrid3(mvarsfg2,1:mxfg,1:myfg)
+        type(fixedgrid_type), intent(inout) :: fgrid
+        real(kind=8), intent(in) :: out_time
+        integer, intent(in) :: grid_index,out_index, out_flag
               
-        ! Locals
+        ! I/O
         integer, parameter :: unit = 95
-        integer :: ifg,jfg,iv
-        integer :: ngridnumber,ipos,idigit,noutnumber,icolumns
-        integer :: indetamin,indetamax
-        real(kind=8) :: t0,tf,tau
-        character(len=30) :: fgoutname
-
+        character(len=30) :: fg_filename
+        integer :: grid_number,pos,digit,out_number,columns
+        
+        ! Out format strings
         character(len=*), parameter :: header_format = "(e18.8,'    time', /," // &
                                                         "i5,'    mx', /,"   // &
                                                         "i5,'    my', /,"   // &
@@ -416,90 +388,120 @@ contains
                                                      "e18.8,'    xhi',/," // &
                                                      "e18.8,'    yhi',/," // &
                                                         "i5,'  columns',/)"
+        
+        ! Other locals
+        integer :: i,j,m
+        integer :: eta_min_index,eta_max_index
+        real(kind=8) :: t0,tf,tau
     
 
         ! Make the file names and open output files
-        fgoutname = 'fort.fgnn_xxxx'
-        ngridnumber= ng
-        do ipos = 9, 8, -1
-            idigit= mod(ngridnumber,10)
-            fgoutname(ipos:ipos) = char(ichar('0') + idigit)
-            ngridnumber = ngridnumber/ 10
+        fg_filename = 'fort.fgnn_xxxx'
+        grid_number= grid_index
+        do pos = 9, 8, -1
+            digit = mod(grid_number,10)
+            fg_filename(pos:pos) = char(ichar('0') + digit)
+            grid_number = grid_number/ 10
         enddo
 
-        noutnumber=ioutfg
-        do ipos = 14, 11, -1
-            idigit = mod(noutnumber,10)
-            fgoutname(ipos:ipos) = char(ichar('0') + idigit)
-            noutnumber = noutnumber / 10
+        out_number = out_index
+        do pos = 14, 11, -1
+            digit = mod(out_number,10)
+            fg_filename(pos:pos) = char(ichar('0') + digit)
+            out_number = out_number / 10
         enddo
 
-        open(unit,file=fgoutname,status='unknown',form='formatted')
+        open(unit,file=fg_filename,status='unknown',form='formatted')
 
-        icolumns = mvarsfg -1
-        if (mvarsfg2.gt.1) then
-           icolumns=icolumns + 2
+        ! Determine number of columns that will be written out
+        columns = fgrid%num_vars(1) - 1
+        if (fgrid%num_vars(2) > 1) then
+           columns = columns + 2
         endif
         
-        write(unit,header_format) toutfg,mxfg,myfg,xlowfg,ylowfg,xhifg,yhifg,icolumns
+        ! Write out header
+        write(unit,header_format) out_time,fgrid%mx,fgrid%my,fgrid%x_low,fgrid%y_low,fgrid%x_hi,fgrid%y_hi,columns
 
-        indetamin = ioutarrival+2
-        indetamax = ioutarrival+3
+        ! Surface max/min index
+        eta_min_index = fgrid%output_arrival_times + 2
+        eta_max_index = fgrid%output_arrival_times + 3
         
-        ! interpolate the grid in time, to the output time, using 
+        ! Interpolate the grid in time, to the output time, using 
         ! the solution in fgrid1 and fgrid2, which represent the 
         ! solution on the fixed grid at the two nearest computational times
-        do jfg=1,myfg
-            do ifg=1,mxfg
-                t0=fgrid1(mvarsfg,ifg,jfg)
-                tf=fgrid2(mvarsfg,ifg,jfg)
-                tau=(toutfg-t0)/(tf-t0)
+        do j=1,fgrid%my
+            do i=1,fgrid%mx
+                ! Fetch times for interpolation, this is done per grid point 
+                ! since each grid point may come from a different source
+                t0 = fgrid%early(fgrid%num_vars(1),i,j)
+                tf = fgrid%late(fgrid%num_vars(1),i,j)
+                tau = (out_time - t0) / (tf - t0)
                 
-                do iv=1,mvarsfg-1
-                    if (dabs(fgrid1(iv,ifg,jfg)) .lt. 1d-90) fgrid1(iv,ifg,jfg) = 0.d0
-                    if (dabs(fgrid2(iv,ifg,jfg)) .lt. 1d-90) fgrid2(iv,ifg,jfg) = 0.d0
-                enddo
-                if (icolumns.eq.mvarsfg-1) then 
-                    write(unit,data_format) ((1.d0 - tau)*fgrid1(iv,ifg,jfg)+tau*fgrid2(iv,ifg,jfg), iv=1,mvarsfg-1)
+                ! Check for small numbers
+                forall(m=1:fgrid%num_vars(1)-1,abs(fgrid%early(m,i,j)) < 1d-90)
+                    fgrid%early(m,i,j) = 0.d0
+                end forall
+                forall(m=1:fgrid%num_vars(1)-1,abs(fgrid%late(m,i,j)) < 1d-90)
+                    fgrid%late(m,i,j) = 0.d0
+                end forall
+                
+                ! Check which output form we are doing
+                if (columns == fgrid%num_vars(1) - 1) then 
+                    ! Output only the conserved quantities
+                    write(unit,data_format) interpolate_time(fgrid%num_vars(1), &
+                                                             fgrid%early(:,i,j), &
+                                                             fgrid%late(:,i,j), &
+                                                             tau)
                 else
-                    if (abs(fgrid3(indetamin,ifg,jfg)) < 1d-90) fgrid3(indetamin,ifg,jfg) = 0.d0
-                    if (abs(fgrid3(indetamax,ifg,jfg)) < 1d-90) fgrid3(indetamax,ifg,jfg) = 0.d0
-                    write(unit,data_format) ((1.d0 - tau)*fgrid1(iv,ifg,jfg)+tau*fgrid2(iv,ifg,jfg), iv=1,mvarsfg-1), &
-                                          fgrid3(indetamin,ifg,jfg), &
-                                          fgrid3(indetamax,ifg,jfg)
+                    ! Output min/max of eta as well as the conserved quantities
+                    if (abs(fgrid%often(eta_min_index,i,j)) < 1d-90) then
+                        fgrid%often(eta_min_index,i,j) = 0.d0
+                    endif
+                    if (abs(fgrid%often(eta_max_index,i,j)) < 1d-90) then
+                        fgrid%often(eta_max_index,i,j) = 0.d0
+                    endif
+                    write(unit,data_format) interpolate_time(fgrid%num_vars(1), &
+                                                             fgrid%early(:,i,j), &
+                                                             fgrid%late(:,i,j), &
+                                                             tau), &
+                                                             fgrid%often(eta_min_index,i,j), &
+                                                             fgrid%often(eta_max_index,i,j)
                 endif
             enddo
         enddo
 
         close(unit)
-        print "(a,i2,a,i2,a,e18.8)",' FGRIDOUT: Fixed Grid  ',ng, '  frame ',ioutfg,' at time =',toutfg
+        print "(a,i2,a,i2,a,e18.8)",' FGRIDOUT: Fixed Grid  ',grid_index, '  frame ',out_index,' at time =',out_time
 
         ! ==================== Output for arrival times============
-        if (ioutflag.eq.1) then
+        if (out_flag == 1) then
             ! Make the file name and open output file for arrival times
-            fgoutname = 'fort.fgnn_arrivaltimes'
-            ngridnumber= ng
-            do ipos = 9, 8, -1
-                idigit= mod(ngridnumber,10)
-                fgoutname(ipos:ipos) = char(ichar('0') + idigit)
-                ngridnumber = ngridnumber/ 10
+            fg_filename = 'fort.fgnn_arrivaltimes'
+            grid_number= grid_index
+            do pos = 9, 8, -1
+                digit= mod(grid_number,10)
+                fg_filename(pos:pos) = char(ichar('0') + digit)
+                grid_number = grid_number/ 10
             enddo
-            open(unit,file=fgoutname,status='unknown',form='formatted')
+            open(unit,file=fg_filename,status='unknown',form='formatted')
 
-            write(95,arrival_header_format) mxfg,myfg,xlowfg,ylowfg,xhifg,yhifg
+            write(95,arrival_header_format) fgrid%mx,fgrid%my,fgrid%x_low,fgrid%y_low,fgrid%x_hi,fgrid%y_hi
 
-            do jfg=1,myfg
-                do ifg=1,mxfg
-                    write(unit,"(1e26.16)") fgrid3(1,ifg,jfg)
+            do j=1,fgrid%my
+                do i=1,fgrid%mx
+                    write(unit,"(1e26.16)") fgrid%often(1,i,j)
                 enddo
             enddo
             close(unit)
 
-            print "(a,i2,a)", ' FGRIDOUT: Fixed Grid  ', ng, '  arrival times output'
+            print "(a,i2,a)", ' FGRIDOUT: Fixed Grid  ', grid_index, '  arrival times output'
         endif
       
     end subroutine fgrid_out
     
+    ! =========================================================================
+    ! Utility functions for this module
+    ! Returns back a NaN
     real(kind=8) function nan()
         real(kind=8) dnan
         integer inan(2)
@@ -508,5 +510,43 @@ contains
         inan(2)=2147483647
         nan=dnan
     end function nan
+    
+    ! Interpolation function (in space)
+    ! Given 4 points (points) and geometry from x,y,and cross terms
+    real(kind=8) pure function interpolate(points,geometry) result(interpolant)
+                            
+        implicit none
+                                
+        ! Function signature
+        real(kind=8), intent(in) :: points(2,2)
+        real(kind=8), intent(in) :: geometry(4)
+        
+        ! This is set up as a dot product between the approrpriate terms in 
+        ! the input data.  This routine could be vectorized or a BLAS routine
+        ! used instead of the intrinsics to ensure that the fastest routine
+        ! possible is being used
+        interpolant = sum([points(2,1)-points(1,1), &
+                           points(1,2)-points(1,1), &
+                           points(1,1) + points(2,2) - (points(2,1) + points(1,2)), &
+                           points(1,1)] * geometry)
+                           
+    end function interpolate
+    
+    ! Interpolation function in time
+    function interpolate_time(num_vars,early,late,tau) result(interpolant)
+        
+        implicit none
+        
+        ! Input arguments
+        integer, intent(in) :: num_vars
+        real(kind=8), intent(in) :: early(num_vars),late(num_vars),tau
+        
+        ! Return value
+        real(kind=8) :: interpolant(num_vars)
+
+        interpolant = (1.d0 - tau) * early(:) + tau * late(:)
+
+    end function interpolate_time
+    
 
 end module fixedgrids_module

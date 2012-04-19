@@ -144,12 +144,7 @@ c               # test if arrival times should be output
                 ioutflag = fgrids(ng)%output_arrival_times*
      &                         (fgrids(ng)%num_output-
      &                          fgrids(ng)%last_output_index)
-                call fgrid_out(fgrids(ng)%early,fgrids(ng)%late,
-     &              fgrids(ng)%often,fgrids(ng)%x_low,fgrids(ng)%x_hi,
-     &              fgrids(ng)%y_low,fgrids(ng)%y_hi,fgrids(ng)%mx,
-     &              fgrids(ng)%my,fgrids(ng)%num_vars(1),
-     &              fgrids(ng)%num_vars(2),toutfg,ioutfg,ng,
-     &              fgrids(ng)%output_arrival_times,ioutflag)
+                call fgrid_out(ng,fgrids(ng),toutfg,ioutfg,ioutflag)
 
                 fgrids(ng)%last_output_time = toutfg
                 fgrids(ng)%last_output_index = 
