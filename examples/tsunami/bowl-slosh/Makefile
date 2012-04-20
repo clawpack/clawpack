@@ -67,7 +67,6 @@ SOURCES = \
   $(GEOLIB)/src1d.f \
   $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
-  $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
   $(GEOLIB)/filval.f \
   $(GEOLIB)/filpatch.f \
@@ -77,6 +76,7 @@ SOURCES = \
   $(GEOLIB)/setaux.f \
   $(GEOLIB)/setgauges.f \
   $(GEOLIB)/b4step2.f \
+  $(GEOLIB)/qad.f \
   $(GEOLIB)/flag2refine.f  \
   $(GEOLIB)/allowflag.f  \
   $(GEOLIB)/dumpgauge.f \

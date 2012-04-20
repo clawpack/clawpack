@@ -14,7 +14,6 @@ h0 = 0.1
 grav = 9.81
 omega = numpy.sqrt(2.*grav*h0) / a 
 
-
 #--------------------------
 def setplot(plotdata):
 #--------------------------
@@ -148,8 +147,7 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='2d_edges')
     plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
     plotitem.amr_celledges_show = [1,1,0]   
-    plotitem.amr_patchedges_show = [1]     
-
+    plotitem.amr_patchedges_show = [1]
 
 
     #-----------------------------------------

@@ -98,9 +98,9 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.outstyle = 3
+    clawdata.outstyle = 1
 
-    if clawdata.outstyle==1:
+    if clawdata.outstyle == 1:
         # Output nout frames at equally spaced times up to tfinal:
         clawdata.nout = 16
         clawdata.tfinal = 4.4857014654663745
@@ -265,7 +265,7 @@ def setgeo(rundata):
     geodata.icoordsys = 1
 
     # == settsunami.data values ==
-    geodata.sealevel = -10.
+    geodata.eta_init = -10.0
     geodata.drytolerance = 1.e-3
     geodata.wavetolerance = 1.e-2
     geodata.depthdeep = 1.e2
@@ -306,7 +306,6 @@ def setgeo(rundata):
     # for fixed grids append lines of the form
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
-    # geodata.fixedgrids.append([1., 2., 4, 0., 100., 0., 100., 11, 11, 0, 0])
 
     return rundata
     # end of function setgeo
