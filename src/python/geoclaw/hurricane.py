@@ -21,12 +21,9 @@ class HurricaneData(data.Data):
         self.add_attribute('wind_tolerance',1e-6)
         self.add_attribute('pressure_tolerance',1e-4) # Pressure source term tolerance
 
-        # AMR parameters
+        # AMR parameters for follwing the storm
         self.add_attribute('max_wind_nest',0) # Wind strength based refinement
         self.add_attribute('wind_refine',[20.0,40.0,60.0])
-        self.add_attribute('momentum_refinement',False)
-        self.add_attribute('max_speed_nest',5)
-        self.add_attribute('speed_nest',[0.5,1.0,2.0,3.0,4.0,5.0]) # Just added another level of refinement
         self.add_attribute('max_R_nest',3) # Hurricane location based refinement
         self.add_attribute('R_refine',[60.0e3,40e3,20e3])
         
@@ -56,7 +53,7 @@ class HurricaneData(data.Data):
         """Write out the data file to the path given"""
 
         print "Creating data file %s" % out_file
-        out_file = open(out_file,'w')
+        out_file = data.open_datafile(out_file)
         
         data.data_write(out_file,self,'wind_src','(Wind source term used)')
         data.data_write(out_file,self,'pressure_src',"(Pressure source term used)")
@@ -68,9 +65,6 @@ class HurricaneData(data.Data):
                 
         data.data_write(out_file,self,'max_wind_nest','(Wind strength based refinement)')
         data.data_write(out_file,self,'wind_refine','(Refinement ratios)')
-        data.data_write(out_file,self,'max_speed_nest',"(Speed/Momentum based refinement levels)")
-        data.data_write(out_file,self,'speed_nest',"(Refinement ratios)")
-        data.data_write(out_file,self,'momentum_refinement',"(Momentum based refinement used rather than speed)")
         data.data_write(out_file,self,'max_R_nest',"(Hurricane location based refinement)")
         data.data_write(out_file,self,'R_refine',"(Refinement ratios)")
         data.data_write(out_file,self,None)

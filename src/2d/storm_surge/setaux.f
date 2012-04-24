@@ -13,17 +13,15 @@ c     #    aux(2,i,j) = area ratio (capacity function -- set mcapa = 2)
 c     #    aux(3,i,j) = length ratio for edge
 c
 
-      use multilayer_module
-      use hurricane_module 
       use geoclaw_module
       use topo_module
       use amr_module
+      use hurricane_module
       
       implicit double precision (a-h,o-z)
 
       dimension aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
-      stop 'here'
 
       if (icoordsys.eq.2) then
          if (mcapa .ne. 2 .or. maux.lt.3) then
@@ -55,60 +53,34 @@ c           # for lat-lon grid on sphere:
                aux(3,i,j) = 1.d0
             endif
 
-            if (bathy_type == 0) then
-                if (mtopofiles.gt.0) then
-                   topoint=0.d0
-                call cellgridintegrate(topoint,xim,xcell,xip,yjm,ycell,
+            if (mtopofiles.gt.0) then
+               topoint=0.d0
+               call cellgridintegrate(topoint,xim,xcell,xip,yjm,ycell,
      &	        yjp,xlowtopo,ylowtopo,xhitopo,yhitopo,dxtopo,dytopo,
      &	        mxtopo,mytopo,mtopo,i0topo,mtopoorder,
      &	        mtopofiles,mtoposize,topowork)
                aux(1,i,j) = topoint/(dx*dy*aux(2,i,j))
 
-                else
-                   aux(1,i,j) = 0.d0
+            else
+               aux(1,i,j) = 0.d0
 c     	      # or set-up your own topo
-                endif
-
-                else if (bathy_type == 1) then
-                        if (xcell < bathy_location) then
-                            aux(1,i,j) = bathy_left
-                        else
-                            aux(1,i,j) = bathy_right
-                        endif
-                else if (bathy_type == 2) then
-                        if (xcell < bathy_x0) then
-                            aux(1,i,j) = bathy_basin_depth
-                        else if (bathy_x0 <= xcell .and.
-     &                       xcell < bathy_x1) then
-                        aux(1,i,j) = bathy_shelf_slope
-     &                      * (xcell-bathy_x0) + bathy_basin_depth
-                    else if (bathy_x1 <= xcell .and.
-     &                       xcell < bathy_x2) then
-                        aux(1,i,j) = shelf_depth
-                    else
-                        aux(1,i,j) = bathy_beach_slope
-     &                      * (xcell-bathy_x2) + bathy_shelf_depth
-                        endif
-                else
-                    print *,"Invalid bathy type requested", bathy_type
-                    stop
-                endif
+               endif
             enddo
          enddo
-              
+
 c     Initialize wind and pressure auxillary variables
       call hurricane_wind(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,
      &                    dy,-ramp_up_time,aux)
       call hurricane_pressure(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,
      &                        dx,dy,-ramp_up_time,aux)
-     
+ 
 c     This actually only handles 2 layers right now...
       if (layers > 1) then
           do i=1-mbc,mx+mbc
               do j=1-mbc,my+mbc
-                  if (eta(2) > aux(1,i,j)) then
-                      aux(7,i,j) = eta_init(1) - eta(2)
-                      aux(8,i,j) = eta(2) - aux(1,i,j)
+                  if (eta_init(2) > aux(1,i,j)) then
+                      aux(7,i,j) = eta_init(1) - eta_init(2)
+                      aux(8,i,j) = eta_init(2) - aux(1,i,j)
                   else
                       aux(7,i,j) = eta_init(1) - aux(1,i,j)
                       aux(8,i,j) = 0.d0
@@ -116,7 +88,7 @@ c     This actually only handles 2 layers right now...
               enddo
           enddo
       endif
-     
+      
 
       return
 

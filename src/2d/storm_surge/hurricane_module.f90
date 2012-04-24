@@ -56,7 +56,7 @@ contains
     !     data_file = Path to data file
     !
     ! ========================================================================
-    subroutine set_hurricane_params(data_file)
+    subroutine set_hurricane(data_file)
 
         use geoclaw_module, only: pi
 
@@ -66,58 +66,58 @@ contains
         character(len=*), optional, intent(in) :: data_file
         
         ! Locals
-        integer :: ios,i
+        integer, parameter :: unit = 13
+        integer :: status,i
         character*150 :: hurricane_track_file_path
         
         ! Open file
         if (present(data_file)) then
-            open(unit=13,file=data_file,iostat=ios,status="old",action="read",access="sequential")
+            call opendatafile(unit,data_file)
         else
-            open(unit=13,file='hurricane.data',iostat=ios,status="old",action="read",access="sequential")
+            call opendatafile(unit,'hurricane.data')
         endif
-        if ( ios /= 0 ) stop "Error opening file data_file"
         
         ! Read in parameters
         ! Forcing terms
-        read(13,*) wind_forcing
-        read(13,*) pressure_forcing
-        read(13,*)
+        read(unit,*) wind_forcing
+        read(unit,*) pressure_forcing
+        read(unit,*)
         
         ! Source term algorithm parameters
-        read(13,*) wind_tolerance
-        read(13,*) pressure_tolerance
-        read(13,*)
+        read(unit,*) wind_tolerance
+        read(unit,*) pressure_tolerance
+        read(unit,*)
         
         ! AMR parameters
-        read(13,*) max_wind_nest
+        read(unit,*) max_wind_nest
         allocate(wind_refine(max_wind_nest))
-        read(13,*) (wind_refine(i),i=1,max_wind_nest)
-        read(13,*) max_R_nest
+        read(unit,*) (wind_refine(i),i=1,max_wind_nest)
+        read(unit,*) max_R_nest
         allocate(R_refine(max_R_nest))
-        read(13,*) (R_refine(i),i=1,max_R_nest)
-        read(13,*)
+        read(unit,*) (R_refine(i),i=1,max_R_nest)
+        read(unit,*)
         
         ! Physics
-        read(13,*) rho_air
-        read(13,*) theta_0
+        read(unit,*) rho_air
+        read(unit,*) theta_0
         theta_0 = theta_0 * pi / 180d0
         read(13,*)
         
         ! Wind 
-        read(13,*) wind_type
+        read(unit,*) wind_type
         ! Read in hurricane track data from file
         if (wind_type == 0) then
-            read(13,*) hurricane_track_file_path
+            read(unit,*) hurricane_track_file_path
             call read_hurricane_track_file(hurricane_track_file_path)
         ! Idealized hurricane
         else if (wind_type == 1) then
-            read(13,*) ramp_up_time
-            read(13,*) hurricane_velocity
-            read(13,*) R_eye_init
-            read(13,*) A
-            read(13,*) B
-            read(13,*) Pn
-            read(13,*) Pc
+            read(unit,*) ramp_up_time
+            read(unit,*) hurricane_velocity
+            read(unit,*) R_eye_init
+            read(unit,*) A
+            read(unit,*) B
+            read(unit,*) Pn
+            read(unit,*) Pc
         ! Stommel wind field
         else if (wind_type == 2) then
             read(13,*) A
@@ -126,10 +126,43 @@ contains
             stop
         endif
         
-        close(13)
+        close(unit)
 
-    end subroutine set_hurricane_params
+    end subroutine set_hurricane
 
+    subroutine read_hurricane_track_file(track_file)
+        
+        implicit none
+        
+        ! Subroutine Arguments
+        character(len=*), intent(in) :: track_file
+        
+        ! Locals
+        integer, parameter :: unit = 14
+        
+    end subroutine read_hurricane_track_file
+    
+    ! ========================================================================
+    !   function eye_location(t)
+    ! ========================================================================
+    ! Returns the location of the eye of the storm
+    ! 
+    ! Input:
+    !     real(kind=8) t = current time
+    ! 
+    ! Output:
+    !     real(kind=8) eye_location(2) = (x,y) location of the eye
+    ! ========================================================================
+    pure function eye_location(t)
+        implicit none
+        
+        real(kind=8), intent(in) :: t
+        real(kind=8) :: eye_location(2)
+
+        eye_location = t * hurricane_velocity + R_eye_init
+        
+    end function eye_location
+    
     ! ========================================================================
     !   subroutine hurricane_wind(mbc,mx,my,xlower,ylower,dx,dy,R_eye,wind)
     ! ========================================================================
@@ -181,7 +214,9 @@ contains
         ! Initialize f in case we don't need it
         f = 0.d0
         
-        if (wind_type == 1) then
+        if (wind_type == 0) then
+            stop "Unimplemented wind field type!"
+        else if (wind_type == 1) then
             ! Hurrican eye location
             R_eye = t * hurricane_velocity + R_eye_init
         

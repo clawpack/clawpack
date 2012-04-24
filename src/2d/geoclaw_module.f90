@@ -26,8 +26,7 @@ module geoclaw_module
     
     ! Speed/Momentum based refinement
     integer :: max_speed_nest
-    double precision, allocatable :: speed_refine(:)
-    logical :: momentum_refinement
+    double precision, allocatable :: speed_tolerance(:)
 
     ! ========================================================================
     !  Flow grades flagging support
@@ -246,9 +245,8 @@ contains
         read(iunit,*) coeffmanning
         read(iunit,*) frictiondepth
         read(iunit,"(i2)") max_speed_nest
-        read(iunit,*) momentum_refinement
-        allocate(speed_refine(max_speed_nest))
-        read(iunit,*) (speed_refine(i),i=1,max_speed_nest)
+        allocate(speed_tolerance(max_speed_nest))
+        read(iunit,*) (speed_tolerance(i),i=1,max_speed_nest)
         close(iunit)
 
         write(GEO_PARM_UNIT,*) '   drytolerance:',drytolerance

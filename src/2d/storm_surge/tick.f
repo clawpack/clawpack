@@ -4,7 +4,7 @@ c
       subroutine tick(nvar,iout,nstart,nstop,cut,vtime,time,ichkpt,
      &                naux,nout,tout,tchk,t0,rest)
 c
-      use  geoclaw_module
+      use geoclaw_module
       use amr_module
       implicit double precision (a-h,o-z)
 
