@@ -166,39 +166,46 @@ def setup_package():
                 )
             setup_dict.update(setuptools_dict)
             setup(**setup_dict)
-        else:
-            # actual build, numpy.distutils-based
-            if os.path.exists('.git'):
-                from numpy.distutils.exec_command import exec_command
-                exec_command(['git', 'submodule', 'init'])
-                exec_command(['git', 'submodule', 'update'])
-                # *always* need these
-                # now build symbolic links to repositories
-                if not os.path.exists('clawpack/clawutil'):
-                    os.symlink(os.path.abspath('clawutil/src/python/clawutil'),
-                               'clawpack/clawutil')
-                if not os.path.exists('clawpack/riemann'):
-                    os.symlink(os.path.abspath('riemann/src/python/riemann'),
-                               'clawpack/riemann')
-                    # need this one to build Fortran sources naturally
-                if not os.path.exists('clawpack/riemann/src'):
-                    os.symlink(os.path.abspath('riemann/src'),
-                               'clawpack/riemann/src')
-                if not os.path.exists('clawpack/visclaw'):
-                    os.symlink(os.path.abspath('visclaw/src/python/visclaw'),
-                               'clawpack/visclaw')
-                if not os.path.exists('clawpack/pyclaw'):
-                    os.symlink(os.path.abspath('pyclaw/src/pyclaw'),
-                               'clawpack/pyclaw')
-                if not os.path.exists('clawpack/petclaw'):
-                    os.symlink(os.path.abspath('pyclaw/src/petclaw'),
-                               'clawpack/petclaw')
+            return
+
+        if os.path.exists('.git'):
+            from numpy.distutils.exec_command import exec_command
+            exec_command(['git', 'submodule', 'init'])
+            fails = 0
+            while fails < 20 and exec_command(['git', 'submodule', 'update'])[1]:
+                fails = fails+1
+                import time
+                print "having difficulties updating submodules, waiting 5s and trying again [fail %d/20]" % fails
+                time.sleep(5)
+            # *always* need these
+            # now build symbolic links to repositories
+            if not os.path.exists('clawpack/clawutil'):
+                os.symlink(os.path.abspath('clawutil/src/python/clawutil'),
+                           'clawpack/clawutil')
+            if not os.path.exists('clawpack/riemann'):
+                os.symlink(os.path.abspath('riemann/src/python/riemann'),
+                           'clawpack/riemann')
+                # need this one to build Fortran sources naturally
+            if not os.path.exists('clawpack/riemann/src'):
+                os.symlink(os.path.abspath('riemann/src'),
+                           'clawpack/riemann/src')
+            if not os.path.exists('clawpack/visclaw'):
+                os.symlink(os.path.abspath('visclaw/src/python/visclaw'),
+                           'clawpack/visclaw')
+            if not os.path.exists('clawpack/pyclaw'):
+                os.symlink(os.path.abspath('pyclaw/src/pyclaw'),
+                           'clawpack/pyclaw')
+            if not os.path.exists('clawpack/petclaw'):
+                os.symlink(os.path.abspath('pyclaw/src/petclaw'),
+                           'clawpack/petclaw')
 
             from numpy.distutils.core import setup
             setup(configuration=configuration,
                   **setup_dict)
+
     except Exception as err:
         print err
+        raise err
     finally:
         del sys.path[0]
         os.chdir(old_path)
