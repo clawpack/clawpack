@@ -92,7 +92,7 @@ if not release:
         GIT_REVISION = git_version()
     elif os.path.exists(version_file_path):
         # must be a source distribution, use existing version file
-        from pyclaw.version import git_revision as GIT_REVISION
+        from clawpack.version import git_revision as GIT_REVISION
     else:
         GIT_REVISION = "Unknown"
 
@@ -147,7 +147,7 @@ def setup_package():
         description = DOCLINES[0],
         long_description = "\n".join(DOCLINES[2:]),
         url = "http://www.clawpack.org",
-        download_url = "https://github.com/clawpack/", 
+        download_url = "git+git://github.com/clawpack/clawpack.git#egg=clawpack-dev", 
         license = 'BSD',
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms = ["Linux", "Solaris", "Mac OS-X", "Unix"],
