@@ -159,7 +159,7 @@ c     #prepare slopes - use min-mod limiters
                      velmin = min(vel,velmin)
                      endif
                   if (valc(1,i,j+ii).gt.toldry) then
-                     vel = valc(ivar,i,j)/valc(1,i,j+ii)
+                     vel = valc(ivar,i,j+ii)/valc(1,i,j+ii)
                      velmax = max(vel,velmax)
                      velmin = min(vel,velmin)
                      endif
