@@ -10,11 +10,11 @@ function setplot is called to set the plot parameters.
 from geoclaw import topotools
 from clawpack.clawutil import clawdata
 
-try:
-    from setplotfg import setplotfg
-except:
-    print "Did not find setplotfg.py"
-    setplotfg = None
+# try:
+#     from setplotfg import setplotfg
+# except:
+#     print "Did not find setplotfg.py"
+#     setplotfg = None
 
 #--------------------------
 def setplot(plotdata):
@@ -139,23 +139,6 @@ def setplot(plotdata):
         xticks([3600*i for i in range(n)])
 
     plotaxes.afteraxes = add_zeroline
-
-    # -----------------
-    # Fixed grid plots:
-    # -----------------
-    if setplotfg is not None:
-
-        # Repeat as desired for other fixed grids...
-        # These show up when using 'make .plots'
-        otherfig = plotdata.new_otherfigure('Fixed Grid 1')
-        fgno = 1
-        sfgno = str(fgno).zfill(2)  # e.g. '01'
-        otherfig.fname = '_PlotIndex_FixedGrid%s.html' % sfgno
-        def make_fgplots(plotdata):
-            fgdata = setplotfg(fgno, outdir=plotdata.outdir)
-            # See the setplotfg function for setting up fixed grid plots
-            fgdata.fg2html(framenos='all')
-        otherfig.makefig = make_fgplots
 
 
     #-----------------------------------------
