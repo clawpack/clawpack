@@ -14,7 +14,7 @@ To use interactively:
 """
 
 def setplotfg(fgno=1, outdir='_output'):
-    from visclaw import plotfg, colormaps, geoplot
+    from clawpack.visclaw import plotfg, colormaps, geoplot
     from numpy import arange
 
     # max used for surface and inundation colormaps below:

@@ -8,7 +8,7 @@ function setplot is called to set the plot parameters.
 """ 
 
 from geoclaw import topotools
-from clawutil import clawdata
+from clawpack.clawutil import clawdata
 
 try:
     from setplotfg import setplotfg
@@ -28,7 +28,7 @@ def setplot(plotdata):
     """ 
 
 
-    from visclaw import colormaps, geoplot
+    from clawpack.visclaw import colormaps, geoplot
     from numpy import linspace
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
@@ -38,7 +38,7 @@ def setplot(plotdata):
     # an afteraxis function:
 
     def addgauges(current_data):
-        from visclaw import gaugetools
+        from clawpack.visclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=True)
     
