@@ -26,7 +26,7 @@ def setplot(plotdata):
     """ 
 
 
-    from visclaw import colormaps, geoplot
+    from clawpack.visclaw import colormaps, geoplot
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 

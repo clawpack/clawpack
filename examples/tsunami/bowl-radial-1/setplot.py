@@ -19,7 +19,7 @@ def setplot(plotdata):
     """ 
 
 
-    from visclaw import colormaps, geoplot
+    from clawpack.visclaw import colormaps, geoplot
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
@@ -37,7 +37,7 @@ def setplot(plotdata):
     # an afteraxis function:
 
     def addgauges(current_data):
-        from visclaw import gaugetools
+        from clawpack.visclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=True)
     
