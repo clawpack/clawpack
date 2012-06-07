@@ -329,8 +329,8 @@ def setgeo(rundata):
     # == setfixedgrids.data values ==
     geodata.fixedgrids = []
     # for fixed grids append lines of the form
-    # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
-    #  ioutarrivaltimes,ioutsurfacemax]
+    # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,ioutarrivaltimes,ioutsurfacemax]
+    geodata.fixedgrids.append([3,8,6,52.0,72.0,52.0,72.0,100,100,0,1])
 
     # == Multilayer ==
     geodata.layers = 1
