@@ -6,7 +6,7 @@ Module to setup hurrican parameters
 
 import numpy as np
 
-import clawutil.oldclawdata as data
+import clawpack.clawutil.oldclawdata as data
 
 # Simple hurricane data format
 class HurricaneData(data.Data):
