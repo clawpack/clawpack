@@ -169,14 +169,16 @@ def setup_package():
             return
 
         if os.path.exists('.git'):
-            from numpy.distutils.exec_command import exec_command
-            exec_command(['git', 'submodule', 'init'])
-            fails = 0
-            while fails < 20 and exec_command(['git', 'submodule', 'update'])[1]:
-                fails = fails+1
-                import time
-                print "having difficulties updating submodules, waiting 5s and trying again [fail %d/20]" % fails
-                time.sleep(5)
+            if not os.path.exists('pyclaw') or not os.path.exists('riemann') \
+            or not os.path.exists('visclaw') or not os.path.exists('clawutil'):
+               from numpy.distutils.exec_command import exec_command
+               exec_command(['git', 'submodule', 'init'])
+               fails = 0
+               while fails < 20 and exec_command(['git', 'submodule', 'update'])[1]:
+                   fails = fails+1
+                   import time
+                   print "having difficulties updating submodules, waiting 5s and trying again [fail %d/20]" % fails
+                   time.sleep(5)
             # *always* need these
             # now build symbolic links to repositories
             if not os.path.exists('clawpack/clawutil'):
