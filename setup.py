@@ -169,8 +169,8 @@ def setup_package():
             return
 
         if os.path.exists('.git'):
-            if not os.path.exists('pyclaw') or not os.path.exists('riemann') \
-            or not os.path.exists('visclaw') or not os.path.exists('clawutil'):
+            if not os.path.exists('pyclaw/.git') or not os.path.exists('riemann/.git') \
+            or not os.path.exists('visclaw/.git') or not os.path.exists('clawutil/.git'):
                from numpy.distutils.exec_command import exec_command
                exec_command(['git', 'submodule', 'init'])
                fails = 0
