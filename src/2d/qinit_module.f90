@@ -28,7 +28,7 @@ contains
 
     subroutine add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use geoclaw_module, only: layers,eta_init
+        use geoclaw_module, only: num_layers,eta_init
     
         implicit none
     
@@ -45,7 +45,7 @@ contains
         ! Topography integral function
         real(kind=8) :: topointegral
         
-        if (qinit_type > 0 .and. layers == 1) then
+        if (qinit_type > 0 .and. num_layers == 1) then
             do i=1-mbc,mx+mbc
                 x = xlower + (i-0.5d0)*dx
                 xim = x - 0.5d0*dx
@@ -82,10 +82,10 @@ contains
                     endif
                 enddo
             enddo
-        else if (qinit_type > 0 .and. layers > 1) then
+        else if (qinit_type > 0 .and. num_layers > 1) then
             ! Layers > 1 is currently unsupported, partially due to the topography
             ! integral that is required.
-            stop "ERROR:  qinit_type > 0 and layers > 1 is unsupported!"
+            stop "ERROR:  qinit_type > 0 and num_layers > 1 is unsupported!"
         endif
         
     end subroutine add_perturbation

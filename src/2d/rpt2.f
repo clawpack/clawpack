@@ -5,7 +5,7 @@ c     =====================================================
      &                  ql,qr,aux1,aux2,aux3,
      &                  ilr,asdq,bmasdq,bpasdq)
 c     =====================================================
-      use geoclaw_module
+      use geoclaw_module, only: grav,dry_tolerance,icoordsys,Rearth,pi
 
       implicit none
 c
@@ -39,8 +39,8 @@ c-----------------------last modified 1/10/05----------------------
       integer i,m,mw,mu,mv
 
       g=grav
-      tol=drytolerance
-      abs_tol=drytolerance
+      tol=dry_tolerance(1)
+      abs_tol=dry_tolerance(1)
 
       if (ixy.eq.1) then
 	     mu = 2
@@ -89,7 +89,7 @@ c===========determine velocity from momentum===========================
       dxdcp = 1.d0
       dxdcm = 1.d0
 
-       if (hl.le.drytolerance.and.hr.le.drytolerance) go to 90
+       if (hl.le.dry_tolerance(1).and.hr.le.dry_tolerance(1)) go to 90
 
 *      !check and see if cell that transverse waves are going in is high and dry
        if (ilr.eq.1) then

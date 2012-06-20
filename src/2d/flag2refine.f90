@@ -22,12 +22,24 @@
 ! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
 
-    use geoclaw_module
-    use topo_module
-    use dtopo_module
-    use regions_module
-    use qinit_module
+    use amr_module, only: mxnest
+
+    use geoclaw_module, only:dry_tolerance,wave_tolerance,speed_tolerance
+    use geoclaw_module, only:depthdeep,maxleveldeep,rho,eta_init,num_layers
     
+    use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
+    use topo_module, only: minleveltopo,mtopofiles
+    
+    use dtopo_module, only: tfdtopo,xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
+    use dtopo_module, only: minleveldtopo,num_dtopo
+    
+    use regions_module, only: t_low_region,t_hi_region,x_low_region
+    use regions_module, only: x_hi_region,y_low_region,y_hi_region
+    use regions_module, only: min_level_region,num_regions
+   
+    use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
+    use qinit_module, only: min_level_qinit,qinit_type
+ 
     implicit none
     
     ! Subroutine arguments
@@ -46,23 +58,26 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
     external allowflag
     
     ! Generic locals
-    integer :: i,j,m
+    integer :: i,j,m,k,layer_index
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
-    real(kind=8) :: h,speed,surface
+    real(kind=8) :: h,speed,surface,eta,eta_below
 
-    ! Loop over interior points on this grid:
+    ! Initialize flags
+    amrflags = DONTFLAG
+
+    ! Loop over interior points on this grid
     ! (i,j) grid cell is [x_low,x_hi] x [y_low,y_hi]
-    do j=1,my
-        y_c= ylower +  (j-0.5d0)*dy
+    y_loop: do j=1,my
+        y_c = ylower +  (j-0.5d0)*dy
         y_low = ylower + (j-1)*dy
         y_hi = ylower + j*dy
-        do i = 1,mx
+        x_loop: do i = 1,mx
             x_c = xlower +  (i-0.5d0)*dx
             x_low = xlower +  (i-1)*dx
             x_hi = xlower +  i*dx
 
-            ! Default is to not flag
-            amrflags(i,j) = DONTFLAG
+            ! The following conditions are only checked in the horizontal and
+            ! override the allowflag routine
 
             ! Check to see if refinement is forced in any topography file region:
             do m=1,mtopofiles
@@ -71,7 +86,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
                           y_hi > ylowtopo(m) .and. y_low < yhitopo(m)) then
                         
                         amrflags(i,j) = DOFLAG
-                        cycle
+                        cycle x_loop
                     endif
                 endif
             enddo
@@ -83,7 +98,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
                         y_hi > y_low_region(m) .and. y_low < y_hi_region(m)) then
                     
                         amrflags(i,j) = DOFLAG
-                        cycle
+                        cycle x_loop
                     endif
                 endif
             enddo
@@ -97,7 +112,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
                     y_hi > ylowdtopo(m) .and. y_low < yhidtopo(m)) then
                     
                     amrflags(i,j) = DOFLAG    
-                    cycle
+                    cycle x_loop
                 endif
             enddo
 
@@ -110,7 +125,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
                     y_hi > y_low_qinit .and. y_low < y_hi_qinit) then
                     
                     amrflags(i,j) = DOFLAG
-                    cycle
+                    cycle x_loop
                 endif
             endif
 
@@ -118,119 +133,48 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
             ! Refinement not forced, so check if it is allowed, and if so,
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
+                ! These refinement criteria are checked per layer going backwards
+                ! The bottom layer is checked first and eta_below is set to the 
+                ! bathymetry
+                eta_below = aux(1,i,j)
                 
-                ! Calculate each layer's surface and speed
-                h = q(3*(layers-1)+1,i,j) / rho(layers)
-                
-                if (h > drytolerance) then
-                    ! We are in a wet cell, compute surface and speed of this layer
-                    surface = h + aux(1,i,j)
-                    speed = sqrt(q(3*(layers-1)+2,i,j)**2 + &
-                                    q(3*(layers-1)+3,i,j)**2) / q(3*(layers-1)+1,i,j)
+                layer_loop: do k=num_layers,1,-1
+                    layer_index = 3 * (k - 1)
                     
-                    ! Check to see if the surface is close to the intitial
-                    ! value and perhaps refine if it is not                     
-                    if (abs(surface - eta_init(layers)) > wavetolerance) then
+                    ! Extract state
+                    h = q(layer_index+1,i,j) / rho(k)
+                    eta = h + eta_below
+                    
+                    ! Check wave criteria
+                    if (abs(eta - eta_init(k)) > wave_tolerance(k)) then
                         ! Check to see if we are near shore
                         if (h < depthdeep) then
                             amrflags(i,j) = DOFLAG
-                            cycle ! Move onto next point
-                        ! If we are not, limit the level of refinement
+                            cycle x_loop
+                        ! If we are not in too deep of water, also flag
                         else if (level < maxleveldeep) then
                             amrflags(i,j) = DOFLAG
-                            cycle ! Move onto next point
+                            cycle x_loop
                         endif
                     endif
                     
-                    ! Check speed tolerances
-                    ! TODO: The cycle command unfortunately does not work here
-                    ! as it would only kick out of the inner loop, need to add
-                    ! more logic to handle this
-                    do m=1,max_speed_nest
-                        if (speed > speed_tolerance(m) .and. level <= m) then
-                            amrflags(i,j) = DOFLAG
-                        endif
-                    enddo
-                endif
-
-                ! Do for the rest of the layers
-!                 do m=layers-1,1,-1
-!                     h = q(3*(m-1)+1,i,j) / rho(m)
-!                     if (h > drytolerance) then
-!                         surface(m) = h + surface(m-1)
-!                         speed(m) = sqrt(q(3*(m-1)+2,i,j)**2 + &
-!                                              q(3*(m-1)+3,i,j)**2) / q(3*(m-1)+1,i,j)
-!                         if (h < shore_tolerance) then
-!                             cycle
-!                         else
-!                             
-!                         endif
-!                         
-!                     else
-!                         surface(m) = aux(1,i,j)
-!                         speed(m) = 0.d0
-!                         shore_region(m) = .true.
-!                     endif
-!                 enddo
-!                 
-!                 ! Check if each surface is less than the wave tolerance specified
-!                 if (q(1,i,j) / rho(1) > drytolerance) then
-!                     abs(surface(1) - eta_init(1)) > wave_tolerance(1)
-                
-                
-!c
-!c            # RJL: not sure why this next line is done?
-!c            # Need to fix for arb.  sealevel?
-!c            surface = dsign(surface,q(1,i,j))
-!
-!c            # DLG: it was a way to prevent refining on dry land...
-!c            # probably should be changed if we allow arbitrary sealevel
-!c            # by adding sealevel to surface or something.
-!
-!c            # determine region type and refinement params
-!
-!!              shoreregion = dabs(aux(1,i,j)) .lt. depthdeep
-!              wave = (dabs(surface-eta_init(1)).gt.wavetolerance.and.
-!      &                q(1,i,j).gt.drytolerance)
-! c             #DLG: changing following: didn't work so well for non-lat-lon grids
-! c              shoretol = depthdeep*(dx*dy)
-!                shoretol = depthdeep
-! c
-! 
-!              if (wave) then
-! c               # the surface is not at sea level here
-! 
-!                 if (level.lt.maxleveldeep) then
-! c                   # in deep water we can refine to this level
-!                     amrflags(i,j)=DOFLAG
-!                     go to 100 !# flagged, so no need to check anything else
-!                     endif
-! 
-! c                if (shoreregion) then
-! c                  shoreline=.false.
-! c                 # check if any neighboring cell is dry:
-! c                  do jj=-1,1
-! c                   do ii=-1,1
-! c                    shoreline = shoreline.or.q(1,i+ii,j+jj).le.shoretol
-! c                   enddo
-! c                  enddo
-! 
-! c                 shoreline=shoreline.and.q(1,i,j).gt.shoretol
-!                  shoreline = shoreregion
-! 
-!                  if (shoreline.and.q(1,i,j).gt.drytolerance) then
-! c                    # following comment is regarding commented nested do loop above.
-! c                    # this cell is wet and a neighbor is dry ==> shoreline
-!                      amrflags(i,j)=DOFLAG
-!                      go to 100 !# flagged, so no need to check anything else
-!                  endif
-! 
-! c               endif
-!              endif
-! 
-!              
-! 
-            endif  ! Allow flag check
-        enddo ! x-loop
-    enddo ! y-loop
+                    ! Check speed criteria, note that it might be useful to 
+                    ! also have a per layer criteria since this is not 
+                    ! gradient based
+                    if (h > dry_tolerance(k)) then
+                        speed = sqrt(q(layer_index+2,i,j)**2 &
+                                   + q(layer_index+3,i,j)**2) &
+                                   / q(layer_index+1,i,j)
+                        do m=1,mxnest
+                            if (speed > speed_tolerance(m) .and. level <= m) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
+                        enddo
+                    endif
+                enddo layer_loop
+            endif
+            
+        enddo x_loop
+    enddo y_loop
 end subroutine flag2refine

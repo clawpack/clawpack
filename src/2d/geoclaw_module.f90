@@ -16,17 +16,18 @@ module geoclaw_module
     ! ========================================================================
     ! General geoclaw parameters
     ! ========================================================================
-    double precision :: grav,drytolerance,Rearth,R1,R2,pi
-    double precision :: wavetolerance,coeffmanning,depthdeep
-    double precision :: frictiondepth
+    real(kind=8) :: grav,Rearth,R1,R2,pi
+    real(kind=8) :: coeffmanning,depthdeep
+    real(kind=8) :: frictiondepth
     integer :: icoordsys,maxleveldeep,minlevelwet,maxleveldry
     integer :: icoriolis,ifriction
     integer, parameter :: GEO_PARM_UNIT = 78
     logical            :: varRefTime = .FALSE.
     
-    ! Speed/Momentum based refinement
-    integer :: max_speed_nest
-    double precision, allocatable :: speed_tolerance(:)
+    ! Refinement criteria
+    real(kind=8), allocatable :: dry_tolerance(:)
+    real(kind=8), allocatable :: wave_tolerance(:)
+    real(kind=8), allocatable :: speed_tolerance(:)
 
     ! ========================================================================
     !  Flow grades flagging support
@@ -40,7 +41,7 @@ module geoclaw_module
     ! ========================================================================
     !  Multi-layer support
     ! ========================================================================
-    integer :: layers
+    integer :: num_layers
     double precision, allocatable :: rho(:)
     double precision, allocatable :: eta_init(:)
     
@@ -169,10 +170,10 @@ contains
 
         call opendatafile(unit, file_name)
 
-        read(unit,"(i2)") layers
-        allocate(rho(layers))
+        read(unit,"(i2)") num_layers
+        allocate(rho(num_layers))
         read(unit,*) rho
-        allocate(eta_init(layers))
+        allocate(eta_init(num_layers))
         read(unit,*) eta_init
         read(unit,*) check_richardson
         read(unit,"(d16.8)") richardson_tolerance
@@ -181,17 +182,17 @@ contains
         close(unit) 
         
         ! Calculate ratios of densities
-!         do i=1,layers-1
+!         do i=1,num_layers-1
 !             r(i) = rho(i) / rho(i+1)
 !         enddo
         
-        write(GEO_PARM_UNIT,*) '   layers:',layers
-        write(GEO_PARM_UNIT,*) '   rho:',(rho(i),i=1,layers)
-!         write(GEO_PARM_UNIT,*) '   r (calculated):', (r,i=1,layers-1)
+        write(GEO_PARM_UNIT,*) '   num_layers:',num_layers
+        write(GEO_PARM_UNIT,*) '   rho:',(rho(i),i=1,num_layers)
+!         write(GEO_PARM_UNIT,*) '   r (calculated):', (r,i=1,num_layers-1)
 
-        ! Open Kappa output file if layers > 1
+        ! Open Kappa output file if num_layers > 1
         ! Open file for writing hyperbolicity warnings if multiple layers
-        if (layers > 1) then
+        if (num_layers > 1) then
             open(unit=KAPPA_UNIT, file='fort.kappa', iostat=ios, &
                     status="unknown", action="write")
             if ( ios /= 0 ) stop "Error opening file name fort.kappa"
@@ -205,6 +206,8 @@ contains
     !  Reads in user parameters from the given file name if provided
     ! ========================================================================
     subroutine set_shallow(fname)
+
+        use amr_module, only: mxnest
 
         implicit none
 
@@ -235,22 +238,22 @@ contains
 
         call opendatafile(iunit, file_name)
 
-! Has been moved to multilayer data eta[1]
-!         read(iunit,*) sealevel 
-        read(iunit,*) drytolerance
-        read(iunit,*) wavetolerance
+        allocate(dry_tolerance(num_layers))
+        read(iunit,*) dry_tolerance
+        allocate(wave_tolerance(num_layers))
+        read(iunit,*) wave_tolerance
+        allocate(speed_tolerance(mxnest))
+        read(iunit,*) (speed_tolerance(i),i=1,mxnest)
         read(iunit,*) depthdeep
         read(iunit,*) maxleveldeep
         read(iunit,*) ifriction
         read(iunit,*) coeffmanning
         read(iunit,*) frictiondepth
-        read(iunit,"(i2)") max_speed_nest
-        allocate(speed_tolerance(max_speed_nest))
-        read(iunit,*) (speed_tolerance(i),i=1,max_speed_nest)
         close(iunit)
 
-        write(GEO_PARM_UNIT,*) '   drytolerance:',drytolerance
-        write(GEO_PARM_UNIT,*) '   wavetolerance:',wavetolerance
+        write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
+        write(GEO_PARM_UNIT,*) '   wave_tolerance:',wave_tolerance
+        write(GEO_PARM_UNIT,*) '   speed_tolerance:',speed_tolerance
         write(GEO_PARM_UNIT,*) '   maxleveldeep:', maxleveldeep
         write(GEO_PARM_UNIT,*) '   depthdeep:', depthdeep
         write(GEO_PARM_UNIT,*) '   ifriction:', ifriction

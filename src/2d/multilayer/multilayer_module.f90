@@ -16,7 +16,7 @@ module multilayer_module
     implicit none
     
     ! Physical parameters
-    integer :: layers
+    integer :: num_layers
     double precision, allocatable :: rho(:)
     double precision :: r,one_minus_r
     
@@ -27,15 +27,15 @@ module multilayer_module
     logical :: dry_limit
     
     ! Initial layer depths
-    double precision, allocatable :: eta(:)
-    double precision :: epsilon,sigma,init_location(2),angle
-    integer :: init_type,wave_family
+!     double precision, allocatable :: eta(:)
+!     double precision :: epsilon,sigma,init_location(2),angle
+!     integer :: init_type,wave_family
     
     ! Simple bathy states
-    integer :: bathy_type
-    double precision :: bathy_left, bathy_right, bathy_location
-    double precision :: bathy_x0,bathy_x1,bathy_x2,bathy_basin_depth
-    double precision :: bathy_shelf_depth,bathy_shelf_slope,bathy_beach_slope
+!     integer :: bathy_type
+!     double precision :: bathy_left, bathy_right, bathy_location
+!     double precision :: bathy_x0,bathy_x1,bathy_x2,bathy_basin_depth
+!     double precision :: bathy_shelf_depth,bathy_shelf_slope,bathy_beach_slope
     
     ! Output files
     integer, parameter :: kappa_file = 42
@@ -72,12 +72,12 @@ contains
         dry_limit = .true.
     
         ! Physics parameters
-        read(13,"(i3)") layers
-        allocate(rho(layers))
-        allocate(eta(layers))
-        allocate(wave_tol(layers))
+        read(13,"(i3)") num_layers
+        allocate(rho(num_layers))
+        allocate(eta_init(num_layers))
+        allocate(wave_tol(num_layers))
         read(13,*) rho
-        if (layers > 1) then
+        if (num_layers > 1) then
             r = rho(1) / rho(2)
             one_minus_r = 1.d0 - r
         else
@@ -90,50 +90,49 @@ contains
         read(13,"(i1)") eigen_method
         read(13,"(i1)") inundation_method
         read(13,"(d16.8)") richardson_tolerance
-        read(13,*) wave_tol
         read(13,*) dry_limit
         read(13,*)
         
         ! Initial conditions
-        read(13,*) eta
-        read(13,*) init_type
-        if (init_type > 0) then
-            read(13,*) epsilon
-            if (init_type <= 2 .or. init_type == 5) then  
-                read(13,*) init_location
-                read(13,*) wave_family
-                if(init_type == 2 .or. init_type == 5) then
-                    read(13,*) angle
-                    read(13,*) sigma
-                endif
-            else if (init_type == 3) then
-                read(13,*) init_location
-                read(13,*) sigma
-            endif
-        endif
-        read(13,*)
+!         read(13,*) eta
+!         read(13,*) init_type
+!         if (init_type > 0) then
+!             read(13,*) epsilon
+!             if (init_type <= 2 .or. init_type == 5) then  
+!                 read(13,*) init_location
+!                 read(13,*) wave_family
+!                 if(init_type == 2 .or. init_type == 5) then
+!                     read(13,*) angle
+!                     read(13,*) sigma
+!                 endif
+!             else if (init_type == 3) then
+!                 read(13,*) init_location
+!                 read(13,*) sigma
+!             endif
+!         endif
+!         read(13,*)
         
         ! Bathymetry
-        read(13,*) bathy_type
-        if (bathy_type == 0) then
-            continue
-        else if (bathy_type == 1) then 
-            read(13,"(d16.8)") bathy_location
-            read(13,"(d16.8)") bathy_left
-            read(13,"(d16.8)") bathy_right
-        else if (bathy_type == 2 .or. bathy_type == 3) then
-            read(13,"(d16.8)") bathy_x0
-            read(13,"(d16.8)") bathy_x1
-            read(13,"(d16.8)") bathy_x2
-            read(13,"(d16.8)") bathy_basin_depth
-            read(13,"(d16.8)") bathy_shelf_depth
-            read(13,"(d16.8)") bathy_beach_slope
-            bathy_shelf_slope = (bathy_basin_depth - bathy_shelf_depth) &
-                                        / (bathy_x0 - bathy_x1)
-        else
-            print *,"Invalid bathymetry type ",bathy_type
-            stop
-        endif
+!         read(13,*) bathy_type
+!         if (bathy_type == 0) then
+!             continue
+!         else if (bathy_type == 1) then 
+!             read(13,"(d16.8)") bathy_location
+!             read(13,"(d16.8)") bathy_left
+!             read(13,"(d16.8)") bathy_right
+!         else if (bathy_type == 2 .or. bathy_type == 3) then
+!             read(13,"(d16.8)") bathy_x0
+!             read(13,"(d16.8)") bathy_x1
+!             read(13,"(d16.8)") bathy_x2
+!             read(13,"(d16.8)") bathy_basin_depth
+!             read(13,"(d16.8)") bathy_shelf_depth
+!             read(13,"(d16.8)") bathy_beach_slope
+!             bathy_shelf_slope = (bathy_basin_depth - bathy_shelf_depth) &
+!                                         / (bathy_x0 - bathy_x1)
+!         else
+!             print *,"Invalid bathymetry type ",bathy_type
+!             stop
+!         endif
         
         close(13)
 
@@ -143,31 +142,5 @@ contains
         if ( ios /= 0 ) stop "Error opening file name fort.kappa"
         
     end subroutine set_multilayer_params
-    
-    function minmod_slope(num_vars,value)
-
-        implicit none
-        integer, intent(in) :: num_vars
-        double precision, intent(in) :: value(num_vars,-1:1)
-        double precision :: minmod_slope(num_vars)
-        
-        integer :: n
-        double precision :: s_p,s_m
-        
-        do n=1,num_vars
-            ! Find minmod slope
-            s_p = value(n,1) - value(n,0)
-            s_m = value(n,0) - value(n,-1)
-            minmod_slope(n) = min(abs(s_p),abs(s_m)) &
-                                * sign(1.d0,value(n,1) - value(n,-1))
-
-            ! Check for sign change
-            if (s_m * s_p <= 0.d0) then
-                minmod_slope(n) = 0.d0
-            endif
-        enddo
-        
-    end function minmod_slope
-    
 
 end module multilayer_module

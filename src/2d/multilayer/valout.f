@@ -3,13 +3,13 @@ c -----------------------------------------------------
 c
       subroutine valout (lst, lend, time, nvar, naux)
 c
-      use multilayer_module, only: layers,rho
+      use multilayer_module, only: num_layers,rho
       use amr_module
       
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2
 
-      dimension eta(layers+1),h(layers),hu(layers),hv(layers)
+      dimension eta(num_layers+1),h(num_layers),hu(num_layers),hv(num_layers)
       
       double precision :: wind_x,wind_y,pressure
 
@@ -82,8 +82,8 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
                endif
             enddo
 
-            if (layers > 1) then
-                do k=1,layers
+            if (num_layers > 1) then
+                do k=1,num_layers
                     index = 3*(k-1)
                     h(k) = alloc(iadd(index+1,i,j)) / rho(k)
                     hu(k) = alloc(iadd(index+2,i,j)) / rho(k)
@@ -124,11 +124,11 @@ C             if (abs(vorticity) < 1d-90) then
 C                 vorticity = 0.d0
 C             endif
 
-              write(matunit1,109) (h(k),hu(k),hv(k), k=1,layers),
-     &              (eta(k),k=1,layers),wind_x,wind_y,pressure
+              write(matunit1,109) (h(k),hu(k),hv(k), k=1,num_layers),
+     &              (eta(k),k=1,num_layers),wind_x,wind_y,pressure
 C               write(matunit1,109) h(1),hu(1),hv(1),h(2),hu(2),hv(2),
 C      &            eta(1),eta(2),wind_x,wind_y
-C             write(matunit1,109) (h(k),hu(k),hv(k),eta(k), k=1,layers),
+C             write(matunit1,109) (h(k),hu(k),hv(k),eta(k), k=1,num_layers),
 C      &          wind_x,wind_y        
             
 C             write(matunit1,109) (alloc(iadd(i,j,ivar)), ivar=1,nvar),
@@ -156,7 +156,7 @@ C      &         vorticity
 
 c     # nvar+6 variable printed since surface, wind, pressure, pressure_x and pressure_y also printed
 
-      write(matunit2,1000) time,4*layers+3,ngrids,naux,2
+      write(matunit2,1000) time,4*num_layers+3,ngrids,naux,2
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

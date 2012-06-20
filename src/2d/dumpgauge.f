@@ -9,8 +9,8 @@
       integer bsearch
       dimension q(nvar,mitot,mjtot), var(maxvar)
       dimension aux(naux,mitot,mjtot)
-      dimension eta(layers)
-      dimension h(layers,4)
+      dimension eta(num_layers)
+      dimension h(num_layers,4)
 
 c  # see if this grid contains any gauges so data can be output
 c  # may turn out this should be sorted, but for now do linear search
@@ -66,7 +66,7 @@ c velocities are zeroed out which can then lead to increase in h again.
 
         drytol2 = 0.1d0 * drytolerance
 
-          do m=1,layers
+          do m=1,num_layers
               layer_index = 3*(m-1)
               h(m,1) = q(layer_index+1,iindex,jindex) / rho(m)
               h(m,2) = q(layer_index+1,iindex+1,jindex) / rho(m)
@@ -86,7 +86,7 @@ c velocities are zeroed out which can then lead to increase in h again.
                       var(ivar + layer_index) = 
      &                       q(ivar + layer_index,icell,jcell) / rho(m)
                   enddo
-                  if (m == layers) then
+                  if (m == num_layers) then
                       ! This is the bottom layer and we should figure out the
                       ! topography
                       topo = aux(1,icell,jcell)
@@ -104,7 +104,7 @@ c velocities are zeroed out which can then lead to increase in h again.
      &                 + xoff * yoff 
      &                 * q(layer_index + ivar,iindex+1,jindex+1)/rho(m)
                   enddo
-                  if (m == layers) then
+                  if (m == num_layers) then
                       topo = (1.d0 - xoff) * (1.d0 - yoff) 
      &                        * aux(1,iindex,jindex) 
      &                      + xoff * (1.d0 - yoff) 
@@ -118,13 +118,13 @@ c velocities are zeroed out which can then lead to increase in h again.
           enddo
               
           ! Extract surfaces
-          eta(layers) = var(3*layers-2) + topo
-          do k=layers-1,1,-1
+          eta(num_layers) = var(3*num_layers-2) + topo
+          do k=num_layers-1,1,-1
               eta(k) = var(3*k-2) + eta(k+1)
           enddo
               
           write(OUTGAUGEUNIT,100) igauge(i),level,tgrid, 
-     &                    (var(j),j=1,3*layers),(eta(j),j=1,layers)
+     &              (var(j),j=1,3*num_layers),(eta(j),j=1,num_layers)
   10  enddo
       
  100  format(2i5,15e15.7)
