@@ -80,7 +80,7 @@ c     # for shallow water over topography,
 c     # in coarse cells convert from h,
 c     # to eta,  before interpolating:
 c-----------------------------
-      toldry = drytolerance
+      toldry = dry_tolerance(1)
 c     #prepare slopes - use min-mod limiters
       do j=2, mjc-1
       do i=2, mic-1

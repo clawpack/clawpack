@@ -64,7 +64,7 @@ c Check for dry cells by comparing h to drytol2, which should be smaller
 c than drytolerance to avoid oscillations since when h < drytolerance the
 c velocities are zeroed out which can then lead to increase in h again.
 
-        drytol2 = 0.1d0 * drytolerance
+        drytol2 = 0.1d0 * dry_tolerance(1)
 
           do m=1,num_layers
               layer_index = 3*(m-1)

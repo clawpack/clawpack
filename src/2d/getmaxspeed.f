@@ -20,7 +20,7 @@ c
             xmetric = cos(aux(3,i,j))*Rearth*pi/180.d0
             hxphys = xmetric * hx
             h  = val(1,i,j)
-            if (h .gt. drytolerance) then
+            if (h .gt. dry_tolerance(1)) then
               u  = val(2,i,j)/h
               v  = val(3,i,j)/h
             else
@@ -36,7 +36,7 @@ c
          do j = nghost+1, mjtot-nghost
          do i = nghost+1, mitot-nghost
             h  = val(1,i,j)
-            if (h .gt. drytolerance) then
+            if (h .gt. dry_tolerance(1)) then
               u  = val(2,i,j)/h
               v  = val(3,i,j)/h
             else
