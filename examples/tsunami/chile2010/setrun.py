@@ -274,8 +274,9 @@ def setgeo(rundata):
     geodata.icoriolis = 0
 
     # == settsunami.data values ==
-    geodata.drytolerance = 1.e-3
-    geodata.wavetolerance = 1.e-1
+    geodata.dry_tolerance = 1.e-3
+    geodata.wave_tolerance = 1.e-1
+    geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e1]
     geodata.depthdeep = 1.e2
     geodata.maxleveldeep = 3
     geodata.ifriction = 1
