@@ -255,12 +255,14 @@ c
 c     # Copied here from b4step2 since need to do before saving to qc1d:
       do i=1,mitot
         do j=1,mjtot
-          if (q(1,i,j).lt.drytolerance) then
-             q(1,i,j) = max(q(1,i,j),0.d0)
-             do m=2,nvar
+          do k=1,num_layers
+          if (q(3*(k-1)+1,i,j)/rho(k).lt.dry_tolerance(k)) then
+             q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j),0.d0)
+             do m=3*(k-1) + 2,3*(k-1) + 3
                 q(m,i,j)=0.d0
                 enddo
              endif
+         enddo
         enddo
       enddo
 c
