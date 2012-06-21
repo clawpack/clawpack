@@ -71,8 +71,8 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
             ! the storm and refine if we are
             R_eye = eye_location(t)
             do m=1,max_R_nest
-                if (abs(x - eye_location(1)) < R_refine(m)) .and. &
-                    abs(y - eye_location(2)) < R_refine(m)) .and. &
+                if ((abs(x_c - R_eye(1)) < R_refine(m)) .and. &
+                    (abs(y_c - R_eye(2)) < R_refine(m)) .and. &
                     (level <= m)) then
                 
                     amrflags(i,j) = DOFLAG
@@ -145,17 +145,17 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
             if (allowflag(x_c,y_c,t,level)) then
                 
                 ! Calculate each layer's surface and speed
-                h = q(3*(layers-1)+1,i,j) / rho(layers)
+                h = q(3*(num_layers-1)+1,i,j) / rho(num_layers)
                 
                 if (h > drytolerance) then
                     ! We are in a wet cell, compute surface and speed of this layer
                     surface = h + aux(1,i,j)
-                    speed = sqrt(q(3*(layers-1)+2,i,j)**2 + &
-                                    q(3*(layers-1)+3,i,j)**2) / q(3*(layers-1)+1,i,j)
+                    speed = sqrt(q(3*(num_layers-1)+2,i,j)**2 + &
+                                    q(3*(num_layers-1)+3,i,j)**2) / q(3*(num_layers-1)+1,i,j)
                     
                     ! Check to see if the surface is close to the intitial
                     ! value and perhaps refine if it is not                     
-                    if (abs(surface - eta_init(layers)) > wavetolerance) then
+                    if (abs(surface - eta_init(num_layers)) > wavetolerance) then
                         ! Check to see if we are near shore
                         if (h < depthdeep) then
                             amrflags(i,j) = DOFLAG
@@ -178,8 +178,8 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
                     enddo
                 endif
 
-                ! Do for the rest of the layers
-!                 do m=layers-1,1,-1
+                ! Do for the rest of the num_layers
+!                 do m=num_layers-1,1,-1
 !                     h = q(3*(m-1)+1,i,j) / rho(m)
 !                     if (h > drytolerance) then
 !                         surface(m) = h + surface(m-1)
@@ -266,7 +266,7 @@ end subroutine flag2refine
 ! c        and was not allowing refinement before t = 0, we need this as the 
 ! c        storm surge has ramp up time that may need refinement (KTM 2010-8-4)
 !           speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2)
-!           ! This is only important for layers > 1, otherwise this is already speed
+!           ! This is only important for num_layers > 1, otherwise this is already speed
 !           if (.not.momentum_refinement) then
 !               if (q(1,i,j) > drytolerance) then
 !                   speed = speed / q(1,i,j)

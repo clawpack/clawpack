@@ -22,7 +22,18 @@ CLAW_PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
 FFLAGS ?=
+LFLAGS ?= $(FFLAGS)
 MAKELEVEL ?= 0
+
+# Include LAPACK library flags
+ifeq ($(shell uname), Darwin)
+	LAPACK_LIB = -framework veclib
+endif
+ifeq ($(shell uname), Linux)
+	LAPACK_LIB = -llapack
+endif
+
+# Add pre-processing flags and library include flags
 ifeq ($(MAKELEVEL),0)
 	# If you want to include NetCDF output add these flags
 	# Note that the NETCDF_INC should point to the location of the hearder files
@@ -33,24 +44,46 @@ ifeq ($(MAKELEVEL),0)
 	# Threading flags
 	# FFLAGS += -D GRID_THREADING
 	# FFLAGS += -D MAX1D=200
+	
+	FFLAGS += $(LAPACK_LIB)
+	LFLAGS += $(LAPACK_LIB)
 endif
+
+# Clawpack libraries to be used:
+AMRLIB = $(AMRCLAW)/src/2d
+GEOLIB = $(GEOCLAW)/src/2d
 
 # ---------------------------------
 # List of sources for this program:
 # ---------------------------------
-
-AMRLIB = $(CLAW)/amrclaw/src/2d
-GEOLIB = $(CLAW)/geoclaw/src/2d
-
 MODULES = \
- $(AMRLIB)/amr_module.f90 \
- $(GEOLIB)/geoclaw_module.f90 \
- $(GEOLIB)/topo_module.f90 \
- $(GEOLIB)/dtopo_module.f90 \
- $(GEOLIB)/qinit_module.f90 \
- $(GEOLIB)/gauges_module.f90 \
- $(GEOLIB)/regions_module.f90 \
- $(GEOLIB)/fixedgrids_module.f90 \
+	$(AMRLIB)/amr_module.f90 \
+	$(GEOLIB)/geoclaw_module.f90 \
+	$(GEOLIB)/topo_module.f90 \
+	$(GEOLIB)/dtopo_module.f90 \
+	$(GEOLIB)/qinit_module.f90 \
+	$(GEOLIB)/gauges_module.f90 \
+	$(GEOLIB)/regions_module.f90 \
+	$(GEOLIB)/fixedgrids_module.f90
+	
+	# $(GEOLIB)/src/2d/multilayer/multilayer_module.f90 \
+
+	# $(ML_PATH)/src/2d/hurricane.f90 \
+	# $(ML_PATH)/src/2d/setaux.f \
+	# $(ML_PATH)/src/2d/b4step2.f \
+	# $(ML_PATH)/src/2d/setprob.f90 \
+	# $(ML_PATH)/src/2d/src2.f90 \
+	# $(ML_PATH)/src/2d/src1d.f90 \
+	# $(ML_PATH)/src/2d/qinit.f90 \
+	# $(ML_PATH)/src/2d/valout.f \
+	# $(ML_PATH)/src/2d/flag2refine.f \
+	# $(ML_PATH)/src/2d/rpn2_inundation_multilayer.f90 \
+	# $(ML_PATH)/src/2d/rpt2_dry_multilayer.f90 \
+	# $(ML_PATH)/src/2d/multilayer_eigen.f90 \
+	# $(ML_PATH)/src/2d/tick.f \
+	# $(ML_PATH)/src/2d/stepgrid.f \
+	# $(ML_PATH)/src/2d/flux2fw.f \
+	#     $(ML_PATH)/src/2d/dumpgauge.f \
 
 SOURCES = \
   $(GEOLIB)/setprob.f90 \
@@ -76,7 +109,7 @@ SOURCES = \
   $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setaux.f \
   $(GEOLIB)/setgauges.f \
-  $(GEOLIB)/b4step2.f90 \
+  $(GEOLIB)/b4step2.f \
   $(GEOLIB)/flag2refine.f90  \
   $(GEOLIB)/allowflag.f90  \
   $(GEOLIB)/dumpgauge.f \
@@ -156,15 +189,11 @@ SOURCES = \
   $(AMRLIB)/init_alloc.f90 \
   $(AMRLIB)/restrt_alloc.f90 \
   $(AMRLIB)/resize_alloc.f90
-
+	
+	
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
-include $(CLAWMAKE)
-
-# Construct the topography data
-.PHONY: topo
-topo: .data
-	python maketopo.py
-
+include $(CLAWUTIL)/src/Makefile.common
+	
 ### DO NOT remove this line - make depends on it ###
-
+    

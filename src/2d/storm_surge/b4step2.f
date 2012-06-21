@@ -45,13 +45,10 @@ c     # set hu = hv = 0 in all these cells
 
       do i=1-mbc,mx+mbc
         do j=1-mbc,my+mbc
-            do m=1,layers
-              index = 3*(m-1)
-              if (q(index+1,i,j) / rho(m) < drytolerance) then
-                 q(index+1,i,j) = max(q(index+1,i,j),0.d0)
-                 q(index+2,i,j) = 0.d0
-                 q(index+3,i,j) = 0.d0
-              endif
+            do k=1,num_layers
+                if (q(1,i,j) / rho(k) < drytolerance) then
+                    q(2:meqn,i,j) = 0.d0
+                endif
             enddo
         enddo
       enddo
@@ -75,7 +72,7 @@ c     # set hu = hv = 0 in all these cells
      &                         dx,dy,t,aux)
      
       ! Check Richardson number
-      if (layers > 1) then
+      if (num_layers > 1) then
       do i=1,mx
           do j=1,my
               dry_state = .false.

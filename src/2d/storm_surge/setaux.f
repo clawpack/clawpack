@@ -75,7 +75,7 @@ c     Initialize wind and pressure auxillary variables
      &                        dx,dy,-ramp_up_time,aux)
  
 c     This actually only handles 2 layers right now...
-      if (layers > 1) then
+      if (num_layers > 1) then
           do i=1-mbc,mx+mbc
               do j=1-mbc,my+mbc
                   if (eta_init(2) > aux(1,i,j)) then

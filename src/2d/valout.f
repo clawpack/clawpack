@@ -4,12 +4,13 @@ c
       subroutine valout (lst, lend, time, nvar, naux)
 c
       use amr_module
-      use geoclaw_module, only: layers,rho
+      use geoclaw_module, only: num_layers,rho
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2
 
 c     Work arrays
-      dimension eta(layers),h(layers),hu(layers),hv(layers)
+      dimension eta(num_layers),h(num_layers)
+      dimension hu(num_layers),hv(num_layers)
 
 
 c OLD INDEXING
@@ -86,25 +87,25 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
             enddo
             
             ! Extract all but bottom layer depth and momenta
-            do k=1,layers-1
+            do k=1,num_layers-1
                 index = 3 * (k - 1)
                 h(k) = alloc(iadd(index+1,i,j)) / rho(k)
                 hu(k) = alloc(iadd(index+2,i,j)) / rho(k)
                 hv(k) = alloc(iadd(index+3,i,j)) / rho(k)
             enddo
-            index = 3 * (layers - 1)
-            h(layers) = alloc(iadd(index+1,i,j)) / rho(layers)
-            hu(layers) = alloc(iadd(index+2,i,j)) / rho(layers)
-            hv(layers) = alloc(iadd(index+3,i,j)) / rho(layers)
+            index = 3 * (num_layers - 1)
+            h(num_layers) = alloc(iadd(index+1,i,j)) / rho(num_layers)
+            hu(num_layers) = alloc(iadd(index+2,i,j)) / rho(num_layers)
+            hv(num_layers) = alloc(iadd(index+3,i,j)) / rho(num_layers)
             
             ! Calculate surfaces
-            eta(layers) = h(layers) + alloc(iaddaux(1,i,j))
-            do k=layers-1,1,-1
+            eta(num_layers) = h(num_layers) + alloc(iaddaux(1,i,j))
+            do k=num_layers-1,1,-1
                 eta(k) = h(k) + eta(k+1)
             enddo
             
-            write(matunit1,109) (h(k),hu(k),hv(k), k=1,layers),
-     &                          (eta(k),k=1,layers)
+            write(matunit1,109) (h(k),hu(k),hv(k), k=1,num_layers),
+     &                          (eta(k),k=1,num_layers)
          enddo
          write(matunit1,*) ' '
       enddo
@@ -123,7 +124,7 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
 
 c     # nvar+1 variable printed since surface also printed
 
-      write(matunit2,1000) time,4*layers,ngrids,naux,2
+      write(matunit2,1000) time,4*num_layers,ngrids,naux,2
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

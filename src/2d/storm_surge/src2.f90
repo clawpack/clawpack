@@ -1,6 +1,6 @@
 subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
-    use multilayer_module, only: rho,eta,layers
+    use multilayer_module, only: rho,eta,num_layers
     use hurricane_module
     use geoclaw_module
 
@@ -45,7 +45,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
             do i=1,mx
                 do j=1,my
                     ! Check to see which layer we are doing this on
-                    if (layers > 1) then
+                    if (num_layers > 1) then
                         h(1) = q(1,i,j) / rho(1)
                         h(2) = q(4,i,j) / rho(2)
                     else
@@ -62,7 +62,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     ! Only top layer wet, apply to top layer only
                     else if (h(1) > tol) then
                         ! Set bottom layer momentum to zero
-                        if (layers > 1) q(5:6,i,j) = 0.d0
+                        if (num_layers > 1) q(5:6,i,j) = 0.d0
                         
                         ! Exactly integrate and modify top layer momentum
                         q(2,i,j) = q(2,i,j) * exp(-D*dt)
@@ -71,7 +71,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     ! Neither layer wet, set momentum to zero
                     else
                         q(2:3,i,j) = 0.d0
-                        if (layers > 1) q(5:6,i,j) = 0.d0
+                        if (num_layers > 1) q(5:6,i,j) = 0.d0
                     endif
                 enddo
             enddo
@@ -80,7 +80,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
             do i=1,mx
                 do j=1,my
                     ! Check to see which layer we are doing this on
-                    if (layers > 1) then
+                    if (num_layers > 1) then
                         h(1) = q(1,i,j) / rho(1)
                         h(2) = q(4,i,j) / rho(2)
                     else
@@ -103,7 +103,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     ! Only top layer wet, apply to top layer only
                     else if (h(1) > tol) then
                         ! Set bottom layer momentum to zero
-                        if (layers > 1) q(5:6,i,j) = 0.d0
+                        if (num_layers > 1) q(5:6,i,j) = 0.d0
                 
                         ! Extract speed of top layer
                         speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2) / q(1,i,j)
@@ -118,7 +118,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     ! Neither layer wet, set momentum to zero
                     else
                         q(2:3,i,j) = 0.d0
-                        if (layers > 1) q(5:6,i,j) = 0.d0
+                        if (num_layers > 1) q(5:6,i,j) = 0.d0
                     endif
                 enddo
             enddo
@@ -143,7 +143,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 !q = e^Adt * q0
                 q(2,i,j) = hu * a11 + hv * a12
                 q(3,i,j) = hu * a21 + hv * a22
-                if (layers > 1) then
+                if (num_layers > 1) then
                     hu = q(5,i,j)
                     hv = q(6,i,j)
                     q(5,i,j) = hu * a11 + hv * a12
@@ -158,7 +158,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     if (wind_forcing) then
         ! Here we have to take into account geoclaw which we use for the 
         ! single layer case.  It needs to divide by the water's density
-        if (layers > 1) then
+        if (num_layers > 1) then
             do i=1,mx
                 do j=1,my
                     if (q(1,i,j) / rho(1) > drytolerance) then
@@ -191,7 +191,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
         do i=1,mx
             do j=1,my                  
                 h = 0.d0  
-                if (layers > 1) then
+                if (num_layers > 1) then
                     h(1) = q(1,i,j) / rho(1)
                     h(2) = q(4,i,j) / rho(2)
                 else
@@ -208,7 +208,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     P_atmos_y = 0.d0
                 endif
                 
-                if (layers > 1) then
+                if (num_layers > 1) then
                     if (h(1) > drytolerance) then
                         q(2,i,j) = q(2,i,j) - dt * h(1) * P_atmos_x
                         q(3,i,j) = q(3,i,j) - dt * h(1) * P_atmos_y

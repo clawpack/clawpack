@@ -13,6 +13,7 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
 
     use geoclaw_module, only:num_layers,dry_tolerance,rho
     use geoclaw_module, only:KAPPA_UNIT,check_richardson,richardson_tolerance
+    use geoclaw_module, only:g => grav
     use topo_module
     use dtopo_module
     
@@ -25,8 +26,8 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
     ! Local storage
-    integer :: layer,index,i,j,k
-    real(kind=8) :: h(num_layers),u(num_layers),v(num_layers),g
+    integer :: index,i,j,k
+    real(kind=8) :: h(num_layers),u(num_layers),v(num_layers)
     real(kind=8) :: kappa,one_minus_r
     logical :: dry_state(num_layers)
 
@@ -41,9 +42,20 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     ! check for h < 0 and reset to zero
     ! check for h < drytolerance
     ! set hu = hv = 0 in all these cells
-    forall(i=1-mbc:mx+mbc,j=1-mbc:my+mbc,k=1:num_layers, q(3*(k-1),i,j) / rho(k) < dry_tolerance(k))
-        q(3*(k-1)+1:3*(k-1)+2,i,j) = 0.d0
+    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, k=1:num_layers, &
+           q(3*(k-1)+1,i,j) / rho(k) < dry_tolerance(k))
+        q(3*(k-1)+2:3*(k-1)+3,i,j) = 0.d0
     end forall
+!     do i=1-mbc,mx+mbc
+!         do j=1-mbc,my+mbc
+!             do k=1,num_layers
+!                 if (q(3*(k-1)+1,i,j) / rho(k) < dry_tolerance(k)) then
+!                     print *,3*(k-1)
+!                     q(3*(k-1)+1:3*(k-1)+2,i,j) = 0.d0
+!                 endif
+!             enddo
+!         enddo
+!     enddo
 
     ! Move the topography if needed
     write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo

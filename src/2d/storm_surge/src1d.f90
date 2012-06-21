@@ -6,7 +6,7 @@
 ! problems at the interface between coarse and fine grids.
 subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
 
-    use multilayer_module, only: rho,eta,layers
+    use multilayer_module, only: rho,eta,num_layers
     use hurricane_module
     use geoclaw_module
 
@@ -40,7 +40,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     if (coeff > 0.d0) then
         do i=1,mx1d
             h(1) = q1d(1,i) / rho(1)
-            if (layers > 1) then
+            if (num_layers > 1) then
                 h(2) = q1d(4,i) / rho(2)
             else
                 h(2) = 0.d0
@@ -53,7 +53,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
                 q1d(5,i) = q1d(5,i) * exp(-D*dt)
                 q1d(6,i) = q1d(6,i) * exp(-D*dt)
             else if (h(1) > tol) then
-                if (layers > 1) q1d(5:6,i) = 0.d0
+                if (num_layers > 1) q1d(5:6,i) = 0.d0
                 
                 speed = sqrt(q1d(2,i)**2 + q1d(3,i)**2) / q1d(1,i)
                 
@@ -64,7 +64,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
                 
             else
                 q1d(2:3,i) = 0.d0
-                if (layers > 1)  q1d(5:6,i) = 0.d0
+                if (num_layers > 1)  q1d(5:6,i) = 0.d0
             endif
         enddo          
     endif
@@ -73,7 +73,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     if (wind_forcing) then
         ! Here we have to take into account geoclaw which we use for the 
         ! single layer case.  It needs to divide by the water's density
-        if (layers > 1) then
+        if (num_layers > 1) then
             do i=1,mx1d
                 if (abs(q1d(1,i)) > drytolerance) then
                     wind_speed = sqrt(aux1d(4,i)**2 + aux1d(5,i)**2)

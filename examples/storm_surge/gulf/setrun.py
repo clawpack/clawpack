@@ -1,3 +1,4 @@
+# encoding: utf-8
 """
 Module to set up run time parameters for Clawpack.
 
@@ -63,16 +64,17 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.ndim = ndim
 
     # Lower and upper edge of computational domain:
-    clawdata.xlower = -120.
-    clawdata.xupper = -60.
+    clawdata.xlower = -99.0
+    clawdata.xupper = -80.0
 
-    clawdata.ylower = -60.
-    clawdata.yupper = 0.
+    clawdata.ylower = 17.0
+    clawdata.yupper = 32.0
 
 
     # Number of grid cells:
-    clawdata.mx = 10
-    clawdata.my = 10
+    degree_factor = 4 # (0.25º,0.25º) ~ (25237.5 m, 27693.2 m) resolution
+    clawdata.mx = int(clawdata.xupper - clawdata.xlower) * degree_factor
+    clawdata.my = int(clawdata.yupper - clawdata.ylower) * degree_factor
 
 
     # ---------------
@@ -109,8 +111,8 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.outstyle==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.nout = 18
-        clawdata.tfinal = 32400.0
+        clawdata.tfinal = 3 * 60 * 60 # 3 hours
+        clawdata.nout = int(clawdata.tfinal * 6 / 60**2)# Output every 10 minutes
 
     elif clawdata.outstyle == 2:
         # Specify a list of output times.
@@ -132,7 +134,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 1
+    clawdata.verbosity = 2
 
 
 
@@ -212,15 +214,16 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    mxnest = 3
+    mxnest = 6
 
     clawdata.mxnest = -mxnest   # negative ==> anisotropic refinement in x,y,t
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    clawdata.inratx = [2,6]
-    clawdata.inraty = [2,6]
+    # Run resolution.py 2 2 4 8 16 to see approximate resolutions
+    clawdata.inratx = [2,2,3,4,8]
+    clawdata.inraty = [2,2,3,4,8]
 
-    clawdata.inratt = [2,6]
+    clawdata.inratt = [2,2,3,4,8]
     # Instead of setting these ratios, set:
     # geodata.variable_dt_refinement_ratios = True
     # in setgeo.
@@ -264,7 +267,6 @@ def setgeo(rundata):
         raise AttributeError("Missing geodata attribute")
 
     # == setgeo.data values ==
-
     geodata.variable_dt_refinement_ratios = True
 
     geodata.igravity = 1
@@ -286,33 +288,36 @@ def setgeo(rundata):
     geodata.topofiles = []
     # for topography, append lines of the form
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
-    geodata.topofiles.append([2, 1, 3, 0., 1.e10, \
-                              'etopo10min120W60W60S0S.asc'])
+    geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
+                              './gulf_coarse_bathy.tt3'])
+    geodata.topofiles.append([1, 1, 6, 0., 1.e10, \
+                              './houston_ship_channel.xyz'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
     # for moving topography, append lines of the form:  (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
-    geodata.dtopofiles.append([1,3,3,'usgs100227.tt1'])
+    # geodata.dtopofiles.append([1,3,3,'usgs100227.tt1'])
 
     # == setqinit.data values ==
-    geodata.iqinit = 0
+    geodata.iqinit = 4
     geodata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
-    #geodata.qinitfiles.append([1, 1, 'hump.xyz'])
+    geodata.qinitfiles.append([1, 5, 'hump.xyz'])
 
     # == setregions.data values ==
     geodata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    geodata.regions.append([3, 3, 0., 10000., -85,-72,-38,-25])
-    geodata.regions.append([3, 3, 8000., 26000., -90,-80,-30,-15])
+    geodata.regions.append([1, 3, 0.0, 1e10, -99.0, -80.0, 17.0, 32.0]) # entire domain
+    geodata.regions.append([1, 5, 1800.0, 1e10, -97.0, -93.0, 25.0, 31.0]) # Galveston Area
+    geodata.regions.append([1, 6, 1800.0, 1e10, -97.0, -93.0, 25.0, 31.0]) # Galveston Area
 
     # == setgauges.data values ==
     geodata.gauges = []
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    geodata.gauges.append([32412, -86.392, -17.975, 0., 1.e10])
+    geodata.gauges.append([1, -93.0, 28.0, 0., 1.e10])
 
 
     # == setfixedgrids.data values ==
@@ -323,7 +328,7 @@ def setgeo(rundata):
     # geodata.fixedgrids.append([1e3,3.24e4,10,-90,-80,-30,-15,100,100,0,1])
     
     # == Multilayer ==
-    geodata.num_layers = 1
+    geodata.layers = 1
     geodata.rho = 1.0
     geodata.eta_init = 0.0
     geodata.richardson_tolerance = 0.95
