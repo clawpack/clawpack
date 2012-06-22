@@ -265,9 +265,10 @@ def setgeo(rundata):
     geodata.icoordsys = 1
 
     # == settsunami.data values ==
-    geodata.sealevel = 0.
-    geodata.drytolerance = 1.e-3
-    geodata.wavetolerance = 1.e-2
+    geodata.eta_init = 0.0
+    geodata.dry_tolerance = 1.e-3
+    geodata.wave_tolerance = 1.e-2
+    geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e15]
     geodata.depthdeep = 1.e2
     geodata.maxleveldeep = 3
     geodata.ifriction = 1
@@ -333,9 +334,8 @@ def setgeo(rundata):
     geodata.fixedgrids.append([3,8,6,52.0,72.0,52.0,72.0,100,100,0,1])
 
     # == Multilayer ==
-    geodata.layers = 1
+    geodata.num_layers = 1
     geodata.rho = 1.0
-    geodata.eta_init = 0.0
     geodata.richardson_tolerance = 0.95
 
     return rundata

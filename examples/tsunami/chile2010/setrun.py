@@ -274,9 +274,10 @@ def setgeo(rundata):
     geodata.icoriolis = 0
 
     # == settsunami.data values ==
+    geodata.eta_init = 0.0
     geodata.dry_tolerance = 1.e-3
     geodata.wave_tolerance = 1.e-1
-    geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e1]
+    geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e15]
     geodata.depthdeep = 1.e2
     geodata.maxleveldeep = 3
     geodata.ifriction = 1
@@ -326,7 +327,6 @@ def setgeo(rundata):
     # == Multilayer ==
     geodata.num_layers = 1
     geodata.rho = 1.0
-    geodata.eta_init = 0.0
     geodata.richardson_tolerance = 0.95
     
     return rundata

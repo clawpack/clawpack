@@ -75,7 +75,7 @@ SOURCES = \
   $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setaux.f \
   $(GEOLIB)/setgauges.f \
-  $(GEOLIB)/b4step2.f \
+  $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/flag2refine.f90  \
   $(GEOLIB)/allowflag.f90  \

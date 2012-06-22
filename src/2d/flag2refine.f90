@@ -20,7 +20,8 @@
 !
 !
 ! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
+subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
+                       q,aux,amrflags,DONTFLAG,DOFLAG)
 
     use amr_module, only: mxnest
 
@@ -60,21 +61,22 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
     ! Generic locals
     integer :: i,j,m,k,layer_index
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
-    real(kind=8) :: h,speed,surface,eta,eta_below
+    real(kind=8) :: h,speed,eta,eta_below
 
     ! Initialize flags
     amrflags = DONTFLAG
 
     ! Loop over interior points on this grid
-    ! (i,j) grid cell is [x_low,x_hi] x [y_low,y_hi]
+    ! (i,j) grid cell is [x_low,x_hi] x [y_low,y_hi], cell center at (x_c,y_c)
     y_loop: do j=1,my
-        y_c = ylower +  (j-0.5d0)*dy
-        y_low = ylower + (j-1)*dy
-        y_hi = ylower + j*dy
+        y_low = ylower + (j - 1) * dy
+        y_c = ylower + (j - 0.5d0) * dy
+        y_hi = ylower + j * dy
+        
         x_loop: do i = 1,mx
-            x_c = xlower +  (i-0.5d0)*dx
-            x_low = xlower +  (i-1)*dx
-            x_hi = xlower +  i*dx
+            x_low = xlower + (i - 1) * dx
+            x_c = xlower + (i - 0.5d0) * dx
+            x_hi = xlower + i * dx
 
             ! The following conditions are only checked in the horizontal and
             ! override the allowflag routine
@@ -83,7 +85,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
             do m=1,mtopofiles
                 if (level < minleveltopo(m) .and. t >= tlowtopo(m) .and. t <= thitopo(m)) then
                     if (  x_hi > xlowtopo(m) .and. x_low < xhitopo(m) .and. &
-                          y_hi > ylowtopo(m) .and. y_low < yhitopo(m)) then
+                          y_hi > ylowtopo(m) .and. y_low < yhitopo(m) ) then
                         
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
@@ -95,7 +97,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
             do m=1,num_regions
                 if (level < min_level_region(m) .and. t >= t_low_region(m) .and. t <= t_hi_region(m)) then
                     if (x_hi > x_low_region(m) .and. x_low < x_hi_region(m) .and. &
-                        y_hi > y_low_region(m) .and. y_low < y_hi_region(m)) then
+                        y_hi > y_low_region(m) .and. y_low < y_hi_region(m) ) then
                     
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
@@ -118,7 +120,8 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
 
             ! Check if we're in the region where initial perturbation is
             ! specified and need to force refinement:
-            ! This assumes that t0 = 0.d0
+            ! This assumes that t0 = 0.d0, should really be t0 but we do
+            ! not have access to that parameter in this routine
             if (qinit_type > 0 .and. t == 0.d0) then 
                 if (level < min_level_qinit .and. & 
                     x_hi > x_low_qinit .and. x_low < x_hi_qinit .and. &
@@ -130,7 +133,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
             endif
 
             ! -----------------------------------------------------------------
-            ! Refinement not forced, so check if it is allowed, and if so,
+            ! Refinement not forced, so check if it is allowed and if so,
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
                 ! These refinement criteria are checked per layer going backwards
@@ -138,30 +141,31 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
                 ! bathymetry
                 eta_below = aux(1,i,j)
                 
-                layer_loop: do k=num_layers,1,-1
+                do k=num_layers,1,-1
                     layer_index = 3 * (k - 1)
                     
                     ! Extract state
                     h = q(layer_index+1,i,j) / rho(k)
-                    eta = h + eta_below
-                    
-                    ! Check wave criteria
-                    if (abs(eta - eta_init(k)) > wave_tolerance(k)) then
-                        ! Check to see if we are near shore
-                        if (h < depthdeep) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
-                        ! If we are not in too deep of water, also flag
-                        else if (level < maxleveldeep) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
-                        endif
-                    endif
-                    
-                    ! Check speed criteria, note that it might be useful to 
-                    ! also have a per layer criteria since this is not 
-                    ! gradient based
                     if (h > dry_tolerance(k)) then
+                        eta = h + eta_below
+                    
+                        ! Check wave criteria
+                        if (abs(eta - eta_init(k)) > wave_tolerance(k)) then
+                            ! Check to see if we are near shore
+                            if (h < depthdeep) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            ! If we are not in too deep of water, also flag if
+                            ! we are allowed to
+                            else if (level < maxleveldeep) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
+                        endif
+                    
+                        ! Check speed criteria, note that it might be useful to 
+                        ! also have a per layer criteria since this is not 
+                        ! gradient based
                         speed = sqrt(q(layer_index+2,i,j)**2 &
                                    + q(layer_index+3,i,j)**2) &
                                    / q(layer_index+1,i,j)
@@ -172,7 +176,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp,q,a
                             endif
                         enddo
                     endif
-                enddo layer_loop
+                enddo
             endif
             
         enddo x_loop
