@@ -49,7 +49,7 @@ MODULES = \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/gauges_module.f90 \
- $(GEOLIB)/regions_module.f90 \
+ $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
 
 SOURCES = \
@@ -60,7 +60,7 @@ SOURCES = \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(GEOLIB)/rpn2ez.f \
+  $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f \
@@ -74,11 +74,9 @@ SOURCES = \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
-  $(GEOLIB)/setaux.f \
+  $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/setgauges.f \
   $(GEOLIB)/b4step2.f90 \
-  $(GEOLIB)/flag2refine.f90  \
-  $(GEOLIB)/allowflag.f90  \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \

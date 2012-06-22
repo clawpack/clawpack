@@ -190,7 +190,7 @@ contains
     ! ========================================================================
     subroutine hurricane_wind(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,t,aux)
 
-        use geoclaw_module, only: icoriolis,icoordsys,pi
+        use geoclaw_module, only: icoriolis,coordinate_system,pi
 
         implicit none
 
@@ -370,15 +370,15 @@ contains
     
     ! ========================================================================
     !  Calculate the coriolis constant f
-    !   If icoordsys == 1 then
+    !   If coordinate_system == 1 then
     !       A beta-plane approximation is used and y should be in meters
-    !   if icoordsys == 2 then
+    !   if coordinate_system == 2 then
     !       Grid is in lat-long and y should be in degrees which is converted
     !       to radians
     ! ========================================================================
     double precision function coriolis(y)
     
-        use geoclaw_module, only: icoordsys,Rearth,pi,icoriolis
+        use geoclaw_module, only: coordinate_system,Rearth,pi,icoriolis
     
         implicit none
         
@@ -393,11 +393,11 @@ contains
         
         ! Assume beta plane approximation and y is in meters
         if (icoriolis == 1) then
-            if (icoordsys == 1) then
+            if (coordinate_system == 1) then
                 theta = y / 111d3 * pi / 180d0 + theta_0
                 coriolis = 2.d0 * OMEGA * (sin(theta_0) + (theta - theta_0)     &
                                                         * cos(theta_0))
-            else if (icoordsys == 2) then        
+            else if (coordinate_system == 2) then        
                 theta = pi*y/180.d0
                 coriolis = 2.d0 * OMEGA * sin(theta)
             else

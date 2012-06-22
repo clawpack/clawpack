@@ -54,7 +54,7 @@ contains
     ! upper left corner across in x and then down in y.
     ! Time column advances most slowly.
     ! ========================================================================
-    subroutine set_dtopo(fname)
+    subroutine read_dtopo_settings(file_name)
 
         use geoclaw_module
         use topo_module
@@ -62,12 +62,10 @@ contains
         implicit none
 
         ! Input arguments
-        character*25, optional, intent(in) :: fname
+        character*25, optional, intent(in) :: file_name
 
         ! Locals
-        character*25 :: file_name
         integer, parameter :: iunit = 79
-        logical :: found_file
         real(kind=8) :: xcell, xim, xip, ycell, yjm, yjp, ztopoij
         real(kind=8) :: capac_area, deg2rad
         integer :: i,m,ib,jb,ij,ijdtopo,jbr
@@ -80,8 +78,8 @@ contains
         write(GEO_PARM_UNIT,*) 'SETDTOPO:'
         write(GEO_PARM_UNIT,*) '-------------'
 
-        if (present(fname)) then
-            call opendatafile(iunit,fname)
+        if (present(file_name)) then
+            call opendatafile(iunit,file_name)
         else
             call opendatafile(iunit,'setdtopo.data')
         endif
@@ -177,9 +175,9 @@ contains
                                             mydtopo(i),dtopowork(ijdtopo),1)
 
                                         ztopoij=ztopoij/((yjp-yjm)*(xip-xim))
-                                        if (icoordsys == 2) then
+                                        if (coordinate_system == 2) then
                                             deg2rad = pi/180.d0
-                                            capac_area = deg2rad*Rearth**2 &
+                                            capac_area = deg2rad*earth_radius**2 &
                                                 * (sin(yjp*deg2rad) &
                                                 - sin(yjm*deg2rad))/(yjp-yjm)
                                             ztopoij = ztopoij / capac_area
@@ -198,7 +196,7 @@ contains
             endif
         enddo
 
-    end subroutine set_dtopo
+    end subroutine read_dtopo_settings
     ! ========================================================================
 
     ! ========================================================================

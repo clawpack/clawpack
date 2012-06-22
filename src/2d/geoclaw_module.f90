@@ -14,44 +14,40 @@ module geoclaw_module
     save
     
     ! ========================================================================
-    ! General geoclaw parameters
+    !  Constants
     ! ========================================================================
-    real(kind=8) :: grav,Rearth,R1,R2,pi
-    real(kind=8) :: coeffmanning,depthdeep
-    real(kind=8) :: frictiondepth
-    integer :: icoordsys,maxleveldeep,minlevelwet,maxleveldry
-    integer :: icoriolis,ifriction
     integer, parameter :: GEO_PARM_UNIT = 78
-    logical            :: varRefTime = .FALSE.
+    integer, parameter :: KAPPA_UNIT = 42
+    real(kind=8), parameter :: pi = 4.d0*datan(1.d0)
     
-    ! Refinement criteria
+    ! ========================================================================
+    !  Physics
+    ! ========================================================================
+    real(kind=8) :: grav,earth_radius
+    integer :: coordinate_system
+    
+    ! Forcing
+    logical :: coriolis_force,wind_force,pressure_force,friction_force
+    real(kind=8) :: manning_coefficient,friction_depth
+    real(kind=8) :: rho_air
+    
+    ! Method parameters    
     real(kind=8), allocatable :: dry_tolerance(:)
-    real(kind=8), allocatable :: wave_tolerance(:)
-    real(kind=8), allocatable :: speed_tolerance(:)
-
-    ! ========================================================================
-    !  Flow grades flagging support
-    ! ========================================================================
-    double precision, allocatable :: flowgradevalue(:)
-
-    integer, allocatable :: iflowgradevariable(:), iflowgradetype(:)
-    integer, allocatable :: iflowgrademinlevel(:)
-    integer :: mflowgrades
+    logical :: varRefTime = .FALSE. ! Choose dt refinement automatically
     
     ! ========================================================================
     !  Multi-layer support
     ! ========================================================================
     integer :: num_layers
-    double precision, allocatable :: rho(:)
-    double precision, allocatable :: eta_init(:)
+    real(kind=8), allocatable :: rho(:)
+    real(kind=8), allocatable :: eta_init(:)
     
     ! Multilayer method Parameters
     integer :: eigen_method,inundation_method
 
-    ! Loss of hyperbolicity 
-    integer, parameter :: KAPPA_UNIT = 42
+    ! Loss of hyperbolicity
     logical :: check_richardson
-    double precision :: richardson_tolerance
+    real(kind=8) :: richardson_tolerance
 
 contains
 
@@ -60,272 +56,135 @@ contains
     ! ========================================================================
     !  Reads in user parameters from the given file name if provided
     ! ========================================================================
-    subroutine set_geo(fname)
+    subroutine set_geo(file_name)
 
         use amr_module, only: mcapa
         implicit none
 
         ! Input
-        character*25, intent(in), optional :: fname
+        character(len=*), intent(in), optional :: file_name
 
         ! Locals
-        integer, parameter :: iunit = 127
-        integer :: igrav
-        character*25 :: file_name
-        logical :: found_file
-
-        ! Common block  !!! replaced by use amr_module above !!!
-!       integer :: mcapa
-!       common /cmcapa/ mcapa
+        integer, parameter :: unit = 127
 
         open(unit=GEO_PARM_UNIT,file='fort.geo',status="unknown",action="write")
 
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '--------------------------------------------'
-        write(GEO_PARM_UNIT,*) 'SETGEO:'
-        write(GEO_PARM_UNIT,*) '---------'
-
-        ! Earth Radius params needed for latitude longitude grid
-        pi = 4.d0*datan(1.d0)
+        write(GEO_PARM_UNIT,*) 'Physics Parameters:'
+        write(GEO_PARM_UNIT,*) '-------------------'
 
         ! Read user parameters from setgeo.data
-        if (present(fname)) then
-            file_name = fname
+        if (present(file_name)) then
+            call opendatafile(unit, file_name)
         else
-            file_name = 'setgeo.data'
-        endif
-        inquire(file=file_name,exist=found_file)
-        if (.not. found_file) then
-            print *, 'You must provide a file ', fname
-            stop
+            call opendatafile(unit, 'physics.data')
         endif
 
-        call opendatafile(iunit, file_name)
+        read(unit,*) grav
+        read(unit,*) earth_radius
+        read(unit,*) coordinate_system
+        read(unit,*)
+        read(unit,*) num_layers
+        allocate(rho(num_layers),eta_init(num_layers),dry_tolerance(num_layers))
+        read(unit,*) rho
+        read(unit,*) eta_init
+        read(unit,*)
+        read(unit,*) coriolis_force
+        read(unit,*) friction_force
+        read(unit,*) manning_coefficient
+        read(unit,*) friction_depth
+        read(unit,*) wind_force
+        read(unit,*) rho_air
+        read(unit,*) pressure_force
+        read(unit,*)
+        read(unit,*) dry_tolerance
+        read(unit,*) varRefTime
+        
+        close(unit)
 
-        read(iunit,*) igrav
-
-        ! igrav = 1 means next line contains value of g = gravitational const.
-        if (igrav /= 1) then
-            print *, 'ERROR -- only igrav = 1 is supported in setgeo'
-            stop
-        endif
-        read(iunit,*) grav
-
-        read(iunit,*) icoordsys
-        read(iunit,*) icoriolis
-        read(iunit,*) Rearth
-        read(iunit,*) varRefTime
-        close(iunit)
-
-        ! icoordsys = 1 means Cartesian grid in meters
-        ! icoordsys = 2 means lat-long grid on sphere
-        ! Check that icoordsys is consistent with mcapa:
-        if ((icoordsys > 1) .and. (mcapa == 0)) then
-            print *, 'ERROR in setgeo:  if icoordsys > 1 then'
+        ! coordinate_system = 1 means Cartesian grid in meters
+        ! coordinate_system = 2 means lat-long grid on sphere
+        ! Check that coordinate_system is consistent with mcapa:
+        if ((coordinate_system > 1) .and. (mcapa == 0)) then
+            print *, 'ERROR in setgeo:  if coordinate_system > 1 then'
             print *, '      mcapa should be nonzero'
             stop
         endif
-        if ((icoordsys == 1) .and. (mcapa > 0)) then
-            print *, 'ERROR in setgeo:  if icoordsys = 1 then'
+        if ((coordinate_system == 1) .and. (mcapa > 0)) then
+            print *, 'ERROR in setgeo:  if coordinate_system = 1 then'
             print *, '      mcapa should be zero'
             stop
         endif
 
-        write(GEO_PARM_UNIT,*) '  igravity:',igrav
         write(GEO_PARM_UNIT,*) '   gravity:',grav
-        write(GEO_PARM_UNIT,*) '   icoordsys:',icoordsys
-
-        write(GEO_PARM_UNIT,*) '   varRefTime:',varRefTime
+        write(GEO_PARM_UNIT,*) '   earth_radius:',earth_radius
+        write(GEO_PARM_UNIT,*) '   coordinate_system:',coordinate_system
+        write(GEO_PARM_UNIT,*) ' '
+        write(GEO_PARM_UNIT,*) '   num_layers:',num_layers
+        write(GEO_PARM_UNIT,*) '   rho:',rho
+        write(GEO_PARM_UNIT,*) '   eta_init:',eta_init
+        write(GEO_PARM_UNIT,*) ' '
+        write(GEO_PARM_UNIT,*) '   coriolis_force:',coriolis_force
+        write(GEO_PARM_UNIT,*) '   friction_force:',friction_force
+        write(GEO_PARM_UNIT,*) '   manning_coefficient:',manning_coefficient
+        write(GEO_PARM_UNIT,*) '   friction_depth:',friction_depth
+        write(GEO_PARM_UNIT,*) '   wind_force:',wind_force
+        write(GEO_PARM_UNIT,*) '   rho_air:',rho_air
+        write(GEO_PARM_UNIT,*) '   pressure_force:',pressure_force
+        write(GEO_PARM_UNIT,*) ' '
+        write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
+        write(GEO_PARM_UNIT,*) '   Variable dt Refinement Ratios:',varRefTime
 
     end subroutine set_geo
 
     ! ========================================================================
-    !  set_multilayer(fname)
+    !  read_multilayer_data(file_name)
     ! ========================================================================
-    subroutine set_multilayer(fname)
+    subroutine read_multilayer_data(file_name)
+
         implicit none
-        character(len=25), optional, intent(in) :: fname
+        
+        ! Arguments
+        character(len=*), optional, intent(in) :: file_name
         
         ! Locals
-        character(len=25) :: file_name
-        logical :: found_file
-        integer :: i,ios
         integer, parameter :: unit = 124
+        integer :: ios
 
-        write(GEO_PARM_UNIT,*) ' '
-        write(GEO_PARM_UNIT,*) '--------------------------------------------'
-        write(GEO_PARM_UNIT,*) 'SET_MULTILAYER:'
-        write(GEO_PARM_UNIT,*) '-----------'
-
-        if (present(fname)) then
-            file_name = fname
-        else
-            file_name = 'multilayer.data'
-        endif
-        inquire(file=file_name,exist=found_file)
-        if (.not. found_file) then
-            print *,'You must provide a file ', file_name
-            stop
-        endif
-
-        call opendatafile(unit, file_name)
-
-        read(unit,"(i2)") num_layers
-        allocate(rho(num_layers))
-        read(unit,*) rho
-        allocate(eta_init(num_layers))
-        read(unit,*) eta_init
-        read(unit,*) check_richardson
-        read(unit,"(d16.8)") richardson_tolerance
-        read(unit,"(i1)") eigen_method
-        read(unit,"(i1)") inundation_method
-        close(unit) 
-        
-        ! Calculate ratios of densities
-!         do i=1,num_layers-1
-!             r(i) = rho(i) / rho(i+1)
-!         enddo
-        
-        write(GEO_PARM_UNIT,*) '   num_layers:',num_layers
-        write(GEO_PARM_UNIT,*) '   rho:',(rho(i),i=1,num_layers)
-!         write(GEO_PARM_UNIT,*) '   r (calculated):', (r,i=1,num_layers-1)
-
-        ! Open Kappa output file if num_layers > 1
-        ! Open file for writing hyperbolicity warnings if multiple layers
+        ! Only read in this data if we are doing multilayer swe
         if (num_layers > 1) then
-            open(unit=KAPPA_UNIT, file='fort.kappa', iostat=ios, &
-                    status="unknown", action="write")
-            if ( ios /= 0 ) stop "Error opening file name fort.kappa"
+            write(GEO_PARM_UNIT,*) ' '
+            write(GEO_PARM_UNIT,*) '--------------------------------------------'
+            write(GEO_PARM_UNIT,*) 'Multilayer Parameters:'
+            write(GEO_PARM_UNIT,*) '----------------------'
+
+            if (present(file_name)) then
+                call opendatafile(unit, file_name)
+            else
+                call opendatafile(unit, 'multilayer.data')
+            endif
+
+            read(unit,*) check_richardson
+            read(unit,"(d16.8)") richardson_tolerance
+            read(unit,"(i1)") eigen_method
+            read(unit,"(i1)") inundation_method
+            close(unit) 
+
+            ! Open Kappa output file if num_layers > 1
+            ! Open file for writing hyperbolicity warnings if multiple layers
+            if (num_layers > 1 .and. check_richardson) then
+                open(unit=KAPPA_UNIT, file='fort.kappa', iostat=ios, &
+                        status="unknown", action="write")
+                if ( ios /= 0 ) stop "Error opening file name fort.kappa"
+            endif
+
+            write(GEO_PARM_UNIT,*) '   check_richardson:',check_richardson
+            write(GEO_PARM_UNIT,*) '   richardson_tolerance:',richardson_tolerance
+            write(GEO_PARM_UNIT,*) '   eigen_method:',eigen_method
+            write(GEO_PARM_UNIT,*) '   inundation_method:',inundation_method
         endif
         
-    end subroutine set_multilayer
-
-    ! ========================================================================
-    !  set_shallow(fname)
-    ! ========================================================================
-    !  Reads in user parameters from the given file name if provided
-    ! ========================================================================
-    subroutine set_shallow(fname)
-
-        use amr_module, only: mxnest
-
-        implicit none
-
-        ! Input arguments
-        character*25, optional, intent(in) :: fname
-
-        ! Locals
-        character*25 :: file_name
-        logical :: found_file
-        integer :: i
-        integer, parameter :: iunit = 127
-
-        write(GEO_PARM_UNIT,*) ' '
-        write(GEO_PARM_UNIT,*) '--------------------------------------------'
-        write(GEO_PARM_UNIT,*) 'SET_SHALLOW:'
-        write(GEO_PARM_UNIT,*) '-----------'
-
-        if (present(fname)) then
-            file_name = fname
-        else
-            file_name = 'setshallow.data'
-        endif
-        inquire(file=file_name,exist=found_file)
-        if (.not. found_file) then
-            print *,'You must provide a file ', file_name
-            stop
-        endif
-
-        call opendatafile(iunit, file_name)
-
-        allocate(dry_tolerance(num_layers))
-        read(iunit,*) dry_tolerance
-        allocate(wave_tolerance(num_layers))
-        read(iunit,*) wave_tolerance
-        allocate(speed_tolerance(mxnest))
-        read(iunit,*) (speed_tolerance(i),i=1,mxnest)
-        read(iunit,*) depthdeep
-        read(iunit,*) maxleveldeep
-        read(iunit,*) ifriction
-        read(iunit,*) coeffmanning
-        read(iunit,*) frictiondepth
-        close(iunit)
-
-        write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
-        write(GEO_PARM_UNIT,*) '   wave_tolerance:',wave_tolerance
-        write(GEO_PARM_UNIT,*) '   speed_tolerance:',speed_tolerance
-        write(GEO_PARM_UNIT,*) '   maxleveldeep:', maxleveldeep
-        write(GEO_PARM_UNIT,*) '   depthdeep:', depthdeep
-        write(GEO_PARM_UNIT,*) '   ifriction:', ifriction
-        write(GEO_PARM_UNIT,*) '   Manning coefficient:',coeffmanning
-        write(GEO_PARM_UNIT,*) '   frictiondepth:',frictiondepth
-
-    end subroutine set_shallow
-    ! ========================================================================
-
-
-    ! ========================================================================
-    !  set_flow_grades(fname)
-    ! ========================================================================
-    subroutine set_flow_grades(fname)
-
-        implicit none
-
-        ! Input arguments
-        character*25, optional, intent(in) :: fname
-
-        ! Locals
-        integer, parameter :: iunit = 127
-        integer :: i
-        character*25 :: file_name
-        logical :: found_file
-
-        write(GEO_PARM_UNIT,*) ' '
-        write(GEO_PARM_UNIT,*) '--------------------------------------------'
-        write(GEO_PARM_UNIT,*) 'SET FLOW GRADES:'
-        write(GEO_PARM_UNIT,*) '------------'
-
-        ! Read user parameters from setflowgrades.data
-        if (present(fname)) then
-            file_name = fname
-        else
-            file_name = 'setflowgrades.data'
-        endif
-        inquire(file=file_name,exist=found_file)
-        if (.not. found_file) then
-            print *, 'You must provide a file ', fname
-            print *, 'Or comment out call setflowgrades in setprob'
-            stop
-        endif
-
-        call opendatafile(iunit, fname)
-
-        read(iunit,*) mflowgrades
-
-        if (mflowgrades == 0) then
-            write(GEO_PARM_UNIT,*) '  No flow grades specified'
-            return
-        endif
-
-        ! Allocate arrays
-        allocate(flowgradevalue(mflowgrades),iflowgradevariable(mflowgrades))
-        allocate(iflowgradetype(mflowgrades),iflowgrademinlevel(mflowgrades))
-
-        do i=1,mflowgrades
-            read(iunit,*) flowgradevalue(i),iflowgradevariable(i), &
-                iflowgradetype(i),iflowgrademinlevel(i)
-        enddo
-
-        close(iunit)
-
-        write(GEO_PARM_UNIT,*) '   mflowgrades:',  mflowgrades
-
-        do i=1,mflowgrades
-            write(GEO_PARM_UNIT,"(d12.3,3i4)") flowgradevalue(i), &
-                iflowgradevariable(i),iflowgradetype(i),iflowgrademinlevel(i)
-
-        enddo
-
-    end subroutine set_flow_grades
+    end subroutine read_multilayer_data
 
 end module geoclaw_module

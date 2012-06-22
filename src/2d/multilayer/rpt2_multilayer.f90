@@ -203,7 +203,7 @@ subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,aux1,aux2,aux3,imp,asdq,bmasdq
         endif
 
         ! Handle lat-long coordinate systems
-        if (icoordsys == 2) then
+        if (coordinate_system == 2) then
             if (ixy == 2) then
                 dxdcp=(Rearth*pi/180.d0)
                 dxdcm = dxdcp
@@ -345,7 +345,7 @@ subroutine rpt2_single_layer(ixy,ql,qr,aux1,aux2,aux3,ilr,asdq,bmasdq,bpasdq)
        endif
        if (eta.lt.max(topo1,topo3)) go to 90
 
-      if (icoordsys.eq.2) then
+      if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
             dxdcp=(Rearth*pi/180.d0)
             dxdcm = dxdcp
@@ -511,7 +511,7 @@ subroutine rpt2_single_layer(ixy,ql,qr,aux1,aux2,aux3,ilr,asdq,bmasdq,bpasdq)
 !     endif
 !     if (eta.lt.max(topo1,topo3)) go to 90
 ! 
-!     if (icoordsys.eq.2) then
+!     if (coordinate_system.eq.2) then
 !         if (ixy.eq.2) then
 !             dxdcp=(Rearth*pi/180.d0)
 !             dxdcm = dxdcp

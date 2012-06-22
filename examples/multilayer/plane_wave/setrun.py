@@ -297,9 +297,9 @@ def setgeo(rundata):
     geodata.icoriolis = 0
 
     # == settsunami.data values ==
-    # geodata.drytolerance = 1.e-3
-    geodata.drytolerance = 1.e-3
-    geodata.wavetolerance = 5e-1
+    geodata.dry_tolerance = [1.e-3,1.e-3]
+    geodata.wave_tolerance = [0.1,0.1]
+    geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
     geodata.depthdeep = 2.e2
     geodata.maxleveldeep = 4
     geodata.ifriction = 2
@@ -313,16 +313,18 @@ def setgeo(rundata):
     geodata.topofiles.append([2, 1, 5, 0., 1e10, 'topo.data'])
     
     # == setdtopo.data values ==
+    # Unsupported in the multilayer case
     geodata.dtopofiles = []
-    # for moving topography, append lines of the form:  (<= 1 allowed for now!)
-    #   [minlevel,maxlevel,fname]
 
     # == setqinit.data values ==
-    geodata.qinitfiles = []  
-    geodata.iqinit = 0
-    # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
-    #   [minlev, maxlev, fname]
-    # geodata.qinitfiles.append([1,3,'qinit.data'])
+    # Note that this is a different sort of perturbation from the single-layer
+    # version.  These are idealized perturbations for the time being
+    geodata.qinit_type = 2
+    geodata.init_location = [0.25,0.25]
+    geodata.wave_family = 4
+    geodata.epsilon = 0.02
+    geodata.angle = 0.0
+    geodata.sigma = 0.02
 
     # == setregions.data values ==
     geodata.regions = []
@@ -345,40 +347,22 @@ def setgeo(rundata):
     # geodata.fixedgrids.append([1., 2., 4, 0., 100., 0., 100., 11, 11, 0, 0])
     
     # == Multilayer ==
-    geodata.layers = 2
+    geodata.num_layers = 1
     geodata.rho = [0.90,1.0]
     geodata.eta_init = [0.0,-0.6]
     geodata.richardson_tolerance = 0.95
+    geodata.eigen_method = 2
+    geodata.inundation_method = 2
+    
+    # # Bathy settings (2D is written out as a topo file)
+    # data.bathy_type = 1
+    # data.bathy_left = -1.0
+    # data.bathy_location = 0.6
+    # data.bathy_right = -0.2
     
     return rundata
     # end of function setgeo
     # ----------------------
-    
-# Parameters still need to add
-# Momentum based refinement
-# data.momentum_refinement = False
-# data.max_speed_nest = 5
-# data.speed_nest = [0.25,0.5,1.0,2.0,3.0,4.0]
-    
-# # Algorithm Parameters
-# data.eigen_method = 2
-# data.inundation_method = 2
-# data.wave_tolerance = [0.1,0.1]
-# data.dry_limit = True
-# 
-# # Initial conditions
-# data.init_type = 2
-# data.init_location = [0.25,0.25]
-# data.wave_family = 4
-# data.epsilon = 0.02
-# data.angle = 0.0
-# data.sigma = 0.02
-# 
-# # Bathy settings (2D is written out as a topo file)
-# data.bathy_type = 1
-# data.bathy_left = -1.0
-# data.bathy_location = 0.6
-# data.bathy_right = -0.2
     
 # =====================
 #  Main run function 

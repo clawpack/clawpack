@@ -48,7 +48,7 @@ c            # apply friction source term only in shallower water
 
 *     ! coriolis--------------------------------------------------------
 *     ! coriolis--------------------------------------------------------
-      if (icoordsys.eq.2.and.icoriolis.eq.1) then
+      if (coordinate_system.eq.2.and.icoriolis.eq.1) then
          w = 2.d0*pi/(86400.d0) !angular velocity of earth
          do i=1,mx1d
             cor = 2.d0*w*sin(aux1d(3,i))

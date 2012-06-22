@@ -11,7 +11,7 @@ c
 
 
       sp_over_h = 0.d0   ! compute max speed over h, since dx may not equal dy
-      if (icoordsys .eq. 2) then
+      if (coordinate_system .eq. 2) then
         do j = nghost+1, mjtot-nghost
          ymetric = Rearth*pi/180.d0
          hyphys = ymetric*hy

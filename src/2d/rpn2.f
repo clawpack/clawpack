@@ -33,7 +33,7 @@ c
 !           David George, Vancouver WA, Feb. 2009                           !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      use geoclaw_module, only: grav,dry_tolerance,Rearth,pi
+      use geoclaw_module, only: grav,dry_tolerance,earth_radius,pi
       use amr_module, only: mcapa
       implicit none
       integer maux  ! should be passed in or put into a module
@@ -245,9 +245,9 @@ c==========Capacity for mapping from latitude longitude to physical space====
         if (mcapa.gt.0) then
          do i=2-mbc,mx+mbc
           if (ixy.eq.1) then
-             dxdc=(Rearth*pi/180.d0)
+             dxdc=(earth_radius*pi/180.d0)
           else
-             dxdc=Rearth*pi*cos(auxl(3,i))/180.d0
+             dxdc=earth_radius*pi*cos(auxl(3,i))/180.d0
           endif
 
           do mw=1,mwaves
