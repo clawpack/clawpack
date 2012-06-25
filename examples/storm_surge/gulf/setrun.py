@@ -111,7 +111,7 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.outstyle==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.tfinal = 3 * 60 * 60 # 3 hours
+        clawdata.tfinal = 4 * 60 * 60 # 3 hours
         clawdata.nout = int(clawdata.tfinal * 6 / 60**2)# Output every 10 minutes
 
     elif clawdata.outstyle == 2:
@@ -134,7 +134,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 2
+    clawdata.verbosity = 6
 
 
 
@@ -269,29 +269,30 @@ def setgeo(rundata):
     # == setgeo.data values ==
     geodata.variable_dt_refinement_ratios = True
 
-    geodata.igravity = 1
     geodata.gravity = 9.81
-    geodata.icoordsys = 2
-    geodata.Rearth = 6367.5e3
-    geodata.icoriolis = 0
+    geodata.coordinate_system = 2
+    geodata.earth_radius = 6367.5e3
+    geodata.coriolis_force = False
 
     # == settsunami.data values ==
-    geodata.drytolerance = 1.e-3
-    geodata.wavetolerance = 1.e-1
-    geodata.depthdeep = 1.e2
-    geodata.maxleveldeep = 3
-    geodata.ifriction = 1
-    geodata.coeffmanning =.025
-    geodata.frictiondepth = 1.e6
+    geodata.dry_tolerance = 1.e-3
+    geodata.wave_tolerance = 1.e-1
+    geodata.deep_depth = 1.e2
+    geodata.max_level_deep = 3
+    geodata.friction_force = True
+    geodata.manning_coefficient =.025
+    geodata.friction_depth = 1.e6
 
     # == settopo.data values ==
     geodata.topofiles = []
     # for topography, append lines of the form
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
-                              './gulf_coarse_bathy.tt3'])
-    geodata.topofiles.append([1, 1, 6, 0., 1.e10, \
-                              './houston_ship_channel.xyz'])
+                              './bathy/gulf_coarse_bathy.tt3'])
+    geodata.topofiles.append([3, 1, 6, 0., 1.e10, \
+                              './bathy/galveston_bay.tt3'])
+    # geodata.topofiles.append([1, 1, 6, 0., 1.e10, \
+    #                           './bathy/houston_ship_channel.xyz'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
@@ -300,7 +301,7 @@ def setgeo(rundata):
     # geodata.dtopofiles.append([1,3,3,'usgs100227.tt1'])
 
     # == setqinit.data values ==
-    geodata.iqinit = 4
+    geodata.qinit_type = 4
     geodata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
@@ -310,9 +311,8 @@ def setgeo(rundata):
     geodata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    geodata.regions.append([1, 3, 0.0, 1e10, -99.0, -80.0, 17.0, 32.0]) # entire domain
-    geodata.regions.append([1, 5, 1800.0, 1e10, -97.0, -93.0, 25.0, 31.0]) # Galveston Area
-    geodata.regions.append([1, 6, 1800.0, 1e10, -97.0, -93.0, 25.0, 31.0]) # Galveston Area
+    # geodata.regions.append([1, 3, 0.0, 1e10, -99.0, -80.0, 17.0, 32.0]) # entire domain
+    geodata.regions.append([4, 5, 0.0, 1e10, -95.4, -94.41, 29.1, 29.92]) # Houston Ship Channel
 
     # == setgauges.data values ==
     geodata.gauges = []

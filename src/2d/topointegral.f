@@ -100,7 +100,7 @@ c           # of interest in the array zz
      &                                         x1,x2,y1,y2,
      &                                         dxx,dyy,
      &                                         z11,z12,z21,z22,
-     &                                         Rearth,pi)
+     &                                         earth_radius,pi)
                 else
                   write(*,*)  'TOPOINTEGRAL: coordinate_system error'
                   endif

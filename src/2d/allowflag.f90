@@ -17,9 +17,9 @@
 logical function allowflag(x,y,t,level)
 
     use geoclaw_module
+    use refinement_module
     use topo_module
     use dtopo_module
-    use regions_module
     use qinit_module
           
     implicit none
@@ -48,23 +48,23 @@ logical function allowflag(x,y,t,level)
 
     do m=1,mtopofiles
         if (level < maxleveltopo(m)) then
-      	    if (x > xlowtopo(m) .and. x < xhitopo(m) .and. &
+            if (x > xlowtopo(m) .and. x < xhitopo(m) .and. &
                 y > ylowtopo(m) .and. y < yhitopo(m) .and. &
                 t > tlowtopo(m) .and. t < thitopo(m)) then
-     		  
+
                 allowflag = .true.
                 return
-	        endif
+            endif
         endif
     enddo
 
     do m=1,num_regions
-        if (level < max_level_region(m)) then 
-            if (x > x_low_region(m) .and. x <  x_hi_region(m).and. &
-                y > y_low_region(m) .and. y <  y_hi_region(m).and. &
-                t > t_low_region(m) .and. t <= t_hi_region(m)) then
+        if (level < regions(m)%max_level) then 
+            if (x > regions(m)%x_low .and. x <  regions(m)%x_hi.and. &
+                y > regions(m)%y_low .and. y <  regions(m)%y_hi.and. &
+                t > regions(m)%t_low .and. t <= regions(m)%t_hi) then
 
-     		    allowflag = .true.
+                allowflag = .true.
                 return
             endif
         endif
@@ -85,8 +85,8 @@ logical function allowflag(x,y,t,level)
     ! TODO: Correct the assumption that t0 = 0.0
     if (t == 0.d0 .and. qinit_type > 0) then
         if (x > x_low_qinit .and. x < x_hi_qinit .and. &
-      	    y > y_low_qinit .and. y < y_hi_qinit) then
-     		
+            y > y_low_qinit .and. y < y_hi_qinit) then
+
             if (level < max_level_qinit) then
                 allowflag = .true.
                 return
@@ -95,3 +95,4 @@ logical function allowflag(x,y,t,level)
     endif
 
 end function allowflag
+    

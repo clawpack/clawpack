@@ -38,7 +38,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     tol = 1.d-30  ! To prevent divide by zero in gamma
 
     ! friction--------------------------------------------------------
-    if (coeffmanning > 0.d0 .and. ifriction > 0) then
+    if (coeffmanning > 0.d0 .and. friction_forcing > 0) then
         ! Constant coefficient of friction
         if (ifriction == 1) then
             D = coeff

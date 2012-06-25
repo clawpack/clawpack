@@ -112,7 +112,7 @@ contains
         if (present(fname)) then
             call opendatafile(unit,fname)
         else
-            call opendatafile(unit,"setqinit.data")
+            call opendatafile(unit,"qinit.data")
         endif
         
         read(unit,"(i1)") qinit_type

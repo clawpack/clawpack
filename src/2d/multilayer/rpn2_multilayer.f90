@@ -518,7 +518,7 @@ subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,fwave,s,amdq,apdq)
     if (mcapa > 0) then
         do i=2-mbc,mx+mbc
             if (ixy == 1) then
-                dxdc=(Rearth*pi/180.d0)
+                dxdc=(earth_radius*pi/180.d0)
             else
                 dxdc=auxl(i,3)
             endif

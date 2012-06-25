@@ -205,15 +205,15 @@ subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,aux1,aux2,aux3,imp,asdq,bmasdq
         ! Handle lat-long coordinate systems
         if (coordinate_system == 2) then
             if (ixy == 2) then
-                dxdcp=(Rearth*pi/180.d0)
+                dxdcp=(earth_radius*pi/180.d0)
                 dxdcm = dxdcp
             else
                 if (imp == 1) then
-                    dxdcp = Rearth*pi*cos(aux3(3,i-1))/180.d0
-                    dxdcm = Rearth*pi*cos(aux1(3,i-1))/180.d0
+                    dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
+                    dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
                 else
-                    dxdcp = Rearth*pi*cos(aux3(3,i))/180.d0
-                    dxdcm = Rearth*pi*cos(aux1(3,i))/180.d0
+                    dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
+                    dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
                 endif
             endif
         else
@@ -347,15 +347,15 @@ subroutine rpt2_single_layer(ixy,ql,qr,aux1,aux2,aux3,ilr,asdq,bmasdq,bpasdq)
 
       if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
-            dxdcp=(Rearth*pi/180.d0)
+            dxdcp=(earth_radius*pi/180.d0)
             dxdcm = dxdcp
          else
             if (ilr.eq.1) then
-               dxdcp = Rearth*pi*cos(aux3(1,3))/180.d0
-               dxdcm = Rearth*pi*cos(aux1(1,3))/180.d0
+               dxdcp = earth_radius*pi*cos(aux3(1,3))/180.d0
+               dxdcm = earth_radius*pi*cos(aux1(1,3))/180.d0
             else
-               dxdcp = Rearth*pi*cos(aux3(2,3))/180.d0
-               dxdcm = Rearth*pi*cos(aux1(2,3))/180.d0
+               dxdcp = earth_radius*pi*cos(aux3(2,3))/180.d0
+               dxdcm = earth_radius*pi*cos(aux1(2,3))/180.d0
             endif
          endif
       endif
@@ -513,15 +513,15 @@ subroutine rpt2_single_layer(ixy,ql,qr,aux1,aux2,aux3,ilr,asdq,bmasdq,bpasdq)
 ! 
 !     if (coordinate_system.eq.2) then
 !         if (ixy.eq.2) then
-!             dxdcp=(Rearth*pi/180.d0)
+!             dxdcp=(earth_radius*pi/180.d0)
 !             dxdcm = dxdcp
 !         else
 !             if (ilr.eq.1) then
-!                 dxdcp = Rearth*pi*cos(aux3(1,3))/180.d0
-!                 dxdcm = Rearth*pi*cos(aux1(1,3))/180.d0
+!                 dxdcp = earth_radius*pi*cos(aux3(1,3))/180.d0
+!                 dxdcm = earth_radius*pi*cos(aux1(1,3))/180.d0
 !             else
-!                 dxdcp = Rearth*pi*cos(aux3(2,3))/180.d0
-!                 dxdcm = Rearth*pi*cos(aux1(2,3))/180.d0
+!                 dxdcp = earth_radius*pi*cos(aux3(2,3))/180.d0
+!                 dxdcm = earth_radius*pi*cos(aux1(2,3))/180.d0
 !             endif
 !         endif
 !     endif

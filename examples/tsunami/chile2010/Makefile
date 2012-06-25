@@ -56,6 +56,8 @@ SOURCES = \
   $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/movetopo.f \
+  $(GEOLIB)/flag2refine.f90 \
+  $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
@@ -83,7 +85,7 @@ SOURCES = \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
-  $(GEOLIB)/getmaxspeed.f \
+  $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
   $(AMRLIB)/prefilp.f \
   $(AMRLIB)/quick_sort1.f \

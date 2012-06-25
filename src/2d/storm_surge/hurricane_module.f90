@@ -378,7 +378,7 @@ contains
     ! ========================================================================
     double precision function coriolis(y)
     
-        use geoclaw_module, only: coordinate_system,Rearth,pi,icoriolis
+        use geoclaw_module, only: coordinate_system,earth_radius,pi,icoriolis
     
         implicit none
         

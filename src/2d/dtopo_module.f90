@@ -81,7 +81,7 @@ contains
         if (present(file_name)) then
             call opendatafile(iunit,file_name)
         else
-            call opendatafile(iunit,'setdtopo.data')
+            call opendatafile(iunit,'dtopo.data')
         endif
 
         read(iunit,*) num_dtopo

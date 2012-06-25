@@ -51,6 +51,7 @@ MODULES = \
  $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/regions_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/refinement_module.f90
 
 SOURCES = \
   qinit.f90 \
@@ -60,7 +61,7 @@ SOURCES = \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(GEOLIB)/rpn2ez.f \
+  $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f \
@@ -85,7 +86,7 @@ SOURCES = \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
-  $(GEOLIB)/getmaxspeed.f \
+  $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
   $(AMRLIB)/prefilp.f \
   $(AMRLIB)/quick_sort1.f \

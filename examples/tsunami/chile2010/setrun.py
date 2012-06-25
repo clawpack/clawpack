@@ -267,22 +267,21 @@ def setgeo(rundata):
 
     geodata.variable_dt_refinement_ratios = True
 
-    geodata.igravity = 1
     geodata.gravity = 9.81
-    geodata.icoordsys = 2
-    geodata.Rearth = 6367.5e3
-    geodata.icoriolis = 0
+    geodata.coordinate_system = 2
+    geodata.earth_radius = 6367.5e3
+    geodata.coriolis_forcing = False
 
     # == settsunami.data values ==
     geodata.eta_init = 0.0
     geodata.dry_tolerance = 1.e-3
     geodata.wave_tolerance = 1.e-1
     geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e15]
-    geodata.depthdeep = 1.e2
-    geodata.maxleveldeep = 3
-    geodata.ifriction = 1
-    geodata.coeffmanning =.025
-    geodata.frictiondepth = 1.e6
+    geodata.deep_depth = 1.e2
+    geodata.max_level_deep = 3
+    geodata.friction_forcing = True
+    geodata.manning_coefficient =.025
+    geodata.friction_depth = 1.e6
 
     # == settopo.data values ==
     geodata.topofiles = []

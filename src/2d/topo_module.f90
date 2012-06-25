@@ -80,11 +80,12 @@ contains
         if (present(file_name)) then
             call opendatafile(iunit, file_name)
         else
-            call opendatafile(iunit, 'settopo.data')
+            call opendatafile(iunit, 'topo.data')
         endif
         
         ! Read in topography specification type
-        read(iunit,*) topo_type
+        read(iunit,"(i1)") topo_type
+        print *,topo_type
         
         ! Primary topography type, read in topography files specified
         if (topo_type == 0) then

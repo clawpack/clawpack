@@ -39,8 +39,8 @@ endif
 # List of sources for this program:
 # ---------------------------------
 
-AMRLIB = $(CLAW)/amrclaw/src/2d
-GEOLIB = $(CLAW)/geoclaw/src/2d
+AMRLIB = $(AMRCLAW)/src/2d
+GEOLIB = $(GEOCLAW)/src/2d
 
 MODULES = \
  $(AMRLIB)/amr_module.f90 \
@@ -49,18 +49,21 @@ MODULES = \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/gauges_module.f90 \
- $(GEOLIB)/regions_module.f90 \
+ $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
 
 SOURCES = \
+  $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/movetopo.f \
+  $(GEOLIB)/flag2refine.f90 \
+  $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(GEOLIB)/rpn2ez.f \
+  $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f \
@@ -74,18 +77,15 @@ SOURCES = \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
-  $(GEOLIB)/setaux.f \
   $(GEOLIB)/setgauges.f \
-  $(GEOLIB)/b4step2.f \
-  $(GEOLIB)/flag2refine.f90  \
-  $(GEOLIB)/allowflag.f90  \
+  $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
-  $(GEOLIB)/getmaxspeed.f \
+  $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
   $(AMRLIB)/prefilp.f \
   $(AMRLIB)/quick_sort1.f \

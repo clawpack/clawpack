@@ -51,7 +51,7 @@ contains
         if (present(fname)) then
             call opendatafile(unit,fname)
         else
-            call opendatafile(unit,'setfixedgrids.data')
+            call opendatafile(unit,'fixed_grids.data')
         endif
 
         ! Read in data

@@ -14,7 +14,6 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
 
     use geoclaw_module, only: coordinate_system,earth_radius,pi
-!       use topo_module
     use amr_module, only: mcapa
     use topo_module
     
@@ -55,11 +54,11 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     do j=1-mbc,my+mbc
         ym = ylow + (j - 1.d0) * dy
         y = ylow + (j - 0.5d0) * dy
-        yp = ylow + j * dy
+        yp = ylow + real(j,kind=8) * dy
         do i=1-mbc,mx+mbc
             xm = xlow + (i - 1.d0) * dx
             x = xlow + (i - 0.5d0) * dx
-            xp = xlow + i * dx
+            xp = xlow + real(i,kind=8) * dx
             
             ! Set lat-long cell info
             if (coordinate_system == 2) then

@@ -260,20 +260,20 @@ def setgeo(rundata):
 
     geodata.variable_dt_refinement_ratios = True
 
-    geodata.igravity = 1
     geodata.gravity = 9.81
-    geodata.icoordsys = 1
+    geodata.coordinate_system = 1
+    geodata.coriolis_force = False
 
     # == settsunami.data values ==
     geodata.eta_init = 0.0
     geodata.dry_tolerance = 1.e-3
     geodata.wave_tolerance = 1.e-2
     geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e15]
-    geodata.depthdeep = 1.e2
-    geodata.maxleveldeep = 3
-    geodata.ifriction = 1
-    geodata.coeffmanning = 0.025
-    geodata.frictiondepth = 20.
+    geodata.deep_depth = 1.e2
+    geodata.max_level_deep = 3
+    geodata.friction_force = True
+    geodata.manning_coefficient = 0.025
+    geodata.friction_depth = 20.
 
     # == settopo.data values ==
     geodata.topofiles = []
@@ -287,7 +287,7 @@ def setgeo(rundata):
     #   [minlevel,maxlevel,fname]
 
     # == setqinit.data values ==
-    geodata.iqinit = 4
+    geodata.qinit_type = 4
     geodata.qinitfiles = []  
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]

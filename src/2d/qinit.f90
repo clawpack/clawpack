@@ -12,7 +12,8 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
     
     ! Locals
-    integer :: i,j,m,layer_index,eta_below
+    integer :: i,j,m,layer_index
+    real(kind=8) :: eta_below
     
     ! Set flat state based on eta_init
     q = 0.d0

@@ -92,15 +92,14 @@ def plot_bathy(bathy_file,coarse_factor=5,topo_type=3):
 def plot_bathy_2():
     from clawpack.visclaw import geoplot
 
-    # T = geoplot.TopoPlotData('gulf_coarse_bathy.tt3')
-    # T.topotype = 3
-    # # T.cmin = -7000.
-    # # T.cmax = 50.0
-    # T.plot()
+    T = geoplot.TopoPlotData('bathy/gulf_coarse_bathy.tt3')
+    T.topotype = 3
+    T.cmin = -20
+    T.cmax = 50.0
+    T.plot()
 
-    T = geoplot.TopoPlotData('houston_ship_channel.xyz')
-    T.topotype = 1
-    # T.fname = 'houston_ship_channel.xyz'
+    T.topotype = 3
+    T.fname = 'bathy/galveston_bay.tt3'
     T.plot()
 
     plt.xlim(-99.0,-80.0)
@@ -110,7 +109,7 @@ def plot_bathy_2():
     
     plt.show()
 
-
+    import pdb; pdb.set_trace()
 
 
 def convert_adcirc_bathy(topo_file,output_file="converted.xyz",topo_type=1):
@@ -162,12 +161,12 @@ def make_qinit(outfile="hump.xyz"):
     """
     Create qinit data file
     """
-    nxpoints = 100
-    nypoints = 100
+    nxpoints = 200
+    nypoints = 200
     xlower = -94.0
-    xupper = -90.0
-    ylower = 23.0
-    yupper = 27.0
+    xupper = -92.0
+    ylower = 27.0
+    yupper = 29.0
     topotools.topo1writer(outfile,qinit,xlower,xupper,ylower,yupper,nxpoints,nypoints)
 
 
@@ -175,8 +174,8 @@ def qinit(x,y):
     """
     Gaussian hump:
     """
-    x0 = -92.0
-    y0 = 25.0
+    x0 = -93.0
+    y0 = 28.0
     d = topotools.gcdist(x,y,x0,y0)  # great circle distance on earth
     ze = -d**2 / 2.e9
     amplitude = 1.0
@@ -202,8 +201,8 @@ def plot_qinit(qinit_file="hump.xyz"):
 if __name__=='__main__':
     # convert_adcirc_bathy('gulf_bathy.xyz')
     # convert_adcirc_bathy('test_bathy.xyz')
-    # make_qinit()
-    # plot_qinit()
+    # plot_bathy_2()
+    make_qinit()
+    plot_qinit()
     # plot_bathy("./gulf_coarse_bathy.tt3",topo_type=-3)
-    plot_bathy_2()
     
