@@ -200,6 +200,9 @@ def setup_package():
             if not os.path.exists('clawpack/petclaw'):
                 os.symlink(os.path.abspath('pyclaw/src/petclaw'),
                            'clawpack/petclaw')
+            if not os.path.exists('clawpack/peanoclaw'):
+                os.symlink(os.path.abspath('pyclaw/src/peanoclaw'),
+                           'clawpack/peanoclaw')
 
             from numpy.distutils.core import setup
             setup(configuration=configuration,
