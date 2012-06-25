@@ -212,6 +212,8 @@ def setup_package():
         print err
         raise err
     finally:
+        if os.path.exists('clawpack/riemann/src'):
+                os.unlink('clawpack/riemann/src')
         del sys.path[0]
         os.chdir(old_path)
     return
