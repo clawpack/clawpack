@@ -45,8 +45,12 @@ def setplot(plotdata):
 
     full_xlimits = [-99.0,-80.0]
     full_ylimits = [17.0,32.0]
-    houston_xlimits = [-97,-93]
-    houston_ylimits = [25.0,31.0]
+    houston_xlimits = [-95.4, -94.41]
+    houston_ylimits = [29.1, 29.92]
+    galveston_xlimits = [-94.84, -94.70]
+    galveston_ylimits = [29.30, 29.40]
+    houston_harbor_xlimits = [-95.321,-95.0747]
+    houston_harbor_ylimits = [29.7000,29.8304]
 
     #-----------------------------------------
     # Figure for pcolor plot of entire Gulf
@@ -103,9 +107,9 @@ def setplot(plotdata):
     plotitem.celledges_show = 0
     plotitem.patchedges_show = 0
     
-    # ========================
-    # = Houston Ship Channel =
-    # ========================
+    # ===============================
+    # = Entire Houston Ship Channel =
+    # ===============================
     plotfigure = plotdata.new_plotfigure(name='Houston Ship Channel', figno=1)
 
     # Set up for axes in this figure:
@@ -137,6 +141,76 @@ def setplot(plotdata):
     plotitem.patchedges_show = 1
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
+
+    # ==========================================================================
+    # Galveston Channel
+    # ==========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Galveston Bay Entry Channel', figno=2)
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes('pcolor')
+    plotaxes.title = 'Surface'
+    plotaxes.scaled = True
+    plotaxes.afteraxes = fixup
+
+    # Water
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    # plotitem.plot_var = geoplot.surface
+    plotitem.plot_var = geoplot.surface_or_depth
+    plotitem.pcolor_cmap = geoplot.tsunami_colormap
+    plotitem.pcolor_cmin = -0.2
+    plotitem.pcolor_cmax = 0.2
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
+
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    # plotitem.amr_celledges_show = [1,1,0]
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
+    plotaxes.xlimits = galveston_xlimits
+    plotaxes.ylimits = galveston_ylimits
+
+    # ==========================================================================
+    #  City of Houston Area
+    # ==========================================================================
+    plotfigure = plotdata.new_plotfigure(name='City of Houston', figno=3)
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes('pcolor')
+    plotaxes.title = 'Surface'
+    plotaxes.scaled = True
+    plotaxes.afteraxes = fixup
+
+    # Water
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    # plotitem.plot_var = geoplot.surface
+    plotitem.plot_var = geoplot.surface_or_depth
+    plotitem.pcolor_cmap = geoplot.tsunami_colormap
+    plotitem.pcolor_cmin = -0.2
+    plotitem.pcolor_cmax = 0.2
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
+
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    # plotitem.amr_celledges_show = [1,1,0]
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
+    plotaxes.xlimits = houston_harbor_xlimits
+    plotaxes.ylimits = houston_harbor_ylimits
 
 
     #-----------------------------------------

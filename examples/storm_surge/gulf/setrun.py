@@ -290,9 +290,21 @@ def setgeo(rundata):
     geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
                               './bathy/gulf_coarse_bathy.tt3'])
     geodata.topofiles.append([3, 1, 6, 0., 1.e10, \
-                              './bathy/galveston_bay.tt3'])
-    # geodata.topofiles.append([1, 1, 6, 0., 1.e10, \
-    #                           './bathy/houston_ship_channel.xyz'])
+                              './bathy/NOAA_Galveston_Houston.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              './bathy/galveston_channel.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              './bathy/houston_harbor.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              './bathy/houston_channel_3.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              './bathy/houston_channel_2.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           './bathy/galveston.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              './bathy/lower_galveston_bay.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              './bathy/upper_galveston_bay.tt3'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
@@ -311,8 +323,10 @@ def setgeo(rundata):
     geodata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    # geodata.regions.append([1, 3, 0.0, 1e10, -99.0, -80.0, 17.0, 32.0]) # entire domain
-    geodata.regions.append([4, 5, 0.0, 1e10, -95.4, -94.41, 29.1, 29.92]) # Houston Ship Channel
+    geodata.regions.append([1, 4, 0.0, 1e10, -99.00, -80.00, 17.00, 32.00]) # entire domain
+    geodata.regions.append([1, 5, 0.0, 1e10, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
+    # geodata.regions.append([1, 7, 0.0, 1e10, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
+    # geodata.regions.append([1, 7, 0.0, 1e10, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
 
     # == setgauges.data values ==
     geodata.gauges = []
