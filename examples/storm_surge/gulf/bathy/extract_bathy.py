@@ -77,9 +77,39 @@ def read_topo(path,topo_type=3):
 
 def extract(path,fill_path,extent,no_data_value=999999,plot_fill=False,
             method='nearest',delta_limit=20.0,TOLERANCE=1e-3):
-    r"""
+    r"""Extract sub-section of bathymetry from file at path
 
-    extent = (min(x),max(x),min(y),max(y))
+    Function to extract a sub-section given by extent of the bathymetry file at 
+    path assumed to be in a x,y,z format which can be unstructured.  Uses the 
+    bathymetry file at fill_path to fill in gaps in data.  Returns the data
+    interpolated onto a grid determined by the resolution of the original file
+    or the limiting resolution delta_limit.
+
+    :Input:
+     *path* (string) - Path to the bathymetry file which the data is being 
+                       pulled from.
+     *fill_path* (string) - Path to the bathymetry file providing the fill data,
+                            i.e. data to use when no data exists.
+     *extent* (tuple) - A tuple defining the rectangle of the sub-section.  Must
+                        be in the form (x lower,x upper,y lower, y upper).
+     *no_data_value* (float) - Value to use if no data was found to fill in a 
+                               missing value, ignored if `method = 'nearest'`.
+                               Default is `999999`.
+     *method* (string) - Method for interpolation, valid methods are found in
+                         the scipy module scipy.interpolate.  Default is 
+                         `nearest`.
+     *delta_limit* (float) - Limit of finest horizontal resolution, default is
+                             20 meters.
+     *tolerance* (float) -  Tolerance allowed for extent matching.  Since the 
+                            requested extents and the eventual output may not 
+                            match due to round off, this parameter is used to 
+                            check if they are within acceptable tolerances.
+                            Default is `1e-3`.
+
+    :Output:
+     *Z* (ndarray) - Interpolated 2D array of bathymetry depths starting in the
+                     upper right corner of the sub-section specified by extent.
+     *delta* (float) - Final choice used for the horizontal resolution.
     """
 
     # Extract data
@@ -174,6 +204,11 @@ def extract(path,fill_path,extent,no_data_value=999999,plot_fill=False,
 
 
 def write_bathy(path,Z,lower,delta,no_data_value=999999,topotype=3):
+    r"""Write out a topography file to path of type topotype
+
+    Writes out a bathymetry file of type 3 to path from data in Z.  The rest of
+    the arguments are used to write the header data.
+    """
 
     outfile = open(path,'w')
 
@@ -202,7 +237,7 @@ def write_bathy(path,Z,lower,delta,no_data_value=999999,topotype=3):
 
 
 def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None):
-    r""""""
+    r"""Plot the bathymetry files specified in paths and region_path."""
     
     # Setup region figure
     region_fig = plt.figure(1)
