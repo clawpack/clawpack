@@ -9,8 +9,11 @@ houston_ship_channel.xyz - Bathymetry of the Houston ship channel from:
 
     Data has been located by Hugh Roberts
 
-galveston_bay.tt3 - Bathymetry covering Galveston and Houston ship channel area
-    with 3 second resolution.  
+NOAA_Galveston_Houstin.tt3 - Bathymetry covering Galveston and Houston ship 
+    channel area with 3 second resolution.
     
     Lower left corner  (95º 26' W, 29º 06' N)
     Upper right corner (94º 25' W, 29º 55' N)
+
+extract_bathy.py - Python script for extracting requested subsections of xyz
+    bathymetry file and turn them into gridded topography type 3.

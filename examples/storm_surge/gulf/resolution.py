@@ -27,10 +27,11 @@ def calculate_resolution(ratios,base_resolutions=[0.25,0.25]):
 
     print "Resolutions:"
     for level in xrange(num_levels):
-        print " Level %s - (%sº,%sº) - (%s m, %s m)" % (level,degree_resolutions[level,0],
-                                                              degree_resolutions[level,1],
-                                                              meter_resolutions[level,0],
-                                                              meter_resolutions[level,1])
+        print " Level %s - (%sº,%sº) - (%s m, %s m)" % (str(level+1),
+                                                        degree_resolutions[level,0],
+                                                        degree_resolutions[level,1],
+                                                        meter_resolutions[level,0],
+                                                        meter_resolutions[level,1])
     
 
 if __name__ == "__main__":
