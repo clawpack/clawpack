@@ -134,7 +134,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 6
+    clawdata.verbosity = 7
 
 
 
@@ -214,16 +214,16 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    mxnest = 6
+    mxnest = 7
 
     clawdata.mxnest = -mxnest   # negative ==> anisotropic refinement in x,y,t
 
     # List of refinement ratios at each level (length at least mxnest-1)
     # Run resolution.py 2 2 4 8 16 to see approximate resolutions
-    clawdata.inratx = [2,2,3,4,8]
-    clawdata.inraty = [2,2,3,4,8]
+    clawdata.inratx = [2,2,3,4,8,2]
+    clawdata.inraty = [2,2,3,4,8,2]
 
-    clawdata.inratt = [2,2,3,4,8]
+    clawdata.inratt = [2,2,3,4,8,2]
     # Instead of setting these ratios, set:
     # geodata.variable_dt_refinement_ratios = True
     # in setgeo.
@@ -277,6 +277,7 @@ def setgeo(rundata):
     # == settsunami.data values ==
     geodata.dry_tolerance = 1.e-3
     geodata.wave_tolerance = 1.e-1
+    geodata.speed_tolerance = [1e10,1e10,1e10,1e10,1e10,1e10,1e10,1e10]
     geodata.deep_depth = 1.e2
     geodata.max_level_deep = 3
     geodata.friction_force = True
@@ -289,7 +290,7 @@ def setgeo(rundata):
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
                               './bathy/gulf_coarse_bathy.tt3'])
-    geodata.topofiles.append([3, 1, 6, 0., 1.e10, \
+    geodata.topofiles.append([3, 1, 5, 0., 1.e10, \
                               './bathy/NOAA_Galveston_Houston.tt3'])
     geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
                               './bathy/galveston_channel.tt3'])

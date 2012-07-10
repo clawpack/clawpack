@@ -32,7 +32,7 @@ ifeq ($(MAKELEVEL),0)
 
 	# Threading flags
 	# FFLAGS += -D GRID_THREADING
-	# FFLAGS += -D MAX1D=200
+	FFLAGS += -D MAX1D=200
 endif
 
 # ---------------------------------

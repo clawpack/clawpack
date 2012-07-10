@@ -7,6 +7,11 @@ import sys
 
 import numpy as np
 
+# Generic, spheriod based conversion
+R_earth = 6378.1 * 1000.0
+deg2meters = lambda theta,lat:R_earth * theta * np.pi / 180.0 * np.cos(lat * np.pi / 180.0)
+meters2deg = lambda d,lat:d / (R_earth * np.pi / 180.0 * np.cos(lat * np.pi / 180.0))
+
 # Based at lat = 24º
 long2meters = lambda degree_resolution:degree_resolution * 100950.05720513177
 lat2meters = lambda degree_resolution:degree_resolution * 110772.87259559495
