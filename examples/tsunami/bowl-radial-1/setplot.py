@@ -263,20 +263,20 @@ def setplot(plotdata):
 
 
     #-----------------------------------------
-    # Figure for grids alone
+    # Figure for patches alone
     #-----------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='grids', figno=2)
+    plotfigure = plotdata.new_plotfigure(name='patches', figno=2)
     plotfigure.show = False
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = [0,1]
     plotaxes.ylimits = [0,1]
-    plotaxes.title = 'grids'
+    plotaxes.title = 'patches'
     plotaxes.scaled = True
 
     # Set up for item on these axes:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_grid')
+    plotitem = plotaxes.new_plotitem(plot_type='2d_patch')
     plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
     plotitem.amr_celledges_show = [1,1,0]   
     plotitem.amr_patchedges_show = [1]     
