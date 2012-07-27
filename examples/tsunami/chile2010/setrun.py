@@ -7,7 +7,7 @@ that will be read in by the Fortran code.
 """
 
 import os
-from pyclaw import data
+import clawutil.oldclawdata as data
 import numpy as np
 
 
@@ -71,8 +71,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells:
-    clawdata.mx = 10
-    clawdata.my = 10
+    clawdata.mx = 30
+    clawdata.my = 30
 
 
     # ---------------

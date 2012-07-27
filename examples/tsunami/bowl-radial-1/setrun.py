@@ -7,7 +7,7 @@ that will be read in by the Fortran code.
 """ 
 
 import os
-from pyclaw import data 
+import clawutil.oldclawdata as data 
 
 
 #------------------------------

@@ -2,7 +2,7 @@
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
-CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
+CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
 
 # See the above file for details and a list of make options, or type
 #   make .help
@@ -36,7 +36,7 @@ AMRLIB = $(CLAW)/amrclaw/src/2d
 GEOLIB = $(CLAW)/geoclaw/src/2d
 
 MODULES = \
- $(AMRLIB)/amr_module.f \
+ $(AMRLIB)/amr_module.f90 \
  $(GEOLIB)/geoclaw_module.f \
  $(GEOLIB)/topo_module.f \
  $(GEOLIB)/dtopo_module.f \

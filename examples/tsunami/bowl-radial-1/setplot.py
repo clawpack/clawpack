@@ -19,7 +19,6 @@ def setplot(plotdata):
     """ 
 
 
-    #from pyclaw.plotters import colormaps, geoplot
     from visclaw import colormaps, geoplot
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
