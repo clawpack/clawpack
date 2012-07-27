@@ -145,7 +145,7 @@ def setplot(plotdata):
     plotaxes.scaled = True
 
     # Set up for item on these axes:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_edges')
+    plotitem = plotaxes.new_plotitem(plot_type='2d_patch')
     plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
     plotitem.amr_celledges_show = [1,1,0]   
     plotitem.amr_patchedges_show = [1]     
