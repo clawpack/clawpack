@@ -21,7 +21,9 @@ CLAW_PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
-FFLAGS ?=
+#FFLAGS ?=
+FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
+
 MAKELEVEL ?= 0
 ifeq ($(MAKELEVEL),0)
 	# If you want to include NetCDF output add these flags
