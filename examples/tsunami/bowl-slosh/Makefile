@@ -20,13 +20,22 @@ CLAW_setplot_file = setplot.py      # File containing function to set plots
 CLAW_PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran   # default if not set as environment variable
-# Add any desired compiler flags such as -g here:
-FFLAGS ?=  -O2
+FC ?= gfortran
+#FFLAGS ?=
+FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
 
-# If you want to include NetCDF output add these flags
-# FFLAGS ?=-I/usr/include  -lnetcdf -lnetcdff
+MAKELEVEL ?= 0
+ifeq ($(MAKELEVEL),0)
+	# If you want to include NetCDF output add these flags
+	# Note that the NETCDF_INC should point to the location of the hearder files
+	# for NetCDF
+	# NETCDF_INC ?= /usr/include
+	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
+	# Threading flags
+	# FFLAGS += -D GRID_THREADING
+	# FFLAGS += -D MAX1D=200
+endif
 
 # ---------------------------------
 # List of sources for this program:
@@ -77,6 +86,7 @@ SOURCES = \
   $(GEOLIB)/setfixedgrids.f \
   $(GEOLIB)/b4step2.f \
   $(GEOLIB)/flag2refine.f  \
+  $(GEOLIB)/flag2refine2.f  \
   $(GEOLIB)/allowflag.f  \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
@@ -92,14 +102,17 @@ SOURCES = \
   $(AMRLIB)/bound.f \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
+  $(AMRLIB)/spest2.f  \
   $(AMRLIB)/init_iflags.f  \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \
   $(AMRLIB)/cleanup.f \
   $(AMRLIB)/colate.f \
+  $(AMRLIB)/colate2.f \
   $(AMRLIB)/errest.f \
   $(AMRLIB)/bufnst.f \
+  $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl.f \
@@ -109,9 +122,11 @@ SOURCES = \
   $(AMRLIB)/intfil.f \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
+  $(AMRLIB)/nestck2.f \
   $(AMRLIB)/prepc.f \
   $(AMRLIB)/prepf.f \
   $(AMRLIB)/projec.f \
+  $(AMRLIB)/projec2.f \
   $(AMRLIB)/signs.f \
   $(AMRLIB)/findcut.f \
   $(AMRLIB)/smartbis.f \
@@ -135,11 +150,24 @@ SOURCES = \
   $(AMRLIB)/zeroin.f \
   $(AMRLIB)/setflags.f \
   $(AMRLIB)/shiftset.f \
+  $(AMRLIB)/shiftset2.f \
   $(AMRLIB)/conck.f \
   $(AMRLIB)/domshrink.f \
   $(AMRLIB)/domprep.f \
   $(AMRLIB)/domup.f \
   $(AMRLIB)/domcopy.f \
+  $(AMRLIB)/setdomflags.f \
+  $(AMRLIB)/setIndices.f \
+  $(AMRLIB)/coarseGridFlagSet.f \
+  $(AMRLIB)/addflags.f \
+  $(AMRLIB)/baseCheck.f \
+  $(AMRLIB)/drivesort.f \
+  $(AMRLIB)/flagcheck.f \
+  $(AMRLIB)/domgrid.f \
+  $(AMRLIB)/setPhysBndryFlags.f \
+  $(AMRLIB)/griddomup.f \
+  $(AMRLIB)/griddomcopy.f \
+  $(AMRLIB)/griddomshrink.f \
   $(AMRLIB)/coarsen.f \
   $(AMRLIB)/auxcoarsen.f \
   $(AMRLIB)/intcopy.f \
