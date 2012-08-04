@@ -534,7 +534,7 @@ contains
     end function interpolate
     
     ! Interpolation function in time
-    function interpolate_time(num_vars,early,late,tau) result(interpolant)
+    pure function interpolate_time(num_vars,early,late,tau) result(interpolant)
         
         implicit none
         
