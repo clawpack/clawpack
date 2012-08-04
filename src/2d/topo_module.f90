@@ -224,7 +224,7 @@ contains
         double precision, parameter :: topo_missing = -150.d0
         logical, parameter :: maketype2 = .false.
         integer :: i,j,num_points,missing,status,topo_start
-        double precision :: no_data_value,x,y,z
+        double precision :: no_data_value,x,y,z,topo_temp
 
         print *, ' '
         print *, 'Reading topography file  ', fname
@@ -239,11 +239,20 @@ contains
                 i = 0
                 status = 0
                 do i=1,mx*my
-                    read(iunit,fmt=*,iostat=status) x,y,topo(i)
+                    read(iunit,fmt=*,iostat=status) x,y,topo_temp
+                    if ((i > mx * my) .and. (status == 0)) then
+                        print *,'*** Error: i > mx*my = ',mx*my
+                        print *,'*** i, mx, my: ',i,mx,my
+                        print *,'*** status = ',status
+                        stop
+                    endif
+
                     if (status /= 0) then
                         print *,"Error reading topography file, reached EOF."
                         print *,"  File = ",fname
                         stop
+                    else
+                        topo(i) = topo_temp
                     endif
                 enddo
 
