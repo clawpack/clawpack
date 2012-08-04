@@ -434,7 +434,7 @@ c     # default values of parameters that may be reset if user's setprob
 c     # routine calls settopo, setdtopo, setqinit, setregions or setgauges.
       mgauges = 0
       mtopofiles = 0
-      mregions = 0
+      num_regions = 0
       idtopo = 0
       iqinit = 0
       coordinate_system = 0
