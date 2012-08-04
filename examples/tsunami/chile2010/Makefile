@@ -51,6 +51,7 @@ MODULES = \
  $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/regions_module.f90
 
 SOURCES = \
   $(GEOLIB)/setprob.f90 \
