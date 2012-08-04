@@ -12,7 +12,7 @@ def gettopo():
     """
     Retrieve the topo file from the GeoClaw repository.
     """
-    remote_directory = 'http://kingkong.amath.washington.edu/topo/etopo2'
+    remote_directory = 'http://www.clawpack.org/geoclaw/topo/etopo'
     topo_fname = 'etopo10min120W60W60S0S.asc'
     topotools.get_topo(topo_fname, remote_directory)
 

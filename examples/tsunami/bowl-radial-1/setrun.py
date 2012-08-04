@@ -7,7 +7,7 @@ that will be read in by the Fortran code.
 """ 
 
 import os
-import clawutil.oldclawdata as data 
+import clawpack.clawutil.oldclawdata as data 
 
 
 #------------------------------
@@ -260,19 +260,20 @@ def setgeo(rundata):
 
     geodata.variable_dt_refinement_ratios = True
 
-    geodata.igravity = 1
     geodata.gravity = 9.81
-    geodata.icoordsys = 1
+    geodata.coordinate_system = 1
+    geodata.coriolis_force = False
 
     # == settsunami.data values ==
-    geodata.sealevel = 0.
-    geodata.drytolerance = 1.e-3
-    geodata.wavetolerance = 1.e-2
-    geodata.depthdeep = 1.e2
-    geodata.maxleveldeep = 3
-    geodata.ifriction = 1
-    geodata.coeffmanning = 0.025
-    geodata.frictiondepth = 20.
+    geodata.eta_init = 0.0
+    geodata.dry_tolerance = 1.e-3
+    geodata.wave_tolerance = 1.e-2
+    geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e15]
+    geodata.deep_depth = 1.e2
+    geodata.max_level_deep = 3
+    geodata.friction_force = True
+    geodata.manning_coefficient = 0.025
+    geodata.friction_depth = 20.
 
     # == settopo.data values ==
     geodata.topofiles = []
@@ -286,7 +287,7 @@ def setgeo(rundata):
     #   [minlevel,maxlevel,fname]
 
     # == setqinit.data values ==
-    geodata.iqinit = 4
+    geodata.qinit_type = 4
     geodata.qinitfiles = []  
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
@@ -299,9 +300,9 @@ def setgeo(rundata):
     geodata.regions.append([1, 1, 0., 1.e10, -100.,100., -100.,100.])
     geodata.regions.append([1, 2, 0., 1.e10,    0.,100.,    0.,100.])
     geodata.regions.append([2, 3, 3., 1.e10,   52., 72.,   52., 72.])
-    #geodata.regions.append([2, 3, 3., 1.e10,   75., 95.,   -10.,  10.])
+    geodata.regions.append([2, 3, 3., 1.e10,   75., 95.,   -10.,  10.])
     geodata.regions.append([2, 4, 3.4, 1.e10,   57., 68.,   57., 68.])
-    #geodata.regions.append([2, 4, 3.4, 1.e10,   83., 92.,   -4.,  4.])
+    geodata.regions.append([2, 4, 3.4, 1.e10,   83., 92.,   -4.,  4.])
 
     # == setgauges.data values ==
     geodata.gauges = []
@@ -329,8 +330,13 @@ def setgeo(rundata):
     # == setfixedgrids.data values ==
     geodata.fixedgrids = []
     # for fixed grids append lines of the form
-    # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
-    #  ioutarrivaltimes,ioutsurfacemax]
+    # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,ioutarrivaltimes,ioutsurfacemax]
+    geodata.fixedgrids.append([3,8,6,52.0,72.0,52.0,72.0,100,100,0,1])
+
+    # == Multilayer ==
+    geodata.num_layers = 1
+    geodata.rho = 1.0
+    geodata.richardson_tolerance = 0.95
 
     return rundata
     # end of function setgeo

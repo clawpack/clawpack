@@ -7,6 +7,14 @@ function setplot is called to set the plot parameters.
     
 """ 
 
+
+try:
+    from setplotfg import setplotfg
+except:
+    print "Did not find setplotfg.py"
+    setplotfg = None
+
+
 #--------------------------
 def setplot(plotdata):
 #--------------------------
@@ -19,7 +27,7 @@ def setplot(plotdata):
     """ 
 
 
-    from visclaw import colormaps, geoplot
+    from clawpack.visclaw import colormaps, geoplot
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
@@ -37,7 +45,7 @@ def setplot(plotdata):
     # an afteraxis function:
 
     def addgauges(current_data):
-        from visclaw import gaugetools
+        from clawpack.visclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=True)
     
@@ -307,6 +315,23 @@ def setplot(plotdata):
     plotitem.plotstyle = 'o'
     plotitem.amr_color=['b','r','g']
     plotaxes.afteraxes = "pylab.legend(['Level 1','Level 2'])"
+    
+    # -----------------
+    # Fixed grid plots:
+    # -----------------
+    if setplotfg is not None:
+
+        # Repeat as desired for other fixed grids...
+        # These show up when using 'make .plots'
+        otherfig = plotdata.new_otherfigure('Fixed Grid 1')
+        fgno = 1
+        sfgno = str(fgno).zfill(2)  # e.g. '01'
+        otherfig.fname = '_PlotIndex_FixedGrid%s.html' % sfgno
+        def make_fgplots(plotdata):
+            fgdata = setplotfg(fgno, outdir=plotdata.outdir)
+            # See the setplotfg function for setting up fixed grid plots
+            fgdata.fg2html(framenos='all')
+        otherfig.makefig = make_fgplots
 
     #-----------------------------------------
     

@@ -5,7 +5,8 @@ c     =====================================================
      &                  ql,qr,aux1,aux2,aux3,
      &                  ilr,asdq,bmasdq,bpasdq)
 c     =====================================================
-      use geoclaw_module
+      use geoclaw_module, only: grav,dry_tolerance,coordinate_system
+      use geoclaw_module, only: earth_radius,pi
 
       implicit none
 c
@@ -39,15 +40,15 @@ c-----------------------last modified 1/10/05----------------------
       integer i,m,mw,mu,mv
 
       g=grav
-      tol=drytolerance
-      abs_tol=drytolerance
+      tol=dry_tolerance(1)
+      abs_tol=dry_tolerance(1)
 
       if (ixy.eq.1) then
-	     mu = 2
-	     mv = 3
+        mu = 2
+        mv = 3
       else
-	     mu = 3
-	     mv = 2
+        mu = 3
+        mv = 2
       endif
 
 
@@ -89,7 +90,7 @@ c===========determine velocity from momentum===========================
       dxdcp = 1.d0
       dxdcm = 1.d0
 
-       if (hl.le.drytolerance.and.hr.le.drytolerance) go to 90
+       if (hl.le.dry_tolerance(1).and.hr.le.dry_tolerance(1)) go to 90
 
 *      !check and see if cell that transverse waves are going in is high and dry
        if (ilr.eq.1) then
@@ -109,17 +110,17 @@ c            s2 = 0.5d0*(s1+s3)
        endif
        if (eta.lt.max(topo1,topo3)) go to 90
 
-      if (icoordsys.eq.2) then
+      if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
-            dxdcp=(Rearth*pi/180.d0)
+            dxdcp=(earth_radius*pi/180.d0)
             dxdcm = dxdcp
          else
             if (ilr.eq.1) then
-               dxdcp = Rearth*pi*cos(aux3(3,i-1))/180.d0
-               dxdcm = Rearth*pi*cos(aux1(3,i-1))/180.d0
+               dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
+               dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
             else
-               dxdcp = Rearth*pi*cos(aux3(3,i))/180.d0
-               dxdcm = Rearth*pi*cos(aux1(3,i))/180.d0
+               dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
+               dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
             endif
          endif
       endif

@@ -240,7 +240,7 @@ c     # relimit correction fluxes if they drive a cell negative
      &                - dmin1(0.d0,dtdxij*fp(1,i,j))
      &                - dmin1(0.d0,dtdyij*gp(1,i,j))
                   phi = dmin1(1.d0,
-     &                 dabs(qold(1,i,j)/(p+drytolerance)))
+     &                 dabs(qold(1,i,j)/(p+dry_tolerance(1))))
 
                   if (phi.lt.1.d0) then
                      do m=1,meqn

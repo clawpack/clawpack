@@ -88,21 +88,21 @@ c           # of interest in the array zz
                z21 = zz(ii+1,jjz1)
                z22 = zz(ii+1,jjz2)
 
-               if (icoordsys.eq.1) then !cartesian rectangle
+               if (coordinate_system.eq.1) then !cartesian rectangle
                   theintegral = theintegral + bilinearintegral(
      &                                         xim,xip,yjm,yjp,
      &                                         x1,x2,y1,y2,
      &                                         dxx,dyy,
      &                                         z11,z12,z21,z22)
-                elseif (icoordsys.eq.2) then !integrate on surface of sphere
+                elseif (coordinate_system.eq.2) then !integrate on surface of sphere
                   theintegral = theintegral + bilinearintegral_s(
      &                                         xim,xip,yjm,yjp,
      &                                         x1,x2,y1,y2,
      &                                         dxx,dyy,
      &                                         z11,z12,z21,z22,
-     &                                         Rearth,pi)
+     &                                         earth_radius,pi)
                 else
-                  write(*,*)  'TOPOINTEGRAL: icoordsys error'
+                  write(*,*)  'TOPOINTEGRAL: coordinate_system error'
                   endif
                enddo
             enddo
