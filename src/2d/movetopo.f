@@ -250,7 +250,7 @@ c       if (.false.) then
                      yjm=ylowtopo(m) + (jb-1.d0)*dytopo(m)
                      yjp = ylowtopo(m) + jb*dytopo(m)
 
-                if (yjm.le.yhidtopo.and.yjp.ge.ylowdtopo) then
+                if (yjm.lt.yhidtopo.and.yjp.gt.ylowdtopo) then
                     yjmc=max(yjm,ylowdtopo)
                     yjpc=min(yjp,yhidtopo)
                     dyc = yjpc-yjmc
