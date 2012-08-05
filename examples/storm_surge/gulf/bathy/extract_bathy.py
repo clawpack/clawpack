@@ -236,7 +236,8 @@ def write_bathy(path,Z,lower,delta,no_data_value=999999,topotype=3):
     outfile.close()
 
 
-def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None):
+def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None,
+               plot_coastline=True):
     r"""Plot the bathymetry files specified in paths and region_path."""
     
     # Setup region figure
@@ -266,6 +267,10 @@ def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None):
                                        vmax=depth_extent[1],
                                        extent=region_extent,
                                        cmap=cmap,norm=color_norm)
+    
+    if plot_coastline:
+        region_axes.contour(X,Y,Z,levels=[0.0],colors='r')
+
 
     # Read in and plot each patch
     for (i,patch_path) in enumerate(paths):
