@@ -899,8 +899,50 @@ def swapheader (inputfile,outputfile):
     return
     #=========================================================================================
 
-
-
-
-
-
+#==============================================================================
+def create_topo_func(loc,verbose=False):
+    """Given a set of (x,z) locations, create a lambda function
+    
+    Create a lambda function that when evaluated will give the topgraphy 
+    height at the point (x,y).
+    
+    :Example: 
+    >>> f = create_topo_profile_func(loc)
+    >>> b = f(x,y)
+    
+    :Input:
+     - *loc* (list) - Create a topography file with the profile denoted by the
+       tuples inside of loc.  A sample set of points are shown below.  Note 
+       that the first value of the list is the x location and the second is 
+       the height of the topography.
+        
+        z (m)
+        ^                                                  o loc[5]  o
+        |                                                    
+        |                                          loc[4]   
+        |--------------------------------------------o-----> x (m) (sea level)
+        |                                            
+        |                                o loc[2] o loc[3]
+        |                         
+        |                         
+        |                           o loc[1]
+        |           
+        |                               
+        |__________________o loc[0]
+        0.0               
+        
+        
+    """
+    
+    cmd_str = "lambda x,y: (x <= %s) * %s" % (loc[0][0],loc[0][1])
+    for i in xrange(0,len(loc)-1):
+        loc_str = " + (%s < x) * (x <= %s)" % (loc[i][0],loc[i+1][0])
+        loc_str = "".join((loc_str," * ((%s - %s) " % (loc[i][1],loc[i+1][1])))
+        loc_str = "".join((loc_str," / (%s - %s)" % (loc[i][0],loc[i+1][0])))
+        loc_str = "".join((loc_str," * (x - %s) + %s)" % (loc[i][0],loc[i][1])))
+        cmd_str = "".join((cmd_str,loc_str))
+    cmd_str = "".join((cmd_str," + (%s < x) * %s" % (loc[-1][0],loc[-1][1])))
+    
+    if verbose:
+        print cmd_str
+    return eval(cmd_str)

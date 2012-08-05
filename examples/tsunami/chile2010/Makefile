@@ -2,7 +2,7 @@
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
-CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
+CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
 
 # See the above file for details and a list of make options, or type
 #   make .help
@@ -49,21 +49,21 @@ MODULES = \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/gauges_module.f90 \
- $(GEOLIB)/regions_module.f90 \
+ $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/regions_module.f90
 
 SOURCES = \
-  $(GEOLIB)/setprob.f \
-  $(GEOLIB)/qinit.f \
-  $(GEOLIB)/readqinit.f \
+  $(GEOLIB)/setprob.f90 \
+  $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/movetopo.f \
+  $(GEOLIB)/flag2refine.f90 \
+  $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(GEOLIB)/fgridinterp.f \
-  $(GEOLIB)/fgridout.f \
-  $(GEOLIB)/rpn2ez.f \
+  $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f \
@@ -77,29 +77,24 @@ SOURCES = \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
-  $(GEOLIB)/setaux.f \
-  $(GEOLIB)/setqinit.f \
-  $(GEOLIB)/setregions.f \
+  $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/setgauges.f \
-  $(GEOLIB)/setfixedgrids.f \
-  $(GEOLIB)/b4step2.f \
-  $(GEOLIB)/flag2refine.f  \
-  $(GEOLIB)/allowflag.f  \
+  $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
-  $(GEOLIB)/getmaxspeed.f \
+  $(GEOLIB)/getmaxspeed.f90 \
+  $(GEOLIB)/advanc.f \
   $(AMRLIB)/prefilp.f \
   $(AMRLIB)/quick_sort1.f \
-  $(AMRLIB)/advanc.f \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/bound.f \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
-  $(AMRLIB)/init_iflags.f  \
+  $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \

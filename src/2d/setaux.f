@@ -8,7 +8,7 @@ c
 c     # aux(1,i,j) = Z(x,y) topography
 c     #                     (negative below sea level for topoymetry)
 c
-c     # If icoordsys=2 then lat-lon coordinates on the sphere and
+c     # If coordinate_system=2 then lat-lon coordinates on the sphere and
 c     #    aux(2,i,j) = area ratio (capacity function -- set mcapa = 2)
 c     #    aux(3,i,j) = length ratio for edge
 c
@@ -21,9 +21,9 @@ c
       dimension aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
 
-      if (icoordsys.eq.2) then
+      if (coordinate_system.eq.2) then
          if (mcapa .ne. 2 .or. maux.lt.3) then
-            write(6,*) 'ERROR in setaux:  for icoordsys=2'
+            write(6,*) 'ERROR in setaux:  for coordinate_system=2'
             write(6,*) '     need mcapa = 2 and maux >= 3'
             write(6,*) '     have mcapa = ',mcapa,'  maux = ',maux
             stop
@@ -40,7 +40,7 @@ c
             xim = xlow + (i - 1.d0)*dx
             xip = xlow + i*dx
 
-            if (icoordsys.eq.2) then
+            if (coordinate_system.eq.2) then
 c           # for lat-lon grid on sphere:
                deg2rad = pi/180.d0
                aux(2,i,j)= deg2rad*Rearth**2*

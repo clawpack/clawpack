@@ -30,6 +30,8 @@ module dtopo_module
     integer :: num_dtopo
     double precision dz
     logical, allocatable :: topoaltered(:)
+    
+    double precision, private :: dtopo_t_start
 
 contains
     ! ========================================================================
@@ -52,7 +54,7 @@ contains
     ! upper left corner across in x and then down in y.
     ! Time column advances most slowly.
     ! ========================================================================
-    subroutine set_dtopo(fname)
+    subroutine read_dtopo_settings(file_name)
 
         use geoclaw_module
         use topo_module
@@ -60,40 +62,27 @@ contains
         implicit none
 
         ! Input arguments
-        character*25, optional, intent(in) :: fname
+        character*25, optional, intent(in) :: file_name
 
         ! Locals
-        character*25 :: file_name
         integer, parameter :: iunit = 79
-        logical :: found_file
-        double precision :: xcell, xim, xip, ycell, yjm, yjp, ztopoij
-        double precision :: capac_area, deg2rad
+        real(kind=8) :: xcell, xim, xip, ycell, yjm, yjp, ztopoij
+        real(kind=8) :: capac_area, deg2rad
         integer :: i,m,ib,jb,ij,ijdtopo,jbr
 
         ! Function
-        double precision :: topointegral
-
-        ! Common block
-        double precision :: tstart
-        common /ctstart/ tstart
+        real(kind=8) :: topointegral
 
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '--------------------------------------------'
         write(GEO_PARM_UNIT,*) 'SETDTOPO:'
         write(GEO_PARM_UNIT,*) '-------------'
 
-        if (present(fname)) then
-            file_name = fname
+        if (present(file_name)) then
+            call opendatafile(iunit,file_name)
         else
-            file_name  = 'setdtopo.data'
+            call opendatafile(iunit,'dtopo.data')
         endif
-        inquire(file=file_name,exist=found_file)
-        if (.not. found_file) then
-            print *,'You must provide a file ', file_name
-            stop
-        endif
-
-        call opendatafile(iunit, file_name)
 
         read(iunit,*) num_dtopo
         write(GEO_PARM_UNIT,*) '   num dtopo files = ',num_dtopo
@@ -150,12 +139,12 @@ contains
         ! the topo arrays are altered here to match the final topo + dtopo.
         ! ====================================================================
         do i=1,num_dtopo
-            if (tstart <= tfdtopo(i)) then
+            if (dtopo_t_start <= tfdtopo(i)) then
                 topoaltered(i) = .false.
-            elseif (tstart > tfdtopo(i)) then
+            elseif (dtopo_t_start > tfdtopo(i)) then
                 topoaltered(i) = .true.
-                write(GEO_PARM_UNIT,*) '  Altering topo arrays at t=', tstart
-                print *, 'SETDTOPO Resetting topo arrays at t=',tstart
+                write(GEO_PARM_UNIT,*) '  Altering topo arrays at t=', dtopo_t_start
+                print *, 'SETDTOPO Resetting topo arrays at t=',dtopo_t_start
                 do m=1,mtopofiles
                     if ((xlowtopo(m) <= xhidtopo(i)).and. &
                             (xhitopo(m) >= xlowdtopo(i)).and. &
@@ -186,9 +175,9 @@ contains
                                             mydtopo(i),dtopowork(ijdtopo),1)
 
                                         ztopoij=ztopoij/((yjp-yjm)*(xip-xim))
-                                        if (icoordsys == 2) then
+                                        if (coordinate_system == 2) then
                                             deg2rad = pi/180.d0
-                                            capac_area = deg2rad*Rearth**2 &
+                                            capac_area = deg2rad*earth_radius**2 &
                                                 * (sin(yjp*deg2rad) &
                                                 - sin(yjm*deg2rad))/(yjp-yjm)
                                             ztopoij = ztopoij / capac_area
@@ -207,7 +196,7 @@ contains
             endif
         enddo
 
-    end subroutine set_dtopo
+    end subroutine read_dtopo_settings
     ! ========================================================================
 
     ! ========================================================================
