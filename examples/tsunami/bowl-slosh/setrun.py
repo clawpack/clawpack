@@ -28,7 +28,7 @@ def setrun(claw_pkg='geoclaw'):
     assert claw_pkg.lower() == 'geoclaw',  "Expected claw_pkg = 'geoclaw'"
 
     ndim = 2
-    rundata = ClawRunData(claw_pkg, ndim)
+    rundata = data.ClawRunData(claw_pkg, ndim)
 
     #------------------------------------------------------------------
     # GeoClaw specific parameters:
