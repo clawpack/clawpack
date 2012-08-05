@@ -41,8 +41,8 @@ endif
 # List of sources for this program:
 # ---------------------------------
 
-AMRLIB = $(CLAW)/amrclaw/src/2d
-GEOLIB = $(CLAW)/geoclaw/src/2d
+AMRLIB = $(AMRCLAW)/src/2d
+GEOLIB = $(GEOCLAW)/src/2d
 
 MODULES = \
  $(AMRLIB)/amr_module.f90 \
@@ -53,26 +53,23 @@ MODULES = \
  $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/regions_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/refinement_module.f90
 
 SOURCES = \
-  qinit.f \
-  $(GEOLIB)/setprob.f \
-  $(GEOLIB)/readqinit.f \
+  qinit.f90 \
+  $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(GEOLIB)/fgridinterp.f \
-  $(GEOLIB)/fgridout.f \
-  $(GEOLIB)/rpn2ez.f \
+  $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f \
   $(GEOLIB)/src1d.f \
   $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
-  $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
   $(GEOLIB)/filval.f \
   $(GEOLIB)/filpatch.f \
@@ -80,30 +77,39 @@ SOURCES = \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setaux.f \
-  $(GEOLIB)/setqinit.f \
-  $(GEOLIB)/setregions.f \
   $(GEOLIB)/setgauges.f \
+<<<<<<< HEAD
   $(GEOLIB)/setfixedgrids.f \
   $(GEOLIB)/b4step2.f \
   $(GEOLIB)/flag2refine.f  \
   $(GEOLIB)/flag2refine2.f  \
   $(GEOLIB)/allowflag.f  \
+=======
+  $(GEOLIB)/b4step2.f90 \
+  $(GEOLIB)/qad.f \
+  $(GEOLIB)/flag2refine.f90  \
+  $(GEOLIB)/allowflag.f90  \
+>>>>>>> master
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
-  $(GEOLIB)/getmaxspeed.f \
+  $(GEOLIB)/getmaxspeed.f90 \
+  $(GEOLIB)/advanc.f \
   $(AMRLIB)/prefilp.f \
   $(AMRLIB)/quick_sort1.f \
-  $(AMRLIB)/advanc.f \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/bound.f \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
+<<<<<<< HEAD
   $(AMRLIB)/spest2.f  \
   $(AMRLIB)/init_iflags.f  \
+=======
+  $(AMRLIB)/init_iflags.f \
+>>>>>>> master
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \
@@ -182,8 +188,7 @@ SOURCES = \
   $(AMRLIB)/opendatafile.f \
   $(AMRLIB)/init_alloc.f90 \
   $(AMRLIB)/restrt_alloc.f90 \
-  $(AMRLIB)/resize_alloc.f90 \
-# $(AMRLIB)/resize_alloc_static.f90 \
+  $(AMRLIB)/resize_alloc.f90
 
 
 

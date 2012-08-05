@@ -7,7 +7,7 @@ that will be read in by the Fortran code.
 """
 
 import os
-import clawutil.oldclawdata as data
+import clawpack.clawutil.oldclawdata as data
 import numpy as np
 
 
@@ -71,8 +71,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells:
-    clawdata.mx = 30
-    clawdata.my = 30
+    clawdata.mx = 10
+    clawdata.my = 10
 
 
     # ---------------
@@ -267,21 +267,21 @@ def setgeo(rundata):
 
     geodata.variable_dt_refinement_ratios = True
 
-    geodata.igravity = 1
     geodata.gravity = 9.81
-    geodata.icoordsys = 2
-    geodata.Rearth = 6367.5e3
-    geodata.icoriolis = 0
+    geodata.coordinate_system = 2
+    geodata.earth_radius = 6367.5e3
+    geodata.coriolis_forcing = False
 
     # == settsunami.data values ==
-    geodata.sealevel = 0.
-    geodata.drytolerance = 1.e-3
-    geodata.wavetolerance = 1.e-1
-    geodata.depthdeep = 1.e2
-    geodata.maxleveldeep = 3
-    geodata.ifriction = 1
-    geodata.coeffmanning =.025
-    geodata.frictiondepth = 1.e6
+    geodata.eta_init = 0.0
+    geodata.dry_tolerance = 1.e-3
+    geodata.wave_tolerance = 1.e-1
+    geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e15]
+    geodata.deep_depth = 1.e2
+    geodata.max_level_deep = 3
+    geodata.friction_forcing = True
+    geodata.manning_coefficient =.025
+    geodata.friction_depth = 1.e6
 
     # == settopo.data values ==
     geodata.topofiles = []
@@ -321,7 +321,13 @@ def setgeo(rundata):
     # for fixed grids append lines of the form
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
-
+    # geodata.fixedgrids.append([1e3,3.24e4,10,-90,-80,-30,-15,100,100,0,1])
+    
+    # == Multilayer ==
+    geodata.num_layers = 1
+    geodata.rho = 1.0
+    geodata.richardson_tolerance = 0.95
+    
     return rundata
     # end of function setgeo
     # ----------------------

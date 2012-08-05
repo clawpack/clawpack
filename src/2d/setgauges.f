@@ -5,7 +5,7 @@ c=========================================================================
       use amr_module
       use gauges_module
       implicit double precision (a-h,o-z)
-      character*25, parameter :: fname = 'setgauges.data'
+      character(len=25), parameter :: fname = 'setgauges.data'
       logical foundFile
 
 
@@ -27,7 +27,7 @@ c=========================================================================
       if (mgauges.gt.maxgauges) then
             write(*,*) 'ERROR in setgauges'
             write(*,*) 'mgauges = ',mgauges,'   maxgauges = ',maxgauges
-            write(*,*) 'increase maxgauges in gauges.i'
+            write(*,*) 'increase maxgauges in gauges_module.f90'
             stop
             endif
 

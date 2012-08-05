@@ -160,7 +160,7 @@ c        even if initial timestep was good could be too small
 c        try automatically resetting 
 c        RANDY: do you like this option
 c
-         possk(1) = cfl/spoh(1)
+         possk(1) = cfl/(spoh(1) + tiny(1.d0))
          write(*,*)"  automatically setting initial dt to ",possk(1)
 
 c
@@ -174,7 +174,7 @@ c  this is set during timestepping or by user initially
 c
       do level = 2, lfine   
          dtc = possk(level-1)
-         dtf = cfl/spoh(level)
+         dtf = cfl/(spoh(level) + tiny(1.d0))
          if (dtf .gt. dtc) then
             kratio(level-1) = 1  ! cant have larger timestep than parent level
             possk(level)    = dtc  ! cant have larger timestep than parent level

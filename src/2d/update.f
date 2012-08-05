@@ -66,7 +66,7 @@ c 20   if (mptr .eq. 0) go to 85
 !$OMP&                    etaf,etaav,hav,nwet,hc,huc,hvc),
 !$OMP&            SHARED(lget,numgrids,listgrids,level,intratx,intraty,
 !$OMP&                   nghost,uprint,nvar,naux,mcapa,node,listsp,
-!$OMP&                   alloc,lstart,drytolerance),
+!$OMP&                   alloc,lstart,dry_tolerance),
 !$OMP&            DEFAULT(none)
       do ng = 1, numgrids(lget)
 c        mptr    = mget(ng, level)
@@ -157,7 +157,7 @@ c     and is never increased given an increase in mass
       husum = 0.d0
       hvsum = 0.d0
 
-      drytol=drytolerance
+      drytol=dry_tolerance(1)
       nwet=0
 
       do jco  = 1, intraty(lget)

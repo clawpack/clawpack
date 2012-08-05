@@ -434,10 +434,10 @@ c     # default values of parameters that may be reset if user's setprob
 c     # routine calls settopo, setdtopo, setqinit, setregions or setgauges.
       mgauges = 0
       mtopofiles = 0
-      mregions = 0
+      num_regions = 0
       idtopo = 0
       iqinit = 0
-      icoordsys = 0
+      coordinate_system = 0
       coeffmanning = 0.d0
       frictiondepth = 0.d0
 c
@@ -501,8 +501,8 @@ c        # first timestep looks at the gauge array but it is not yet built
          nstart = 0
       endif
 
-      if (icoordsys .eq. 0) then
-         write(6,*) 'ERROR:  icoordsys is not set properly'
+      if (coordinate_system .eq. 0) then
+         write(6,*) 'ERROR:  coordinate_system is not set properly'
          write(6,*) '        perhaps you neglected to call setgeo?'
          stop
          endif
