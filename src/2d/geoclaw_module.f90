@@ -23,13 +23,13 @@ module geoclaw_module
     ! ========================================================================
     !  Physics
     ! ========================================================================
-    real(kind=8) :: grav,earth_radius
+    real(kind=8) :: grav, earth_radius
     integer :: coordinate_system
     
     ! Forcing
-    logical :: coriolis_force,wind_force,pressure_force,friction_force
-    real(kind=8) :: manning_coefficient,friction_depth
-    real(kind=8) :: rho_air
+    logical :: coriolis_force ! True then coriolis terms included in src
+    integer :: friction_force ! If 0, no forcing, 1 constant N, 2 variable
+    real(kind=8) :: manning_coefficient, friction_depth
     
     ! Method parameters    
     real(kind=8), allocatable :: dry_tolerance(:)
@@ -92,11 +92,15 @@ contains
         read(unit,*)
         read(unit,*) coriolis_force
         read(unit,*) friction_force
-        read(unit,*) manning_coefficient
-        read(unit,*) friction_depth
-        read(unit,*) wind_force
-        read(unit,*) rho_air
-        read(unit,*) pressure_force
+        if (friction_force == 0) then
+            manning_coefficient = 0.d0
+            friction_depth = 1.d10
+        else if (friction_force == 1) then
+            read(unit,*) manning_coefficient
+            read(unit,*) friction_depth
+        else if ( friction_force > 1 ) then
+            stop "Friction forcing > 1 unhandled."
+        endif
         read(unit,*)
         read(unit,*) dry_tolerance
         read(unit,*) varRefTime
@@ -129,9 +133,6 @@ contains
         write(GEO_PARM_UNIT,*) '   friction_force:',friction_force
         write(GEO_PARM_UNIT,*) '   manning_coefficient:',manning_coefficient
         write(GEO_PARM_UNIT,*) '   friction_depth:',friction_depth
-        write(GEO_PARM_UNIT,*) '   wind_force:',wind_force
-        write(GEO_PARM_UNIT,*) '   rho_air:',rho_air
-        write(GEO_PARM_UNIT,*) '   pressure_force:',pressure_force
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
         write(GEO_PARM_UNIT,*) '   Variable dt Refinement Ratios:',varRefTime

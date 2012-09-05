@@ -31,7 +31,7 @@ ifeq ($(MAKELEVEL),0)
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
 	# Threading flags
-	# FFLAGS += -D GRID_THREADING
+	# FFLAGS += -D GRID_THREADING -fopenmp
 	FFLAGS += -D MAX1D=200
 endif
 
@@ -51,11 +51,15 @@ MODULES = \
  $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/regions_module.f90 \
+ $(GEOLIB)/storm_surge/holland_storm_module.f90
 
 SOURCES = \
-  $(GEOLIB)/setaux.f90 \
-  $(GEOLIB)/setprob.f90 \
-  $(GEOLIB)/qinit.f90 \
+  $(GEOLIB)/storm_surge/src2.f \
+  $(GEOLIB)/storm_surge/src1d.f \
+  $(GEOLIB)/storm_surge/setaux.f90 \
+  $(GEOLIB)/storm_surge/setprob.f90 \
+  $(GEOLIB)/storm_surge/qinit.f90 \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/flag2refine.f90 \
   $(GEOLIB)/allowflag.f90 \
@@ -66,8 +70,6 @@ SOURCES = \
   $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
-  $(GEOLIB)/src2.f \
-  $(GEOLIB)/src1d.f \
   $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \

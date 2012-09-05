@@ -1,7 +1,6 @@
 subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
-    use multilayer_module, only: rho,eta,num_layers
-    use hurricane_module
+    use storm_module, only: wind_forcing, pressure_forcing
     use geoclaw_module
 
     implicit none
@@ -17,15 +16,14 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! Locals
     integer :: i,j
     double precision :: yc
+    
     ! Friction
     double precision :: h(2),g,coeff,tol,speed,D
+    
     ! Wind and pressure
     double precision :: tau,wind_speed,P_atmos_x,P_atmos_y
+    
     ! Coriolis source term
-    ! angular velocity of earth = 2.d0*pi/(86400.d0) 
-!     double precision, parameter :: OMEGA = 7.2722052166430395d-05
-!     double precision, parameter :: OMEGA = 7.2722052166430395d-03 ! Incorrect value but used for testing
-    ! For beta-plane approximation, center of domain's latitude 
     double precision :: fdt,theta,a11,a12,a21,a22,hu,hv
     
     integer :: mn,n
@@ -40,7 +38,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! friction--------------------------------------------------------
     if (coeffmanning > 0.d0 .and. friction_forcing > 0) then
         ! Constant coefficient of friction
-        if (ifriction == 1) then
+        if (friction_forcing == 1) then
             D = coeff
             do i=1,mx
                 do j=1,my
@@ -75,8 +73,9 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     endif
                 enddo
             enddo
-        ! Manning-N friction
-        else if (ifriction == 2) then
+        ! Variable friction field
+        else if (friction_forcing == 2) then
+            stop "Variable friction unimplemented (ifriction == 2)."
             do i=1,mx
                 do j=1,my
                     ! Check to see which layer we are doing this on
@@ -127,7 +126,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! ----------------------------------------------------------------
 
     ! coriolis--------------------------------------------------------
-    if (icoriolis > 0) then
+    if (coriolis_force) then
         do j=1,my
             yc = ylower + (j-.5d0)*dy
             fdt = coriolis(yc) * dt

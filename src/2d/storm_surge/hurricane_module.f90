@@ -1,49 +1,31 @@
 ! ============================================================================
-!  Program:     /Users/mandli/src/local/shallow_water/2d/storm_surge/testbeach
-!  File:        hurricane
-!  Created:     2009-11-11
-!  Author:      Kyle Mandli
-! ============================================================================
-!      Copyright (C) 2009-11-11 Kyle Mandli <mandli@amath.washington.edu>
-!
 !  Distributed under the terms of the Berkeley Software Distribution (BSD) 
 !  license
 !                     http://www.opensource.org/licenses/
 ! ============================================================================
 
-module hurricane_module
+module storm_module
+
+    use holland_storm_module, only: holland_storm_type
 
     implicit none
     
-    ! Wind source terms
-    logical :: wind_forcing
-    integer :: wind_type,max_wind_nest
-    double precision, allocatable :: wind_refine(:)
-    double precision :: wind_tolerance
-    
-    ! Pressure source terms
-    logical :: pressure_forcing
-    double precision :: pressure_tolerance
-    
-    ! Refinement parameters
-    integer :: max_R_nest
-    double precision, allocatable :: R_refine(:)
+    ! Source term control and parameters
+    logical :: wind_forcing, pressure_forcing
+    integer :: wind_type
+    real(kind=8) :: rho_air
+    real(kind=8) :: pressure_tolerance, wind_tolerance
+
+    ! AMR Parameters
+    integer :: max_R_next, max_wind_nest
+    real(kind=8), allocatable :: R_refine(:), wind_refine(:)
     
     ! Hurricane Parameters
-    double precision :: ramp_up_time,hurricane_velocity(2),R_eye_init(2)
-    double precision :: rho_air
-    double precision, private :: A,B,Pn,Pc
-    
-    double precision, allocatable :: time(:),position(:,:)
-    double precision, allocatable :: max_wind(:),min_pressure(:)
-    
-    ! Coriolis location for beta-plane approximation
-    !  should be read in but not implemented that way yet
-    double precision :: theta_0
+    type(holland_storm_type) :: storm
 
 contains
     ! ========================================================================
-    !   subroutine set_hurricane_parameters(data_file)
+    !   subroutine set_storm(data_file)
     ! ========================================================================
     ! Reads in the data file at the path data_file.  Sets the following 
     ! parameters:
@@ -56,7 +38,7 @@ contains
     !     data_file = Path to data file
     !
     ! ========================================================================
-    subroutine set_hurricane(data_file)
+    subroutine set_storm(data_file)
 
         use geoclaw_module, only: pi
 
@@ -68,7 +50,6 @@ contains
         ! Locals
         integer, parameter :: unit = 13
         integer :: status,i
-        character*150 :: hurricane_track_file_path
         
         ! Open file
         if (present(data_file)) then
@@ -97,12 +78,6 @@ contains
         read(unit,*) (R_refine(i),i=1,max_R_nest)
         read(unit,*)
         
-        ! Physics
-        read(unit,*) rho_air
-        read(unit,*) theta_0
-        theta_0 = theta_0 * pi / 180d0
-        read(13,*)
-        
         ! Wind 
         read(unit,*) wind_type
         ! Read in hurricane track data from file
@@ -130,38 +105,6 @@ contains
 
     end subroutine set_hurricane
 
-    subroutine read_hurricane_track_file(track_file)
-        
-        implicit none
-        
-        ! Subroutine Arguments
-        character(len=*), intent(in) :: track_file
-        
-        ! Locals
-        integer, parameter :: unit = 14
-        
-    end subroutine read_hurricane_track_file
-    
-    ! ========================================================================
-    !   function eye_location(t)
-    ! ========================================================================
-    ! Returns the location of the eye of the storm
-    ! 
-    ! Input:
-    !     real(kind=8) t = current time
-    ! 
-    ! Output:
-    !     real(kind=8) eye_location(2) = (x,y) location of the eye
-    ! ========================================================================
-    pure function eye_location(t)
-        implicit none
-        
-        real(kind=8), intent(in) :: t
-        real(kind=8) :: eye_location(2)
-
-        eye_location = t * hurricane_velocity + R_eye_init
-        
-    end function eye_location
     
     ! ========================================================================
     !   subroutine hurricane_wind(mbc,mx,my,xlower,ylower,dx,dy,R_eye,wind)
