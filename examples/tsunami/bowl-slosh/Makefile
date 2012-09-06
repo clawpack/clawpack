@@ -64,8 +64,8 @@ SOURCES = \
   $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
-  $(GEOLIB)/src2.f \
-  $(GEOLIB)/src1d.f \
+  $(GEOLIB)/src2.f90 \
+  $(GEOLIB)/src1d.f90 \
   $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/valout.f \
