@@ -270,7 +270,7 @@ def setgeo(rundata):
     geodata.gravity = 9.81
     geodata.coordinate_system = 2
     geodata.earth_radius = 6367.5e3
-    geodata.coriolis_forcing = False
+    geodata.coriolis_forcing = True
 
     # == settsunami.data values ==
     geodata.eta_init = 0.0
@@ -279,7 +279,7 @@ def setgeo(rundata):
     geodata.speed_tolerance = [1e15,1e15,1e15,1e15,1e15]
     geodata.deep_depth = 1.e2
     geodata.max_level_deep = 3
-    geodata.friction_forcing = True
+    geodata.friction_forcing = 1
     geodata.manning_coefficient =.025
     geodata.friction_depth = 1.e6
 

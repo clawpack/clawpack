@@ -25,10 +25,14 @@ module geoclaw_module
     ! ========================================================================
     real(kind=8) :: grav, earth_radius
     integer :: coordinate_system
+
+    ! Rotational velocity of Earth
+    real(kind=8), parameter :: omega = 2.0d0 * pi / 86164.2d0
     
     ! Forcing
-    logical :: coriolis_force ! True then coriolis terms included in src
-    integer :: friction_force ! If 0, no forcing, 1 constant N, 2 variable
+    logical :: coriolis_forcing ! True then coriolis terms included in src
+    real(kind=8) :: theta_0 ! Used if using the beta-plane approximation
+    integer :: friction_forcing ! If 0, no forcing, 1 constant N, 2 variable
     real(kind=8) :: manning_coefficient, friction_depth
     
     ! Method parameters    
@@ -90,15 +94,21 @@ contains
         read(unit,*) rho
         read(unit,*) eta_init
         read(unit,*)
-        read(unit,*) coriolis_force
-        read(unit,*) friction_force
-        if (friction_force == 0) then
+        read(unit,*) coriolis_forcing
+        if (coordinate_system == 1 .and. coriolis_forcing) then
+            read(unit,*) theta_0
+            print *,'here'
+        else
+            theta_0 = 0.d0
+        endif
+        read(unit,*) friction_forcing
+        if (friction_forcing == 0) then
             manning_coefficient = 0.d0
             friction_depth = 1.d10
-        else if (friction_force == 1) then
+        else if (friction_forcing == 1) then
             read(unit,*) manning_coefficient
             read(unit,*) friction_depth
-        else if ( friction_force > 1 ) then
+        else if ( friction_forcing > 1 ) then
             stop "Friction forcing > 1 unhandled."
         endif
         read(unit,*)
@@ -129,8 +139,9 @@ contains
         write(GEO_PARM_UNIT,*) '   rho:',rho
         write(GEO_PARM_UNIT,*) '   eta_init:',eta_init
         write(GEO_PARM_UNIT,*) ' '
-        write(GEO_PARM_UNIT,*) '   coriolis_force:',coriolis_force
-        write(GEO_PARM_UNIT,*) '   friction_force:',friction_force
+        write(GEO_PARM_UNIT,*) '   coriolis_forcing:',coriolis_forcing
+        write(GEO_PARM_UNIT,*) '   theta_0:',theta_0
+        write(GEO_PARM_UNIT,*) '   friction_forcing:',friction_forcing
         write(GEO_PARM_UNIT,*) '   manning_coefficient:',manning_coefficient
         write(GEO_PARM_UNIT,*) '   friction_depth:',friction_depth
         write(GEO_PARM_UNIT,*) ' '
@@ -187,5 +198,37 @@ contains
         endif
         
     end subroutine read_multilayer_data
+
+    ! ========================================================================
+    !  Calculate the coriolis constant f
+    !   If coordinate_system == 1 then
+    !       A beta-plane approximation is used and y should be in meters
+    !   if coordinate_system == 2 then
+    !       Grid is in lat-long and y should be in degrees which is converted
+    !       to radians
+    ! ========================================================================
+    real(kind=8) pure function coriolis(y)
+
+        implicit none
+        
+        ! Input
+        real(kind=8), intent(in) :: y
+        
+        ! Locals
+        real(kind=8) :: theta
+        
+        ! Assume beta plane approximation and y is in meters    
+        if (coordinate_system == 1) then
+            theta = y / 111d3 * pi / 180d0 + theta_0
+            coriolis = 2.d0 * omega * (sin(theta_0) + (theta - theta_0)     &
+                                                    * cos(theta_0))
+        else if (coordinate_system == 2) then        
+            theta = pi*y/180.d0
+            coriolis = 2.d0 * omega * sin(theta)
+        else
+            ! Unknown coordinate system, return nothing
+            coriolis = 0.d0
+        endif
+    end function coriolis
 
 end module geoclaw_module
