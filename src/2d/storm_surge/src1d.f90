@@ -5,100 +5,120 @@
 ! time steps to the coarse grid cell values used in solving Riemann
 ! problems at the interface between coarse and fine grids.
 subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
-
-    use multilayer_module, only: rho,eta,num_layers
-    use hurricane_module
-    use geoclaw_module
+      
+    use storm_module, only: wind_forcing, pressure_forcing
+    use storm_module, only: rho_air, wind_drag
+    use storm_module, only: pressure_tolerance
+      
+    use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
+    use geoclaw_module, only: friction_forcing, manning_coefficient 
+    use geoclaw_module, only: friction_depth, num_layers, rho
+    use geoclaw_module, only: omega, coordinate_system
 
     implicit none
+
+    ! Input
+    integer, intent(in) :: meqn, mbc, mx1d, maux
+    real(kind=8), intent(in) :: t, dt
+    real(kind=8), intent(inout) :: q1d(meqn, mx1d), aux1d(maux, mx1d)
+
+    ! Local storage
+    integer :: i, m, bottom_index, bottom_layer, layer_index
+    logical :: found
+    real(kind=8) :: h(num_layers), hu, hv, gamma, dgamma, y, fdt, a(2,2)
+
+    ! Algorithm parameters
+    ! Parameter controls when to zero out the momentum at a depth in the
+    ! friction source term
+    real(kind=8), parameter :: depth_tolerance = 1.0d-30
     
-    ! Input parameters
-    integer, intent(in) :: meqn,mbc,mx1d,maux
-    double precision, intent(in) :: t,dt
-    
-    ! Output
-    double precision, intent(inout) :: q1d(meqn,mx1d)
-    double precision, intent(inout) :: aux1d(maux,mx1d)
+    ! Friction forcing
+    if (friction_forcing > 0) then
+        if (friction_forcing == 2) stop "Variable friction unimplemented!"
 
-    ! Locals
-    integer :: i
-    double precision :: g,coeff,tol,h(2)
-    double precision :: wind_speed,tau,P_atmos_x,P_atmos_y,speed,D
-
-    ! Common block
-    double precision dtcom,dxcom,dycom,tcom
-    integer icom,jcom
-    
-    common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
-
-    ! Incorporates friction using Manning coefficient
-    g=grav
-    coeff = coeffmanning
-    tol = 1.d-30  !# to prevent divide by zero in gamma
-
-    ! = Friction =============================================================
-    if (coeff > 0.d0) then
         do i=1,mx1d
-            h(1) = q1d(1,i) / rho(1)
-            if (num_layers > 1) then
-                h(2) = q1d(4,i) / rho(2)
-            else
-                h(2) = 0.d0
+
+            ! Extract depths
+            forall (m=1:num_layers)
+                h(m) = q1d(3 * (m-1) + 1,i) / rho(m)
+            end forall
+
+            ! Extract appropriate momentum, also zero momentum in dry layers
+            m = num_layers
+            found = .false.
+            do while(.not.found .and. m > 0)
+                if (h(m) > depth_tolerance) then
+                    ! Extract momentum components and exit loop
+                    bottom_layer = m
+                    bottom_index = 3 * (m - 1)
+                    hu = q1d(bottom_index + 2, i) / rho(m)
+                    hv = q1d(bottom_index + 3, i) / rho(m)
+                    found = .true.
+                else
+                    ! Set almost dry layers momentum to zero
+                    q1d(3 * (m - 1) + 2, i) = 0.d0
+                    q1d(3 * (m - 1) + 3, i) = 0.d0
+                endif
+                m = m - 1
+            end do
+
+            if (.not.found) then
+                cycle
             endif
-            
-            if (h(2) > tol) then
-                speed = sqrt(q1d(5,i)**2 + q1d(6,i)**2) / q1d(4,i)
-                D = coeff**2 * g * sum(h)**(-7/3) * speed
-                
-                q1d(5,i) = q1d(5,i) * exp(-D*dt)
-                q1d(6,i) = q1d(6,i) * exp(-D*dt)
-            else if (h(1) > tol) then
-                if (num_layers > 1) q1d(5:6,i) = 0.d0
-                
-                speed = sqrt(q1d(2,i)**2 + q1d(3,i)**2) / q1d(1,i)
-                
-                D = coeff**2 * g * sum(h)**(-7/3) * speed
-                
-                q1d(2,i) = q1d(2,i) * exp(-D*dt)
-                q1d(3,i) = q1d(3,i) * exp(-D*dt)
-                
-            else
-                q1d(2:3,i) = 0.d0
-                if (num_layers > 1)  q1d(5:6,i) = 0.d0
+
+            ! Apply friction source term only if in shallower water
+            if (sum(h) <= friction_depth) then
+                ! Calculate source term
+                gamma = sqrt(hu**2 + hv**2) * (g * manning_coefficient**2) &
+                                            / (h(bottom_layer)**(7/3))
+                dgamma = 1.d0 + dt * gamma
+                q1d(bottom_index + 2, i) = q1d(bottom_index + 2, i) / dgamma
+                q1d(bottom_index + 3, i) = q1d(bottom_index + 3, i) / dgamma
             endif
-        enddo          
+        enddo
+    endif
+    
+    ! Only lat-long coordinate system supported here right now
+    if (coriolis_forcing .and. coordinate_system == 2) then
+
+        do i=1,mx1d
+            ! aux(3,:,:) stores the y coordinates multiplied by deg2rad
+            fdt = 2.d0 * omega * sin(aux1d(3,i)) * dt
+
+            ! Calculate matrix components
+            a(1,1) = 1.d0 - 0.5d0 * fdt**2 + fdt**4 / 24.d0
+            a(1,2) =  fdt - fdt**3 / 6.d0
+            a(2,1) = -fdt + fdt**3 / 6.d0
+            a(2,2) = a(1,1)
+    
+            do m=1,num_layers
+                q1d(layer_index + 2,i) = q1d(layer_index + 2,i) * a(1,1) &
+                                       + q1d(layer_index + 3,i) * a(1,2)
+                q1d(layer_index + 3,i) = q1d(layer_index + 2,i) * a(2,1) &
+                                       + q1d(layer_index + 3,i) * a(2,2)
+            enddo
+        enddo
+        
     endif
     
     ! = Wind Forcing =========================================================
     if (wind_forcing) then
-        ! Here we have to take into account geoclaw which we use for the 
-        ! single layer case.  It needs to divide by the water's density
-        if (num_layers > 1) then
-            do i=1,mx1d
-                if (abs(q1d(1,i)) > drytolerance) then
-                    wind_speed = sqrt(aux1d(4,i)**2 + aux1d(5,i)**2)
-                    if (wind_speed > wind_tolerance) then
-                        tau = wind_drag(wind_speed) * rho_air * wind_speed
-                        q1d(2,i) = q1d(2,i) + dt * tau * aux1d(4,i)
-                        q1d(3,i) = q1d(3,i) + dt * tau * aux1d(5,i)
-                    endif
-                endif
-            enddo
-        else
-            do i=1,mx1d
-                if (abs(q1d(1,i)) > drytolerance) then
-                    wind_speed = sqrt(aux1d(4,i)**2 + aux1d(5,i)**2)
+        ! Force only the top layer of water
+        do i=1,mx1d
+            if (q1d(1,i) / rho(1) > drytolerance) then
+                wind_speed = sqrt(aux1d(4,i)**2 + aux1d(5,i)**2)
+                if (wind_speed > wind_tolerance) then
                     tau = wind_drag(wind_speed) * rho_air * wind_speed
-                    q1d(2,i) = q1d(2,i) + dt * tau * aux1d(4,i) / rho(1)
-                    q1d(3,i) = q1d(3,i) + dt * tau * aux1d(5,i) / rho(1)
+                    q1d(2,i) = q1d(2,i) + dt * tau * aux1d(4,i)
+                    q1d(3,i) = q1d(3,i) + dt * tau * aux1d(5,i)
                 endif
-            enddo
-        endif
+            endif
+        enddo
     endif
     ! ========================================================================
     
     ! == Pressure Forcing ====================================================
-    if (pressure_forcing) then
+    if (pressure_forcing .or. .false.) then
         stop "Not sure how to proceed, need direction or the right dx or dy."
     endif
 

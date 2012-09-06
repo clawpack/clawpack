@@ -176,7 +176,8 @@ contains
     ! ==========================================================================
     subroutine update_storm(t,storm)
 
-        use geoclaw_module, only: rho_air, earth_radius, pi
+        use storm_module, only: rho_air
+        use geoclaw_mdoule, only: earth_radius, pi
 
         implicit none
         
@@ -296,7 +297,7 @@ contains
     subroutine set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,t, &
                             pressure_index,wind_index,aux,storm)
 
-        use geoclaw_module, only: rho_air,pi
+        use geoclaw_module, only: rho_air, pi, omega
 
         implicit none
 
@@ -311,9 +312,6 @@ contains
         ! Array storing wind and presure field
         integer, intent(in) :: pressure_index,wind_index
         real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-
-        ! Rotational velocity of Earth
-        real(kind=8), parameter :: omega = 2.0d0 * pi / 86164.2d0
 
         ! Local storage
         real(kind=8) :: x,y,r
