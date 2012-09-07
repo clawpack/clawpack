@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# encoding: utf-8
 """
 file: topotools.py 
 
@@ -953,7 +955,7 @@ def create_topo_func(loc,verbose=False):
 deg2meters = lambda theta,lat:R_earth * theta * np.pi / 180.0 * np.cos(lat * np.pi / 180.0)
 meters2deg = lambda d,lat:d / (R_earth * np.pi / 180.0 * np.cos(lat * np.pi / 180.0))
 
-# Based at lat = 24º
+# Based at lat = 24 degrees
 long2meters = lambda degree_resolution:degree_resolution * 100950.05720513177
 lat2meters = lambda degree_resolution:degree_resolution * 110772.87259559495
 
@@ -981,11 +983,11 @@ def calculate_resolution(ratios,base_resolutions=[0.25,0.25],
                                                         degree_resolutions[level,0],
                                                         degree_resolutions[level,1],
                                                         meter_resolutions[level,0],
-                                                        meter_resolutions[level,1]
+                                                        meter_resolutions[level,1])
 
     resolutions = {}
     for level in xrange(1,num_levels):
-        resolutions{level} = (degree_resolutions,meter_resolutions)
+        resolutions[level] = (degree_resolutions,meter_resolutions)
     return [(degree_resolutions,meter_resolutions) 
                         for level in xrange(1,num_levels)]
 
