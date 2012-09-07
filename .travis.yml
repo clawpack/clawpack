@@ -4,7 +4,8 @@ python:
 # command to install dependencies
 install: 
     - "pip install --use-mirrors numpy"
-    - "pip install --use-mirrors"
+    - "pip install --use-mirrors clawpack"
 # command to run tests
 script: 
-    - find pyclaw/apps -name test*.py|xargs nosetests --with-xunit --verbose || :
+    - cd clawpack/pyclaw
+    - nosetests
