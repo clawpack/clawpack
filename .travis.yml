@@ -1,0 +1,10 @@
+language: python
+python:
+  - "2.7"
+# command to install dependencies
+install: 
+    - "pip install --use-mirrors numpy"
+    - "pip install --use-mirrors"
+# command to run tests
+script: 
+    - find pyclaw/apps -name test*.py|xargs nosetests --with-xunit --verbose || :
