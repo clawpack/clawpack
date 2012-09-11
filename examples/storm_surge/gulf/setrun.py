@@ -11,6 +11,8 @@ import os
 import clawpack.clawutil.oldclawdata as data
 import numpy as np
 
+import surge
+
 
 #------------------------------
 def setrun(claw_pkg='geoclaw'):
@@ -111,7 +113,7 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.outstyle==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.tfinal = 4 * 60 * 60 # 3 hours
+        clawdata.tfinal = 10 * 60 * 60
         clawdata.nout = int(clawdata.tfinal * 6 / 60**2)# Output every 10 minutes
 
     elif clawdata.outstyle == 2:
@@ -214,7 +216,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    mxnest = 7
+    mxnest = 6
 
     clawdata.mxnest = -mxnest   # negative ==> anisotropic refinement in x,y,t
 
@@ -272,7 +274,7 @@ def setgeo(rundata):
     geodata.gravity = 9.81
     geodata.coordinate_system = 2
     geodata.earth_radius = 6367.5e3
-    geodata.coriolis_force = False
+    geodata.coriolis_forcing = True
 
     # == settsunami.data values ==
     geodata.dry_tolerance = 1.e-3
@@ -280,7 +282,7 @@ def setgeo(rundata):
     geodata.speed_tolerance = [1e10,1e10,1e10,1e10,1e10,1e10,1e10,1e10]
     geodata.deep_depth = 1.e2
     geodata.max_level_deep = 3
-    geodata.friction_force = True
+    geodata.friction_forcing = 1
     geodata.manning_coefficient =.025
     geodata.friction_depth = 1.e6
 
@@ -314,11 +316,11 @@ def setgeo(rundata):
     # geodata.dtopofiles.append([1,3,3,'usgs100227.tt1'])
 
     # == setqinit.data values ==
-    geodata.qinit_type = 4
+    geodata.qinit_type = 0
     geodata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
-    geodata.qinitfiles.append([1, 5, 'hump.xyz'])
+    # geodata.qinitfiles.append([1, 5, 'hump.xyz'])
 
     # == setregions.data values ==
     geodata.regions = []
@@ -352,15 +354,46 @@ def setgeo(rundata):
     # end of function setgeo
     # ----------------------
 
+def set_storm(rundata):
 
+    data = surge.StormData()
+
+   # Physics parameters
+    data.rho_air = 1.15 # Density of air
+    data.ambient_pressure = 101.3e3 # Nominal atmos pressure
+
+    # Source term controls
+    data.wind_forcing = True
+    data.pressure_forcing = True
+    
+    # Source term algorithm parameters
+    data.wind_tolerance = 1e-6
+    data.pressure_tolerance = 1e-4 # Pressure source term tolerance
+
+    # AMR parameters
+    data.max_wind_nest = 0 # Wind strength based refinement
+    data.wind_refine = [20.0,40.0,60.0]
+    data.max_R_nest = 3 # Hurricane location based refinement
+    data.R_refine = [60.0e3,40e3,20e3]
+    
+    # Storm parameters
+    data.storm_type = 1 # Type of storm
+
+    # Storm type 1 - Read in file track
+    data.hurricane_track_file = './ike.data'
+
+    return data
 
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
     import sys
     if len(sys.argv) == 2:
-	rundata = setrun(sys.argv[1])
+        rundata = setrun(sys.argv[1])
     else:
-	rundata = setrun()
+        rundata = setrun()
 
     rundata.write()
+
+    storm_data = set_storm()
+    storm_data.write()
 

@@ -1,5 +1,5 @@
 ! ==============================================================================
-!  holland_storm_module 
+! storm_module 
 !
 ! Module contains routines for constructing a wind and pressure field based on
 ! the Holland hurricane module.  
@@ -11,7 +11,7 @@ module holland_storm_module
     implicit none
     save
 
-    ! Storm description
+    ! Holland storm type definition
     type holland_storm_type
         ! Fore/hindcast size and current position
         integer :: index,num_casts
@@ -23,8 +23,9 @@ module holland_storm_module
         real(kind=8), allocatable :: track(:,:)
         real(kind=8) :: velocity(2)
 
-        ! Storm intensity
-        real(kind=8) :: ambient_pressure = 101300.d0 ! Pascals
+        ! Storm physics
+        real(kind=8) :: ambient_pressure = 101.3d3 ! Pascals
+        real(kind=8) :: rho_air = 1.3d0
         real(kind=8), allocatable :: max_wind_radius(:)
         real(kind=8), allocatable :: max_wind_speed(:)
         real(kind=8), allocatable :: central_pressure(:)
@@ -37,7 +38,8 @@ module holland_storm_module
 contains
 
     ! Setup routine for the holland model
-    type(holland_storm_type) function storm_setup(storm_data_path) result(storm)
+    type(holland_storm_type) function set_holland_storm(storm_data_path) &
+        result(storm)
 
         implicit none
 
@@ -123,14 +125,14 @@ contains
         ! Initialize stored_velocity
         storm%velocity = 0.d0
 
-    end function storm_setup
+    end function set_holland_storm
 
     ! ==========================================================================
     !  real(kind=8) pure date_to_seconds(year,months,days,hours,minutes,seconds)
     !    Convert time from year, month, day, hour, min, sec to seconds since the
     !    beginning of the year.
     ! ==========================================================================
-    real(kind=8) pure function date_to_seconds(year,months,days,hours,minutes, &
+    pure real(kind=8) function date_to_seconds(year,months,days,hours,minutes, &
                                                seconds) result(time)
       
         implicit none
@@ -176,8 +178,7 @@ contains
     ! ==========================================================================
     subroutine update_storm(t,storm)
 
-        use storm_module, only: rho_air
-        use geoclaw_mdoule, only: earth_radius, pi
+        use geoclaw_module, only: earth_radius, pi
 
         implicit none
         
@@ -215,14 +216,15 @@ contains
                 modified_max_wind_speed = modified_max_wind_speed / atmos_boundary_layer
                 
                 ! Calculate central pressure difference
-                ! Limit central pressure deficit due to bad ambient pressure problem
                 dp = storm%ambient_pressure - storm%central_pressure(storm%index)
-                if (dp < 100.d0) then
-                    dp = 100.d0
-                endif
+                ! Limit central pressure deficit due to bad ambient pressure,
+                ! really should have better ambient pressure...
+!                 if (dp < 100.d0) then
+!                     dp = 100.d0
+!                 endif
 
                 ! Calculate Holland parameters and limit the result
-                B = rho_air * exp(1.d0) * (modified_max_wind_speed**2) / dp
+                B = storm%rho_air * exp(1.d0) * (modified_max_wind_speed**2) / dp
                 if (B <  1.d0) B = 1.d0
                 if (B > 2.5d0) B = 2.5d0
 
@@ -253,10 +255,10 @@ contains
     end subroutine update_storm
 
     ! ==========================================================================
-    !  storm_location(t,storm)
+    !  holland_storm_location(t,storm)
     !    Interpolate location of hurricane in the current time interval
     ! ==========================================================================
-    function storm_location(t,storm) result(location)
+    function holland_storm_location(t,storm) result(location)
 
         implicit none
 
@@ -289,15 +291,15 @@ contains
                 (storm%track(3,storm%index + 1) - storm%track(3,storm%index))
         end if
 
-    end function storm_location
+    end function holland_storm_location
 
     ! ==========================================================================
     !  set_storm_fields()
     ! ==========================================================================
-    subroutine set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,t, &
-                            pressure_index,wind_index,aux,storm)
+    subroutine set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,&
+                                    t,aux, wind_index, pressure_index, storm)
 
-        use geoclaw_module, only: rho_air, pi, omega
+        use geoclaw_module, only: pi, omega, g => grav, rho, num_layers
 
         implicit none
 
@@ -310,30 +312,21 @@ contains
         type(holland_storm_type), intent(in out) :: storm
 
         ! Array storing wind and presure field
-        integer, intent(in) :: pressure_index,wind_index
+        integer, intent(in) :: wind_index, pressure_index
         real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
         ! Local storage
-        real(kind=8) :: x,y,r
+        real(kind=8) :: x,y,r,sloc(2)
         real(kind=8) :: coriolis
         integer :: i,j
 
         ! First update storm if necessary
         call update_storm(t,storm)
 
-        ! Calculate wind field on grid given
-        do j=1,my
+        ! Calculate storm's current location
+        sloc = holland_storm_location(t,storm)
 
-            y = (ylower + (j-0.5d0) * dy) * pi / 180.d0
-            
-            do i=1,my
-
-                x = (xlower + (i-0.5d0) * dx) * pi / 180.d0
-                r = sqrt(x**2 + y**2)
-
-                coriolis = 2.0d0 * omega * sin(y * pi)
-            enddo
-        enddo
+        ! Set wind and pressure field
 
         aux(wind_index:wind_index+1,:,:) = 0.d0
         aux(pressure_index,:,:) = storm%ambient_pressure

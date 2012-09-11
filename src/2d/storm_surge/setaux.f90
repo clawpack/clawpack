@@ -13,7 +13,8 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !     aux(5,i,j) = 
 
 
-    use geoclaw_module, only: coordinate_system,earth_radius,pi
+    use geoclaw_module, only: coordinate_system, earth_radius, pi
+    use geoclaw_module, only: num_layers, eta_init
     use storm_module, only: wind_index, pressure_index
     use amr_module, only: mcapa
     use topo_module

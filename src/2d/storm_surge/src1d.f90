@@ -8,9 +8,10 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
       
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag
-    use storm_module, only: pressure_tolerance
+    use storm_module, only: pressure_tolerance, wind_tolerance
       
-    use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
+    use geoclaw_module, only: g => grav, dry_tolerance
+    use geoclaw_module, only: coriolis_forcing, coriolis
     use geoclaw_module, only: friction_forcing, manning_coefficient 
     use geoclaw_module, only: friction_depth, num_layers, rho
     use geoclaw_module, only: omega, coordinate_system
@@ -25,7 +26,8 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     ! Local storage
     integer :: i, m, bottom_index, bottom_layer, layer_index
     logical :: found
-    real(kind=8) :: h(num_layers), hu, hv, gamma, dgamma, y, fdt, a(2,2)
+    real(kind=8) :: h(num_layers), hu, hv, gamma, dgamma, y, fdt, a(2,2), tau
+    real(kind=8) :: wind_speed, P_atmos_x, P_atmos_y
 
     ! Algorithm parameters
     ! Parameter controls when to zero out the momentum at a depth in the
@@ -104,8 +106,9 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     ! = Wind Forcing =========================================================
     if (wind_forcing) then
         ! Force only the top layer of water
+        ! Assumes that the top-most layer goes dry last
         do i=1,mx1d
-            if (q1d(1,i) / rho(1) > drytolerance) then
+            if (q1d(1,i) / rho(1) > dry_tolerance(1)) then
                 wind_speed = sqrt(aux1d(4,i)**2 + aux1d(5,i)**2)
                 if (wind_speed > wind_tolerance) then
                     tau = wind_drag(wind_speed) * rho_air * wind_speed

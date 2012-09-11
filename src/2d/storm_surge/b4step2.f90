@@ -16,6 +16,8 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     use geoclaw_module, only:g => grav
     use topo_module
     use dtopo_module
+
+    use storm_module, only: set_storm_fields
     
     implicit none
     
