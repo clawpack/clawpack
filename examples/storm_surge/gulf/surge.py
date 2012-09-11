@@ -10,7 +10,7 @@ import clawpack.clawutil.oldclawdata as data
 # Simple hurricane data format
 class StormData(data.Data):
 
-    def __init__(self,ramp_up_time):
+    def __init__(self):
         super(StormData,self).__init__()
         
         # Physics parameters
@@ -35,10 +35,10 @@ class StormData(data.Data):
         self.add_attribute("storm_type",1) # Type of storm
 
         # Storm type 1 - Read in file track
-        self.add_attribute("hurricane_track_file",'./storm.data')
+        self.add_attribute("storm_file",'./storm.data')
 
         # Storm type 2 - Idealized Hurricane, these match hurricane Tracy
-        self.add_attribute("ramp_up_t",ramp_up_time) # Ramp up time for hurricane
+        self.add_attribute("ramp_up_t",12*60.0**2) # Ramp up time for hurricane
         self.add_attribute('velocity',(5.0,0.0))  # Speed of hurricane
         self.add_attribute('R_eye_init',(0.0,0.0))     # Initial position
         self.add_attribute('A',23.0)        # Hurricane model fit parameter
@@ -49,7 +49,7 @@ class StormData(data.Data):
         self.add_attribute('stommel_wind',1.0)
 
         
-    def write(self,out_file='./storm.data',datasource="setrun.py"):
+    def write(self,out_file='./surge.data',datasource="setrun.py"):
         """Write out the data file to the path given"""
 
         print "Creating data file %s" % out_file

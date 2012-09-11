@@ -354,7 +354,7 @@ def setgeo(rundata):
     # end of function setgeo
     # ----------------------
 
-def set_storm(rundata):
+def set_storm():
 
     data = surge.StormData()
 
