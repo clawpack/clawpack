@@ -33,5 +33,17 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     if (qinit_type > 0) then
         call add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     endif
+
+    if (.false.) then
+        open(23, file='fort.aux',status='unknown',form='formatted')
+        print *,'Writing out aux arrays'
+        print *,' '
+        do j=1,my
+            do i=1,mx
+                write(23,*) i,j,(q(m,i,j),m=1,meqn)
+            enddo
+        enddo
+        close(23)
+    endif
     
 end subroutine qinit

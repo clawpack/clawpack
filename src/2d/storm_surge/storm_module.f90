@@ -13,9 +13,15 @@ module storm_module
     use geoclaw_module, only: num_layers
 
     use holland_storm_module, only: holland_storm_type
-    use idealized_storm_module, only: ideal_storm_type
+    use constant_storm_module, only: constant_storm_type
 
     implicit none
+
+    ! Log file unit
+    integer, parameter :: log_unit = 423
+
+    ! Track file unit
+    integer, parameter :: track_unit = 424
 
     ! Locations of wind and pressure fields
     integer :: wind_index, pressure_index
@@ -26,13 +32,12 @@ module storm_module
     real(kind=8) :: pressure_tolerance, wind_tolerance
 
     ! AMR Parameters
-    integer :: max_R_nest, max_wind_nest
     real(kind=8), allocatable :: R_refine(:), wind_refine(:)
 
     ! Storm object
     integer :: storm_type
     type(holland_storm_type) :: holland_storm
-    type(ideal_storm_type) :: ideal_storm
+    type(constant_storm_type), pointer :: constant_storm => null()
 
     ! Store physics here for ease of use
     ! WARNING:  If these do not agree with the storm data objects things will break!
@@ -53,6 +58,11 @@ contains
     ! ========================================================================
     subroutine set_storm(data_file)
 
+        use utility_module, only: get_value_count
+
+        use holland_storm_module, only: set_holland_storm
+        use constant_storm_module, only: set_constant_storm
+
         use geoclaw_module, only: pi
 
         implicit none
@@ -63,24 +73,24 @@ contains
         ! Locals
         integer, parameter :: unit = 13
         integer :: status, i
-        character(len=200) :: storm_file_path
+        character(len=200) :: storm_file_path, line
         
         ! Open file
         if (present(data_file)) then
             call opendatafile(unit,data_file)
         else
-            call opendatafile(unit,'hurricane.data')
+            call opendatafile(unit,'surge.data')
         endif
 
         ! Set some parameters
-        wind_index = 5 + num_layers
-        pressure_index = 7 + num_layers
+        wind_index = 4 + num_layers
+        pressure_index = 6 + num_layers
         
         ! Read in parameters
         ! Physics
         ! TODO: These are currently set directly in the types, should change!
-        read(unit,*) rho_air
-        read(unit,*) ambient_pressure
+        read(unit,"(1d16.8)") rho_air
+        read(unit,"(1d16.8)") ambient_pressure
 
         ! Forcing terms
         read(unit,*) wind_forcing
@@ -93,27 +103,28 @@ contains
         read(unit,*)
         
         ! AMR parameters
-        read(unit,*) max_wind_nest
-        allocate(wind_refine(max_wind_nest))
-        read(unit,*) (wind_refine(i),i=1,max_wind_nest)
-        read(unit,*) max_R_nest
-        allocate(R_refine(max_R_nest))
-        read(unit,*) (R_refine(i),i=1,max_R_nest)
+        read(unit,*) line
+        allocate(wind_refine(get_value_count(line)))
+        read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
+        read(unit,*) line
+        allocate(R_refine(get_value_count(line)))
+        read(line,*) (R_refine(i),i=1,size(R_refine,1))
         read(unit,*)
         
         ! Storm Setup 
         read(unit,*) storm_type
         read(unit,*) storm_file_path
+
         ! Read in hurricane track data from file
         if (storm_type == 0) then
             ! No storm will be used
         else if (storm_type == 1) then
             ! Track file with Holland reconstruction
-            stop "Call holland storm setup routine."
+            call set_holland_storm(storm_file_path,holland_storm)
             ! Set rho_air and ambient pressure in storms
         else if (storm_type == 2) then
-            ! Idealized track and holland reconstruction
-            stop "Call ideal storm setup routine."
+            ! constant track and holland reconstruction
+            call set_constant_storm(storm_file_path,constant_storm)
             ! Set rho_air and ambient pressure in storms
         else if (storm_type == 3) then
             ! Stommel wind field
@@ -124,6 +135,29 @@ contains
         endif
         
         close(unit)
+
+        ! Print log messages
+        open(unit=log_unit, file="fort.surge", status="unknown", action="write")
+        
+        write(log_unit,"(a,1d16.8)") "rho_air =          ",rho_air
+        write(log_unit,"(a,1d16.8)") "ambient_pressure = ",ambient_pressure
+        write(log_unit,*) ""
+
+        write(log_unit,"(a,1d16.8)") "wind_tolerance =     ", wind_tolerance
+        write(log_unit,"(a,1d16.8)") "pressure_tolerance = ", pressure_tolerance
+        write(log_unit,*) ""
+
+        write(log_unit,*) "Wind Nesting = ", (wind_refine(i),i=1,size(wind_refine,1))
+        write(log_unit,*) "R Nesting = ", (R_refine(i),i=1,size(R_refine,1))
+        write(log_unit,*) ""
+
+        write(log_unit,*) "Storm Type = ", storm_type
+        write(log_unit,*) "  file = ", storm_file_path
+
+        ! Open track output file if using storm type 1
+        if (storm_type == 1) then
+            open(unit=track_unit,file="fort.track",status="unknown",action="write")
+        endif
 
     end subroutine set_storm
 
@@ -164,7 +198,7 @@ contains
     function storm_location(t) result(location)
 
         use holland_storm_module, only: holland_storm_location
-        use idealized_storm_module, only: ideal_storm_location
+        use constant_storm_module, only: constant_storm_location
 
         implicit none
 
@@ -180,12 +214,13 @@ contains
             case(1)
                 location = holland_storm_location(t,holland_storm)
             case(2)
-                location = ideal_storm_location(t,ideal_storm)
+                location = constant_storm_location(t,constant_storm)
             case(3)
                 location = [0.d0, 0.d0]
         end select
 
     end function storm_location
+
 
     subroutine set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,&
                                 t,aux)
@@ -199,6 +234,17 @@ contains
 
     end subroutine set_storm_fields
 
+
+    subroutine output_storm_location(t)
+
+        implicit none
+
+        real(kind=8), intent(in) :: t
+
+        write(track_unit,"(3e26.16)") t,storm_location(t)
+
+    end subroutine output_storm_location
+
 end module storm_module
 
 
@@ -206,7 +252,7 @@ end module storm_module
     ! ========================================================================
     !   subroutine hurricane_wind(mbc,mx,my,xlower,ylower,dx,dy,R_eye,wind)
     ! ========================================================================
-    ! Calculates an idealized 2d field of wind with the strength profile used
+    ! Calculates an constant 2d field of wind with the strength profile used
     ! from Weisberg and Zheng (2006).
     !
     ! Input:
@@ -306,7 +352,7 @@ end module storm_module
     ! ========================================================================
     !   subroutine hurricane_pressure(mbc,mx,my,xlower,ylower,dx,dy,R_eye,pressure)
     ! ========================================================================
-    ! Calculates an idealized 2d field of preesure with the strength profile 
+    ! Calculates an constant 2d field of preesure with the strength profile 
     ! used from Weisberg and Zheng (2006).
     !
     ! Input:

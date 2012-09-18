@@ -35,7 +35,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
     use qinit_module, only: min_level_qinit,qinit_type
 
-    use storm_module, only: max_R_nest, max_wind_nest, wind_refine, R_refine
+    use storm_module, only: wind_refine, R_refine
     use storm_module, only: storm_location
     
     use refinement_module
@@ -87,7 +87,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
             ! Check to see if we are some specified distance from the eye of
             ! the storm and refine if we are
             R_eye = storm_location(t)
-            do m=1,max_R_nest
+            do m=1,size(R_refine,1)
                 if ((abs(x_c - R_eye(1)) < R_refine(m)) .and. &
                     (abs(y_c - R_eye(2)) < R_refine(m)) .and. &
                     (level <= m)) then
@@ -99,7 +99,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
             
             ! Refine based on wind speed
             wind_speed = sqrt(aux(4,i,j)**2 + aux(5,i,j)**2)
-            do m=1,max_wind_nest
+            do m=1,size(wind_refine,1)
                 if ((wind_speed > wind_refine(m)) .and. (level <= m)) then
                     amrflags(i,j) = DOFLAG
                     cycle

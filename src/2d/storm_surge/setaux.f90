@@ -15,7 +15,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     use geoclaw_module, only: coordinate_system, earth_radius, pi
     use geoclaw_module, only: num_layers, eta_init
-    use storm_module, only: wind_index, pressure_index
+    use storm_module, only: wind_index, pressure_index, set_storm_fields
     use amr_module, only: mcapa
     use topo_module
     
@@ -45,7 +45,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(1,:,:) = 0.d0 ! Bathymetry
     aux(2,:,:) = 1.d0 ! Grid cell area
     aux(3,:,:) = 1.d0 ! Length ratio for edge
-    aux(4:num_layers + 4,:,:) = 0.d0 ! Initial layer depths for multilayer
+    aux(4:num_layers + 3,:,:) = 0.d0 ! Initial layer depths for multilayer
     aux(wind_index,:,:) = 0.d0 ! Wind speed x-direction
     aux(wind_index+1,:,:) = 0.d0 ! Wind speed y-direction
     aux(pressure_index,:,:) = 0.d0 ! Pressure field
@@ -117,7 +117,9 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     endif
 
     ! Initialize wind and pressure auxillary variables
-    stop "Set storm fields here"
+    ! This only matters for the first step when we output the intial storm 
+    ! fields.  Otherwise we would have to figure out what t is here
+!     call set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlow,ylow,dx,dy,t,aux)
     
     ! Output bathymetry for debugging
     if (.false.) then

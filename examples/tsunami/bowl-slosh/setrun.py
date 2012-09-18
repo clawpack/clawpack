@@ -76,7 +76,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.meqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.maux = 3
+    clawdata.maux = 4
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.mcapa = 0
@@ -225,7 +225,7 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    clawdata.auxtype = ['center','center','yleft']
+    clawdata.auxtype = ['center','center','yleft','center']
 
 
     clawdata.tol = -1.0     # negative ==> don't use Richardson estimator

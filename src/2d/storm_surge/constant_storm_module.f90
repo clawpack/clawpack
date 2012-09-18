@@ -1,16 +1,16 @@
 ! ==============================================================================
-! idealized_storm_module 
+! constantized_storm_module 
 !
 ! Module contains routines for constructing a wind and pressure field based on
 ! a contant Holland based storm.
 ! ==============================================================================
-module idealized_storm_module
+module constant_storm_module
 
     implicit none
     save
 
     ! Holland storm type definition
-    type ideal_storm_type
+    type constant_storm_type
 
         real(kind=8) :: ramp_up_time
         real(kind=8) :: velocity(2)
@@ -21,17 +21,18 @@ module idealized_storm_module
         real(kind=8) :: ambient_pressure = 101.3d3
         real(kind=8) :: rho_air = 1.3d0
 
-    end type ideal_storm_type
+    end type constant_storm_type
 
 contains
 
     ! Setup routine for the holland model
-    type(ideal_storm_type) function set_ideal_storm(storm_data_path) result(storm)
+    subroutine set_constant_storm(storm_data_path, storm)
 
         implicit none
 
-        ! Path to data file
-        character(len=*), optional :: storm_data_path
+        ! Subroutine I/O
+        character(len=*), intent(in), optional :: storm_data_path
+        type(constant_storm_type), intent(in out) :: storm
 
         ! Local storage
         integer, parameter :: data_file = 701
@@ -64,47 +65,47 @@ contains
         read(13,*) storm%B
         read(13,*) storm%central_pressure
 
-    end function set_ideal_storm
+    end subroutine set_constant_storm
 
     ! ==========================================================================
     !  holland_update_storm(t)
     !    Update storm information to time t
     ! ==========================================================================
-    subroutine update_ideal_storm(t,storm)
+    subroutine update_constant_storm(t,storm)
 
         implicit none
         
         ! Input
         real(kind=8), intent(in) :: t
-        type(ideal_storm_type), intent(in out) :: storm
+        type(constant_storm_type), intent(in out) :: storm
 
         ! Nothing needs to be updated here
 
-    end subroutine update_ideal_storm
+    end subroutine update_constant_storm
 
     ! ==========================================================================
     !  storm_location(t,storm)
     !    Interpolate location of hurricane in the current time interval
     ! ==========================================================================
-    function ideal_storm_location(t,storm) result(location)
+    function constant_storm_location(t,storm) result(location)
 
         implicit none
 
         ! Input
         real(kind=8), intent(in) :: t
-        type(ideal_storm_type), intent(in out) :: storm
+        type(constant_storm_type), intent(in out) :: storm
 
         ! Output
         real(kind=8) :: location(2)
 
         location = t * storm%velocity + storm%R_eye_init
 
-    end function ideal_storm_location
+    end function constant_storm_location
 
     ! ==========================================================================
     !  set_storm_fields()
     ! ==========================================================================
-    subroutine set_ideal_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,&
+    subroutine set_constant_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,&
                                     t,aux, wind_index, pressure_index, storm)
 
         use geoclaw_module, only: coriolis, coriolis_forcing
@@ -117,7 +118,7 @@ contains
 
         ! Storm description, need in out here since we may update the storm
         ! if at next time point
-        type(ideal_storm_type), intent(in out) :: storm
+        type(constant_storm_type), intent(in out) :: storm
 
         ! Array storing wind and presure field
         integer, intent(in) :: wind_index, pressure_index
@@ -128,7 +129,7 @@ contains
         real(kind=8) :: x, y, r, R_eye(2), f, C, w
 
         ! Hurrican eye location
-        R_eye = ideal_storm_location(t,storm)
+        R_eye = constant_storm_location(t,storm)
     
         ! Parameter constant
         C = 1d1**2 * storm%A * storm%B * (storm%ambient_pressure - storm%central_pressure) / storm%rho_air
@@ -172,6 +173,6 @@ contains
                                 * exp(-(t/(storm%ramp_up_time*0.45d0))**2)
         endif
         
-    end subroutine set_ideal_storm_fields
+    end subroutine set_constant_storm_fields
 
-end module idealized_storm_module
+end module constant_storm_module

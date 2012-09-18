@@ -33,7 +33,5 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     if (qinit_type > 0) then
         call add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     endif
-
-    stop "Call set storm fields here."
     
 end subroutine qinit

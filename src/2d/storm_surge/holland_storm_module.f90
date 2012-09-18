@@ -38,13 +38,13 @@ module holland_storm_module
 contains
 
     ! Setup routine for the holland model
-    type(holland_storm_type) function set_holland_storm(storm_data_path) &
-        result(storm)
+    subroutine set_holland_storm(storm_data_path,storm)
 
         implicit none
 
-        ! Path to data file
+        ! Subroutine I/O
         character(len=*), optional :: storm_data_path
+        type(holland_storm_type), intent(in out) :: storm
 
         ! Local storage
         integer, parameter :: data_file = 701
@@ -67,7 +67,10 @@ contains
             open(unit=data_file,file="./hurricane.data",status='old', &
                  action='read',iostat=io_status)
         endif
-        if (io_status /= 0) stop "Error opening hurricane data file."
+        if (io_status /= 0) then
+            print "(a,i1)", "Error opening storm data file. status = ", io_status
+            stop 
+        endif
 
         ! Count number of data lines
         num_casts = 0
@@ -125,7 +128,7 @@ contains
         ! Initialize stored_velocity
         storm%velocity = 0.d0
 
-    end function set_holland_storm
+    end subroutine set_holland_storm
 
     ! ==========================================================================
     !  real(kind=8) pure date_to_seconds(year,months,days,hours,minutes,seconds)

@@ -44,7 +44,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(1,:,:) = 0.d0 ! Bathymetry
     aux(2,:,:) = 1.d0 ! Grid cell area
     aux(3,:,:) = 1.d0 ! Length ratio for edge
-    aux(4:num_layers + 4,:,:) = 0.d0 ! Initial layer depths for multilayer
+    aux(4:num_layers + 3,:,:) = 0.d0 ! Initial layer depths for multilayer
     
     ! Set analytical bathymetry here if requested
     if (topo_type > 0) then
@@ -112,14 +112,14 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         enddo
     endif
 
-    ! Output bathymetry for debugging
+    ! Output for debugging
     if (.false.) then
         open(23, file='fort.aux',status='unknown',form='formatted')
         print *,'Writing out aux arrays'
         print *,' '
         do j=1,my
             do i=1,mx
-                write(23,aux_format) i,j,(aux(m,i,j),m=1,maux)
+                write(23,*) i,j,(aux(m,i,j),m=1,maux)
             enddo
         enddo
         close(23)
