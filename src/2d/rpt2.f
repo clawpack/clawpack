@@ -1,12 +1,12 @@
 c
 c
 c     =====================================================
-      subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,
+      subroutine rpt2(ixy,maxm,meqn,maux,mwaves,mbc,mx,
      &                  ql,qr,aux1,aux2,aux3,
      &                  ilr,asdq,bmasdq,bpasdq)
 c     =====================================================
-      use geoclaw_module, only: grav,dry_tolerance,coordinate_system
-      use geoclaw_module, only: earth_radius,pi
+      use geoclaw_module, only: g => grav, dry_tolerance
+      use geoclaw_module, only: coordinate_system,earth_radius,pi
 
       implicit none
 c
@@ -15,9 +15,7 @@ c     Jacobian.
 
 c-----------------------last modified 1/10/05----------------------
 
-      integer ixy,maxm,meqn,mwaves,mbc,mx,ilr
-      integer maux  ! should be passed in or put into a module
-      parameter (maux=3)
+      integer ixy,maxm,meqn,maux,mwaves,mbc,mx,ilr
 
       double precision  ql(meqn,1-mbc:maxm+mbc)
       double precision  qr(meqn,1-mbc:maxm+mbc)
@@ -31,7 +29,7 @@ c-----------------------last modified 1/10/05----------------------
       double precision  s(3)
       double precision  r(3,3)
       double precision  beta(3)
-      double precision  g,tol,abs_tol
+      double precision  tol,abs_tol
       double precision  hl,hr,hul,hur,hvl,hvr,vl,vr,ul,ur,bl,br
       double precision  uhat,vhat,hhat,roe1,roe3,s1,s2,s3,s1l,s3r
       double precision  delf1,delf2,delf3,dxdcd,dxdcu
@@ -39,7 +37,6 @@ c-----------------------last modified 1/10/05----------------------
 
       integer i,m,mw,mu,mv
 
-      g=grav
       tol=dry_tolerance(1)
       abs_tol=dry_tolerance(1)
 

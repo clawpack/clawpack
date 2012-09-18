@@ -132,7 +132,7 @@ c
 c     # solve Riemann problem at each interface and compute Godunov updates
 c     ---------------------------------------------------------------------
 c
-      call rpn2(ixy,maxm,meqn,mwaves,mbc,mx,q1d,q1d,
+      call rpn2(ixy,maxm,meqn,maux,mwaves,mbc,mx,q1d,q1d,
      &          aux2,aux2,fwave,s,amdq,apdq)
 c
 c   # Set fadd for the donor-cell upwind method (Godunov)
@@ -215,7 +215,7 @@ c      --------------------------------------------
 c
 c
 c     # split the left-going flux difference into down-going and up-going:
-      call rpt2(ixy,maxm,meqn,mwaves,mbc,mx,
+      call rpt2(ixy,maxm,meqn,maux,mwaves,mbc,mx,
      &          q1d,q1d,aux1,aux2,aux3,
      &          1,amdq,bmasdq,bpasdq)
 c
@@ -232,7 +232,7 @@ c
   160          continue
 c
 c     # split the right-going flux difference into down-going and up-going:
-      call rpt2(ixy,maxm,meqn,mwaves,mbc,mx,
+      call rpt2(ixy,maxm,meqn,maux,mwaves,mbc,mx,
      &          q1d,q1d,aux1,aux2,aux3,
      &          2,apdq,bmasdq,bpasdq)
 c

@@ -1,5 +1,5 @@
 c======================================================================
-      subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,
+      subroutine rpn2(ixy,maxm,meqn,maux,mwaves,mbc,mx,ql,qr,auxl,auxr,
      &                  fwave,s,amdq,apdq)
 c======================================================================
 c
@@ -33,14 +33,14 @@ c
 !           David George, Vancouver WA, Feb. 2009                           !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      use geoclaw_module, only: grav,dry_tolerance,earth_radius,pi
+      use geoclaw_module, only: g => grav, dry_tolerance
+      use geoclaw_module, only: earth_radius, pi
       use amr_module, only: mcapa
+
       implicit none
-      integer maux  ! should be passed in or put into a module
-      parameter (maux=3)
 
       !input
-      integer maxm,meqn,mwaves,mbc,mx,ixy
+      integer maxm,meqn,maux,mwaves,mbc,mx,ixy
 
       double precision  fwave(meqn, mwaves, 1-mbc:maxm+mbc)
       double precision  s(mwaves, 1-mbc:maxm+mbc)
@@ -51,10 +51,9 @@ c
       double precision  auxl(maux,1-mbc:maxm+mbc)
       double precision  auxr(maux,1-mbc:maxm+mbc)
 
-      double precision drytol,g
-
       !local only
       integer m,i,mw,maxiter,mu,nv
+      real(kind=8) :: drytol
       double precision wall(3)
       double precision fw(3,3)
       double precision sw(3)
@@ -67,10 +66,6 @@ c
 
       logical rare1,rare2
 
-!     used from module instead:
-!     common /cmcapa/  mcapa
-
-      g=grav
       drytol=dry_tolerance(1)
 
       !loop through Riemann problems at each grid cell
