@@ -78,7 +78,6 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.mx = int(clawdata.xupper - clawdata.xlower) * degree_factor
     clawdata.my = int(clawdata.yupper - clawdata.ylower) * degree_factor
 
-
     # ---------------
     # Size of system:
     # ---------------
@@ -87,7 +86,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.meqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.maux = 3
+    clawdata.maux = 7
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.mcapa = 2
@@ -98,7 +97,7 @@ def setrun(claw_pkg='geoclaw'):
     # Initial time:
     # -------------
 
-    clawdata.t0 = 0.0
+    clawdata.t0 = 0.20844000e08
 
 
     # -------------
@@ -111,10 +110,14 @@ def setrun(claw_pkg='geoclaw'):
 
     clawdata.outstyle = 1
 
+    # Output files per day requested
+    recurrence = 4
+
     if clawdata.outstyle==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.tfinal = 10 * 60 * 60
-        clawdata.nout = int(clawdata.tfinal * 6 / 60**2)# Output every 10 minutes
+        clawdata.tfinal = 0.221184e8
+        clawdata.nout = int((clawdata.tfinal - clawdata.t0) 
+                                            * recurrence / (60**2 * 24))
 
     elif clawdata.outstyle == 2:
         # Specify a list of output times.
@@ -124,7 +127,7 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.outstyle == 3:
         # Output every iout timesteps with a total of ntot time steps:
         iout = 1
-        ntot = 1
+        ntot = 10
         clawdata.iout = [iout, ntot]
 
 
@@ -136,7 +139,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 7
+    clawdata.verbosity = 3
 
 
 
@@ -216,7 +219,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    mxnest = 6
+    mxnest = 1
 
     clawdata.mxnest = -mxnest   # negative ==> anisotropic refinement in x,y,t
 
@@ -237,7 +240,8 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    clawdata.auxtype = ['center','capacity','yleft']
+    clawdata.auxtype = ['center','capacity','yleft','center','center','center',
+                        'center']
 
 
     clawdata.tol = -1.0     # negative ==> don't use Richardson estimator
@@ -275,6 +279,7 @@ def setgeo(rundata):
     geodata.coordinate_system = 2
     geodata.earth_radius = 6367.5e3
     geodata.coriolis_forcing = True
+    geodata.theta_0 = 45.0
 
     # == settsunami.data values ==
     geodata.dry_tolerance = 1.e-3
@@ -292,22 +297,22 @@ def setgeo(rundata):
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
                               './bathy/gulf_coarse_bathy.tt3'])
-    geodata.topofiles.append([3, 1, 5, 0., 1.e10, \
-                              './bathy/NOAA_Galveston_Houston.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/galveston_channel.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/houston_harbor.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/houston_channel_3.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/houston_channel_2.tt3'])
+    # geodata.topofiles.append([3, 1, 5, 0., 1.e10, \
+    #                           './bathy/NOAA_Galveston_Houston.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/galveston.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/lower_galveston_bay.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/upper_galveston_bay.tt3'])
+    #                           './bathy/galveston_channel.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           './bathy/houston_harbor.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           './bathy/houston_channel_3.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           './bathy/houston_channel_2.tt3'])
+    # # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    # #                           './bathy/galveston.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           './bathy/lower_galveston_bay.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           './bathy/upper_galveston_bay.tt3'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
@@ -317,6 +322,7 @@ def setgeo(rundata):
 
     # == setqinit.data values ==
     geodata.qinit_type = 0
+    # geodata.qinit_type = 4
     geodata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
@@ -326,8 +332,8 @@ def setgeo(rundata):
     geodata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    geodata.regions.append([1, 4, 0.0, 1e10, -99.00, -80.00, 17.00, 32.00]) # entire domain
-    geodata.regions.append([1, 5, 0.0, 1e10, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
+    # geodata.regions.append([1, 4, 0.0, 1e10, -99.00, -80.00, 17.00, 32.00]) # entire domain
+    # geodata.regions.append([1, 5, 0.0, 1e10, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
     # geodata.regions.append([1, 7, 0.0, 1e10, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
     # geodata.regions.append([1, 7, 0.0, 1e10, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
 
@@ -356,31 +362,31 @@ def setgeo(rundata):
 
 def set_storm():
 
+    import geoclaw.surge
+
     data = surge.StormData()
 
    # Physics parameters
-    data.rho_air = 1.15 # Density of air
+    data.rho_air = 1.15 / 1025.0 # Density of air (rho is not implemented above)
     data.ambient_pressure = 101.3e3 # Nominal atmos pressure
 
     # Source term controls
-    data.wind_forcing = True
-    data.pressure_forcing = True
+    data.wind_forcing = False
+    data.pressure_forcing = False
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-6
     data.pressure_tolerance = 1e-4 # Pressure source term tolerance
 
     # AMR parameters
-    data.max_wind_nest = 0 # Wind strength based refinement
     data.wind_refine = [20.0,40.0,60.0]
-    data.max_R_nest = 3 # Hurricane location based refinement
     data.R_refine = [60.0e3,40e3,20e3]
     
     # Storm parameters
     data.storm_type = 1 # Type of storm
 
-    # Storm type 1 - Read in file track
-    data.hurricane_track_file = './ike.data'
+    # Storm type 2 - Idealized storm track
+    data.storm_file = os.path.expandvars('$DATA_PATH/ike_data/fort.22.holland')
 
     return data
 
