@@ -206,13 +206,13 @@ contains
         real(kind=8), intent(in) :: t
 
         ! Output
-        real(kind=8) :: location(2)        
+        real(kind=8) :: location(2)
 
         select case(storm_type)
             case(0)
                 location = [0.d0, 0.d0]
             case(1)
-                location = holland_storm_location(t,holland_storm)
+                location =  holland_storm_location(t,holland_storm)
             case(2)
                 location = constant_storm_location(t,constant_storm)
             case(3)
@@ -225,12 +225,30 @@ contains
     subroutine set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,&
                                 t,aux)
 
+        use holland_storm_module, only: set_holland_storm_fields
+        use constant_storm_module, only: set_constant_storm_fields
+
         implicit none
 
         ! Input arguments
         integer, intent(in) :: maxmx, maxmy, maux, mbc, mx, my
         real(kind=8), intent(in) :: xlower, ylower, dx, dy, t
         real(kind=8), intent(in out) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+
+        select case(storm_type)
+            case(0)
+                continue
+            case(1)
+                call set_holland_storm_fields(maxmx,maxmy,maux,mbc,mx,my, &
+                                    xlower,ylower,dx,dy,t,aux, wind_index, &
+                                    pressure_index, holland_storm)
+            case(2)
+                call set_constant_storm_fields(maxmx,maxmy,maux,mbc,mx,my, &
+                                    xlower,ylower,dx,dy,t,aux, wind_index, &
+                                    pressure_index, constant_storm)
+            case(3)
+                stop "Stommel wind field has not been implemented."
+        end select
 
     end subroutine set_storm_fields
 
@@ -240,185 +258,9 @@ contains
         implicit none
 
         real(kind=8), intent(in) :: t
-
+        
         write(track_unit,"(3e26.16)") t,storm_location(t)
 
     end subroutine output_storm_location
 
 end module storm_module
-
-
-
-    ! ========================================================================
-    !   subroutine hurricane_wind(mbc,mx,my,xlower,ylower,dx,dy,R_eye,wind)
-    ! ========================================================================
-    ! Calculates an constant 2d field of wind with the strength profile used
-    ! from Weisberg and Zheng (2006).
-    !
-    ! Input:
-    !     mbc = Number of ghost cells
-    !     mx = Number of grid cells in x direction
-    !     my = Number of grid cells in y direction
-    !     xlower = Lower coordinate of computational grid in x
-    !     ylower = Lower coordinate of computational grid in y
-    !     dx = Grid spacing in x
-    !     dy = Grid spacing in y
-    !     t = Current time
-    !
-    ! Output:
-    !     wind = Velocity of wind (m/s) (aux array 4 (x) and 5 (y))
-    !
-    ! Hurricane parameters:
-    !     A,B = fit parameters for the hurricane
-    !     rho_air = density of air
-    !     Pn = Ambient atmospheric pressure
-    !     Pc = Central pressure of hurricane
-    ! ========================================================================
-!     subroutine hurricane_wind(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,t,aux)
-
-!         use geoclaw_module, only: icoriolis,coordinate_system,pi
-
-!         implicit none
-
-!         ! Input arguments
-!         integer, intent(in) :: maxmx,maxmy,mbc,mx,my,maux
-!         double precision, intent(in) :: xlower,ylower,dx,dy,t
-
-!         ! Output
-!         double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    
-!         ! Local variables
-!         integer :: i,j
-!         double precision :: x,y,C,r,w,R_eye(2),f,L
-        
-!         ! If wind forcing is turned off, then set the aux array to zeros
-!         if (.not.wind_forcing) then
-!             aux(4:5,:,:) = 0.d0
-!             return
-!         endif
-        
-!         ! Initialize f in case we don't need it
-!         f = 0.d0
-        
-!         if (wind_type == 0) then
-!             stop "Unimplemented wind field type!"
-!         else if (wind_type == 1) then
-!             ! Hurrican eye location
-!             R_eye = t * hurricane_velocity + R_eye_init
-        
-!             ! Parameter constant
-!             C = 1d1**2 * A * B * (Pn-Pc) / rho_air
-            
-!             ! Set the wind    
-!             do j=1-mbc,my+mbc
-!                 y = ylower + (j-0.5d0) * dy - R_eye(2)
-!                 ! Coriolis term
-!                 if (icoriolis == 1) f = coriolis(y)
-!                 do i=1-mbc,mx+mbc
-!                     x = xlower + (i-0.5d0) * dx - R_eye(1)
-!                     r = sqrt(x**2+y**2) * 1d-3
-                
-!                     if (abs(r) < 10d-6) then
-!                         aux(4:5,i,j) = 0.d0
-!                     else
-!                         w = sqrt(C * exp(-A/r**B) / r**B + r**2 * f**2 / 4.0) &
-!                                  - r * f / 2.d0
-!                         r = r * 1d3
-!                         aux(4,i,j) = -w * y / r
-!                         aux(5,i,j) =  w * x / r
-!                     endif
-!                 enddo
-!             enddo
-!         ! Stommel wind field
-!         else if (wind_type == 2) then
-!             ! This corresponds to an effective wind stress of 0.2 in maximum
-!             ! amplitude, the division by 1.2 is to account for the variable
-!             ! wind speed coefficient
-!             L = my*dy
-!             do j=1-mbc,my+mbc
-!                 y = ylower + (j-0.5d0) * dy
-!                 aux(4:5,j,1) = -A * cos(pi*y/L)
-!             enddo
-!             aux(4:5,:,2) = 0.d0
-!         endif
-        
-!         ! Ramp up
-!         if (t < 0.d0) then
-!             aux(4:5,:,:) = aux(4:5,:,:) * exp(-(t/(ramp_up_time*0.45d0))**2)
-!         endif
-        
-!     end subroutine hurricane_wind
-
-    ! ========================================================================
-    !   subroutine hurricane_pressure(mbc,mx,my,xlower,ylower,dx,dy,R_eye,pressure)
-    ! ========================================================================
-    ! Calculates an constant 2d field of preesure with the strength profile 
-    ! used from Weisberg and Zheng (2006).
-    !
-    ! Input:
-    !     mbc = Number of ghost cells
-    !     mx = Number of grid cells in x direction
-    !     my = Number of grid cells in y direction
-    !     xlower = Lower coordinate of computational grid in x
-    !     ylower = Lower coordinate of computational grid in y
-    !     dx = Grid spacing in x
-    !     dy = Grid spacing in y
-    !     R_eye_X = Location of the eye of the hurricane in x
-    !     R_eye_Y = Location of the eye of the hurricane in y
-    !
-    ! Output:
-    !     pressure = Atmospheric pressure (mb) (aux array 6)
-    !
-    ! Hurricane parameters:
-    !     A,B = fit parameters for the hurricane
-    !     rho_air = density of air
-    !     Pn = Ambient atmospheric pressure
-    !     Pc = Central pressure of hurricane
-    ! ========================================================================
-!     subroutine hurricane_pressure(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,t,aux)
-
-!         implicit none
-
-!         ! Input arguments
-!         integer, intent(in) :: maxmx,maxmy,mbc,mx,my,maux
-!         double precision, intent(in) :: xlower,ylower,dx,dy,t
-    
-!         ! Output
-!         double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-
-!         ! Local variables
-!         integer :: i,j
-!         double precision :: r,x,y,R_eye(2)
-    
-!         ! If pressure forcing is turned off, then set the aux array to Pn
-!         if (.not.pressure_forcing) then
-!             aux(6,:,:) = Pn
-!             return
-!         endif
-    
-!         ! Hurrican eye location
-!         R_eye = t * hurricane_velocity + R_eye_init
-    
-!         do i=1-mbc,mx+mbc
-!             do j=1-mbc,my+mbc
-!                 x = xlower + (i-0.5d0) * dx - R_eye(1)
-!                 y = ylower + (j-0.5d0) * dy - R_eye(2)
-!                 r = sqrt(x**2+y**2)
-                
-!                 if (abs(r) < 10d-3) then
-!                     aux(6,i,j) = Pn
-!                 else
-!                     aux(6,i,j) = Pc + (Pn-Pc) * exp(-1.d3**B*A/abs(r)**B)
-!                 endif
-!             enddo
-!         enddo
-        
-!         ! Ramp up
-!         if (t < 0.d0) then
-!             aux(6,:,:) = Pn  + (aux(6,:,:) - Pn) * exp(-(t/(ramp_up_time*0.45d0))**2)
-!         endif
-        
-!         ! Convert to Pa instead of millibars
-!         aux(6,:,:)  = aux(6,:,:) * 100.d0 
-!     end subroutine hurricane_pressure
-    
