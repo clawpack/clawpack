@@ -140,8 +140,8 @@ c   # Set fadd for the donor-cell upwind method (Godunov)
       if (ixy.eq.2) mu=3
       do 40 i=1-mbc+1,mx+mbc-1
          if (coordinate_system.eq.2) then
-      	  if (ixy.eq.1) dxdc=earth_radius*pi/180.d0
-	        if (ixy.eq.2) dxdc=earth_radius*pi*cos(aux2(3,i))/180.d0
+      	  if (ixy.eq.1) dxdc=earth_radius*deg2rad
+	        if (ixy.eq.2) dxdc=earth_radius*cos(aux2(3,i))*deg2rad
 	      else
 	       dxdc=1.d0
 	      endif

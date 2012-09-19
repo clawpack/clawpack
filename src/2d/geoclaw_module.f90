@@ -19,6 +19,8 @@ module geoclaw_module
     integer, parameter :: GEO_PARM_UNIT = 78
     integer, parameter :: KAPPA_UNIT = 42
     real(kind=8), parameter :: pi = 4.d0*datan(1.d0)
+    real(kind=8), parameter :: DEG2RAD = pi / 180.d0
+    real(kind=8), parameter :: RAD2DEG = 180.d0 / pi
     
     ! ========================================================================
     !  Physics
@@ -219,11 +221,11 @@ contains
         
         ! Assume beta plane approximation and y is in meters    
         if (coordinate_system == 1) then
-            theta = y / 111d3 * pi / 180d0 + theta_0
+            theta = y / 111d3 * DEG2RAD + theta_0
             coriolis = 2.d0 * omega * (sin(theta_0) + (theta - theta_0)     &
                                                     * cos(theta_0))
         else if (coordinate_system == 2) then        
-            theta = pi*y/180.d0
+            theta = y * DEG2RAD
             coriolis = 2.d0 * omega * sin(theta)
         else
             ! Unknown coordinate system, return nothing

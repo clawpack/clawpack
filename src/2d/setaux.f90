@@ -13,7 +13,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !     aux(5,i,j) = 
 
 
-    use geoclaw_module, only: coordinate_system, earth_radius, pi
+    use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: eta_init, num_layers
     use amr_module, only: mcapa
     use topo_module
@@ -64,7 +64,6 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             
             ! Set lat-long cell info
             if (coordinate_system == 2) then
-                deg2rad = pi / 180.d0
                 aux(2,i,j) = deg2rad * earth_radius**2 * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
                 aux(3,i,j) = ym * deg2rad
             endif

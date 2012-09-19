@@ -6,7 +6,7 @@ c     =====================================================
      &                  ilr,asdq,bmasdq,bpasdq)
 c     =====================================================
       use geoclaw_module, only: g => grav, dry_tolerance
-      use geoclaw_module, only: coordinate_system,earth_radius,pi
+      use geoclaw_module, only: coordinate_system,earth_radius,deg2rad
 
       implicit none
 c
@@ -109,15 +109,15 @@ c            s2 = 0.5d0*(s1+s3)
 
       if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
-            dxdcp=(earth_radius*pi/180.d0)
+            dxdcp=(earth_radius*deg2rad)
             dxdcm = dxdcp
          else
             if (ilr.eq.1) then
-               dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
-               dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
+               dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
+               dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
             else
-               dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
-               dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
+               dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
+               dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
             endif
          endif
       endif
