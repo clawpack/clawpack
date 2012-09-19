@@ -8,8 +8,9 @@ module qinit_module
     
     ! Work array
     real(kind=8), private, allocatable :: qinit(:)
-      
+    
     ! Geometry
+    real(kind=8) :: t0
     real(kind=8) :: x_low_qinit
     real(kind=8) :: y_low_qinit
     real(kind=8) :: t_low_qinit

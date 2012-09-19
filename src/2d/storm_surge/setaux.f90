@@ -13,11 +13,12 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !     aux(5,i,j) = 
 
 
-    use geoclaw_module, only: coordinate_system, earth_radius, pi
+    use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: num_layers, eta_init
     use storm_module, only: wind_index, pressure_index, set_storm_fields
     use amr_module, only: mcapa
     use topo_module
+    use qinit_module, only: t0
     
     implicit none
     
@@ -28,7 +29,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     
     ! Locals
     integer :: i,j,m
-    real(kind=8) :: x,y,xm,ym,xp,yp,deg2rad,topo_integral
+    real(kind=8) :: x,y,xm,ym,xp,yp,topo_integral
     character(len=*), parameter :: aux_format = "(2i4,4d15.3)"
     
     ! Lat-Long coordinate system in use, check input variables
@@ -68,7 +69,6 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             
             ! Set lat-long cell info
             if (coordinate_system == 2) then
-                deg2rad = pi / 180.d0
                 aux(2,i,j) = deg2rad * earth_radius**2 * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
                 aux(3,i,j) = ym * deg2rad
             endif
@@ -119,7 +119,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     ! Initialize wind and pressure auxillary variables
     ! This only matters for the first step when we output the intial storm 
     ! fields.  Otherwise we would have to figure out what t is here
-!     call set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlow,ylow,dx,dy,t,aux)
+    call set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlow,ylow,dx,dy,t0,aux)
     
     ! Output bathymetry for debugging
     if (.false.) then
