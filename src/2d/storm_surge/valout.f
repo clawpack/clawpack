@@ -114,7 +114,7 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
             storm_field(1) = alloc(iaddaux(wind_index,i,j))
             storm_field(2) = alloc(iaddaux(wind_index+1,i,j))
             storm_field(3) = alloc(iaddaux(pressure_index,i,j))
-            forall (k=1:3,storm_field(ivar) < 1d-90)
+            forall (k=1:3,storm_field(k) < 1d-90)
               storm_field(k) = 0.d0
             end forall
             
