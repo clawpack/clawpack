@@ -201,14 +201,14 @@ contains
         
     end subroutine read_multilayer_data
 
-    ! ========================================================================
+    ! ==========================================================================
     !  Calculate the coriolis constant f
     !   If coordinate_system == 1 then
     !       A beta-plane approximation is used and y should be in meters
     !   if coordinate_system == 2 then
     !       Grid is in lat-long and y should be in degrees which is converted
     !       to radians
-    ! ========================================================================
+    ! ==========================================================================
     real(kind=8) pure function coriolis(y)
 
         implicit none
@@ -232,5 +232,30 @@ contains
             coriolis = 0.d0
         endif
     end function coriolis
+
+    ! ==========================================================================
+    !  Calculate the distance along a sphere
+    !    real(kind=8) spherical_distance(x1,x2)
+    !       x1 = (long,lat)
+    !       x2 = (long,lat)
+    ! ==========================================================================
+    real(kind=8) function spherical_distance(x1,x2) result(distance)
+
+        implicit none
+
+        ! Input
+        real(kind=8), intent(in) :: x1(2),x2(2)
+
+        ! Locals
+        real(kind=8) :: dx ,dy
+
+        dx = (x2(1) - x1(1)) * DEG2RAD
+        dy = (x2(2) - x1(2)) * DEG2RAD
+
+        distance = earth_radius * 2.d0 * asin(sqrt(sin(0.5d0*dy)**2 &
+                                    + cos(x1(2) * DEG2RAD)*cos(x2(2) * DEG2RAD) &
+                                    * sin(0.5d0*dx)**2))
+
+    end function spherical_distance
 
 end module geoclaw_module
