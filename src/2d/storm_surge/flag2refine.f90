@@ -25,6 +25,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
 
     use amr_module, only: mxnest
     use geoclaw_module, only:dry_tolerance,rho,eta_init,num_layers
+    use geoclaw_module, only:spherical_distance
     
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
     use topo_module, only: minleveltopo,mtopofiles
@@ -63,7 +64,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
     ! Generic locals
     integer :: i,j,m,k,layer_index
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
-    real(kind=8) :: h,speed,eta,eta_below
+    real(kind=8) :: h,speed,eta,eta_below,ds
 
     ! Initialize flags
     amrflags = DONTFLAG
@@ -88,10 +89,9 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
             ! the storm and refine if we are
             R_eye = storm_location(t)
             do m=1,size(R_refine,1)
-                if ((abs(x_c - R_eye(1)) < R_refine(m)) .and. &
-                    (abs(y_c - R_eye(2)) < R_refine(m)) .and. &
-                    (level <= m)) then
+                ds = spherical_distance([x_c,y_c],R_eye)
                 
+                if ( ds < R_refine(m) .and. level <= m ) then
                     amrflags(i,j) = DOFLAG
                     cycle
                 endif
@@ -105,6 +105,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
                     cycle
                 endif
             enddo
+            ! *****************************************************
 
             ! Check to see if refinement is forced in any topography file region:
             do m=1,mtopofiles
