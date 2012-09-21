@@ -64,7 +64,7 @@ def setplot(plotdata):
     speed_limits = [0.0,speed_range]
     
     wind_limits = [0,55]
-    pressure_limits = [954,1002]
+    pressure_limits = [966,1013]
     vorticity_limits = [-1.e-2,1.e-2]
 
     # ==========================================================================
@@ -88,7 +88,6 @@ def setplot(plotdata):
         plt.xlabel('t (hours)')
         plt.ylabel('m')
         locs,labels = plt.xticks()
-        # import pdb; pdb.set_trace()
         labels = np.trunc(locs/3600.0)
         # locs = np.linspace(-12.0,40,52)
         # labels = range(-12,41)
@@ -139,7 +138,6 @@ def setplot(plotdata):
 
     def surge_afteraxes(current_data):
         x,y = eye_location(current_data)
-        print current_data.t,x,y
         plt.hold(True)
         plt.plot(x,y,'rD')
         plt.hold(False)
@@ -451,6 +449,7 @@ def setplot(plotdata):
     plotaxes.scaled = True
     
     add_pressure(plotaxes,bounds=pressure_limits)
+    # add_pressure(plotaxes)
     add_land(plotaxes)
     
     # Wind field
