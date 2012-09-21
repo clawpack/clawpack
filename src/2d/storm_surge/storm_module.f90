@@ -252,7 +252,6 @@ contains
 
     end subroutine set_storm_fields
 
-
     subroutine output_storm_location(t)
 
         implicit none

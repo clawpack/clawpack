@@ -54,7 +54,9 @@ contains
     ! Setup routine for the holland model
     subroutine set_holland_storm(storm_data_path,storm)
 
-        use geoclaw_module, only: deg2rad, earth_radius
+        use geoclaw_module, only: deg2rad, spherical_distance
+
+        use qinit_module, only: t0
 
         implicit none
 
@@ -64,18 +66,17 @@ contains
 
         ! Local storage
         integer, parameter :: data_file = 701
-        integer :: i,k,lines,io_status,num_casts
-        real(kind=8) :: forecast_time,last_time,x(2),y(2),ds,dt,dx,dy
+        integer :: i,io_status,num_casts
+        real(kind=8) :: forecast_time,last_time,x(2),y(2),ds,dt,dx,dy,theta
 
         ! Reading buffer variables
         integer :: year,month,day,hour,forecast,lat,lon,max_wind_speed
         integer :: central_pressure,RRP,max_wind_radius
         character(len=4) :: cast_type
+        character(len=1) :: direction(2)
 
         ! File format string
-        character(len=*), parameter :: file_format = "(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,3x,i4,3x,i3,2x,i4,47x,i3,2x,i3)"
-        character(len=*), parameter :: out_format = "('CastTime ',d16.8,' Lat ',d16.8,' Lon ',d16.8,/,'Spd ',d8.2," // &
-                                                    "' CPress ',d10.2,' RRP ',d12.2,' RMW ',d8.2)"
+        character(len=*), parameter :: file_format = "(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,47x,i3,2x,i3)"
 
         ! Open data file
         if (present(storm_data_path)) then
@@ -94,8 +95,8 @@ contains
         num_casts = 0
         do
             read(data_file,fmt=file_format,iostat=io_status) year,month,day, &
-                    hour,cast_type,forecast,lat,lon,max_wind_speed, &
-                    central_pressure,RRP,max_wind_radius
+                    hour,cast_type,forecast,lat,direction(2),lon,direction(1), &
+                    max_wind_speed,central_pressure,RRP,max_wind_radius
 
             ! Exit loop if we ran into an error or we reached the end of the file
             if (io_status /= 0) exit
@@ -120,9 +121,9 @@ contains
         ! Now re-read the file's contents
         i = 0
         do while (i < num_casts)
-            read(data_file,fmt=file_format) year, month, day, hour, cast_type, &
-                    forecast, lat, lon, max_wind_speed, central_pressure, RRP, &
-                    max_wind_radius
+            read(data_file,fmt=file_format) year,month,day,hour,cast_type, &
+                    forecast,lat,direction(2),lon,direction(1),max_wind_speed, &
+                    central_pressure,RRP,max_wind_radius
 
             ! Skip counting this line if time is repeated
             forecast_time = date_to_seconds(year,month,day,hour,0,0.d0)
@@ -134,11 +135,19 @@ contains
 
             ! Storm position
             ! Conversions:
-            !  lon - Convert 10ths of degs to degs, also assume W hemisphere
+            !  lon - Convert 10ths of degs to degs, depends on E,W
             !  lat - Convert 10ths of degs to degs
             storm%track(1,i) = date_to_seconds(year,month,day,hour,0,0.d0)
-            storm%track(2:3,i) = [-real(lon,kind=8) / 10.d0, &
-                                   real(lat,kind=8) / 10.d0]
+            if (direction(1) == "E") then
+                storm%track(2,i) = real(lon,kind=8) / 10.d0
+            else
+                storm%track(2,i) = -real(lon,kind=8) / 10.d0
+            endif
+            if (direction(2) == "N") then
+                storm%track(3,i) = real(lat,kind=8) / 10.d0
+            else
+                storm%track(3,i) = -real(lat,kind=8) / 10.d0
+            endif
 
             ! Storm intensity
             ! Conversions:
@@ -146,7 +155,7 @@ contains
             !  max_wind_radius  - convert from nm to m
             !  central_pressure - convert from mbar to Pa
             storm%max_wind_speed(i) = real(max_wind_speed,kind=8) * 0.51444444d0
-            storm%max_wind_radius(i) = real(max_wind_radius,kind=8)  * 1.852000003180799d3
+            storm%max_wind_radius(i) = real(max_wind_radius,kind=8) * 1.852000003180799d0
             storm%central_pressure(i) = real(central_pressure,kind=8) * 100.d0
 
         enddo
@@ -161,17 +170,15 @@ contains
             y = storm%track(2:3,i+1)
 
             dt = storm%track(1,i + 1) - storm%track(1,i)
-            dx = (y(1) - x(1)) * deg2rad
+            ds = spherical_distance([x(1),0.5d0 * (x(2) + y(2))], &
+                                    [y(1),0.5d0 * (x(2) + y(2))])
+            storm%velocity(1,i) = sign(ds / dt,y(1) - x(1))
 
-            ds = earth_radius * (2.d0 * asin(sqrt(cos(y(2) * deg2rad) &
-                                                * cos(x(2) * deg2rad) &
-                                                * sin(dx / 2.0d0)**2 ) ) )
-            storm%velocity(1,i) = sign(ds/dt,y(1) - x(1))
-
-            dy = (y(2) - x(2)) * deg2rad
-            ds = earth_radius * (2.0d0 * asin(sqrt((sin(dy) / 2.d0)**2)))
-            storm%velocity(2,i) = sign(ds/dt,y(2) - x(2))
+            ds = spherical_distance([0.5d0 * (x(1) + y(1)),x(2)], &
+                                    [0.5d0 * (x(1) + y(1)),y(2)])
+            storm%velocity(2,i) = sign(ds / dt,y(2) - x(2))
         end do
+
         ! Use last approximation for velocity point going forward
         storm%velocity(:,num_casts) = storm%velocity(:,num_casts - 1)
 
@@ -179,7 +186,8 @@ contains
         storm%num_casts = num_casts
 
         ! This is used to speed up searching for correct storm data
-        last_storm_index = 1
+        last_storm_index = 2
+        last_storm_index = storm_index(t0,storm)
 
         if (DEBUG) then
             call output_holland_storm('storm.data',storm)
@@ -342,6 +350,8 @@ contains
             enddo
             if (.not.found) then
                 index = -1
+            else
+                index = new_index
             endif
         endif
 
@@ -357,7 +367,7 @@ contains
                                                 max_wind_speed,     &
                                                 central_pressure)
 
-        use geoclaw_module, only: deg2rad, earth_radius
+        use geoclaw_module, only: deg2rad
 
         implicit none
 
@@ -375,7 +385,7 @@ contains
         integer :: i
 
         ! Increment storm data index if needed and not at end of forecast
-        i = storm_index(t,storm)
+        i = storm_index(t,storm) + 1
         last_storm_index = i
 
         if (i <= 1) then        
@@ -385,11 +395,18 @@ contains
             stop 
         endif
 
+        if (storm%track(1,i) < t) then
+            print *,i
+            print *,t
+            print *,storm%track(1,i-1),storm%track(1,i)
+            stop 
+        endif
+
         ! Interpolate in time for all parameters
         if (i == storm%num_casts) then
             ! At last forecast, use last data for storm strength parameters and
             ! velocity, location uses last velocity and constant motion forward
-            fn = [storm%track(:,i) + (t-storm%track(1,i)) * storm%velocity(:,i), &
+            fn = [storm%track(2:3,i) + (t-storm%track(1,i)) * storm%velocity(:,i), &
                   storm%velocity(:,i), storm%max_wind_radius(i), &
                   storm%max_wind_speed(i), storm%central_pressure(i)]
         else
@@ -398,10 +415,10 @@ contains
             tn = storm%track(1,i)
             tnm = storm%track(1,i-1)
             weight = (t - tnm) / (tn - tnm)
-            fn = [storm%track(2:3,i),storm%velocity(:,2), &
+            fn = [storm%track(2:3,i),storm%velocity(:,i), &
                   storm%max_wind_radius(i),storm%max_wind_speed(i), &
                   storm%central_pressure(i)]
-            fnm = [storm%track(2:3,i),storm%velocity(:,2), &
+            fnm = [storm%track(2:3,i - 1),storm%velocity(:,i - 1), &
                    storm%max_wind_radius(i - 1),storm%max_wind_speed(i - 1), &
                   storm%central_pressure(i - 1)]
             fn = weight * (fn - fnm) + fnm
@@ -425,7 +442,8 @@ contains
                                     pressure_index, storm)
 
         use geoclaw_module, only: g => grav, rho, num_layers
-        use geoclaw_module, only: coriolis, deg2rad, earth_radius
+        use geoclaw_module, only: coriolis, deg2rad
+        use geoclaw_module, only: spherical_distance
 
         use geoclaw_module, only: rad2deg
 
@@ -444,7 +462,7 @@ contains
         real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
         ! Local storage
-        real(kind=8) :: x_global, x_storm, y_global, y_storm, r, theta, sloc(2)
+        real(kind=8) :: x, y, r, theta, sloc(2)
         real(kind=8) :: f, mwr, mws, Pc, Pa, dp, wind, tv(2)
         real(kind=8) :: mod_mws, trans_speed
         integer :: i,j
@@ -453,7 +471,6 @@ contains
         call get_holland_storm_data(t,storm,sloc,tv,mwr,mws,Pc)
         
         ! Other quantities of interest
-        f = coriolis(y_global)
         Pa = storm%ambient_pressure
 
         ! Calculate Holland parameters
@@ -477,15 +494,9 @@ contains
         if (B > 2.5d0) B = 2.5d0
 
         ! Calculate Holland A parameter, not needed
-        A = (mws * 1.d3)**B
+        A = (mwr * 1000.d0)**B
 
-        if (DEBUG) then
-            print "('Holland B = ',d16.8)",B
-            print *,sloc
-            print *,mws,mwr,Pc
-            print *,tv
-        endif
-        stop
+!         if (DEBUG) print "('Holland B = ',d16.8)",B
 
         ! Set initial wind and pressure field
         aux(wind_index:wind_index+1,:,:) = 0.d0
@@ -493,33 +504,27 @@ contains
         
         ! Set fields
         do j=1-mbc,my+mbc
-            y_global = ylower + (j-0.5d0) * dy         ! Degrees latitude
-            y_storm = (y_global - sloc(2)) * deg2rad   ! Radians from storm eye
+            y = ylower + (j-0.5d0) * dy     ! Degrees latitude
+            f = coriolis(y)
             do i=1-mbc,mx+mbc
-                x_global = xlower + (i-0.5d0) * dx       ! Degrees longitude
-                x_storm = (x_global - sloc(1)) * deg2rad ! Rads from storm eye
+                x = xlower + (i-0.5d0) * dx   ! Degrees longitude
 
-!                 ! Calculate storm centric polar coordinate location of grid
-!                 ! cell center, uses Haversine formula
-!                 theta = atan2(y_storm,x_storm)
-!                 r = earth_radius * (2.0d0 * asin(sqrt(sin(y_storm / 2.0d0)**2.0d0 + &
-!                         cos(sloc(2) * deg2rad) * cos(y_global * deg2rad) * sin(x_storm / 2.0d0)**2.0d0)))
+                ! Calculate storm centric polar coordinate location of grid
+                ! cell center, uses Haversine formula
+                r = spherical_distance([x,y],sloc)
+                theta = atan2((y - sloc(2)) * DEG2RAD,(x - sloc(1)) * DEG2RAD)
 
-!                 print "(a)","===================="
-!                 print "(2d16.8)",6378.2064d3,earth_radius
-!                 print "(2d16.8)",6378206.4d0 - earth_radius
-!                 print "('(x,y) = ',4e16.8)",x_global,y_global,x_storm,y_storm
-!                 print "('sloc = ',2e16.8)",sloc
-!                 print "('r = ',2e16.8)",r,sqrt(x_storm**2 + y_storm**2)
-!                 print "('theta = ',e16.8)",theta*rad2deg
+                ! Set pressure field
+!                 print "('A = ',2d16.8)",A,23.d0
+                aux(pressure_index,i,j) = Pc + dp * exp(-1.d3**B*23.d0/abs(r)**B)
+!                 print "('P1 = ',d16.8)",aux(pressure_index,i,j)
+                aux(pressure_index,i,j) = Pc + dp * exp(-(mwr*1000.d0/r)**B)
 
-!                 ! Set pressure field
-!                 aux(pressure_index,i,j) = &
-!                         (Pc + dp * exp(-(rmw * 1000.d0 / r)**B)) / (rho(1) * g)
+!                 print *,aux(pressure_index,i,j)
 
 !                 ! Speed of wind at this point
-!                 wind = sqrt((rmw * 1000.d0 / r)**B &
-!                         * exp(1.d0 - (rmw * 1000.d0 / r)**B) * mws**2 &
+!                 wind = sqrt((mwr * 1000.d0 / r)**B &
+!                         * exp(1.d0 - (mwr * 1000.d0 / r)**B) * mws**2 &
 !                         + r**2 * f**2 / 4.d0) - r * f / 2.d0
 
 !                 ! Velocity components of storm (assumes perfect vortex shape)
@@ -544,7 +549,7 @@ contains
 !                 ! distances from the storm
 !                 aux(wind_index:wind_index+1,i,j) = &
 !                             aux(wind_index:wind_index+1,i,j) &
-!                                     + (abs(wind) / mws) * storm_v
+!                                     + (abs(wind) / mws) * tv
             enddo
         enddo
 
