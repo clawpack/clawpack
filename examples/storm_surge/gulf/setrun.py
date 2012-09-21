@@ -13,6 +13,10 @@ import numpy as np
 
 import surge
 
+#                           days   s/hour    hours/day            
+days2seconds = lambda days: days * 60.0**2 * 24.0
+seconds2days = lambda seconds: seconds / (60.0**2 * 24.0)
+
 
 #------------------------------
 def setrun(claw_pkg='geoclaw'):
@@ -97,7 +101,8 @@ def setrun(claw_pkg='geoclaw'):
     # Initial time:
     # -------------
 
-    clawdata.t0 = 0.20844000e08
+    # clawdata.t0 = (241.25 + 0.25) * 60**2 * 24
+    clawdata.t0 = days2seconds(250.0)
 
 
     # -------------
@@ -110,14 +115,18 @@ def setrun(claw_pkg='geoclaw'):
 
     clawdata.outstyle = 1
 
-    # Output files per day requested
-    recurrence = 4
-
     if clawdata.outstyle==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.tfinal = 0.221184e8
+        #                 day     s/hour  hours/day
+
+        clawdata.tfinal = days2seconds(256.0)
+
+        # Output files per day requested
+        recurrence = 4
         clawdata.nout = int((clawdata.tfinal - clawdata.t0) 
                                             * recurrence / (60**2 * 24))
+        # clawdata.tfinal = days2seconds(252.0)
+        # clawdata.nout = 48
 
     elif clawdata.outstyle == 2:
         # Specify a list of output times.
@@ -139,7 +148,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 3
+    clawdata.verbosity = 2
 
 
 
@@ -219,7 +228,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    mxnest = 1
+    mxnest = 3
 
     clawdata.mxnest = -mxnest   # negative ==> anisotropic refinement in x,y,t
 
@@ -277,7 +286,8 @@ def setgeo(rundata):
 
     geodata.gravity = 9.81
     geodata.coordinate_system = 2
-    geodata.earth_radius = 6367.5e3
+    # geodata.earth_radius = 6367.5e3
+    geodata.earth_radius = 6378.2064e3
     geodata.coriolis_forcing = True
     geodata.theta_0 = 45.0
 
@@ -372,7 +382,7 @@ def set_storm():
 
     # Source term controls
     data.wind_forcing = False
-    data.pressure_forcing = False
+    data.pressure_forcing = True
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-6

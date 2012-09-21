@@ -354,5 +354,5 @@ if __name__ == "__main__":
     
     # Plot results
     plot_bathy(['.'.join((name,'tt3')) for name in regions.keys()],
-               region_bathy,names=regions.keys())
+               region_bathy,names=regions.keys(),patch_names=False)
     plt.show()
