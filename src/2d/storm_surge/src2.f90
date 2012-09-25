@@ -3,6 +3,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag
     use storm_module, only: pressure_tolerance, wind_tolerance
+    use storm_module, only: wind_index, pressure_index
 
     use geoclaw_module, only: g => grav, dry_tolerance
     use geoclaw_module, only: coriolis_forcing, coriolis
@@ -112,17 +113,18 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! End of coriolis source term
 
     ! wind -----------------------------------------------------------
-    if (wind_forcing) then
+    if (wind_forcing .and. .false.) then
         ! Force only the top layer of water, assumes top most layer is last
         ! to go dry
         do j=1,my
             do i=1,mx
                 if (q(1,i,j) / rho(1) > dry_tolerance(1)) then
-                    wind_speed = sqrt(aux(4,i,j)**2 + aux(5,i,j)**2)
+                    wind_speed = sqrt(aux(wind_index,i,j)**2 &
+                                    + aux(wind_index+1,i,j)**2)
                     if (wind_speed > wind_tolerance) then
                         tau = wind_drag(wind_speed) * rho_air * wind_speed
-                        q(2,i,j) = q(2,i,j) + dt * tau * aux(4,i,j)
-                        q(3,i,j) = q(3,i,j) + dt * tau * aux(5,i,j)
+                        q(2,i,j) = q(2,i,j) + dt * tau * aux(wind_index,i,j)
+                        q(3,i,j) = q(3,i,j) + dt * tau * aux(wind_index+1,i,j)
                     endif
                 endif
             enddo
@@ -131,7 +133,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! ----------------------------------------------------------------
 
     ! atmosphere -----------------------------------------------------
-    if (pressure_forcing) then
+    if (pressure_forcing .and. .false.) then
         do j=1,my  
             do i=1,mx  
                 ! Extract depths
@@ -140,8 +142,10 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 end forall
                 
                 ! Calculate gradient of Pressure
-                P_atmos_x = (aux(6,i+1,j) - aux(6,i-1,j)) / (2.d0 * dx)
-                P_atmos_y = (aux(6,i,j+1) - aux(6,i,j-1)) / (2.d0 * dy)
+                P_atmos_x = (aux(pressure_index,i+1,j) &
+                                    - aux(pressure_index,i-1,j)) / (2.d0 * dx)
+                P_atmos_y = (aux(pressure_index,i,j+1) &
+                                    - aux(pressure_index,i,j-1)) / (2.d0 * dy)
                 if (abs(P_atmos_x) < pressure_tolerance) then
                     P_atmos_x = 0.d0
                 endif

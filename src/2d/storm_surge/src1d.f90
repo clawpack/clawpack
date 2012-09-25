@@ -4,11 +4,14 @@
 ! fix-up is applied and is used to apply source terms over partial
 ! time steps to the coarse grid cell values used in solving Riemann
 ! problems at the interface between coarse and fine grids.
+
+! This routine is not called in GeoClaw currently due to conservation problems
 subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
       
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag
     use storm_module, only: pressure_tolerance, wind_tolerance
+    use storm_module, only: wind_index, pressure_index
       
     use geoclaw_module, only: g => grav, dry_tolerance
     use geoclaw_module, only: coriolis_forcing, coriolis
@@ -109,11 +112,12 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
         ! Assumes that the top-most layer goes dry last
         do i=1,mx1d
             if (q1d(1,i) / rho(1) > dry_tolerance(1)) then
-                wind_speed = sqrt(aux1d(4,i)**2 + aux1d(5,i)**2)
+                wind_speed = sqrt(aux1d(wind_index,i)**2 &
+                                + aux1d(wind_index+1,i)**2)
                 if (wind_speed > wind_tolerance) then
                     tau = wind_drag(wind_speed) * rho_air * wind_speed
-                    q1d(2,i) = q1d(2,i) + dt * tau * aux1d(4,i)
-                    q1d(3,i) = q1d(3,i) + dt * tau * aux1d(5,i)
+                    q1d(2,i) = q1d(2,i) + dt * tau * aux1d(wind_index,i)
+                    q1d(3,i) = q1d(3,i) + dt * tau * aux1d(wind_index+1,i)
                 endif
             endif
         enddo
@@ -121,7 +125,9 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     ! ========================================================================
     
     ! == Pressure Forcing ====================================================
-    if (pressure_forcing .or. .false.) then
+    ! Need to add dx and dy to calling signature from qad in order for this to 
+    ! work
+    if (pressure_forcing) then
         stop "Not sure how to proceed, need direction or the right dx or dy."
     endif
 
