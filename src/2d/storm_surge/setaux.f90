@@ -88,7 +88,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     ! Record initial depths if using multiple layers
     if (num_layers > 1) then
-        do j=1-mbc,mx+mbc
+        do j=1-mbc,my+mbc
             do i=1-mbc,mx+mbc
                 do m=1,num_layers-1
                     if (eta_init(m) > aux(1,i,j)) then
@@ -120,7 +120,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     ! This only matters for the first step when we output the intial storm 
     ! fields.  Otherwise we would have to figure out what t is here
     call set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlow,ylow,dx,dy,t0,aux)
-    
+
     ! Output bathymetry for debugging
     if (.false.) then
         open(23, file='fort.aux',status='unknown',form='formatted')
