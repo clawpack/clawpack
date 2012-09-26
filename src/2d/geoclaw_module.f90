@@ -258,4 +258,47 @@ contains
 
     end function spherical_distance
 
+    !=================================================================
+    ! Transform long,lat --> (x,y) coordinates.
+    !
+    ! On input:
+    !    coords(2) = (longitude (E/W),latitude (N/S))
+    !    projection_center(2) = (longitude (E/W),latitude (N/S)) - coordinates 
+    !                        where projection is true
+    !
+    ! On output:
+    !    x(2)          (meters)
+    !=================================================================
+    pure function latlon2xy(coords,projection_center) result(x)
+
+        real(kind=8), intent(in) :: coords(2), projection_center(2)
+        real(kind=8) :: x(2)
+
+        x(1) = deg2rad * earth_radius * (coords(1) - &
+                    projection_center(1)) * cos(deg2rad * projection_center(2))
+        x(2) = deg2rad * earth_radius * coords(2)
+
+    end function latlon2xy
+
+    !=================================================================
+    ! Transform (x,y) --> (lat,lon) coordinates.
+    !
+    ! On input:
+    !    x(2) = (meters)          
+    !    projection_center(2) = (longitude (E/W),latitude (N/S)) - coordinates 
+    !                        where projection is true
+    !
+    ! On output:
+    !    coords(2) = (longitude,latitude)
+    !=================================================================
+    pure function xy2latlon(x,projection_center) result(coords)
+
+        real(kind=8), intent(in) :: x(2), projection_center(2)
+        real(kind=8) :: coords(2)
+
+        coords(1) = projection_center(1) + x(1) &
+                / (deg2rad * earth_radius * cos(deg2rad * projection_center(2)))
+        coords(2) = x(2) / (deg2rad * earth_radius)
+    end function xy2latlon
+
 end module geoclaw_module
