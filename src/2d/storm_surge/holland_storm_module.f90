@@ -40,7 +40,7 @@ module holland_storm_module
     real(kind=8), private :: A,B
     integer, private :: last_storm_index
 
-    logical, private :: DEBUG = .true. 
+    logical, private :: DEBUG = .false. 
 
     ! Atmospheric boundary layer, input variable in ADCIRC but always is
     ! set to the following value
@@ -189,9 +189,8 @@ contains
         last_storm_index = 2
         last_storm_index = storm_index(t0,storm)
 
-        if (DEBUG) then
-            call output_holland_storm('storm.data',storm)
-        endif
+        ! Output read-in storm data for debugging and plotting purposes
+        call output_holland_storm('storm.data',storm)
 
     end subroutine set_holland_storm
 
@@ -299,6 +298,11 @@ contains
         call get_holland_storm_data(t,storm,location, &
                                             junk,junk(1),junk(1),junk(1))
 
+        if (DEBUG) then
+            print "('Storm Location = ',2d16.8)",location
+            print "('i,t = ',i2,d16.8)", storm_index(t,storm),t
+        end if
+
     end function holland_storm_location
 
 
@@ -315,43 +319,34 @@ contains
         type(holland_storm_type), intent(in) :: storm
 
         ! Locals
-        integer :: new_index
-        logical :: found
         real(kind=8) :: t0,t1
+        logical :: found
 
         ! Figure out where we are relative to the last time we checked for the
         ! index (stored in last_storm_index)
         t0 = storm%track(1,last_storm_index - 1)
         t1 = storm%track(1,last_storm_index)
-        if (t0 < t .and. t < t1) then
+        if (t0 < t .and. t <= t1) then
             index = last_storm_index
         else if ( t1 < t ) then
-            ! Check if we are beyond all the forecasting data
-            if (storm%track(1,storm%num_casts) < t) then
-                index = storm%num_casts
-            else
-                ! Go forward until we find the next index
-                do new_index=last_storm_index+1,storm%num_casts
-                    t1 = storm%track(1,new_index)
-                    if (t < t1) exit
-                end do
-                index = new_index
-            endif
-        else
-            ! Go backward until we find the correct index, if we go beyond the 
-            ! first forecast stop here
             found = .false.
-            do new_index=last_storm_index-1,2,-1
-                t0 = storm%track(1,new_index-1)
-                if (t0 < t) then
+            do index=last_storm_index+1,storm%num_casts
+                if (t < storm%track(1,index)) then
                     found = .true.
                     exit
                 endif
             enddo
-            if (.not.found) then
+            ! Assume we have gone past last forecast time
+            if (.not. found) then
+                index = storm%num_casts + 1
+            endif
+        else ! t <= t0
+            if (last_storm_index == 2) then
                 index = -1
             else
-                index = new_index
+                do index=last_storm_index-1,2,-1
+                    if (storm%track(1,index-1) < t) exit
+                enddo
             endif
         endif
 
@@ -367,7 +362,7 @@ contains
                                                 max_wind_speed,     &
                                                 central_pressure)
 
-        use geoclaw_module, only: deg2rad
+        use geoclaw_module, only: deg2rad, latlon2xy, xy2latlon
 
         implicit none
 
@@ -381,32 +376,36 @@ contains
         real(kind=8), intent(out) :: central_pressure
 
         ! Local
-        real(kind=8) :: fn(7), fnm(7), weight, tn, tnm
+        real(kind=8) :: fn(7), fnm(7), weight, tn, tnm, x(2)
         integer :: i
 
         ! Increment storm data index if needed and not at end of forecast
-        i = storm_index(t,storm) + 1
+        i = storm_index(t,storm)
         last_storm_index = i
 
-        if (i <= 1) then        
-            print *,"Invalid storm forecast requested for t = ",t
-            print *,"Time requested is before any forecast data."
-            print *,"   ERROR = ",i
-            stop 
-        endif
-
-        if (storm%track(1,i) < t) then
-            print *,i
-            print *,t
-            print *,storm%track(1,i-1),storm%track(1,i)
-            stop 
+        ! List of possible error conditions
+        if (i <= 1) then
+            if (i == 0) then        
+                print *,"Invalid storm forecast requested for t = ",t
+                print *,"Time requested is before any forecast data."
+                print *,"    first time = ",storm%track(1,1)
+                print *,"   ERROR = ",i
+                stop
+            endif
         endif
 
         ! Interpolate in time for all parameters
-        if (i == storm%num_casts) then
+        if (i == storm%num_casts + 1) then
+            i = i - 1
             ! At last forecast, use last data for storm strength parameters and
             ! velocity, location uses last velocity and constant motion forward
-            fn = [storm%track(2:3,i) + (t-storm%track(1,i)) * storm%velocity(:,i), &
+
+            ! Convert coordinates temporarily to meters so that we can use
+            ! the pre-calculated m/s velocities from before
+            x = latlon2xy(storm%track(2:3,i),storm%track(2:3,i))
+            x = x + (t - storm%track(1,i)) * storm%velocity(:,i)
+            
+            fn = [xy2latlon(x,storm%track(2:3,i)), &
                   storm%velocity(:,i), storm%max_wind_radius(i), &
                   storm%max_wind_speed(i), storm%central_pressure(i)]
         else
@@ -464,7 +463,7 @@ contains
         ! Local storage
         real(kind=8) :: x, y, r, theta, sloc(2)
         real(kind=8) :: f, mwr, mws, Pc, Pa, dp, wind, tv(2)
-        real(kind=8) :: mod_mws, trans_speed
+        real(kind=8) :: mod_mws, trans_speed, max_wind(2), min_wind(2)
         integer :: i,j
 
         ! Get interpolated storm data
@@ -493,16 +492,16 @@ contains
         if (B <  1.d0) B = 1.d0
         if (B > 2.5d0) B = 2.5d0
 
-        ! Calculate Holland A parameter, not needed
-        A = (mwr * 1000.d0)**B
+        if (DEBUG) print "('Holland B = ',d16.8)",B
+        if (DEBUG) print "('Holland A = ',d16.8)",(mwr * 1000.d0)**B
 
-!         if (DEBUG) print "('Holland B = ',d16.8)",B
-
-        ! Set initial wind and pressure field
+        ! Set initial wind and pressure field, do not really need to do this
         aux(wind_index:wind_index+1,:,:) = 0.d0
         aux(pressure_index,:,:) = Pa
         
         ! Set fields
+        max_wind = 0.d0
+        min_wind = 0.d0
         do j=1-mbc,my+mbc
             y = ylower + (j-0.5d0) * dy     ! Degrees latitude
             f = coriolis(y)
@@ -515,43 +514,45 @@ contains
                 theta = atan2((y - sloc(2)) * DEG2RAD,(x - sloc(1)) * DEG2RAD)
 
                 ! Set pressure field
-!                 print "('A = ',2d16.8)",A,23.d0
-                aux(pressure_index,i,j) = Pc + dp * exp(-1.d3**B*23.d0/abs(r)**B)
-!                 print "('P1 = ',d16.8)",aux(pressure_index,i,j)
                 aux(pressure_index,i,j) = Pc + dp * exp(-(mwr*1000.d0/r)**B)
 
-!                 print *,aux(pressure_index,i,j)
+                ! Speed of wind at this point
+                wind = sqrt((mwr * 1000.d0 / r)**B &
+                        * exp(1.d0 - (mwr * 1000.d0 / r)**B) * mws**2 &
+                        + (r * f)**2 / 4.d0) - r * f / 2.d0
 
-!                 ! Speed of wind at this point
-!                 wind = sqrt((mwr * 1000.d0 / r)**B &
-!                         * exp(1.d0 - (mwr * 1000.d0 / r)**B) * mws**2 &
-!                         + r**2 * f**2 / 4.d0) - r * f / 2.d0
+                ! Convert wind velocity from top of atmospheric boundary layer
+                ! (which is what the Holland curve fit produces) to wind
+                ! velocity at 10 m above the earth's surface
 
-!                 ! Velocity components of storm (assumes perfect vortex shape)
-!                 aux(wind_index,i,j)   = -wind * sin(theta)
-!                 aux(wind_index+1,i,j) =  wind * cos(theta)
+                ! Also convert from 1 minute averaged winds to 10 minute
+                ! averaged winds
+                wind = wind * atmos_boundary_layer * sampling_time
 
-!                 ! Convert wind velocity from top of atmospheric boundary layer
-!                 ! (which is what the Holland curve fit produces) to wind
-!                 ! velocity at 10 m above the earth's surface
+                ! Velocity components of storm (assumes perfect vortex shape)
+                aux(wind_index,i,j)   = -wind * sin(theta)
+                aux(wind_index+1,i,j) =  wind * cos(theta)
 
-!                 ! Also convert from 1 minute averaged winds to 10 minute
-!                 ! averaged winds
-!                 aux(wind_index,i,j) = aux(wind_index,i,j) &
-!                                         * atmos_boundary_layer * sampling_time
-!                 aux(wind_index+1,i,j) = aux(wind_index+1,i,j) &
-!                                         * atmos_boundary_layer * sampling_time
-
-!                 ! Add the storm translation speed
-!                 ! Determine translation speed that should be added to final
-!                 ! storm wind speed.  This is tapered to zero as the storm wind
-!                 ! tapers to zero toward the eye of the storm and at long
-!                 ! distances from the storm
-!                 aux(wind_index:wind_index+1,i,j) = &
-!                             aux(wind_index:wind_index+1,i,j) &
-!                                     + (abs(wind) / mws) * tv
+                ! Add the storm translation speed
+                ! Determine translation speed that should be added to final
+                ! storm wind speed.  This is tapered to zero as the storm wind
+                ! tapers to zero toward the eye of the storm and at long
+                ! distances from the storm
+                aux(wind_index,i,j) = aux(wind_index,i,j) + (abs(wind) / mws) * tv(1)
+                aux(wind_index+1,i,j) = aux(wind_index+1,i,j) + (abs(wind) / mws) * tv(2)
+    
+                ! Maximum wind speed recorded
+                if (DEBUG) then
+                    max_wind(1) = max(max_wind(1),aux(wind_index,i,j))
+                    max_wind(2) = max(max_wind(2),aux(wind_index+1,i,j))
+                    min_wind(1) = min(min_wind(1),aux(wind_index,i,j))
+                    min_wind(2) = min(min_wind(2),aux(wind_index+1,i,j))
+                end if
             enddo
         enddo
+
+        if (DEBUG) print "('Max Wind = ',2d16.8)",max_wind
+        if (DEBUG) print "('Min Wind = ',2d16.8)",min_wind
 
     end subroutine set_holland_storm_fields
 

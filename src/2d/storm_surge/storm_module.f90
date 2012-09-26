@@ -72,7 +72,7 @@ contains
         
         ! Locals
         integer, parameter :: unit = 13
-        integer :: status, i
+        integer :: i
         character(len=200) :: storm_file_path, line
         
         ! Open file
@@ -112,7 +112,7 @@ contains
         read(unit,*)
         
         ! Storm Setup 
-        read(unit,*) storm_type
+        read(unit,"(i1)") storm_type
         read(unit,*) storm_file_path
 
         ! Read in hurricane track data from file
