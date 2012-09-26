@@ -27,7 +27,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     
     ! Locals
     integer :: i,j,m
-    real(kind=8) :: x,y,xm,ym,xp,yp,deg2rad,topo_integral
+    real(kind=8) :: x,y,xm,ym,xp,yp,topo_integral
     character(len=*), parameter :: aux_format = "(2i4,4d15.3)"
     
     ! Lat-Long coordinate system in use, check input variables
