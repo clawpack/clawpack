@@ -1,233 +1,238 @@
-c
-c ------------------------------------------------------------------
-c
-      subroutine filval(val,mitot,mjtot,hx,hy,lev,time,
-     1                  valc,auxc,mic,mjc,
-     2                  xleft,xright,ybot,ytop,nvar,
-     3                  mptr,ilo,ihi,jlo,jhi,aux,naux,locflip,
-     4                  sp_over_h)
+!
+! :::::::::::::::::::::::::::::: FILVAL ::::::::::::::::::::::::::
+!
+! create and fill coarser (lev-1) patch with one extra coarse cell all
+! around, plus the ghost cells . will interpolate from this patch to grid mptr
+! without needing special boundary code.
+!
+! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+!
+!
+!
+! ------------------------------------------------------------------
+subroutine filval(val, mitot, mjtot, hx, hy, lev, time, valc, auxc, mic, &
+                  mjc, xleft, xright, ybot, ytop, nvar, mptr, ilo, ihi, &
+                  jlo, jhi, aux, naux, locflip, sp_over_h)
 
-      use geoclaw_module
-      use amr_module
-      implicit double precision (a-h,o-z)
+    use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
+    use amr_module, only: yperdom, spheredom, xupper, yupper
+
+    use geoclaw_module, only: rho, dry_tolerance, eta_init, varRefTime
+
+    implicit none
+
+    ! Input
+    integer, intent(in) :: mitot, mjtot, lev, mic, mjc, nvar, mptr, ilo, ihi
+    integer, intent(in) :: jlo, jhi, naux, locflip
+    real(kind=8), intent(in) :: hx, hy, time, xleft, xright, ybot, ytop
+    real(kind=8), intent(in) :: valc(nvar,mic,mjc), auxc(naux,mic,mjc)
+
+    ! Output
+    real(kind=8), intent(in out) :: sp_over_h
+    real(kind=8), intent(in out) :: val(nvar,mitot,mjtot), aux(naux,mitot,mjtot)
+
+    ! Local storage
+    integer :: levc, lratiox, lratioy, iclo, jclo, ichi, jchi, ng, i, ico, ifine
+    integer :: ii, ivar, j, jco, jfine, jj
+    real(kind=8) :: coarseval(3), hxcrse, hycrse, xl, xr, yb, yt, area
+    real(kind=8) :: dividemass, finemass, hvf, s1m, s1p, slopex, slopey, vel
+    real(kind=8) :: velmax, velmin, vf, vnew, xoff, yoff
+    logical :: fineflag(3)
+
+    ! External function definitions
+    real(kind=8) :: get_max_speed
 
 
-      dimension   val(nvar,mitot,mjtot), valc(nvar,mic,mjc)
-      dimension   aux(naux,mitot,mjtot), auxc(naux,mic,mjc)
+    ! indext into eta array for surface values:
+    ! iaddeta(i,j) = loceta + i-1 + mic*(j-1)
 
-      double precision coarseval(3)
-      logical fineflag(3)
+    levc    = lev - 1
+    lratiox = intratx(levc)
+    lratioy = intraty(levc)
+    hxcrse  = hx * lratiox
+    hycrse  = hy * lratioy
+    xl      = xleft  - hxcrse
+    xr      = xright + hxcrse
+    yb      = ybot   - hycrse
+    yt      = ytop   + hycrse
 
+    ! set integer indices for coarser patch enlarged by 1 cell
+    ! (can stick out of domain). proper nesting will insure this one
+    ! call is sufficient.
+    iclo   = ilo / lratiox - 1
+    jclo   = jlo / lratioy - 1
+    ichi   = (ihi + 1) / lratiox - 1 + 1
+    jchi   = (jhi + 1) / lratioy - 1 + 1
+    ng     = 0
 
-c
-c :::::::::::::::::::::::::::::: FILVAL ::::::::::::::::::::::::::
-c
-c create and fill coarser (lev-1) patch with one extra coarse cell all
-c around, plus the ghost cells . will interpolate from this patch to grid mptr
-c without needing special boundary code.
-c
-c ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-c     # indext into eta array for surface values:
-c       iaddeta(i,j) = loceta + i-1 + mic*(j-1)
-
-      levc    = lev - 1
-      lratiox = intratx(levc)
-      lratioy = intraty(levc)
-      hxcrse  = hx*lratiox
-      hycrse  = hy*lratioy
-      xl      = xleft  - hxcrse
-      xr      = xright + hxcrse
-      yb      = ybot   - hycrse
-      yt      = ytop   + hycrse
-c
-c     set integer indices for coarser patch enlarged by 1 cell
-c     (can stick out of domain). proper nesting will insure this one
-c     call is sufficient.
-      iclo   = ilo/lratiox - 1
-      jclo   = jlo/lratioy - 1
-      ichi   = (ihi+1)/lratiox - 1 + 1
-      jchi   = (jhi+1)/lratioy - 1 + 1
-      ng     = 0
-
-c    :::  mcapa  is the capacity function index
-
-      if (naux .eq. 0) then
-c     if (mcapa .eq. 0) then
+    if (naux == 0) then
         if (xperdom .or. yperdom .or. spheredom) then
-          call preintcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,levc,
-     &                    locflip)
+            call preintcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,levc,locflip)
         else
-          call intcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,levc,1,1)
+            call intcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,levc,1,1)
         endif
-      else  ! intersect grids and copy all (soln and aux)
+    else  
+        ! intersect grids and copy all (soln and aux)
         if (xperdom .or. yperdom .or. spheredom) then
-          call preicall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,
-     &                  jchi,levc,locflip)
+            call preicall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi, &
+                          levc,locflip)
         else
-          call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,
-     &               levc,1,1)
+            call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,levc,1,1)
         endif
-      endif
-      call bc2amr(valc,auxc,mic,mjc,nvar,naux,
-     1            hxcrse,hycrse,levc,time,
-     2            xl,xr,yb,yt,
-     3            xlower,ylower,xupper,yupper,
-     4            xperdom,yperdom,spheredom)
+    endif
+    call bc2amr(valc,auxc,mic,mjc,nvar,naux,hxcrse,hycrse,levc,time,xl,xr,yb, &
+                yt,xlower,ylower,xupper,yupper,xperdom,yperdom,spheredom)
 
-c-----------------------------
-c     # for shallow water over topography,
-c     # in coarse cells convert from h,
-c     # to eta,  before interpolating:
-c-----------------------------
-      toldry = dry_tolerance(1)
-c     #prepare slopes - use min-mod limiters
-      do j=2, mjc-1
-      do i=2, mic-1
-         fineflag(1) = .false.
-*        !interpolate eta to find depth---------------------------------------
-         do ii=-1,1
-            coarseval(2+ii) = valc(1,i+ii,j) / rho(1) + auxc(1,i+ii,j)
-            if (valc(1,i+ii,j) / rho(1) <= toldry) then
-               coarseval(2+ii)=eta_init(1)
-               endif
-            enddo
-         s1p=coarseval(3)-coarseval(2)
-         s1m=coarseval(2)-coarseval(1)
-         slopex=dmin1(dabs(s1p),dabs(s1m))*dsign(1.d0,
-     &      coarseval(3)-coarseval(1))
-         if (s1m*s1p.le.0.d0) slopex=0.d0
-         do jj=-1,1
-            coarseval(2+jj) = valc(1,i,j+jj) / rho(1) + auxc(1,i,j+jj)
-            if (valc(1,i,j+jj) / rho(1) <= toldry) then
-               coarseval(2+jj)=eta_init(1)
-               endif
-            enddo
-         s1p=coarseval(3)-coarseval(2)
-         s1m=coarseval(2)-coarseval(1)
-         slopey=dmin1(dabs(s1p),dabs(s1m))*dsign(1.d0,
-     &      coarseval(3)-coarseval(1))
-         if (s1m*s1p.le.0.d0) slopey=0.d0
-*       !interp. from coarse cells to fine grid to find depth
-         finemass = 0.d0
-         do ico = 1,lratiox
-            do jco = 1,lratioy
-               yoff = (float(jco) - .5)/lratioy - .5
-               xoff = (float(ico) - .5)/lratiox - .5
-               jfine = (j-2)*lratioy + nghost + jco
-               ifine = (i-2)*lratiox + nghost + ico
-               val(1,ifine,jfine) = (coarseval(2)
-     &            + xoff*slopex + yoff*slopey) * rho(1)
-               val(1,ifine,jfine)=max(0.d0,
-     &          val(1,ifine,jfine) / rho(1)-aux(1,ifine,jfine)) * rho(1)
-               finemass = finemass + val(1,ifine,jfine)
-               if (val(1,ifine,jfine) / rho(1) <= toldry) then
-                  fineflag(1) = .true.
-                  val(2,ifine,jfine)=0.d0
-                  val(3,ifine,jfine)=0.d0
-                  endif
-               enddo
-            enddo
-* !------determine momentum----------------------------------
-*        !finemass is the total mass in all new fine grid cells
-*        !all fine mass has been determined for this coarse grid cell
-*        !if all fine cells are dry, momentum has already been set
-         if (finemass / rho(1) >= toldry) then
-            do ivar = 2,nvar
-               fineflag(ivar)=.false.
-               s1p=(valc(ivar,i+1,j)-valc(ivar,i,j)) / rho(1)
-               s1m=(valc(ivar,i,j)-valc(ivar,i-1,j)) / rho(1)
-               slopex=dmin1(dabs(s1p),dabs(s1m))*dsign(1.d0,
-     &            (valc(ivar,i+1,j)-valc(ivar,i-1,j)) / rho(1))
-               if (s1m*s1p.le.0.d0) slopex=0.d0
-               s1p=(valc(ivar,i,j+1)-valc(ivar,i,j)) / rho(1)
-               s1m=(valc(ivar,i,j)-valc(ivar,i,j-1)) / rho(1)
-               slopey=dmin1(dabs(s1p),dabs(s1m))*dsign(1.d0,
-     &            (valc(ivar,i,j+1)-valc(ivar,i,j-1)) / rho(1))
-               if (s1m*s1p.le.0.d0) slopey=0.d0
-               if (valc(1,i,j) / rho(1) > toldry) then
-                  velmax = valc(ivar,i,j)/valc(1,i,j)
-                  velmin = valc(ivar,i,j)/valc(1,i,j)
-               else
-                  velmax = 0.d0
-                  velmin = 0.d0
-                  endif
-               do ii = -1,1,2
-                  if (valc(1,i+ii,j) / rho(1) > toldry) then
-                     vel = valc(ivar,i+ii,j) / valc(1,i+ii,j)
-                     velmax = max(vel,velmax)
-                     velmin = min(vel,velmin)
-                     endif
-                  if (valc(1,i,j+ii) / rho(1) > toldry) then
-                     vel = valc(ivar,i,j+ii)/valc(1,i,j+ii)
-                     velmax = max(vel,velmax)
-                     velmin = min(vel,velmin)
-                     endif
-                  enddo
+    !-----------------------------
+    ! For shallow water over topography, in coarse cells convert from h to eta,
+    ! before interpolating:
+    !-----------------------------
 
-*              !try to set momentum
-               do ico = 1,lratiox
-                  if (fineflag(1).or.fineflag(ivar)) exit
-                  do jco = 1,lratioy
-                     jfine = (j-2)*lratioy + nghost + jco
-                     ifine = (i-2)*lratiox + nghost + ico
-                     yoff = (float(jco) - .5)/lratioy - .5
-                     xoff = (float(ico) - .5)/lratiox - .5
-                     hvf = valc(ivar,i,j) / rho(1) 
-     &                          + xoff*slopex + yoff*slopey
-                     vf = hvf / (val(1,ifine,jfine) / rho(1))
-                     if (vf.gt.velmax.or.vf.lt.velmin) then
-                        fineflag(ivar)=.true.
-                        exit
-                     else
-                        val(ivar,ifine,jfine) = hvf * rho(1)
+    ! Prepare slopes - use min-mod limiters
+    do j=2, mjc-1
+        do i=2, mic-1
+            fineflag(1) = .false.
+            ! interpolate eta to find depth
+            do ii=-1,1
+                coarseval(2+ii) = valc(1,i+ii,j) / rho(1) + auxc(1,i+ii,j)
+                if (valc(1,i+ii,j) / rho(1) <= dry_tolerance(1)) then
+                    coarseval(2+ii)=eta_init(1)
+                end if
+            end do
+            s1p = coarseval(3) - coarseval(2)
+            s1m = coarseval(2) - coarseval(1)
+            slopex = min(abs(s1p), abs(s1m)) &
+                                * sign(1.d0,coarseval(3) - coarseval(1))
+            if (s1m*s1p <= 0.d0) slopex=0.d0
+
+            do jj=-1,1
+                coarseval(2+jj) = valc(1,i,j+jj) / rho(1) + auxc(1,i,j+jj)
+                if (valc(1,i,j+jj) / rho(1) <= dry_tolerance(1)) then
+                    coarseval(2+jj)=eta_init(1)
+                end if
+            end do
+            s1p = coarseval(3) - coarseval(2)
+            s1m = coarseval(2) - coarseval(1)
+            slopey = min(abs(s1p), abs(s1m)) &
+                                * sign(1.d0,coarseval(3)-coarseval(1))
+            if (s1m*s1p <= 0.d0) slopey=0.d0
+
+            ! Interpolate from coarse cells to fine grid to find depth
+            finemass = 0.d0
+            do ico = 1,lratiox
+                do jco = 1,lratioy
+                    yoff = (real(jco,kind=8) - 0.5d0) / lratioy - 0.5d0
+                    xoff = (real(ico,kind=8) - 0.5d0) / lratiox - 0.5d0
+                    jfine = (j-2) * lratioy + nghost + jco
+                    ifine = (i-2) * lratiox + nghost + ico
+                    val(1,ifine,jfine) = (coarseval(2) + xoff * slopex &
+                                                       + yoff * slopey) * rho(1)
+                    val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine) / rho(1) &
+                                            - aux(1,ifine,jfine)) * rho(1)
+                    finemass = finemass + val(1,ifine,jfine)
+                    if (val(1,ifine,jfine) / rho(1) <= dry_tolerance(1)) then
+                        fineflag(1) = .true.
+                        val(2,ifine,jfine) = 0.d0
+                        val(3,ifine,jfine) = 0.d0
+                    end if
+                end do
+            end do
+
+            !------ Determine Momentum ----------------------------------
+            ! finemass is the total mass in all new fine grid cells
+            ! all fine mass has been determined for this coarse grid cell
+            ! if all fine cells are dry, momentum has already been set
+            if (finemass / rho(1) >= dry_tolerance(1)) then
+                do ivar = 2,nvar
+                    fineflag(ivar)=.false.
+                    s1p = (valc(ivar,i+1,j) - valc(ivar,i,j)) / rho(1)
+                    s1m = (valc(ivar,i,j) - valc(ivar,i-1,j)) / rho(1)
+                    slopex = min(abs(s1p), abs(s1m)) &
+                     * sign(1.d0,(valc(ivar,i+1,j) - valc(ivar,i-1,j)) / rho(1))
+                    if (s1m*s1p.le.0.d0) slopex=0.d0
+                
+                    s1p = (valc(ivar,i,j+1) - valc(ivar,i,j)) / rho(1)
+                    s1m = (valc(ivar,i,j) - valc(ivar,i,j-1)) / rho(1)
+                    slopey = min(abs(s1p), abs(s1m)) &
+                     * sign(1.d0,(valc(ivar,i,j+1) - valc(ivar,i,j-1)) / rho(1))
+                    if (s1m*s1p.le.0.d0) slopey=0.d0
+
+                    if (valc(1,i,j) / rho(1) > dry_tolerance(1)) then
+                        velmax = valc(ivar,i,j)/valc(1,i,j)
+                        velmin = valc(ivar,i,j)/valc(1,i,j)
+                    else
+                        velmax = 0.d0
+                        velmin = 0.d0
+                    endif
+               
+                    do ii = -1,1,2
+                        if (valc(1,i+ii,j) / rho(1) > dry_tolerance(1)) then
+                            vel = valc(ivar,i+ii,j) / valc(1,i+ii,j)
+                            velmax = max(vel,velmax)
+                            velmin = min(vel,velmin)
                         endif
-                     enddo
-                  enddo
+                        if (valc(1,i,j+ii) / rho(1) > dry_tolerance(1)) then
+                            vel = valc(ivar,i,j+ii) / valc(1,i,j+ii)
+                            velmax = max(vel,velmax)
+                            velmin = min(vel,velmin)
+                        endif
+                    enddo
 
-*              !momentum is set to preserve old momentum or not violate
-*              !generating new extrema in velocities
-               if (fineflag(1).or.fineflag(ivar)) then !more mass now, conserve momentum
-                  area = dble(lratiox*lratioy)
-                  dividemass = max(finemass,valc(1,i,j))
-                  Vnew = area*valc(ivar,i,j)/dividemass
+                    ! try to set momentum
+                    do ico = 1,lratiox
+                        if (fineflag(1).or.fineflag(ivar)) exit
 
-                  do ico = 1,lratiox
-                     do jco = 1,lratioy
-                        jfine = (j-2)*lratioy + nghost + jco
-                        ifine = (i-2)*lratiox + nghost + ico
-                        val(ivar,ifine,jfine) = Vnew*val(1,ifine,jfine)
+                        do jco = 1,lratioy
+                            jfine = (j-2) * lratioy + nghost + jco
+                            ifine = (i-2) * lratiox + nghost + ico
+                            yoff = (real(jco,kind=8) - 0.5d0) / lratioy - 0.5d0
+                            xoff = (real(ico,kind=8) - 0.5d0) / lratiox - 0.5d0
+                            hvf = valc(ivar,i,j) / rho(1) + xoff * slopex &
+                                                          + yoff*slopey
+                            vf = hvf / (val(1,ifine,jfine) / rho(1))
+                            if (vf > velmax .or. vf < velmin) then
+                                fineflag(ivar) = .true.
+                                exit
+                            else
+                                val(ivar,ifine,jfine) = hvf * rho(1)
+                            endif
                         enddo
-                     enddo
-                  endif
+                    enddo
 
-               enddo
+                    ! momentum is set to preserve old momentum or not violate
+                    ! generating new extrema in velocities
+                    if (fineflag(1) .or. fineflag(ivar)) then
+                        ! more mass now, conserve momentum
+                        area = real(lratiox * lratioy,kind=8)
+                        dividemass = max(finemass,valc(1,i,j))
+                        Vnew = area * valc(ivar,i,j) / dividemass
+
+                        do ico = 1,lratiox
+                            do jco = 1,lratioy
+                                jfine = (j-2) * lratioy + nghost + jco
+                                ifine = (i-2) * lratiox + nghost + ico
+                                val(ivar,ifine,jfine) = Vnew * val(1,ifine,jfine)
+                            enddo
+                        enddo
+                    endif
+
+                enddo
             endif
 
-         enddo !end of coarse loop
-         enddo !end of coarse loop
+        enddo !end of coarse loop
+    enddo !end of coarse loop
 
-c
-c      if (mcapa .ne. 0) then
-c        call fixcapaq(val,aux,mitot,mjtot,valc,auxc,mic,mjc,
-c     &                nvar,naux,levc)
-c      endif
-c
-c  overwrite interpolated values with fine grid values, if available.
-c
-      call intcopy(val,mitot,mjtot,nvar,ilo-nghost,ihi+nghost,
-     &             jlo-nghost,jhi+nghost,lev,1,1)
+    ! overwrite interpolated values with fine grid values, if available.
+    call intcopy(val,mitot,mjtot,nvar,ilo-nghost,ihi+nghost,jlo-nghost, &
+                 jhi+nghost,lev,1,1)
 
-c
-c    scan for max wave speed on newly created grid. this will be used to set appropriate
-c    time step and appropriate refinement in time. For this app not nec to refine by same
-c    amount as refinement in space since refinement at shores where h is shallow has lower
-c    speeds.
-c
-      if (varRefTime) then   ! keep consistent with setgrd_geo and qinit_geo
-         sp_over_h = get_max_speed(val,mitot,mjtot,nvar,aux,naux,nghost,
-     &                           hx,hy)
-      endif
+    ! scan for max wave speed on newly created grid. this will be used to set appropriate
+    ! time step and appropriate refinement in time. For this app not nec to refine by same
+    ! amount as refinement in space since refinement at shores where h is shallow has lower
+    ! speeds.
 
- 99   return
-      end
+    if (varRefTime) then   ! keep consistent with setgrd_geo and qinit_geo
+        sp_over_h = get_max_speed(val,mitot,mjtot,nvar,aux,naux,nghost,hx,hy)
+    endif
+
+end subroutine filval
