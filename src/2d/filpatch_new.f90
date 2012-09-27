@@ -308,7 +308,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,time,mitot,mjtot, &
                 ic = 2 + (iff - (isl - ilo) - 1) / lratiox
                 eta1 = (-0.5d0 + real(mod(iff-1, lratiox),kind=8)) / real(lratiox,kind=8)
                 do jf  = 1,ncolp
-                    jc = 2 + (jf  - (jsb - jlo) - 1)/lratioy
+                    jc = 2 + (jf  - (jsb - jlo) - 1) / lratioy
                     eta2 = (-0.5d0 + real(mod(jf -1,lratioy),kind=8)) / real(lratioy,kind=8)
 
                     flag = flaguse(iff,jf)
@@ -335,144 +335,36 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,time,mitot,mjtot, &
                end do
             end do
 
-            ! Determine momentum in fine cells
+            !loop again and reset momentum to conserve momentum
+            !in the case of gained momentum, or if velocity bounds violated
             if (reloop) then
-                do iff=1,nrowp
-                    ic = 2 + (iff - (isl - ilo) - 1) / lratiox
-                    eta1 = (-0.5d0 + real(mod(iff-1, lratiox),kind=8)) / real(lratiox,kind=8)
-                    do jf=1,ncolp
-                        jc = 2 + (jf  - (jsb - jlo) - 1) / lratioy
-                        eta2 = (-0.5d0 + real(mod(jf-1, lratioy),kind=8)) / real(lratioy,kind=8)
+                do iff = 1,nrowp
+                    ic = 2 + (iff - (isl - ilo) - 1)/lratiox
+                    eta1 = (-0.5d0 + real(mod(iff-1,lratiox),kind=8)) / real(lratiox,kind=8)
+                    do jf  = 1,ncolp
+                        jc = 2 + (jf  - (jsb - jlo) - 1)/lratioy
+                        eta2 = (-0.5d0 + real(mod(jf -1,lratioy),kind=8)) / real(lratioy,kind=8)
                         flag = flaguse(iff,jf)
-                        if (flag == 0.d0) then
+                        if (flag == 0.0) then
                             if (fineflag(ivalc(1,ic,jc)) .or. fineflag(ivalc(ivar,ic,jc))) then
-                                hcrse = valcrse(ivalc(1,ic,jc)) / rho(1)
-                                hcnt = real(icount(icrse(ic,jc)),kind=8)
-                                hfineave = finemass(icrse(ic,jc)) / (hcnt * rho(1))
-                                dividemass = max(hcrse,hfineave)
-                                hfine = valbig(1,iff+nrowst-1,jf+ncolst-1) / rho(1)
-                                Vnew = valcrse(ivalc(ivar,ic,jc)) / (dividemass * rho(1))
-                                valbig(ivar,iff+nrowst-1,jf+ncolst-1) = Vnew * valbig(1,iff+nrowst-1,jf+ncolst-1)
-                            else
-                                valbig(ivar,iff+nrowst-1,jf+ncolst-1) = 0.d0
-                            end if
-                        end if
-                    end do
-                end do
-            end if
+                                if (finemass(icrse(ic,jc)) / rho(1) > dry_tolerance(1)) then
+                                    hcrse = valcrse(ivalc(1,ic,jc)) / rho(1)
+                                    hcnt = real(icount(icrse(ic,jc)),kind=8)
+                                    hfineave = finemass(icrse(ic,jc)) / (hcnt * rho(1))
+                                    dividemass = max(hcrse,hfineave)
+                                    hfine = valbig(1,iff+nrowst-1,jf+ncolst-1) / rho(1)
+                                    Vnew = valcrse(ivalc(ivar,ic,jc)) / (dividemass * rho(1))
+                                    valbig(ivar,iff+nrowst-1,jf+ncolst-1) = Vnew * valbig(1,iff+nrowst-1,jf+ncolst-1)
+                                else
+                                    valbig(ivar,iff+nrowst-1,jf+ncolst-1) = 0.d0
+                                endif
+                            endif
+                        endif
+                    enddo
+                enddo
+            endif
         end do
         ! Done interpolating momenta and other conserved quantities
-
-
-!          do ivar = 2,nvar
-! !           !find interpolation slope for momentum = q(:,ivar)
-!             do ic  = 2, nrowc-1
-!             do jc  = 2, ncolc-1
-
-!                s1 = valcrse(ivalc(ivar,ic,jc)) / rho(1)- valcrse(ivalc(ivar,ic-1,jc)) / rho(1)
-!                s2 = valcrse(ivalc(ivar,ic+1,jc)) / rho(1)- valcrse(ivalc(ivar,ic,jc)) / rho(1)
-!                if (s1*s2.le.0) then
-!                   slopex(icrse(ic,jc))= 0.d0
-!                else
-!                   slopex(icrse(ic,jc))=dmin1(dabs(s1),dabs(s2))*dsign(1.d0, valcrse(ivalc(ivar,ic+1,jc)) &
-!                     / rho(1)- valcrse(ivalc(ivar,ic-1,jc)) / rho(1))
-!                   endif
-!                s1 = valcrse(ivalc(ivar,ic,jc)) / rho(1) - valcrse(ivalc(ivar,ic,jc-1)) / rho(1)
-!                s2 = valcrse(ivalc(ivar,ic,jc+1)) / rho(1)- valcrse(ivalc(ivar,ic,jc)) / rho(1)
-!                if (s1*s2.le.0) then
-!                   slopey(icrse(ic,jc))= 0.d0
-!                else
-!                   slopey(icrse(ic,jc))=dmin1(dabs(s1),dabs(s2))*dsign(1.d0, valcrse(ivalc(ivar,ic,jc+1)) &
-!                     / rho(1)- valcrse(ivalc(ivar,ic,jc-1)) / rho(1))
-!                   endif
-
-!                if (valcrse(ivalc(1,ic,jc)) / rho(1).gt.dry_tolerance(1)) then
-!                   velmax(icrse(ic,jc)) = valcrse(ivalc(ivar,ic,jc))/ valcrse(ivalc(1,ic,jc))
-!                   velmin(icrse(ic,jc)) =  valcrse(ivalc(ivar,ic,jc))/ valcrse(ivalc(1,ic,jc))
-!                else
-!                   velmax(icrse(ic,jc)) = 0.d0
-!                   velmin(icrse(ic,jc)) = 0.d0
-!                   endif
-
-!                !look for bounds on velocity to avoid generating new extrema
-!                !necessary since interpolating momentum linearly
-!                !yet depth is not interpolated linearly
-!                do ii = -1,1,2
-!                   if (valcrse(ivalc(1,ic+ii,jc))/ rho(1).gt.dry_tolerance(1)) then
-!                      velmax(icrse(ic,jc)) = max(velmax(icrse(ic,jc)),valcrse(ivalc(ivar,ic+ii,jc)) &
-!                         /valcrse(ivalc(1,ic+ii,jc)))
-!                      velmin(icrse(ic,jc)) = min(velmin(icrse(ic,jc)),valcrse(ivalc(ivar,ic+ii,jc)) &
-!                         /valcrse(ivalc(1,ic+ii,jc)))
-!                      endif
-!                   if (valcrse(ivalc(1,ic,jc+ii))/ rho(1).gt.dry_tolerance(1)) then
-!                      velmax(icrse(ic,jc)) = max(velmax(icrse(ic,jc)),valcrse(ivalc(ivar,ic,jc+ii))&
-!                         /valcrse(ivalc(1,ic,jc+ii)))
-!                      velmin(icrse(ic,jc)) = min(velmin(icrse(ic,jc)),valcrse(ivalc(ivar,ic,jc+ii))&
-!                         /valcrse(ivalc(1,ic,jc+ii)))
-!                      endif
-!                   enddo
-
-!                end do
-!                end do
-
-! !           !determine momentum in fine cells
-!             do iff = 1,nrowp
-!                ic = 2 + (iff - (isl - ilo) - 1)/lratiox
-!                eta1 = (-0.5d0+dble(mod(iff-1,lratiox)))/dble(lratiox)
-!             do jf  = 1,ncolp
-!                jc = 2 + (jf  - (jsb - jlo) - 1)/lratioy
-!                eta2 = (-0.5d0+dble(mod(jf -1,lratioy)))/dble(lratioy)
-
-!                flag = flaguse(iff,jf)
-!                if (flag .eq. 0.0) then
-!                   if (.not.(fineflag(ivalc(1,ic,jc)))) then
-! !                    !this is a normal wet cell. intepolate normally
-!                      hvf = valcrse(ivalc(ivar,ic,jc)) / rho(1) + eta1*slopex(icrse(ic,jc)) + eta2*slopey(icrse(ic,jc))
-! !                    Here we need to divied by rho since valbig stores
-! !                    mass.
-!                      vf = hvf/valbig(1,iff+nrowst-1,jf+ncolst-1)/rho(1)
-!                      if (vf.lt.velmin(icrse(ic,jc)).or. vf.gt.velmax(icrse(ic,jc))) then
-!                         fineflag(ivalc(ivar,ic,jc))=.true.
-!                         reloop = .true.
-!                      else
-!                         valbig(ivar,iff+nrowst-1,jf+ncolst-1)=hvf*rho(1)
-!                         endif
-!                      endif
-!                   endif
-!                enddo
-!                enddo
-
-
-!             !loop again and reset momentum to conserve momentum
-!             !in the case of gained momentum, or if velocity bounds violated
-!             if (reloop) then
-!                do iff = 1,nrowp
-!                   ic = 2 + (iff - (isl - ilo) - 1)/lratiox
-!                   eta1 =(-0.5d0+dble(mod(iff-1,lratiox)))/dble(lratiox)
-!                do jf  = 1,ncolp
-!                   jc = 2 + (jf  - (jsb - jlo) - 1)/lratioy
-!                   eta2 = (-0.5d0+dble(mod(jf -1,lratioy)))/dble(lratioy)
-!                   flag = flaguse(iff,jf)
-!                   if (flag.eq.0.0) then
-!                      if (fineflag(ivalc(1,ic,jc)).or.fineflag(ivalc(ivar,ic,jc))) then
-!                         if (finemass(icrse(ic,jc)) / rho(1)>dry_tolerance(1)) then
-!                            hcrse = valcrse(ivalc(1,ic,jc)) / rho(1)
-!                            hcnt = dble(icount(icrse(ic,jc)))
-!                            hfineave = finemass(icrse(ic,jc)) / (hcnt * rho(1))
-!                            dividemass = max(hcrse,hfineave)
-!                            hfine = valbig(1,iff+nrowst-1,jf+ncolst-1) / rho(1)
-!                            Vnew = valcrse(ivalc(ivar,ic,jc)) / (dividemass * rho(1))
-!                            valbig(ivar,iff+nrowst-1,jf+ncolst-1) =Vnew*valbig(1,iff+nrowst-1,jf+ncolst-1)
-!                         else
-!                            valbig(ivar,iff+nrowst-1,jf+ncolst-1)=0.d0
-!                            endif
-!                         endif
-!                      endif
-!                   enddo
-!                   enddo
-!                endif
-
-!             enddo
 
     end if
 
