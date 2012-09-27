@@ -71,8 +71,8 @@ SOURCES = \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
-  $(GEOLIB)/filval.f \
-  $(GEOLIB)/filpatch.f \
+  $(GEOLIB)/filval_new.f90 \
+  $(GEOLIB)/filpatch_new.f90 \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
