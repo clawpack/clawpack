@@ -35,7 +35,11 @@ def setplot(plotdata):
     surge_data = Data(os.path.join(plotdata.outdir,'surge.data'))
 
     # Load storm track
-    track = np.loadtxt(os.path.join(plotdata.outdir,'fort.track'))
+    try:
+        track_file_path = os.path.join(plotdata.outdir,'fort.track')
+        track = np.loadtxt(track_file_path)
+    except:
+        track = None
 
     # Location of storm fields
     wind_field = 4
@@ -129,6 +133,7 @@ def setplot(plotdata):
     def eye_location(cd):
         x = track[cd.frameno,1]
         y = track[cd.frameno,2]
+        
         return x,y
         
     def days_figure_title(current_data):
@@ -137,10 +142,11 @@ def setplot(plotdata):
         plt.title('%s at day %3.2f' % (title,t))
 
     def surge_afteraxes(current_data):
-        x,y = eye_location(current_data)
-        plt.hold(True)
-        plt.plot(x,y,'rD')
-        plt.hold(False)
+        if track is not None:
+            x,y = eye_location(current_data)
+            plt.hold(True)
+            plt.plot(x,y,'rD')
+            plt.hold(False)
         days_figure_title(current_data)
         
     def storm_wind(current_data):
@@ -438,7 +444,7 @@ def setplot(plotdata):
     # Hurricane forcing - Entire gulf
     # ========================================================================
     # Pressure field
-    plotfigure = plotdata.new_plotfigure(name='pressure', figno=2)
+    plotfigure = plotdata.new_plotfigure(name='Pressure', figno=2)
     plotfigure.show = surge_data.pressure_forcing
     
     plotaxes = plotfigure.new_plotaxes()
@@ -453,7 +459,7 @@ def setplot(plotdata):
     add_land(plotaxes)
     
     # Wind field
-    plotfigure = plotdata.new_plotfigure(name='wind',figno=3)
+    plotfigure = plotdata.new_plotfigure(name='Wind Speed',figno=3)
     plotfigure.show = surge_data.wind_forcing
     
     plotaxes = plotfigure.new_plotaxes()
@@ -467,6 +473,44 @@ def setplot(plotdata):
     # add_wind(plotaxes,bounds=wind_limits,plot_type='contour')
     # add_wind(plotaxes,bounds=wind_limits,plot_type='quiver')
     add_land(plotaxes)
+    
+    # Wind field components
+    plotfigure = plotdata.new_plotfigure(name='Wind Components',figno=4)
+    plotfigure.show = surge_data.wind_forcing
+    
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = "subplot(121)"
+    plotaxes.xlimits = full_xlimits
+    plotaxes.ylimits = full_ylimits
+    plotaxes.title = "X-Component of Wind Field"
+    plotaxes.afteraxes = surge_afteraxes
+    plotaxes.scaled = True
+
+    plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+    plotitem.plot_var = wind_x
+    plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+    plotitem.imshow_cmin = -wind_limits[1]
+    plotitem.imshow_cmax = wind_limits[1]
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1]
+    
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = "subplot(122)"
+    plotaxes.xlimits = full_xlimits
+    plotaxes.ylimits = full_ylimits
+    plotaxes.title = "Y-Component of Wind Field"
+    plotaxes.afteraxes = surge_afteraxes
+    plotaxes.scaled = True
+
+    plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+    plotitem.plot_var = wind_y
+    plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+    plotitem.imshow_cmin = -wind_limits[1]
+    plotitem.imshow_cmax = wind_limits[1]
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1]
 
     # ========================================================================
     #  Figures for gauges
@@ -478,7 +522,7 @@ def setplot(plotdata):
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = [0.0,amrdata.tfinal]
+    # plotaxes.xlimits = [0.0,amrdata.tfinal]
     # plotaxes.ylimits = [0,150.0]
     plotaxes.ylimits = surface_limits
     plotaxes.title = 'Surface'
