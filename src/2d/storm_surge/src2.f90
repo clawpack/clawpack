@@ -9,7 +9,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use geoclaw_module, only: coriolis_forcing, coriolis
     use geoclaw_module, only: friction_forcing, manning_coefficient 
     use geoclaw_module, only: friction_depth, num_layers, rho
-    use geoclaw_module, only: spherical_distance
+    use geoclaw_module, only: spherical_distance, coordinate_system
 
     implicit none
     
@@ -145,9 +145,14 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 xc = xlower + (i - 0.5d0) * dx
                 xp = xlower + i * dx
                 
-                ! Convert distance in lat-long to meters
-                dx_meters = spherical_distance([xp,yc],[xm,yc])
-                dy_meters = spherical_distance([xc,yp],[xc,ym])
+                if (coordinate_system == 2) then
+                    ! Convert distance in lat-long to meters
+                    dx_meters = spherical_distance([xp,yc],[xm,yc])
+                    dy_meters = spherical_distance([xc,yp],[xc,ym])
+                else
+                    dx_meters = dx
+                    dy_meters = dy
+                endif
 
                 ! Extract depths
                 forall (m=1:num_layers)
