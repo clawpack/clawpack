@@ -36,7 +36,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     logical :: set
     integer :: i, i_coarse, j_coarse, i_fine, j_fine, n
     integer :: mx_coarse, my_coarse, mx_patch, my_patch
-    integer :: unset_indices(4), coarse_indi_coarsees(4)
+    integer :: unset_indices(4), coarse_indices(4)
     integer :: refinement_ratio_x, refinement_ratio_y
     real(kind=8) :: dx_fine, dy_fine, dx_coarse, dy_coarse
     real(kind=8) :: coarse_rect(4), fill_rect(4)
@@ -132,20 +132,20 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
         ! New patch rectangle (after we have partially filled it in) but in the
         ! coarse patches [iplo,iphi,jplo,jphi]
-        coarse_indi_coarsees = [(unset_indices(1) - refinement_ratio_x + nghost * refinement_ratio_x) &
+        coarse_indices = [(unset_indices(1) - refinement_ratio_x + nghost * refinement_ratio_x) &
                                                 / refinement_ratio_x - nghost, &
                           (unset_indices(2) + refinement_ratio_x) / refinement_ratio_x, &
                           (unset_indices(3) - refinement_ratio_y + nghost * refinement_ratio_y) &
                                                 / refinement_ratio_y - nghost, &
                           (unset_indices(4) + refinement_ratio_y) / refinement_ratio_y]
-        coarse_rect = [xlower + coarse_indi_coarsees(1) * dx_coarse, &
-                       xlower + (coarse_indi_coarsees(2) + 1) * dx_coarse, &
-                       ylower + coarse_indi_coarsees(3) * dy_coarse, &
-                       ylower + (coarse_indi_coarsees(4) + 1) * dy_coarse]
+        coarse_rect = [xlower + coarse_indices(1) * dx_coarse, &
+                       xlower + (coarse_indices(2) + 1) * dx_coarse, &
+                       ylower + coarse_indices(3) * dy_coarse, &
+                       ylower + (coarse_indices(4) + 1) * dy_coarse]
 
         ! Coarse grid number of spatial points (nrowc,ncolc)
-        mx_coarse   =  coarse_indi_coarsees(2) - coarse_indi_coarsees(1) + 1
-        my_coarse   =  coarse_indi_coarsees(4) - coarse_indi_coarsees(3) + 1
+        mx_coarse   =  coarse_indices(2) - coarse_indices(1) + 1
+        my_coarse   =  coarse_indices(4) - coarse_indices(3) + 1
 
         ! Check to make sure we created big enough scratch arrays
         if (mx_coarse > fill_indices(2) - fill_indices(1) + 3 .or. &
@@ -168,10 +168,10 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         endif
 
         ! Fill in the edges of the coarse grid
-        if ((xperdom .or. (yperdom .or. spheredom)) .and. sticksout(coarse_indi_coarsees)) then
-            call prefilrecur(level - 1,num_eqn,valcrse,auxcrse,num_aux,t,mx_coarse,my_coarse,1,1,coarse_indi_coarsees)
+        if ((xperdom .or. (yperdom .or. spheredom)) .and. sticksout(coarse_indices)) then
+            call prefilrecur(level - 1,num_eqn,valcrse,auxcrse,num_aux,t,mx_coarse,my_coarse,1,1,coarse_indices)
         else
-            call filrecur(level - 1,num_eqn,valcrse,auxcrse,num_aux,t,mx_coarse,my_coarse,1,1,coarse_indi_coarsees)
+            call filrecur(level - 1,num_eqn,valcrse,auxcrse,num_aux,t,mx_coarse,my_coarse,1,1,coarse_indices)
         endif
 
         ! loop through coarse cells determining intepolation slopes
@@ -198,7 +198,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
             enddo
         enddo
 
-        ! Calculate gradients of coarse grid eta
+        ! Calculate limited gradients of coarse grid eta
         do i_coarse = 2, mx_coarse - 1
             do j_coarse = 2, my_coarse - 1 
                 
@@ -240,7 +240,8 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                     valbig(1,i_fine + nrowst - 1, j_fine + ncolst - 1) = h_fine * rho(1)
                     fine_mass(i_coarse,j_coarse) = fine_mass(i_coarse,j_coarse) + h_fine
                     
-                    ! Flag this cell as needing checking if this is a dry cell
+                    ! Flag the corresponding coarse cell as needing relimiting
+                    ! if one of the fine cells ends up being dry
                     if (h_fine < dry_tolerance(1)) then
                         fine_flag(1,i_coarse,j_coarse) = .true.
                         reloop = .true.
