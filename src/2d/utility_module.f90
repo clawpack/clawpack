@@ -34,4 +34,15 @@ Contains
 
     end function get_value_count
 
+    ! Converts seconds to days truncating at the second decimal place
+    real(kind=8) pure function convert2days(seconds) result(days)
+        
+        implicit none
+        real(kind=8), intent(in) :: seconds
+
+        days = real(int(seconds * 1.d2 / 8.64d4) / 1.d2, kind=8)
+
+    end function convert2days
+
+
 end module utility_module
