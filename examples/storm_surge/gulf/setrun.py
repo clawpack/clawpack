@@ -11,7 +11,7 @@ import os
 import clawpack.clawutil.oldclawdata as data
 import numpy as np
 
-import surge
+import geoclaw.surge as surge
 
 #                           days   s/hour    hours/day            
 days2seconds = lambda days: days * 60.0**2 * 24.0
@@ -119,7 +119,8 @@ def setrun(claw_pkg='geoclaw'):
         # Output nout frames at equally spaced times up to tfinal:
         #                 day     s/hour  hours/day
 
-        clawdata.tfinal = days2seconds(256.0)
+        # clawdata.tfinal = days2seconds(260.0)
+        clawdata.tfinal = days2seconds(257.0)
 
         # Output files per day requested
         recurrence = 4
@@ -262,6 +263,12 @@ def setrun(claw_pkg='geoclaw'):
 
     # More AMR parameters can be set -- see the defaults in pyclaw/data.py
 
+    # Checkpointing
+    clawdata.restart = False
+    clawdata.N_restart = 0
+    clawdata.checkpt_iousr = 10000
+    clawdata.tchk = [] 
+
     return rundata
     # end of function setrun
     # ----------------------
@@ -293,7 +300,7 @@ def setgeo(rundata):
 
     # == settsunami.data values ==
     geodata.dry_tolerance = 1.e-3
-    geodata.wave_tolerance = 1.e-1
+    geodata.wave_tolerance = 5.e-1
     geodata.speed_tolerance = [1e10,1e10,1e10,1e10,1e10,1e10,1e10,1e10]
     geodata.deep_depth = 1.e2
     geodata.max_level_deep = 3
@@ -362,7 +369,7 @@ def setgeo(rundata):
     
     # == Multilayer ==
     geodata.layers = 1
-    geodata.rho = 1.0
+    geodata.rho = 1025.0
     geodata.eta_init = 0.0
     geodata.richardson_tolerance = 0.95
     
@@ -377,7 +384,7 @@ def set_storm():
     data = surge.StormData()
 
    # Physics parameters
-    data.rho_air = 1.15 / 1025.0 # Density of air (rho is not implemented above)
+    data.rho_air = 1.15
     data.ambient_pressure = 101.3e3 # Nominal atmos pressure
 
     # Source term controls
