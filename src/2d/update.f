@@ -4,7 +4,7 @@ c -----------------------------------------------------------
 c
       subroutine update (level, nvar, naux)
       
-      use geoclaw_module
+      use geoclaw_module, only: rho, dry_tolerance
 c
 c     # modified for shallow water on topography to use surface level eta
 c     # rather than depth h = q(i,j,1)
@@ -157,7 +157,6 @@ c     and is never increased given an increase in mass
       husum = 0.d0
       hvsum = 0.d0
 
-      drytol=dry_tolerance(1)
       nwet=0
 
       do jco  = 1, intraty(lget)
@@ -168,12 +167,12 @@ c     and is never increased given an increase in mass
                capa=alloc(iaddfaux(iff+ico-1,jff+jco-1))
                endif
 
-            hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa
+            hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa / rho(1)
             bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
-            huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa
-            hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa
+            huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa / rho(1)
+            hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa / rho(1)
 
-            if (hf .gt. drytol) then
+            if (hf > dry_tolerance(1)) then
                etaf = hf+bf
                nwet=nwet+1
             else
@@ -204,9 +203,9 @@ c     and is never increased given an increase in mass
 
 c     # set h on coarse grid based on surface, not conservative near shoreline
 
-      alloc(iadd(1,i,j)) = hc/capac
-      alloc(iadd(2,i,j)) = huc/capac
-      alloc(iadd(3,i,j)) = hvc/capac
+      alloc(iadd(1,i,j)) = hc / capac * rho(1)
+      alloc(iadd(2,i,j)) = huc / capac * rho(1)
+      alloc(iadd(3,i,j)) = hvc / capac * rho(1)
 c
       if (uprint) write(outunit,103)(alloc(iadd(ivar,i,j)),
      .     ivar=1,nvar)
