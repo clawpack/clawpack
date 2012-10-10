@@ -15,65 +15,12 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors 
 
 import clawpack.visclaw.colormaps as colormaps
+import bathy
 
 # Degree to meter conversion function
 R_earth = 6378.1 * 1000.0
 deg2meters = lambda theta,lat:R_earth * theta * np.pi / 180.0 * np.cos(lat * np.pi / 180.0)
 meters2deg = lambda d,lat:d / (R_earth * np.pi / 180.0 * np.cos(lat * np.pi / 180.0))
-
-def read_topo_header(path,topo_type=3):
-    r"""Read in header of topography file at path.
-
-    If a value returns numpy.nan then the value was not retrievable.
-    """
-
-    # Default values to track errors
-    num_cells = [np.nan,np.nan]
-    extent = [np.nan,np.nan,np.nan,np.nan]
-    delta = np.nan
-    no_data_value = np.nan
-
-    bathy_file = open(path,'r')
-
-    if topo_type == 3:
-        num_cells[0] = int(bathy_file.readline().split()[0])
-        num_cells[1] = int(bathy_file.readline().split()[0])
-        extent[0] = float(bathy_file.readline().split()[0])
-        extent[2] = float(bathy_file.readline().split()[0])
-        delta = float(bathy_file.readline().split()[0])
-        no_data_value = float(bathy_file.readline().split()[0])
-        
-        extent[1] = extent[0] + num_cells[0] * delta
-        extent[3] = extent[2] + num_cells[1] * delta
-    else:
-        raise NotImplemented("Topo type header reading not implemented.")
-
-    bathy_file.close()
-
-    return num_cells,extent,delta,no_data_value
-
-
-def read_topo(path,topo_type=3):
-    r"""Read in topography data
-
-    Depending on the topography type, returns:
-     1) 1D arrays x,y,z
-     3) 2D arrays X,Y,Z
-    """
-
-    if topo_type == 3:
-        N,extent,delta,no_data_value = read_topo_header(path)
-        x = np.linspace(extent[0],extent[1],N[0])
-        y = np.linspace(extent[3],extent[2],N[1])
-        X,Y = np.meshgrid(x,y)
-        # Data is read in starting at the top right corner
-        Z = np.loadtxt(path,skiprows=6)
-
-    else:
-        raise NotImplemented('Topo type reading not implemented.')
-
-    return X,Y,Z
-
 
 def extract(path,fill_path,extent,no_data_value=999999,plot_fill=False,
             method='nearest',delta_limit=20.0,TOLERANCE=1e-3):
@@ -163,7 +110,7 @@ def extract(path,fill_path,extent,no_data_value=999999,plot_fill=False,
 
     # Add fill data
     print "Extracting fill data"
-    X_fill,Y_fill,Z_fill = read_topo(fill_path)
+    X_fill,Y_fill,Z_fill = bathy.read_topo(fill_path)
     fill_extent = (np.min(X_fill),np.max(X_fill),np.min(Y_fill),np.max(Y_fill))
     if fill_extent[0] > extent[0] or fill_extent[1] < extent[1] or \
        fill_extent[2] > extent[2] or fill_extent[3] < extent[3]:
@@ -251,7 +198,7 @@ def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None,
     patch_axes = [patch_fig.add_subplot(rows,columns,i) for i in xrange(len(paths))]
 
     # Read in region bathymetry
-    X,Y,Z = read_topo(region_path)
+    X,Y,Z = bathy.read_topo(region_path)
     region_extent = (np.min(X),np.max(X),np.min(Y),np.max(Y))
     depth_extent = (np.min(Z),np.max(Z))
 
@@ -274,7 +221,7 @@ def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None,
 
     # Read in and plot each patch
     for (i,patch_path) in enumerate(paths):
-        X,Y,Z = read_topo(patch_path)
+        X,Y,Z = bathy.read_topo(patch_path)
         extent = (np.min(X),np.max(X),np.min(Y),np.max(Y))
 
         # Plot on region figure

@@ -71,10 +71,10 @@ def setrun(claw_pkg='geoclaw'):
 
     # Lower and upper edge of computational domain:
     clawdata.xlower = -99.0
-    clawdata.xupper = -80.0
+    clawdata.xupper = -50.0
 
-    clawdata.ylower = 17.0
-    clawdata.yupper = 32.0
+    clawdata.ylower = 8.0
+    clawdata.yupper = 17.0
 
 
     # Number of grid cells:
@@ -101,8 +101,8 @@ def setrun(claw_pkg='geoclaw'):
     # Initial time:
     # -------------
 
-    # clawdata.t0 = (241.25 + 0.25) * 60**2 * 24
-    clawdata.t0 = days2seconds(250.0)
+    clawdata.t0 = (241.25 + 0.25) * 60**2 * 24
+    # clawdata.t0 = days2seconds(250.0)
 
 
     # -------------
@@ -149,7 +149,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 2
+    clawdata.verbosity = 3
 
 
 
@@ -312,10 +312,12 @@ def setgeo(rundata):
     geodata.topofiles = []
     # for topography, append lines of the form
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
+    geodata.topofiles.append([3, 1, 2, 0., 1e10, 
+                              './bathy/gulf_caribbean.tt3'])
     geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
                               './bathy/gulf_coarse_bathy.tt3'])
-    # geodata.topofiles.append([3, 1, 5, 0., 1.e10, \
-    #                           './bathy/NOAA_Galveston_Houston.tt3'])
+    geodata.topofiles.append([3, 1, 5, 0., 1.e10, \
+                              './bathy/NOAA_Galveston_Houston.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
     #                           './bathy/galveston_channel.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
@@ -324,8 +326,8 @@ def setgeo(rundata):
     #                           './bathy/houston_channel_3.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
     #                           './bathy/houston_channel_2.tt3'])
-    # # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    # #                           './bathy/galveston.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           './bathy/galveston.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
     #                           './bathy/lower_galveston_bay.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \

@@ -1,6 +1,11 @@
 README for Gulf Storm Surge simulation
 
-gulf_coarse_bathy.tt3 - Bathymetry covering entire gulf at 2 minute resolution from the 
+gulf_carribean.tt3 - Bathymetry covering larger region including Carribean and
+    part of the Atlantic sea-board.
+    Lower left corner = (99W,8N), upper right corner = (50W,17N)
+
+gulf_coarse_bathy.tt3 - Bathymetry covering entire gulf at 2 minute resolution
+    Lower left corner = (99W,17N), upper right corner = (80W,17N)
 
 houston_ship_channel.xyz - Bathymetry of the Houston ship channel from:
 
