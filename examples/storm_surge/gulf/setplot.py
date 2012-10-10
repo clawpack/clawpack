@@ -34,11 +34,15 @@ def setplot(plotdata):
     physics = Data(os.path.join(plotdata.outdir,'physics.data'))
     surge_data = Data(os.path.join(plotdata.outdir,'surge.data'))
 
-    # Load storm track
+    # Load storm track, set to None if it appears we did not write out the track
+    # correctly
     try:
         track_file_path = os.path.join(plotdata.outdir,'fort.track')
         track = np.loadtxt(track_file_path)
     except:
+        track = None
+
+    if track.shape[0] <= 1:
         track = None
 
     # Location of storm fields
