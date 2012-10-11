@@ -13,7 +13,7 @@ c
 c     Work arrays
       dimension eta(num_layers),h(num_layers)
       dimension hu(num_layers),hv(num_layers)
-      dimension storm_field(3)
+      dimension storm_field(5)
 
 
 c OLD INDEXING
@@ -114,13 +114,15 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
             storm_field(1) = alloc(iaddaux(wind_index,i,j))
             storm_field(2) = alloc(iaddaux(wind_index+1,i,j))
             storm_field(3) = alloc(iaddaux(pressure_index,i,j))
-            forall (k=1:3,abs(storm_field(k)) < 1d-90)
+            storm_field(4) = alloc(iaddaux(pressure_index+1,i,j))
+            storm_field(5) = alloc(iaddaux(pressure_index+2,i,j))
+            forall (k=1:5,abs(storm_field(k)) < 1d-90)
               storm_field(k) = 0.d0
             end forall
             
             write(matunit1,109) (h(k),hu(k),hv(k), k=1,num_layers),
      &                          (eta(k),k=1,num_layers),
-     &                          (storm_field(k),k=1,3)
+     &                          (storm_field(k),k=1,5)
          enddo
          write(matunit1,*) ' '
       enddo
@@ -139,7 +141,7 @@ c  old        ycorn = rnode(cornylo,mptr) - .5d0*hyposs(level)
 
 c     # nvar+1 variable printed since surface also printed
 
-      write(matunit2,1000) time,4*num_layers+3,ngrids,naux,2
+      write(matunit2,1000) time,4*num_layers+5,ngrids,naux,2
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

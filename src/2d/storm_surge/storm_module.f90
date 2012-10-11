@@ -37,7 +37,7 @@ module storm_module
     ! Storm object
     integer :: storm_type
     type(holland_storm_type) :: holland_storm
-    type(constant_storm_type), pointer :: constant_storm => null()
+    type(constant_storm_type) :: constant_storm
 
     ! Store physics here for ease of use
     ! WARNING:  If these do not agree with the storm data objects things will break!
@@ -120,11 +120,11 @@ contains
             ! No storm will be used
         else if (storm_type == 1) then
             ! Track file with Holland reconstruction
-            call set_holland_storm(storm_file_path,holland_storm)
+            call set_holland_storm(storm_file_path,holland_storm,log_unit)
             ! Set rho_air and ambient pressure in storms
         else if (storm_type == 2) then
             ! constant track and holland reconstruction
-            call set_constant_storm(storm_file_path,constant_storm)
+            call set_constant_storm(storm_file_path,constant_storm,log_unit)
             ! Set rho_air and ambient pressure in storms
         else if (storm_type == 3) then
             ! Stommel wind field

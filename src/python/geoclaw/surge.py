@@ -70,23 +70,24 @@ class StormData(data.Data):
         data.data_write(data_file,self,None)
         
         data.data_write(data_file,self,"storm_type",'(Storm specification type)')
-        if self.storm_type == 0:
-            pass
-        elif self.storm_type == 1:
-            data.data_write(data_file,self,'storm_file',"(Location of storm data file)")
+        data.data_write(data_file,self,'storm_file',"(Location of storm data)")
+        if self.storm_type == 0 or self.storm_type == 1:
+            pass 
         elif self.storm_type == 2:
             # Open another data file called stored in storm_file and write the 
             # following parameters to it
-            # storm_file = open(self.storm_file,'w')
-
-            data.data_write(data_file,self,"ramp_up_t","(Ramp up time for wind field)")
-            data.data_write(data_file,self,'velocity',"(Speed of storm)")
-            data.data_write(data_file,self,'R_eye_init',"(Initial position of storm)")
-            data.data_write(data_file,self,'A',"(Hurricane model fit parameter)")
-            data.data_write(data_file,self,'B')
-            data.data_write(data_file,self,'Pc',"(Pressure in the eye of the hurricane)")
+            storm_file = data.open_datafile(self.storm_file)
+            data.data_write(storm_file,self,"ramp_up_t","(Ramp up time for wind field)")
+            data.data_write(storm_file,self,'velocity',"(Speed of storm)")
+            data.data_write(storm_file,self,'R_eye_init',"(Initial position of storm)")
+            data.data_write(storm_file,self,'A',"(Hurricane model fit parameter)")
+            data.data_write(storm_file,self,'B')
+            data.data_write(storm_file,self,'Pc',"(Pressure in the eye of the hurricane)")
         elif self.storm_type == 3:
-            data.data_write(data_file,self,"stommel_wind","(Amplitude of Stommel wind)")
+            # Open another data file called stored in storm_file and write the 
+            # following parameters to it
+            storm_file = data.open_datafile(self.storm_file)
+            data.data_write(storm_file,self,"stommel_wind","(Amplitude of Stommel wind)")
         else:
             raise Exception("Invalid storm type %s." % storm_type)
             

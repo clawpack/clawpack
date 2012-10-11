@@ -52,10 +52,9 @@ module holland_storm_module
 contains
 
     ! Setup routine for the holland model
-    subroutine set_holland_storm(storm_data_path,storm)
+    subroutine set_holland_storm(storm_data_path,storm,log_unit)
 
-        use geoclaw_module, only: deg2rad, spherical_distance
-
+        use geoclaw_module, only: deg2rad, spherical_distance, coordinate_system
         use qinit_module, only: t0
 
         implicit none
@@ -63,10 +62,11 @@ contains
         ! Subroutine I/O
         character(len=*), optional :: storm_data_path
         type(holland_storm_type), intent(in out) :: storm
+        integer, intent(in) :: log_unit
 
         ! Local storage
         integer, parameter :: data_file = 701
-        integer :: i,io_status,num_casts
+        integer :: i, k, io_status, num_casts
         real(kind=8) :: forecast_time,last_time,x(2),y(2),ds,dt,dx,dy,theta
 
         ! Reading buffer variables
@@ -78,12 +78,17 @@ contains
         ! File format string
         character(len=*), parameter :: file_format = "(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,47x,i3,2x,i3)"
 
+        ! Storm type only works on lat-long coordinate systems
+        if (coordinate_system /= 2) then
+            stop "Holland storm type does only works on lat-long coordinates."
+        endif
+
         ! Open data file
         if (present(storm_data_path)) then
             open(unit=data_file,file=storm_data_path,status='old', &
                  action='read',iostat=io_status)
         else
-            open(unit=data_file,file="./hurricane.data",status='old', &
+            open(unit=data_file,file="./storm.data",status='old', &
                  action='read',iostat=io_status)
         endif
         if (io_status /= 0) then
@@ -110,7 +115,7 @@ contains
         end do
         rewind(data_file)
 
-        if (debug) print "('Casts = ',i3)",num_casts
+        write(log_unit,"('Forecasts = ',i3)") num_casts
 
         ! Allocate storm parameter file variables
         allocate(storm%track(3,num_casts))
@@ -189,47 +194,22 @@ contains
         last_storm_index = 2
         last_storm_index = storm_index(t0,storm)
 
-        ! Output read-in storm data for debugging and plotting purposes
-        call output_holland_storm('storm.data',storm)
+        ! Log everything to the surge log file
+        write(log_unit,*) ""
+        write(log_unit,*) "Storm Track and Strength"
+        write(log_unit,*) ""
+        do i=1,storm%num_casts
+            write(log_unit,"(8e26.16)") (storm%track(k,i),k=1,3),  &
+                                        (storm%velocity(k,i),k=1,2), &
+                                         storm%max_wind_radius(i), &
+                                         storm%max_wind_speed(i),  &
+                                         storm%central_pressure(i)
+        enddo
+
+        close(log_unit)
 
     end subroutine set_holland_storm
 
-    ! ==========================================================================
-    !  output_holland_storm(path,storm)
-    !     Write out the Holland storm to the path given
-    ! ==========================================================================
-    subroutine output_holland_storm(path,storm)
-
-        implicit none
-
-        ! Input
-        character(len=*), intent(in) :: path
-        type(holland_storm_type), intent(in) :: storm
-
-        ! Local
-        integer, parameter :: iounit = 343
-        integer :: ios,i,k
-        character(len=*), parameter :: storm_format = "(8e26.16)"
-
-        ! Open data file
-        open(unit=iounit, file=path, iostat=ios, status="unknown", action="write")
-        if ( ios /= 0 ) then
-            print *, "Error opening file ",path," for storm output."
-            stop
-        endif
-
-        ! Write out each line
-        do i=1,storm%num_casts
-            write(iounit,storm_format) (storm%track(k,i),k=1,3),  &
-                                       (storm%velocity(k,i),k=1,2), &
-                                        storm%max_wind_radius(i), &
-                                        storm%max_wind_speed(i),  &
-                                        storm%central_pressure(i)
-        enddo
-
-        close(iounit)
-
-    end subroutine output_holland_storm
 
     ! ==========================================================================
     !  real(kind=8) pure date_to_seconds(year,months,days,hours,minutes,seconds)

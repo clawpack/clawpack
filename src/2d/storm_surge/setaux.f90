@@ -52,6 +52,8 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(wind_index,:,:) = 0.d0 ! Wind speed x-direction
     aux(wind_index+1,:,:) = 0.d0 ! Wind speed y-direction
     aux(pressure_index,:,:) = ambient_pressure ! Pressure field
+    aux(pressure_index+1,:,:) = 0.d0 ! Pressure field gradient
+    aux(pressure_index+2,:,:) = 0.d0 
 
     ! Set analytical bathymetry here if requested
     if (topo_type > 0) then

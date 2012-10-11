@@ -166,13 +166,13 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                                     - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
                 if (abs(P_atmos_x) < pressure_tolerance) then
                     P_atmos_x = 0.d0
-                else
-!                     print "('grad(P) = ',2d16.8)",P_atmos_x,P_atmos_y
-!                     print "('dt * h = ',1d16.8)", h(1)*dt
                 endif
                 if (abs(P_atmos_y) < pressure_tolerance) then
                     P_atmos_y = 0.d0
                 endif
+                aux(pressure_index+1,i,j) = P_atmos_x
+                aux(pressure_index+2,i,j) = P_atmos_y
+
                 ! Modify momentum in each layer
                 do m=1,num_layers
                     if (h(m) > dry_tolerance(m)) then

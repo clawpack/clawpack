@@ -23,65 +23,57 @@ module constant_storm_module
 
     end type constant_storm_type
 
+    logical, private, parameter :: DEBUG = .true.
+
 contains
 
     ! Setup routine for the holland model
-    subroutine set_constant_storm(storm_data_path, storm)
+    subroutine set_constant_storm(storm_data_path, storm, log_unit)
+
+        use geoclaw_module, only: coordinate_system
 
         implicit none
 
         ! Subroutine I/O
         character(len=*), intent(in), optional :: storm_data_path
         type(constant_storm_type), intent(in out) :: storm
+        integer, intent(in) :: log_unit
 
         ! Local storage
-        integer, parameter :: data_file = 701
-        integer :: i,lines,io_status,num_casts
-        real(kind=8) :: forecast_time,last_time
+        integer, parameter :: unit = 701
 
-        ! Reading buffer variables
-        integer :: year,month,day,hour,forecast,lat,lon,max_wind_speed
-        integer :: central_pressure,RRP,max_wind_radius
-        character(len=4) :: cast_type
-
-        ! File format string
-        character(len=*), parameter :: file_format = "(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,3x,i4,3x,i3,2x,i4,47x,i3,2x,i3)"
+        ! Storm type does not work for lat-long coordinate systems
+        if (coordinate_system == 2) then
+            stop "Constant storm type does not work on lat-long coordinates."
+        endif
 
         ! Open data file
         if (present(storm_data_path)) then
-            open(unit=data_file,file=storm_data_path,status='old', &
-                 action='read',iostat=io_status)
+            call opendatafile(unit,storm_data_path)
         else
-            open(unit=data_file,file="./hurricane.data",status='old', &
-                 action='read',iostat=io_status)
+            call opendatafile(unit,'storm.data')
         endif
-        if (io_status /= 0) stop "Error opening hurricane data file."
 
         ! Read in hurricane parameters
-        read(13,*) storm%ramp_up_time
-        read(13,*) storm%velocity
-        read(13,*) storm%R_eye_init
-        read(13,*) storm%A
-        read(13,*) storm%B
-        read(13,*) storm%central_pressure
+        read(unit,*) storm%ramp_up_time
+        read(unit,*) storm%velocity
+        read(unit,*) storm%R_eye_init
+        read(unit,*) storm%A
+        read(unit,*) storm%B
+        read(unit,*) storm%central_pressure
+
+        ! Output to log file
+        write(log_unit,*) "Storm Data - Constant Storm"
+        write(log_unit,"('Ramp Up Time = ',d16.8)") storm%ramp_up_time
+        write(log_unit,"('Velocity = ',2d16.8)") storm%velocity
+        write(log_unit,"('Eye initial position = ',2d16.8)") storm%R_eye_init
+        write(log_unit,"('Holland parameters (A,B) =',2d16.8)") storm%A, storm%B
+        write(log_unit,"('Pressures (Pn,Pc) = ',2d16.8)") storm%ambient_pressure,&
+                                                        storm%central_pressure
+        write(log_unit,"('Density of Air = ',d16.8)") storm%rho_air
 
     end subroutine set_constant_storm
 
-    ! ==========================================================================
-    !  holland_update_storm(t)
-    !    Update storm information to time t
-    ! ==========================================================================
-    subroutine update_constant_storm(t,storm)
-
-        implicit none
-        
-        ! Input
-        real(kind=8), intent(in) :: t
-        type(constant_storm_type), intent(in out) :: storm
-
-        ! Nothing needs to be updated here
-
-    end subroutine update_constant_storm
 
     ! ==========================================================================
     !  storm_location(t,storm)
@@ -126,29 +118,32 @@ contains
 
         ! Locals
         integer :: i, j
-        real(kind=8) :: x, y, r, R_eye(2), f, C, w
+        real(kind=8) :: x, y, r, r_km, R_eye(2), f, C, w
 
         ! Hurrican eye location
         R_eye = constant_storm_location(t,storm)
     
         ! Parameter constant
-        C = 1d1**2 * storm%A * storm%B * (storm%ambient_pressure - storm%central_pressure) / storm%rho_air
+        C = storm%A * storm%B * (storm%ambient_pressure - storm%central_pressure) / storm%rho_air
         
+        f = 0.d0
         do j=1-mbc,my+mbc
             y = ylower + (j-0.5d0) * dy - R_eye(2)
+            
             ! Coriolis term
             if (coriolis_forcing) f = coriolis(y)
+
             do i=1-mbc,mx+mbc
                 x = xlower + (i-0.5d0) * dx - R_eye(1)
-                r = sqrt(x**2+y**2) * 1d-3
+                r = sqrt(x**2+y**2)
             
                 ! Set wind
-                if (abs(r) < 10d-6) then
+                if (abs(r) < 1.0d-4) then
                     aux(wind_index:wind_index + 1,i,j) = 0.d0
                 else
-                    w = sqrt(C * exp(-storm%A/r**storm%B) / r**storm%B + r**2 * f**2 / 4.0) &
-                             - r * f / 2.d0
-                    r = r * 1d3
+                    w = sqrt(C * exp(-storm%A / (1d-3 * r)**storm%B) / (r * 1d-3)**storm%B &
+                                + (1d-3 * r * f)**2 / 4.d0) - 1d-3 * r * f / 2.d0
+
                     aux(wind_index,i,j) = -w * y / r
                     aux(wind_index+1,i,j) =  w * x / r
                 endif
@@ -169,8 +164,9 @@ contains
                                 * exp(-(t/(storm%ramp_up_time*0.45d0))**2)
             aux(wind_index+1,:,:) = aux(wind_index+1,:,:) &
                                 * exp(-(t/(storm%ramp_up_time*0.45d0))**2)
-            aux(pressure_index,:,:) = aux(pressure_index,:,:) &
-                                * exp(-(t/(storm%ramp_up_time*0.45d0))**2)
+            aux(pressure_index,:,:) = storm%ambient_pressure &
+                        + (aux(pressure_index,:,:) - storm%ambient_pressure) &
+                        * exp(-(t/(storm%ramp_up_time*0.45d0))**2)
         endif
         
     end subroutine set_constant_storm_fields
