@@ -11,6 +11,7 @@ import os
 import clawpack.clawutil.oldclawdata as data
 import numpy as np
 
+# RAMP_UP_TIME = 0.0
 RAMP_UP_TIME = 12 * 60**2
 
 #------------------------------
@@ -83,7 +84,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.meqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.maux = 7
+    clawdata.maux = 9
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.mcapa = 0
@@ -105,7 +106,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.outstyle = 3
+    clawdata.outstyle = 1
     # Number of hours to simulate
     num_hours = 40
     # Output interval per hour, 1 = every hour, 0.5 = every half hour, etc...
@@ -143,7 +144,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 7
+    clawdata.verbosity = 2
 
 
 
@@ -244,7 +245,7 @@ def setrun(claw_pkg='geoclaw'):
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
     clawdata.auxtype = ['center','center','center','center','center','center',
-                        'center']
+                        'center','center','center']
 
 
     clawdata.tol = -1.0     # negative ==> don't use Richardson estimator
@@ -286,20 +287,20 @@ def setgeo(rundata):
     geodata.theta_0 = 45.0
 
     # == settsunami.data values ==
-    geodata.dry_tolerance = 1.e-3
-    geodata.wave_tolerance = 1.e-1
+    geodata.dry_tolerance = 1.e-2
+    geodata.wave_tolerance = 5.e-1
     geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
     geodata.deep_depth = 2.e2
     geodata.max_level_deep = 4
-    geodata.friction_forcing = 0
+    geodata.friction_forcing = 1
     geodata.manning_coefficient = 0.025
-    geodata.friction_depth = 1.e10
+    geodata.friction_depth = 1.e6
 
     # == settopo.data values ==
     geodata.topofiles = []
     # for topography, append lines of the form
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
-    geodata.topofiles.append([1, 1, 5, 0., 1.e10,'./topo.tt1'])
+    geodata.topofiles.append([1, 1, 5, -RAMP_UP_TIME, 1.e10,'./topo.tt1'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
@@ -345,7 +346,7 @@ def setgeo(rundata):
     
     # == Multilayer ==
     geodata.layers = 1
-    geodata.rho = 1.0
+    geodata.rho = 1025.0
     geodata.eta_init = 0.0
     geodata.richardson_tolerance = 0.95
     
@@ -360,27 +361,25 @@ def set_storm():
     data = geoclaw.surge.StormData()
 
    # Physics parameters
-    data.rho_air = 1.15 / 1025.0 # Density of air (rho is not implemented above)
-    data.ambient_pressure = 1005.0 # Nominal atmos pressure
+    data.rho_air = 1.15             # Density of air (rho is not implemented above)
+    data.ambient_pressure = 101.5e3 # Nominal atmos pressure
 
     # Source term controls
-    data.wind_forcing = False
-    data.pressure_forcing = False
+    data.wind_forcing = True
+    data.pressure_forcing = True
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-6
     data.pressure_tolerance = 1e-4 # Pressure source term tolerance
 
-    # AMR parameters
+    # AMR parameters, in m/s and meters respectively
     data.wind_refine = [20.0,40.0,60.0]
     data.R_refine = [60.0e3,40e3,20e3]
     
     # Storm parameters
     data.storm_type = 2 # Type of storm
 
-    # Storm type 2 - Idealized storm track
-    data.storm_file = os.path.expandvars('./hurricane.data')
-
+    # Idealized storm with explicit track and Holland parameters
     velocity = 5.0
     angle = 0.0
 
@@ -389,7 +388,7 @@ def set_storm():
     data.R_eye_init = (0.0,0.0)
     data.A = 23.0
     data.B = 1.5
-    data.Pc = 950.0
+    data.Pc = 950.0 * 1e2 # Have to convert this to Pa instead of millibars
 
     return data
 
