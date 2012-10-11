@@ -532,6 +532,7 @@ def setplot(plotdata):
     # Wind field components
     plotfigure = plotdata.new_plotfigure(name='Wind Components',figno=5)
     plotfigure.show = surge_data.wind_forcing
+    plotfigure.kwargs = {'figsize':(16,6)}
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.axescmd = "subplot(121)"
