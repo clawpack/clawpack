@@ -170,13 +170,12 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 if (abs(P_atmos_y) < pressure_tolerance) then
                     P_atmos_y = 0.d0
                 endif
-                aux(pressure_index+1,i,j) = P_atmos_x
-                aux(pressure_index+2,i,j) = P_atmos_y
 
                 ! Modify momentum in each layer
                 do m=1,num_layers
                     if (h(m) > dry_tolerance(m)) then
                         layer_index = 3 * (m - 1)
+
                         q(layer_index + 2, i, j) = q(layer_index + 2, i, j) &
                                                         - dt * h(m) * P_atmos_x
                         q(layer_index + 3, i, j) = q(layer_index + 3, i, j) &
