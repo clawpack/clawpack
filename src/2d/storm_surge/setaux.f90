@@ -57,8 +57,9 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     ! Set analytical bathymetry here if requested
     if (topo_type > 0) then
-        forall (i=1-mbc:my+mbc,j=1-mbc:my+mbc)
-            aux(1,i,j) = analytic_topography(xlow + (i - 0.5d0) * dx,ylow + (j - 0.5d0) * dy)
+        forall (i=1-mbc:mx+mbc,j=1-mbc:my+mbc)
+            aux(1,i,j) = analytic_topography(xlow + (i - 0.5d0) * dx, &
+                                             ylow + (j - 0.5d0) * dy)
         end forall
     endif
     
