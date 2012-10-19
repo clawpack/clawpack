@@ -54,6 +54,7 @@ MODULES = \
  $(GEOLIB)/utility_module.f90 \
  $(GEOLIB)/storm_surge/holland_storm_module.f90 \
  $(GEOLIB)/storm_surge/constant_storm_module.f90 \
+ $(GEOLIB)/storm_surge/stommel_storm_module.f90 \
  $(GEOLIB)/storm_surge/storm_module.f90
 
 SOURCES = \
@@ -66,6 +67,7 @@ SOURCES = \
   $(GEOLIB)/storm_surge/b4step2.f90 \
   $(GEOLIB)/storm_surge/tick.f \
   $(GEOLIB)/storm_surge/valout.f \
+  $(GEOLIB)/storm_surge/bc2amr.f \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate.f \
@@ -80,7 +82,6 @@ SOURCES = \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/filval_new.f90 \
   $(GEOLIB)/filpatch_new.f90 \
-  $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setgauges.f \

@@ -14,6 +14,7 @@ module storm_module
 
     use holland_storm_module, only: holland_storm_type
     use constant_storm_module, only: constant_storm_type
+    use stommel_storm_module, only: stommel_storm_type
 
     implicit none
 
@@ -38,6 +39,7 @@ module storm_module
     integer :: storm_type
     type(holland_storm_type) :: holland_storm
     type(constant_storm_type) :: constant_storm
+    type(stommel_storm_type) :: stommel_storm
 
     ! Store physics here for ease of use
     ! WARNING:  If these do not agree with the storm data objects things will break!
@@ -62,6 +64,7 @@ contains
 
         use holland_storm_module, only: set_holland_storm
         use constant_storm_module, only: set_constant_storm
+        use stommel_storm_module, only: set_stommel_storm
 
         use geoclaw_module, only: pi
 
@@ -128,7 +131,7 @@ contains
             ! Set rho_air and ambient pressure in storms
         else if (storm_type == 3) then
             ! Stommel wind field
-            stop "Call stommel storm setup routine."
+            call set_stommel_storm(storm_file_path,stommel_storm,log_unit)
         else
             print *,"Invalid storm type ",storm_type," provided."
             stop
@@ -197,6 +200,8 @@ contains
 
     function storm_location(t) result(location)
 
+        use amr_module, only: rinfinity
+
         use holland_storm_module, only: holland_storm_location
         use constant_storm_module, only: constant_storm_location
 
@@ -210,13 +215,13 @@ contains
 
         select case(storm_type)
             case(0)
-                location = [0.d0, 0.d0]
+                location = [rinfinity,rinfinity]
             case(1)
-                location =  holland_storm_location(t,holland_storm)
+                location = holland_storm_location(t,holland_storm)
             case(2)
                 location = constant_storm_location(t,constant_storm)
             case(3)
-                location = [0.d0, 0.d0]
+                location = [rinfinity,rinfinity]
         end select
 
     end function storm_location
@@ -227,6 +232,7 @@ contains
 
         use holland_storm_module, only: set_holland_storm_fields
         use constant_storm_module, only: set_constant_storm_fields
+        use stommel_storm_module, only: set_stommel_storm_fields
 
         implicit none
 
@@ -247,7 +253,9 @@ contains
                                     xlower,ylower,dx,dy,t,aux, wind_index, &
                                     pressure_index, constant_storm)
             case(3)
-                stop "Stommel wind field has not been implemented."
+                call set_stommel_storm_fields(maxmx,maxmy,maux,mbc,mx,my, &
+                                    xlower,ylower,dx,dy,t,aux, wind_index, &
+                                    pressure_index, stommel_storm)
         end select
 
     end subroutine set_storm_fields
