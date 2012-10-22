@@ -99,7 +99,6 @@ contains
         read(unit,*) coriolis_forcing
         if (coordinate_system == 1 .and. coriolis_forcing) then
             read(unit,*) theta_0
-            print *,'here'
         else
             theta_0 = 0.d0
         endif

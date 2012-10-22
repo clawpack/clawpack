@@ -9,8 +9,8 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !        aux(2,i,j) = area ratio (capacity function -- set mcapa = 2)
 !        aux(3,i,j) = length ratio for edge
 !     
-!     aux(4,i,j) = 
-!     aux(5,i,j) = 
+!     aux(4:num_layers + 3,i,j) = Initial layer depths for linearized problem
+!
 
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
