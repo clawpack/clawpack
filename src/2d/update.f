@@ -66,7 +66,7 @@ c 20   if (mptr .eq. 0) go to 85
 !$OMP&                    etaf,etaav,hav,nwet,hc,huc,hvc),
 !$OMP&            SHARED(lget,numgrids,listgrids,level,intratx,intraty,
 !$OMP&                   nghost,uprint,nvar,naux,mcapa,node,listsp,
-!$OMP&                   alloc,lstart,dry_tolerance),
+!$OMP&                   alloc,lstart,dry_tolerance,rho),
 !$OMP&            DEFAULT(none)
       do ng = 1, numgrids(lget)
 c        mptr    = mget(ng, level)
