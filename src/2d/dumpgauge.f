@@ -122,9 +122,14 @@ c velocities are zeroed out which can then lead to increase in h again.
           do k=num_layers-1,1,-1
               eta(k) = var(3*k-2) + eta(k+1)
           enddo
+
+!$OMP CRITICAL (gaugeio)
               
           write(OUTGAUGEUNIT,100) igauge(i),level,tgrid, 
      &              (var(j),j=1,3*num_layers),(eta(j),j=1,num_layers)
+
+!$OMP END CRITICAL (gaugeio)
+
   10  enddo
       
  100  format(2i5,15e15.7)
