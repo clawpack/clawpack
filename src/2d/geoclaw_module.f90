@@ -224,8 +224,7 @@ contains
             coriolis = 2.d0 * omega * (sin(theta_0) + (theta - theta_0)     &
                                                     * cos(theta_0))
         else if (coordinate_system == 2) then        
-            theta = y * DEG2RAD
-            coriolis = 2.d0 * omega * sin(theta)
+            coriolis = 2.d0 * omega * sin(y * DEG2RAD)
         else
             ! Unknown coordinate system, return nothing
             coriolis = 0.d0
