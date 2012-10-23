@@ -202,7 +202,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
                         speed = sqrt(q(layer_index+2,i,j)**2 &
                                    + q(layer_index+3,i,j)**2) &
                                    / q(layer_index+1,i,j)
-                        do m=1,mxnest
+                        do m=1,min(size(speed_tolerance),mxnest)
                             if (speed > speed_tolerance(m) .and. level <= m) then
                                 amrflags(i,j) = DOFLAG
                                 cycle x_loop
