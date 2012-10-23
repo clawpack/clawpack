@@ -31,7 +31,7 @@ ifeq ($(MAKELEVEL),0)
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
 	# Threading flags
-	# FFLAGS += -fopenmp
+	FFLAGS += -fopenmp
 endif
 
 # ---------------------------------
