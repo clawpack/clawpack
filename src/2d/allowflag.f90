@@ -11,8 +11,6 @@
 ! 
 !  If Richardson error estimates are used (if tol>0) then this routine
 !  is also called from errf1.
-! 
-!  TODO: Does allowflag work for t0 < 0.0? Maybe not for iqinit > 0
 !
 logical function allowflag(x,y,t,level)
 
@@ -57,7 +55,6 @@ logical function allowflag(x,y,t,level)
             endif
         endif
     enddo
-
     do m=1,num_regions
         if (level < regions(m)%max_level) then 
             if (x > regions(m)%x_low .and. x <  regions(m)%x_hi.and. &
