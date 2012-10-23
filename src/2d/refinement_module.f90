@@ -42,6 +42,7 @@ contains
         
         use amr_module, only: mxnest
         use geoclaw_module, only: num_layers
+        use utility_module, only: get_value_count
         
         implicit none
         
@@ -51,6 +52,7 @@ contains
         ! Locals
         integer, parameter :: unit = 127
         integer :: i
+        character(len=128) :: line
 
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '--------------------------------------------'
@@ -66,8 +68,9 @@ contains
         ! Basic criteria
         allocate(wave_tolerance(num_layers))
         read(unit,*) wave_tolerance
-        allocate(speed_tolerance(mxnest))
-        read(unit,*) (speed_tolerance(i),i=1,mxnest)
+        read(unit,'(a)') line
+        allocate(speed_tolerance(get_value_count(line)))
+        read(line,*) (speed_tolerance(i),i=1,size(speed_tolerance))
         read(unit,*) deep_depth
         read(unit,*) max_level_deep
         read(unit,*)
