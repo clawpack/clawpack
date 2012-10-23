@@ -82,34 +82,34 @@ c
 c
 c     # fluxes initialized in step2
 c
-      mwork0 = (maxm+2*mbc)*(12*meqn + mwaves + meqn*mwaves + 2)
-c
-      if (mwork .lt. mwork0) then
-         write(outunit,*) 'CLAW2 ERROR... mwork must be increased to ',
-     &               mwork0
-         write(*      ,*) 'CLAW2 ERROR... mwork must be increased to ',
-     &               mwork0
-         stop
-      endif
+C       mwork0 = (maxm+2*mbc)*(12*meqn + mwaves + meqn*mwaves + 2)
+C c
+C       if (mwork .lt. mwork0) then
+C          write(outunit,*) 'CLAW2 ERROR... mwork must be increased to ',
+C      &               mwork0
+C          write(*      ,*) 'CLAW2 ERROR... mwork must be increased to ',
+C      &               mwork0
+C          stop
+C       endif
 c
 c     # partition work array into pieces needed for local storage in
 c     # step2 routine. Find starting index of each piece:
 c
-      i0faddm = 1
-      i0faddp = i0faddm + (maxm+2*mbc)*meqn
-      i0gaddm = i0faddp + (maxm+2*mbc)*meqn
-      i0gaddp = i0gaddm + 2*(maxm+2*mbc)*meqn
-      i0q1d   = i0gaddp + 2*(maxm+2*mbc)*meqn
-      i0dtdx1 = i0q1d + (maxm+2*mbc)*meqn
-      i0dtdy1 = i0dtdx1 + (maxm+2*mbc)
-      i0aux1 = i0dtdy1 + (maxm+2*mbc)
-      i0aux2 = i0aux1 + (maxm+2*mbc)*maux
-      i0aux3 = i0aux2 + (maxm+2*mbc)*maux
-c
-c
-      i0next = i0aux3 + (maxm+2*mbc)*maux    !# next free space
-      mused  = i0next - 1                    !# space already used
-      mwork1 = mwork - mused              !# remaining space (passed to step2)
+C       i0faddm = 1
+C       i0faddp = i0faddm + (maxm+2*mbc)*meqn
+C       i0gaddm = i0faddp + (maxm+2*mbc)*meqn
+C       i0gaddp = i0gaddm + 2*(maxm+2*mbc)*meqn
+C       i0q1d   = i0gaddp + 2*(maxm+2*mbc)*meqn
+C       i0dtdx1 = i0q1d + (maxm+2*mbc)*meqn
+C       i0dtdy1 = i0dtdx1 + (maxm+2*mbc)
+C       i0aux1 = i0dtdy1 + (maxm+2*mbc)
+C       i0aux2 = i0aux1 + (maxm+2*mbc)*maux
+C       i0aux3 = i0aux2 + (maxm+2*mbc)*maux
+C c
+C c
+C       i0next = i0aux3 + (maxm+2*mbc)*maux    !# next free space
+C       mused  = i0next - 1                    !# space already used
+C       mwork1 = mwork - mused              !# remaining space (passed to step2)
 
 c
 
@@ -213,12 +213,7 @@ c
       call step2(mbig,mx,my,nvar,maux,
      &           mbc,mx,my,
      &              q,aux,dx,dy,dt,cflgrid,
-     &              fm,fp,gm,gp,
-     &              work(i0faddm),work(i0faddp),
-     &              work(i0gaddm),work(i0gaddp),
-     &              work(i0q1d),work(i0dtdx1),work(i0dtdy1),
-     &              work(i0aux1),work(i0aux2),work(i0aux3),
-     &              work(i0next),mwork1,rpn2,rpt2)
+     &              fm,fp,gm,gp,rpn2,rpt2)
 c
 c            
         mptr_level = node(nestlevel,mptr)
