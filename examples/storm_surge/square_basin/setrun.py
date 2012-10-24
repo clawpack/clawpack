@@ -298,32 +298,29 @@ def setgeo(rundata):
 
     # == settopo.data values ==
     geodata.topofiles = []
-    # for topography, append lines of the form
-    #   [topotype, minlevel, maxlevel, t1, t2, fname]
-    geodata.topofiles.append([1, 1, 5, -RAMP_UP_TIME, 1.e10,'./topo.tt1'])
-
+    geodata.topo_type = 2
+    geodata.x0 = 350e3
+    geodata.x1 = 450e3
+    geodata.x2 = 480e3
+    geodata.basin_depth = -3000.0
+    geodata.shelf_depth = -200.0
+    geodata.beach_slope = 0.05
+    
     # == setdtopo.data values ==
     geodata.dtopofiles = []
     # for moving topography, append lines of the form:  (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
-    # geodata.dtopofiles.append([1,3,3,'usgs100227.tt1'])
 
     # == setqinit.data values ==
     geodata.qinit_type = 0
-    # geodata.qinit_type = 4
     geodata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
-    # geodata.qinitfiles.append([1, 5, 'hump.xyz'])
 
     # == setregions.data values ==
     geodata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    # geodata.regions.append([1, 4, 0.0, 1e10, -99.00, -80.00, 17.00, 32.00]) # entire domain
-    # geodata.regions.append([1, 5, 0.0, 1e10, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
-    # geodata.regions.append([1, 7, 0.0, 1e10, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
-    # geodata.regions.append([1, 7, 0.0, 1e10, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
 
     # == setgauges.data values ==
     geodata.gauges = []
@@ -340,9 +337,7 @@ def setgeo(rundata):
     # == setfixedgrids.data values ==
     geodata.fixedgrids = []
     # for fixed grids append lines of the form
-    # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
-    #  ioutarrivaltimes,ioutsurfacemax]
-    # geodata.fixedgrids.append([1e3,3.24e4,10,-90,-80,-30,-15,100,100,0,1])
+    # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,ioutarrivaltimes,ioutsurfacemax]
     
     # == Multilayer ==
     geodata.layers = 1

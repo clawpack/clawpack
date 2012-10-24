@@ -143,7 +143,7 @@ def setplot(plotdata):
         if track is not None:
             x,y = eye_location(current_data)
             plt.hold(True)
-            plt.plot(x,y,'rD')
+            plt.plot(x,y,'rD',markersize=2)
             plt.hold(False)
         hours_figure_title(current_data)
         m_to_km_labels(current_data)
