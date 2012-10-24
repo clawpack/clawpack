@@ -90,7 +90,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.meqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.maux = 7
+    clawdata.maux = 9
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.mcapa = 2
@@ -250,7 +250,7 @@ def setrun(claw_pkg='geoclaw'):
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
     clawdata.auxtype = ['center','capacity','yleft','center','center','center',
-                        'center']
+                        'center','center','center']
 
 
     clawdata.tol = -1.0     # negative ==> don't use Richardson estimator
@@ -378,7 +378,7 @@ def set_storm():
 
     import geoclaw.surge
 
-    data = surge.StormData()
+    data = surge.data.StormData()
 
    # Physics parameters
     data.rho_air = 1.15

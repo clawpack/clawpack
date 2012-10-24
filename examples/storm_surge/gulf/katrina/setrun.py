@@ -114,7 +114,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.outstyle = 3
+    clawdata.outstyle = 1
 
     if clawdata.outstyle==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -374,9 +374,7 @@ def setgeo(rundata):
 
 def set_storm():
 
-    import geoclaw.surge
-
-    data = surge.StormData()
+    data = surge.data.StormData()
 
    # Physics parameters
     data.rho_air = 1.15

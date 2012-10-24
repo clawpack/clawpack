@@ -103,7 +103,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Ike 2008083006 = day 242
     # days = date2days('2008083006')
-    # clawdata.t0 = days2seconds(245.50)
+    clawdata.t0 = days2seconds(246.0)
     # clawdata.t0 = days2seconds(252.0)
 
 
@@ -115,7 +115,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.outstyle = 3
+    clawdata.outstyle = 1
 
     if clawdata.outstyle==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -322,11 +322,11 @@ def setgeo(rundata):
     # for topography, append lines of the form
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     geodata.topofiles.append([3, 1, 3, rundata.clawdata.t0, rundata.clawdata.tfinal, 
-                              './bathy/gulf_caribbean.tt3'])
+                              '../bathy/gulf_caribbean.tt3'])
     # geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
     #                           './bathy/gulf_coarse_bathy.tt3'])
     geodata.topofiles.append([3, 1, 5, rundata.clawdata.t0, rundata.clawdata.tfinal,
-                              './bathy/NOAA_Galveston_Houston.tt3'])
+                              '../bathy/NOAA_Galveston_Houston.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
     #                           './bathy/galveston_channel.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
@@ -391,9 +391,7 @@ def setgeo(rundata):
 
 def set_storm():
 
-    import geoclaw.surge
-
-    data = surge.StormData()
+    data = surge.data.StormData()
 
    # Physics parameters
     data.rho_air = 1.15
