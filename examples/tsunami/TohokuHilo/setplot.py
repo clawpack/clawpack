@@ -7,8 +7,8 @@ function setplot is called to set the plot parameters.
     
 """ 
 
-from pyclaw.geotools import topotools
-from pyclaw.data import Data
+from geoclaw import topotools
+from clawpack.clawutil.clawdata import ClawData
 
 
 #--------------------------
@@ -23,7 +23,7 @@ def setplot(plotdata):
     """ 
 
 
-    from pyclaw.plotters import colormaps, geoplot
+    from clawpack.visclaw import colormaps, geoplot
     from numpy import linspace
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
@@ -33,7 +33,7 @@ def setplot(plotdata):
     # an afteraxis function:
 
     def addgauges(current_data):
-        from pyclaw.plotters import gaugetools
+        from geoclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=False)
     
@@ -67,8 +67,8 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -77,8 +77,8 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [1,1,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [1,1,0]
+    plotitem.patchedges_show = 1
     plotaxes.xlimits = [202., 206.]
     plotaxes.ylimits = [19., 21.]
 
@@ -90,8 +90,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['y']  # color on each level
     plotitem.kwargs = {'linestyles':'solid','linewidths':2}
     plotitem.amr_contour_show = [1,0,0]  
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
 
 
     #-----------------------------------------
@@ -115,8 +115,8 @@ def setplot(plotdata):
     plotitem.imshow_cmin = -0.2
     plotitem.imshow_cmax = 0.2
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
@@ -125,8 +125,8 @@ def setplot(plotdata):
     plotitem.imshow_cmin = 0.0
     plotitem.imshow_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
     plotaxes.xlimits = 'auto'
     plotaxes.ylimits = 'auto'
 
@@ -138,8 +138,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['y']  # color on each level
     plotitem.kwargs = {'linestyles':'solid','linewidths':2}
     plotitem.amr_contour_show = [1,0,0]  
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
 
 
     #-----------------------------------------
@@ -162,8 +162,8 @@ def setplot(plotdata):
     plotitem.imshow_cmin = -0.2
     plotitem.imshow_cmax = 0.2
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
@@ -172,8 +172,8 @@ def setplot(plotdata):
     plotitem.imshow_cmin = 0.0
     plotitem.imshow_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
     plotaxes.xlimits = [204.8, 205.]
     plotaxes.ylimits = [19.7, 19.9]
 
@@ -198,8 +198,8 @@ def setplot(plotdata):
     plotitem.imshow_cmin = -0.2
     plotitem.imshow_cmax = 0.2
     plotitem.add_colorbar = True
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
@@ -208,8 +208,8 @@ def setplot(plotdata):
     plotitem.imshow_cmin = 0.0
     plotitem.imshow_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_gridlines_show = [0,0,0]
-    plotitem.gridedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
     plotaxes.xlimits = [204.9, 204.96]
     plotaxes.ylimits = [19.72, 19.76]
 
@@ -222,8 +222,8 @@ def setplot(plotdata):
     plotitem.amr_contour_colors = ['y']  # color on each level
     plotitem.kwargs = {'linestyles':'solid','linewidths':2}
     plotitem.amr_contour_show = [1,0,0]  
-    plotitem.gridlines_show = 0
-    plotitem.gridedges_show = 0
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
 
 
     #-----------------------------------------
