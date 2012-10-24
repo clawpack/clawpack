@@ -76,7 +76,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.meqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.maux = 3
+    clawdata.maux = 4
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.mcapa = 0
@@ -225,7 +225,7 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    clawdata.auxtype = ['center','center','yleft']
+    clawdata.auxtype = ['center','center','yleft','center']
 
 
     clawdata.tol = -1.0     # negative ==> don't use Richardson estimator
@@ -269,7 +269,7 @@ def setgeo(rundata):
     geodata.wave_tolerance = 1.e-2
     geodata.deep_depth = 1.e2
     geodata.max_level_deep = 3
-    geodata.friction_forcing = False
+    geodata.friction_forcing = 0
     geodata.manning_coefficient = 0.0
     geodata.friction_depth = 1.e6
     

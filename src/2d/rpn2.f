@@ -1,5 +1,5 @@
 c======================================================================
-      subroutine rpn2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,auxl,auxr,
+      subroutine rpn2(ixy,maxm,meqn,maux,mwaves,mbc,mx,ql,qr,auxl,auxr,
      &                  fwave,s,amdq,apdq)
 c======================================================================
 c
@@ -33,14 +33,14 @@ c
 !           David George, Vancouver WA, Feb. 2009                           !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      use geoclaw_module, only: grav,dry_tolerance,earth_radius,pi
+      use geoclaw_module, only: g => grav, dry_tolerance, rho
+      use geoclaw_module, only: earth_radius, deg2rad
       use amr_module, only: mcapa
+
       implicit none
-      integer maux  ! should be passed in or put into a module
-      parameter (maux=3)
 
       !input
-      integer maxm,meqn,mwaves,mbc,mx,ixy
+      integer maxm,meqn,maux,mwaves,mbc,mx,ixy
 
       double precision  fwave(meqn, mwaves, 1-mbc:maxm+mbc)
       double precision  s(mwaves, 1-mbc:maxm+mbc)
@@ -51,10 +51,9 @@ c
       double precision  auxl(maux,1-mbc:maxm+mbc)
       double precision  auxr(maux,1-mbc:maxm+mbc)
 
-      double precision drytol,g
-
       !local only
       integer m,i,mw,maxiter,mu,nv
+      real(kind=8) :: drytol
       double precision wall(3)
       double precision fw(3,3)
       double precision sw(3)
@@ -67,10 +66,6 @@ c
 
       logical rare1,rare2
 
-!     used from module instead:
-!     common /cmcapa/  mcapa
-
-      g=grav
       drytol=dry_tolerance(1)
 
       !loop through Riemann problems at each grid cell
@@ -113,20 +108,21 @@ c        !set normal direction
          endif
 
          !skip problem if in a completely dry area
-         if (qr(1,i-1).le.drytol.and.ql(1,i).le.drytol) then
+         if (qr(1,i-1) / rho(1) <= drytol .and.
+     &       ql(1,i) / rho(1) <= drytol) then
             go to 30
          endif
 
          !Riemann problem variables
-         hL = qr(1,i-1)
-         hR = ql(1,i)
-         huL = qr(mu,i-1)
-         huR = ql(mu,i)
+         hL = qr(1,i-1) / rho(1)
+         hR = ql(1,i) / rho(1)
+         huL = qr(mu,i-1) / rho(1)
+         huR = ql(mu,i) / rho(1)
          bL = auxr(1,i-1)
          bR = auxl(1,i)
 
-         hvL=qr(nv,i-1)
-         hvR=ql(nv,i)
+         hvL=qr(nv,i-1) / rho(1)
+         hvR=ql(nv,i) / rho(1)
 
          !check for wet/dry boundary
          if (hR.gt.drytol) then
@@ -225,7 +221,7 @@ c        !eliminate ghost fluxes for wall
          do mw=1,3
             sw(mw)=sw(mw)*wall(mw)
             do m=1,meqn
-               fw(m,mw)=fw(m,mw)*wall(mw)
+               fw(m,mw)=fw(m,mw)*wall(mw) * rho(1)
             enddo
          enddo
 
@@ -245,9 +241,9 @@ c==========Capacity for mapping from latitude longitude to physical space====
         if (mcapa.gt.0) then
          do i=2-mbc,mx+mbc
           if (ixy.eq.1) then
-             dxdc=(earth_radius*pi/180.d0)
+             dxdc=(earth_radius*deg2rad)
           else
-             dxdc=earth_radius*pi*cos(auxl(3,i))/180.d0
+             dxdc=earth_radius*cos(auxl(3,i))*deg2rad
           endif
 
           do mw=1,mwaves

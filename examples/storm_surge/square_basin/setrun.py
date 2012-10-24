@@ -11,6 +11,8 @@ import os
 import clawpack.clawutil.oldclawdata as data
 import numpy as np
 
+# RAMP_UP_TIME = 0.0
+RAMP_UP_TIME = 12 * 60**2
 
 #------------------------------
 def setrun(claw_pkg='geoclaw'):
@@ -64,18 +66,15 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.ndim = ndim
 
     # Lower and upper edge of computational domain:
-    clawdata.xlower = -99.0
-    clawdata.xupper = -80.0
-
-    clawdata.ylower = 17.0
-    clawdata.yupper = 32.0
-
+    clawdata.xlower = -200e3
+    clawdata.xupper = 500e3
+    
+    clawdata.ylower = -300e3
+    clawdata.yupper = 300e3
 
     # Number of grid cells:
-    degree_factor = 4 # (0.25º,0.25º) ~ (25237.5 m, 27693.2 m) resolution
-    clawdata.mx = int(clawdata.xupper - clawdata.xlower) * degree_factor
-    clawdata.my = int(clawdata.yupper - clawdata.ylower) * degree_factor
-
+    clawdata.mx = 70
+    clawdata.my = 60
 
     # ---------------
     # Size of system:
@@ -85,10 +84,10 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.meqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.maux = 3
+    clawdata.maux = 9
 
     # Index of aux array corresponding to capacity function, if there is one:
-    clawdata.mcapa = 2
+    clawdata.mcapa = 0
 
 
 
@@ -96,7 +95,7 @@ def setrun(claw_pkg='geoclaw'):
     # Initial time:
     # -------------
 
-    clawdata.t0 = 0.0
+    clawdata.t0 = -RAMP_UP_TIME
 
 
     # -------------
@@ -108,21 +107,32 @@ def setrun(claw_pkg='geoclaw'):
     # The solution at initial time t0 is always written in addition.
 
     clawdata.outstyle = 1
-
+    # Number of hours to simulate
+    num_hours = 40
+    # Output interval per hour, 1 = every hour, 0.5 = every half hour, etc...
+    step = 0.25
+    
     if clawdata.outstyle==1:
-        # Output nout frames at equally spaced times up to tfinal:
-        clawdata.tfinal = 4 * 60 * 60 # 3 hours
-        clawdata.nout = int(clawdata.tfinal * 6 / 60**2)# Output every 10 minutes
+        clawdata.nout = int(num_hours / step) + int(np.ceil(RAMP_UP_TIME / (step*60**2)))
+        clawdata.tfinal = num_hours * 60.0**2
+        # # Output nout frames at equally spaced times up to tfinal:
+        # clawdata.nout = 48
+        # clawdata.tfinal = 60.0**2*clawdata.nout
 
     elif clawdata.outstyle == 2:
         # Specify a list of output times.
-        clawdata.tout =  [0.5, 1.0]   # used if outstyle == 2
+        # t_start = 0.7650e05
+        # dt = 0.12E+03 
+        # clawdata.tout = [0.0,3.0,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9,4.0]
+        # clawdata.tout = [x*60**2 for x in clawdata.tout]
+        clawdata.tout = [0.0,1.0,2.0,3.0,4.0]
+        # for i in xrange(60):
+        #     clawdata.tout.append(i*dt+t_start)
         clawdata.nout = len(clawdata.tout)
-
     elif clawdata.outstyle == 3:
         # Output every iout timesteps with a total of ntot time steps:
         iout = 1
-        ntot = 1
+        ntot = 100
         clawdata.iout = [iout, ntot]
 
 
@@ -134,7 +144,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 7
+    clawdata.verbosity = 2
 
 
 
@@ -214,16 +224,15 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    mxnest = 7
+    mxnest = 5
 
     clawdata.mxnest = -mxnest   # negative ==> anisotropic refinement in x,y,t
 
     # List of refinement ratios at each level (length at least mxnest-1)
     # Run resolution.py 2 2 4 8 16 to see approximate resolutions
-    clawdata.inratx = [2,2,3,4,8,2]
-    clawdata.inraty = [2,2,3,4,8,2]
-
-    clawdata.inratt = [2,2,3,4,8,2]
+    clawdata.inratx = [2,2,2,2,2]
+    clawdata.inraty = [2,2,2,2,2]
+    clawdata.inratt = [2,2,2,2,2]
     # Instead of setting these ratios, set:
     # geodata.variable_dt_refinement_ratios = True
     # in setgeo.
@@ -235,13 +244,15 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    clawdata.auxtype = ['center','capacity','yleft']
+    clawdata.auxtype = ['center','center','center','center','center','center',
+                        'center','center','center']
 
 
     clawdata.tol = -1.0     # negative ==> don't use Richardson estimator
     clawdata.tolsp = 0.5    # used in default flag2refine subroutine
                             # (Not used in geoclaw!)
 
+    clawdata.cutoff = 0.7   # efficiency cutoff for grid generation
     clawdata.kcheck = 3     # how often to regrid (every kcheck steps)
     clawdata.ibuff  = 2     # width of buffer zone around flagged points
 
@@ -270,81 +281,67 @@ def setgeo(rundata):
     geodata.variable_dt_refinement_ratios = True
 
     geodata.gravity = 9.81
-    geodata.coordinate_system = 2
+    geodata.coordinate_system = 1
     geodata.earth_radius = 6367.5e3
-    geodata.coriolis_force = False
+    geodata.coriolis_forcing = True
+    geodata.theta_0 = 45.0
 
     # == settsunami.data values ==
-    geodata.dry_tolerance = 1.e-3
-    geodata.wave_tolerance = 1.e-1
-    geodata.speed_tolerance = [1e10,1e10,1e10,1e10,1e10,1e10,1e10,1e10]
-    geodata.deep_depth = 1.e2
-    geodata.max_level_deep = 3
-    geodata.friction_force = True
-    geodata.manning_coefficient =.025
+    geodata.dry_tolerance = 1.e-2
+    geodata.wave_tolerance = 5.e-1
+    geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
+    geodata.deep_depth = 2.e2
+    geodata.max_level_deep = 4
+    geodata.friction_forcing = 1
+    geodata.manning_coefficient = 0.025
     geodata.friction_depth = 1.e6
 
     # == settopo.data values ==
     geodata.topofiles = []
-    # for topography, append lines of the form
-    #   [topotype, minlevel, maxlevel, t1, t2, fname]
-    geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
-                              './bathy/gulf_coarse_bathy.tt3'])
-    geodata.topofiles.append([3, 1, 5, 0., 1.e10, \
-                              './bathy/NOAA_Galveston_Houston.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/galveston_channel.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/houston_harbor.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/houston_channel_3.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/houston_channel_2.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/galveston.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/lower_galveston_bay.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              './bathy/upper_galveston_bay.tt3'])
-
+    geodata.topo_type = 2
+    geodata.x0 = 350e3
+    geodata.x1 = 450e3
+    geodata.x2 = 480e3
+    geodata.basin_depth = -3000.0
+    geodata.shelf_depth = -200.0
+    geodata.beach_slope = 0.05
+    
     # == setdtopo.data values ==
     geodata.dtopofiles = []
     # for moving topography, append lines of the form:  (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
-    # geodata.dtopofiles.append([1,3,3,'usgs100227.tt1'])
 
     # == setqinit.data values ==
-    geodata.qinit_type = 4
+    geodata.qinit_type = 0
     geodata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
-    geodata.qinitfiles.append([1, 5, 'hump.xyz'])
 
     # == setregions.data values ==
     geodata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    geodata.regions.append([1, 4, 0.0, 1e10, -99.00, -80.00, 17.00, 32.00]) # entire domain
-    geodata.regions.append([1, 5, 0.0, 1e10, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
-    # geodata.regions.append([1, 7, 0.0, 1e10, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
-    # geodata.regions.append([1, 7, 0.0, 1e10, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
 
     # == setgauges.data values ==
     geodata.gauges = []
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    geodata.gauges.append([1, -93.0, 28.0, 0., 1.e10])
+    N_gauges = 21
+    for i in xrange(0,N_gauges):
+        x = 455e3 # This is right where the shelf turns into beach, 100 meter of water
+        # x = -80.0 * (23e3 / 180) + 500e3 - 5e3  # 1 km off shore
+        y = 550e3 / (N_gauges + 1) * (i+1) + -275e3       # Start 25 km inside domain
+        geodata.gauges.append([i, x, y, 0.0, 1e10])
+        print "Gauge %s: (%s,%s)" % (i,x/1e3,y/1e3)
 
 
     # == setfixedgrids.data values ==
     geodata.fixedgrids = []
     # for fixed grids append lines of the form
-    # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
-    #  ioutarrivaltimes,ioutsurfacemax]
-    # geodata.fixedgrids.append([1e3,3.24e4,10,-90,-80,-30,-15,100,100,0,1])
+    # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,ioutarrivaltimes,ioutsurfacemax]
     
     # == Multilayer ==
     geodata.layers = 1
-    geodata.rho = 1.0
+    geodata.rho = 1025.0
     geodata.eta_init = 0.0
     geodata.richardson_tolerance = 0.95
     
@@ -352,15 +349,55 @@ def setgeo(rundata):
     # end of function setgeo
     # ----------------------
 
+def set_storm():
 
+    import geoclaw.surge
+
+    data = geoclaw.surge.StormData()
+
+   # Physics parameters
+    data.rho_air = 1.15             # Density of air (rho is not implemented above)
+    data.ambient_pressure = 101.5e3 # Nominal atmos pressure
+
+    # Source term controls
+    data.wind_forcing = True
+    data.pressure_forcing = True
+    
+    # Source term algorithm parameters
+    data.wind_tolerance = 1e-6
+    data.pressure_tolerance = 1e-4 # Pressure source term tolerance
+
+    # AMR parameters, in m/s and meters respectively
+    data.wind_refine = [20.0,40.0,60.0]
+    data.R_refine = [60.0e3,40e3,20e3]
+    
+    # Storm parameters
+    data.storm_type = 2 # Type of storm
+
+    # Idealized storm with explicit track and Holland parameters
+    velocity = 5.0
+    angle = 0.0
+
+    data.ramp_up_t = RAMP_UP_TIME
+    data.velocity = (velocity * np.cos(angle),velocity * np.sin(angle))
+    data.R_eye_init = (0.0,0.0)
+    data.A = 23.0
+    data.B = 1.5
+    data.Pc = 950.0 * 1e2 # Have to convert this to Pa instead of millibars
+
+    return data
 
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
     import sys
     if len(sys.argv) == 2:
-	rundata = setrun(sys.argv[1])
+        rundata = setrun(sys.argv[1])
     else:
-	rundata = setrun()
+        rundata = setrun()
 
     rundata.write()
+
+    # Create storm data
+    storm_data = set_storm()
+    storm_data.write()
 

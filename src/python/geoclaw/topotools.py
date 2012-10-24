@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# encoding: utf-8
 """
 file: topotools.py 
 
@@ -946,3 +948,46 @@ def create_topo_func(loc,verbose=False):
     if verbose:
         print cmd_str
     return eval(cmd_str)
+
+
+# Generic, spheroid based conversion
+# TODO: Convert this to using the basemap package instead
+deg2meters = lambda theta,lat:R_earth * theta * np.pi / 180.0 * np.cos(lat * np.pi / 180.0)
+meters2deg = lambda d,lat:d / (R_earth * np.pi / 180.0 * np.cos(lat * np.pi / 180.0))
+
+# Based at lat = 24 degrees
+long2meters = lambda degree_resolution:degree_resolution * 100950.05720513177
+lat2meters = lambda degree_resolution:degree_resolution * 110772.87259559495
+
+def calculate_resolution(ratios,base_resolutions=[0.25,0.25],
+                                print_resolutions=False):
+    r"""Given *ratios* and starting resolutions, calculate level resolutions
+
+    returns a dictionary of resolutions key valued by level"""
+    num_levels = len(ratios) + 1
+
+    degree_resolutions = np.empty((num_levels,2))
+    meter_resolutions = np.empty((num_levels,2))
+    degree_resolutions[0,:] = base_resolutions
+    meter_resolutions[0,0] = long2meters(base_resolutions[0])
+    meter_resolutions[0,1] = lat2meters(base_resolutions[1])
+    for level in xrange(1,num_levels):
+        degree_resolutions[level,:] = degree_resolutions[level-1,:] / ratios[level-1]
+        meter_resolutions[level,0] = long2meters(degree_resolutions[level,0])
+        meter_resolutions[level,1] = lat2meters(degree_resolutions[level,1])
+
+    if print_resolutions:
+        print "Resolutions:"
+        for level in xrange(num_levels):
+            print " Level %s - (%sº,%sº) - (%s m, %s m)" % (str(level+1),
+                                                        degree_resolutions[level,0],
+                                                        degree_resolutions[level,1],
+                                                        meter_resolutions[level,0],
+                                                        meter_resolutions[level,1])
+
+    resolutions = {}
+    for level in xrange(1,num_levels):
+        resolutions[level] = (degree_resolutions,meter_resolutions)
+    return [(degree_resolutions,meter_resolutions) 
+                        for level in xrange(1,num_levels)]
+

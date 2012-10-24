@@ -8,8 +8,9 @@ module qinit_module
     
     ! Work array
     real(kind=8), private, allocatable :: qinit(:)
-      
+    
     ! Geometry
+    real(kind=8) :: t0
     real(kind=8) :: x_low_qinit
     real(kind=8) :: y_low_qinit
     real(kind=8) :: t_low_qinit
@@ -28,7 +29,7 @@ contains
 
     subroutine add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use geoclaw_module, only: num_layers,eta_init
+        use geoclaw_module, only: num_layers, eta_init, rho
     
         implicit none
     
@@ -74,10 +75,10 @@ contains
 
                         if (qinit_type < 4) then 
                             if (aux(1,i,j) <= eta_init(1)) then
-                                q(qinit_type,i,j) = q(qinit_type,i,j) + dq
+                                q(qinit_type,i,j) = q(qinit_type,i,j) + dq * rho(1)
                             endif
                         else if (qinit_type == 4) then
-                            q(1,i,j) = max(dq-aux(1,i,j),0.d0)
+                            q(1,i,j) = max(dq-aux(1,i,j),0.d0) * rho(1)
                         endif
                     endif
                 enddo

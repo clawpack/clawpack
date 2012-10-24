@@ -205,15 +205,15 @@ subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,ql,qr,aux1,aux2,aux3,imp,asdq,bmasdq
         ! Handle lat-long coordinate systems
         if (coordinate_system == 2) then
             if (ixy == 2) then
-                dxdcp=(earth_radius*pi/180.d0)
+                dxdcp=(earth_radius*deg2rad)
                 dxdcm = dxdcp
             else
                 if (imp == 1) then
-                    dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
-                    dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
+                    dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
+                    dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
                 else
-                    dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
-                    dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
+                    dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
+                    dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
                 endif
             endif
         else

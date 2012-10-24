@@ -6,6 +6,8 @@ c
 c
       use geoclaw_module
       use amr_module
+      use utility_module, only: convert2days
+
       implicit double precision (a-h,o-z)
 
 
@@ -87,6 +89,8 @@ c
 c  ------ start of coarse grid integration loop. ------------------
 c
 C  20   if (ncycle .ge. nstop .or. time .ge. tfinal) goto 999
+c     Have to get rid of this requirement since ncycle is not per step
+c     but per run and we cannot set it high enough.
  20   if (time .ge. tfinal) goto 999
 
       if (nextout  .le. nout) then
@@ -223,14 +227,17 @@ c         # rjl modified 6/17/05 to print out *after* advanc and print cfl
 c         # rjl & mjb changed to cfl_level, 3/17/10
 
           timenew = tlevel(level)+possk(level)
+          dc = 8.64d4
           if (tprint) then
-              write(outunit,100)level,cfl_level,possk(level),timenew
+              write(outunit,100)level,cfl_level,possk(level),
+     &                          convert2days(timenew)
               endif
           if (method(4).ge.level) then
-              write(6,100)level,cfl_level,possk(level),timenew
+              write(6,100)level,cfl_level,possk(level),
+     &                    convert2days(timenew)
               endif
 100       format(' AMRCLAW: level ',i2,'  CFL = ',e8.3,
-     &           '  dt = ',e10.4,  '  final t = ',e12.6)
+     &           '  dt = ',e10.4,  '  final t (day) = ',f6.2)
 
 
 c        # to debug individual grid updates...
@@ -347,13 +354,13 @@ c
 c
 c  # computation is complete to final time or requested number of steps
 c
-       if (ncycle .ge. nstop .and. tfinal .lt. rinfinity) then
-c         # warn the user that calculation finished prematurely
-          write(outunit,102) nstop
-          write(6,102) nstop
-  102     format('*** Computation halted after nv(1) = ',i8,
-     &           '  steps on coarse grid')
-          endif
+C        if (ncycle .ge. nstop .and. tfinal .lt. rinfinity) then
+C c         # warn the user that calculation finished prematurely
+C           write(outunit,102) nstop
+C           write(6,102) nstop
+C   102     format('*** Computation halted after nv(1) = ',i8,
+C      &           '  steps on coarse grid')
+C           endif
 c
 c  # final output (unless we just did it above)
 c

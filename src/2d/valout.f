@@ -12,11 +12,7 @@ c     Work arrays
       dimension eta(num_layers),h(num_layers)
       dimension hu(num_layers),hv(num_layers)
 
-
-c OLD INDEXING
-c     iadd(i,j,ivar) = loc + i - 1 + mitot*((ivar-1)*mjtot+j-1)
-c     iaddaux(i,j,iaux) = locaux + i - 1 + mitot*((iaux-1)*mjtot+j-1)
-c NEW INDEXING ORDER SWITCHED
+c     Indexing
       iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
      .                                      naux*mitot*(j-1)

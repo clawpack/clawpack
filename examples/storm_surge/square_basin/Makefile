@@ -31,8 +31,7 @@ ifeq ($(MAKELEVEL),0)
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
 	# Threading flags
-	# FFLAGS += -D GRID_THREADING
-	FFLAGS += -D MAX1D=200
+	# FFLAGS += -fopenmp
 endif
 
 # ---------------------------------
@@ -51,13 +50,24 @@ MODULES = \
  $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/regions_module.f90 \
+ $(GEOLIB)/storm_surge/holland_storm_module.f90 \
+ $(GEOLIB)/storm_surge/constant_storm_module.f90 \
+ $(GEOLIB)/storm_surge/stommel_storm_module.f90 \
+ $(GEOLIB)/utility_module.f90 \
+ $(GEOLIB)/storm_surge/storm_module.f90
 
 SOURCES = \
-  $(GEOLIB)/setaux.f90 \
-  $(GEOLIB)/setprob.f90 \
-  $(GEOLIB)/qinit.f90 \
+  $(GEOLIB)/storm_surge/setprob.f90 \
+  $(GEOLIB)/storm_surge/qinit.f90 \
+  $(GEOLIB)/storm_surge/flag2refine.f90 \
+  $(GEOLIB)/storm_surge/src2.f90 \
+  $(GEOLIB)/storm_surge/setaux.f90 \
+  $(GEOLIB)/storm_surge/src1d.f \
+  $(GEOLIB)/storm_surge/b4step2.f90 \
+  $(GEOLIB)/storm_surge/tick.f \
+  $(GEOLIB)/storm_surge/valout.f \
   $(GEOLIB)/movetopo.f \
-  $(GEOLIB)/flag2refine.f90 \
   $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
@@ -66,28 +76,23 @@ SOURCES = \
   $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
-  $(GEOLIB)/src2.f \
-  $(GEOLIB)/src1d.f \
   $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
-  $(GEOLIB)/valout.f \
-  $(GEOLIB)/filval.f \
-  $(GEOLIB)/filpatch.f \
+  $(GEOLIB)/filval_new.f90 \
+  $(GEOLIB)/filpatch_new.f90 \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setgauges.f \
-  $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
-  $(GEOLIB)/tick.f \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
-  $(AMRLIB)/prefilp.f \
+  $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/bound.f \
@@ -107,7 +112,7 @@ SOURCES = \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
   $(AMRLIB)/grdfit.f \
-  $(AMRLIB)/intfil.f \
+  $(AMRLIB)/intfil_new.f90 \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
   $(AMRLIB)/prepc.f \
@@ -121,7 +126,7 @@ SOURCES = \
   $(AMRLIB)/regrid.f \
   $(AMRLIB)/setuse.f \
   $(AMRLIB)/stst1.f \
-  $(AMRLIB)/trimbd.f \
+  $(AMRLIB)/trimbd_new.f90 \
   $(AMRLIB)/nodget.f \
   $(AMRLIB)/basic.f \
   $(AMRLIB)/outval.f \

@@ -65,14 +65,14 @@ SOURCES = \
   $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
-  $(GEOLIB)/src2.f \
-  $(GEOLIB)/src1d.f \
+  $(GEOLIB)/src2.f90 \
+  $(GEOLIB)/src1d.f90 \
   $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
-  $(GEOLIB)/filval.f \
-  $(GEOLIB)/filpatch.f \
+  $(GEOLIB)/filval_new.f90 \
+  $(GEOLIB)/filpatch_new.f90 \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/amr2ez.f \

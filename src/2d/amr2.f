@@ -67,6 +67,7 @@ c
       use topo_module
       use amr_module
       use regions_module
+      use qinit_module, only: t0
       implicit double precision (a-h,o-z)
 
 

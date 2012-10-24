@@ -31,7 +31,6 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     real(kind=8) :: kappa,one_minus_r
     logical :: dry_state(num_layers)
 
-
     ! Format strings
     character(len=*), parameter :: hyp_warning = '("Hyperbolicity may have failed at index (",i4,",",i4,")")'
     character(len=*), parameter :: hyp_info = '("  layer = ",i2,"  kappa = ",d16.8)'
@@ -76,39 +75,38 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
                 dry_state = .false.
                 do k=1,num_layers
                     index = 3*(k-1)
-                      h(k) = q(index+1,i,j) / rho(k)
-                      if (h(k) > dry_tolerance(k)) then
-                          u(k) = q(index+2,i,j) / q(index+1,i,j)
-                          v(k) = q(index+3,i,j) / q(index+1,i,j)
-                      else
-                          dry_state(k) = .true.
-                          u(k) = 0.d0
-                          v(k) = 0.d0
-                      endif
-                  enddo
-              
-                  ! Calculate for each layer pairing
-                  do k=1,num_layers-1
-                      one_minus_r = 1.d0 - rho(k) / rho(k+1)
-                      if (sum(h(k:k+1)) > dry_tolerance(k)) then
-                          kappa = (u(k) - u(k+1))**2 / (g*one_minus_r*sum(h(k:k+1)))
-                          if (kappa > richardson_tolerance) then
-                              write(KAPPA_UNIT,hyp_warning) i,j
-                              write(KAPPA_UNIT,hyp_info) k,kappa
-                              print hyp_warning, i,j
-                              print hyp_info, k,kappa
-                          endif
-                          kappa = (v(k) - v(k+1))**2 / (g*one_minus_r*sum(h(k:k+1)))
-                          if (kappa > richardson_tolerance) then
-                              write(KAPPA_UNIT,hyp_warning) i,j
-                              write(KAPPA_UNIT,hyp_info) k,kappa
-                              print hyp_warning, i,j
-                              print hyp_info, k,kappa
-                          endif
-                      endif
-                  enddo
-              enddo
-          enddo
-      endif
+                    h(k) = q(index+1,i,j) / rho(k)
+                    if (h(k) > dry_tolerance(k)) then
+                        u(k) = q(index+2,i,j) / q(index+1,i,j)
+                        v(k) = q(index+3,i,j) / q(index+1,i,j)
+                    else
+                        dry_state(k) = .true.
+                        u(k) = 0.d0
+                        v(k) = 0.d0
+                    endif
+                enddo
+                ! Calculate for each layer pairing
+                do k=1,num_layers-1
+                    one_minus_r = 1.d0 - rho(k) / rho(k+1)
+                    if (sum(h(k:k+1)) > dry_tolerance(k)) then
+                        kappa = (u(k) - u(k+1))**2 / (g*one_minus_r*sum(h(k:k+1)))
+                        if (kappa > richardson_tolerance) then
+                            write(KAPPA_UNIT,hyp_warning) i,j
+                            write(KAPPA_UNIT,hyp_info) k,kappa
+                            print hyp_warning, i,j
+                            print hyp_info, k,kappa
+                        endif
+                        kappa = (v(k) - v(k+1))**2 / (g*one_minus_r*sum(h(k:k+1)))
+                        if (kappa > richardson_tolerance) then
+                            write(KAPPA_UNIT,hyp_warning) i,j
+                            write(KAPPA_UNIT,hyp_info) k,kappa
+                            print hyp_warning, i,j
+                            print hyp_info, k,kappa
+                        endif
+                    endif
+                enddo
+            enddo
+        enddo
+    endif
 
 end subroutine b4step2
