@@ -18,10 +18,10 @@ module storm_module
 
     implicit none
 
-    ! Log file unit
+    ! Log file IO unit
     integer, parameter :: log_unit = 423
 
-    ! Track file unit
+    ! Track file IO unit
     integer, parameter :: track_unit = 424
 
     ! Locations of wind and pressure fields
@@ -106,10 +106,10 @@ contains
         read(unit,*)
         
         ! AMR parameters
-        read(unit,*) line
+        read(unit,'(a)') line
         allocate(wind_refine(get_value_count(line)))
         read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
-        read(unit,*) line
+        read(unit,'(a)') line
         allocate(R_refine(get_value_count(line)))
         read(line,*) (R_refine(i),i=1,size(R_refine,1))
         read(unit,*)
@@ -117,25 +117,6 @@ contains
         ! Storm Setup 
         read(unit,"(i1)") storm_type
         read(unit,*) storm_file_path
-
-        ! Read in hurricane track data from file
-        if (storm_type == 0) then
-            ! No storm will be used
-        else if (storm_type == 1) then
-            ! Track file with Holland reconstruction
-            call set_holland_storm(storm_file_path,holland_storm,log_unit)
-            ! Set rho_air and ambient pressure in storms
-        else if (storm_type == 2) then
-            ! constant track and holland reconstruction
-            call set_constant_storm(storm_file_path,constant_storm,log_unit)
-            ! Set rho_air and ambient pressure in storms
-        else if (storm_type == 3) then
-            ! Stommel wind field
-            call set_stommel_storm(storm_file_path,stommel_storm,log_unit)
-        else
-            print *,"Invalid storm type ",storm_type," provided."
-            stop
-        endif
         
         close(unit)
 
@@ -157,10 +138,26 @@ contains
         write(log_unit,*) "Storm Type = ", storm_type
         write(log_unit,*) "  file = ", storm_file_path
 
-        ! Open track output file if using storm type 1
-        if (storm_type == 1) then
-            open(unit=track_unit,file="fort.track",status="unknown",action="write")
+        ! Read in hurricane track data from file
+        if (storm_type == 0) then
+            ! No storm will be used
+        else if (storm_type == 1) then
+            ! Track file with Holland reconstruction
+            call set_holland_storm(storm_file_path,holland_storm,log_unit)
+            ! Set rho_air and ambient pressure in storms
+        else if (storm_type == 2) then
+            ! constant track and holland reconstruction
+            call set_constant_storm(storm_file_path,constant_storm,log_unit)
+            ! Set rho_air and ambient pressure in storms
+        else if (storm_type == 3) then
+            ! Stommel wind field
+            call set_stommel_storm(storm_file_path,stommel_storm,log_unit)
+        else
+            print *,"Invalid storm type ",storm_type," provided."
+            stop
         endif
+
+        close(log_unit)
 
     end subroutine set_storm
 
@@ -266,7 +263,12 @@ contains
 
         real(kind=8), intent(in) :: t
         
+        ! We open this here so that the file flushes and writes to disk
+        open(unit=track_unit,file="fort.track",action="write",access='append')
+
         write(track_unit,"(3e26.16)") t,storm_location(t)
+        
+        close(track_unit)
 
     end subroutine output_storm_location
 

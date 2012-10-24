@@ -85,9 +85,11 @@ contains
 
         ! Open data file
         if (present(storm_data_path)) then
+            print *,'Reading storm date file ',storm_data_path
             open(unit=data_file,file=storm_data_path,status='old', &
                  action='read',iostat=io_status)
         else
+            print *,'Reading storm date file ./storm.data'
             open(unit=data_file,file="./storm.data",status='old', &
                  action='read',iostat=io_status)
         endif
@@ -190,9 +192,18 @@ contains
         ! Record number of casts
         storm%num_casts = num_casts
 
+        if (t0 < storm%track(1,1)) then
+            print *,t0,storm%track(1,1)
+            stop "Start time is before first forecast time."
+        endif
+
         ! This is used to speed up searching for correct storm data
         last_storm_index = 2
         last_storm_index = storm_index(t0,storm)
+        if (last_storm_index == -1) then
+            print *,"Forecast not found for time ",t0,'.'
+            stop
+        endif
 
         ! Log everything to the surge log file
         write(log_unit,*) ""
@@ -205,8 +216,6 @@ contains
                                          storm%max_wind_speed(i),  &
                                          storm%central_pressure(i)
         enddo
-
-        close(log_unit)
 
     end subroutine set_holland_storm
 
@@ -278,7 +287,7 @@ contains
         call get_holland_storm_data(t,storm,location, &
                                             junk,junk(1),junk(1),junk(1))
 
-        if (DEBUG) then
+        if (DEBUG .and. .false.) then
             print "('Storm Location = ',2d16.8)",location
             print "('i,t = ',i2,d16.8)", storm_index(t,storm),t
         end if
@@ -443,7 +452,7 @@ contains
         ! Local storage
         real(kind=8) :: x, y, r, theta, sloc(2)
         real(kind=8) :: f, mwr, mws, Pc, Pa, dp, wind, tv(2)
-        real(kind=8) :: mod_mws, trans_speed, max_wind(2), min_wind(2)
+        real(kind=8) :: mod_mws, trans_speed
         integer :: i,j
 
         ! Get interpolated storm data
@@ -473,15 +482,13 @@ contains
         if (B > 2.5d0) B = 2.5d0
 
         if (DEBUG) print "('Holland B = ',d16.8)",B
-        if (DEBUG) print "('Holland A = ',d16.8)",(mwr * 1000.d0)**B
+        if (DEBUG) print "('Holland A = ',d16.8)",(mwr)**B
 
         ! Set initial wind and pressure field, do not really need to do this
         aux(wind_index:wind_index+1,:,:) = 0.d0
         aux(pressure_index,:,:) = Pa
         
         ! Set fields
-        max_wind = 0.d0
-        min_wind = 0.d0
         do j=1-mbc,my+mbc
             y = ylower + (j-0.5d0) * dy     ! Degrees latitude
             f = coriolis(y)
@@ -498,8 +505,8 @@ contains
 
                 ! Speed of wind at this point
                 wind = sqrt((mwr * 1000.d0 / r)**B &
-                        * exp(1.d0 - (mwr * 1000.d0 / r)**B) * mws**2 &
-                        + (r * f)**2 / 4.d0) - r * f / 2.d0
+                        * exp(1.d0 - (mwr * 1000.d0 / r)**B) * mws**2.d0 &
+                        + (r * f)**2.d0 / 4.d0) - r * f / 2.d0
 
                 ! Convert wind velocity from top of atmospheric boundary layer
                 ! (which is what the Holland curve fit produces) to wind
@@ -520,19 +527,8 @@ contains
                 ! distances from the storm
                 aux(wind_index,i,j) = aux(wind_index,i,j) + (abs(wind) / mws) * tv(1)
                 aux(wind_index+1,i,j) = aux(wind_index+1,i,j) + (abs(wind) / mws) * tv(2)
-    
-                ! Maximum wind speed recorded
-                if (DEBUG) then
-                    max_wind(1) = max(max_wind(1),aux(wind_index,i,j))
-                    max_wind(2) = max(max_wind(2),aux(wind_index+1,i,j))
-                    min_wind(1) = min(min_wind(1),aux(wind_index,i,j))
-                    min_wind(2) = min(min_wind(2),aux(wind_index+1,i,j))
-                end if
             enddo
         enddo
-
-        if (DEBUG) print "('Max Wind = ',2d16.8)",max_wind
-        if (DEBUG) print "('Min Wind = ',2d16.8)",min_wind
 
     end subroutine set_holland_storm_fields
 

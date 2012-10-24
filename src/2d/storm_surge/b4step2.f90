@@ -48,16 +48,6 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
            q(3*(k-1)+1,i,j) / rho(k) < dry_tolerance(k))
         q(3*(k-1)+2:3*(k-1)+3,i,j) = 0.d0
     end forall
-!     do i=1-mbc,mx+mbc
-!         do j=1-mbc,my+mbc
-!             do k=1,num_layers
-!                 if (q(3*(k-1)+1,i,j) / rho(k) < dry_tolerance(k)) then
-!                     print *,3*(k-1)
-!                     q(3*(k-1)+1:3*(k-1)+2,i,j) = 0.d0
-!                 endif
-!             enddo
-!         enddo
-!     enddo
 
     ! Move the topography if needed
     write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo

@@ -80,6 +80,8 @@ c     that no slope in topography occurs at the physical boundary.
 c
 c ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::;
 
+      use storm_module, only: wind_index, pressure_index
+
       implicit double precision (a-h,o-z)
 
       common /combc2/ mthbc(4)

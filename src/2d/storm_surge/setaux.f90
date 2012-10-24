@@ -9,8 +9,9 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !        aux(2,i,j) = area ratio (capacity function -- set mcapa = 2)
 !        aux(3,i,j) = length ratio for edge
 !     
-!     aux(4,i,j) = 
-!     aux(5,i,j) = 
+!     aux(4:num_layers + 3,i,j) = Initial layer depths for linearized problem
+!     aux(wind_index:wind_index+1, i ,j) = Wind Field (x,y)
+!     aux(pressure_index, i , j) = Pressure Field
 
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
@@ -52,8 +53,8 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(wind_index,:,:) = 0.d0 ! Wind speed x-direction
     aux(wind_index+1,:,:) = 0.d0 ! Wind speed y-direction
     aux(pressure_index,:,:) = ambient_pressure ! Pressure field
-    aux(pressure_index+1,:,:) = 0.d0 ! Pressure field gradient
-    aux(pressure_index+2,:,:) = 0.d0 
+    aux(pressure_index+1,:,:) = 0.d0 ! Wind force x
+    aux(pressure_index+2,:,:) = 0.d0 ! Wind force x
 
     ! Set analytical bathymetry here if requested
     if (topo_type > 0) then
