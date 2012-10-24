@@ -67,7 +67,7 @@ contains
         ! Locals
         integer, parameter :: iunit = 79
         real(kind=8) :: xcell, xim, xip, ycell, yjm, yjp, ztopoij
-        real(kind=8) :: capac_area, deg2rad
+        real(kind=8) :: capac_area
         integer :: i,m,ib,jb,ij,ijdtopo,jbr
 
         ! Function
@@ -176,7 +176,6 @@ contains
 
                                         ztopoij=ztopoij/((yjp-yjm)*(xip-xim))
                                         if (coordinate_system == 2) then
-                                            deg2rad = pi/180.d0
                                             capac_area = deg2rad*earth_radius**2 &
                                                 * (sin(yjp*deg2rad) &
                                                 - sin(yjm*deg2rad))/(yjp-yjm)

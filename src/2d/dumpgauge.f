@@ -2,7 +2,6 @@
 
       use amr_module
       use geoclaw_module
-      use gauges_module
 
       implicit double precision (a-h,o-z)
 

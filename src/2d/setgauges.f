@@ -3,7 +3,6 @@ c=========================================================================
 c=========================================================================
 
       use amr_module
-      use gauges_module
       implicit double precision (a-h,o-z)
       character(len=25), parameter :: fname = 'setgauges.data'
       logical foundFile

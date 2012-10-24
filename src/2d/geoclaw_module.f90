@@ -19,24 +19,30 @@ module geoclaw_module
     integer, parameter :: GEO_PARM_UNIT = 78
     integer, parameter :: KAPPA_UNIT = 42
     real(kind=8), parameter :: pi = 4.d0*datan(1.d0)
+    real(kind=8), parameter :: DEG2RAD = pi / 180.d0
+    real(kind=8), parameter :: RAD2DEG = 180.d0 / pi
     
     ! ========================================================================
     !  Physics
     ! ========================================================================
-    real(kind=8) :: grav,earth_radius
+    real(kind=8) :: grav, earth_radius
     integer :: coordinate_system
+
+    ! Rotational velocity of Earth
+    real(kind=8), parameter :: omega = 2.0d0 * pi / 86164.2d0
     
     ! Forcing
-    logical :: coriolis_force,wind_force,pressure_force,friction_force
-    real(kind=8) :: manning_coefficient,friction_depth
-    real(kind=8) :: rho_air
+    logical :: coriolis_forcing ! True then coriolis terms included in src
+    real(kind=8) :: theta_0 ! Used if using the beta-plane approximation
+    integer :: friction_forcing ! If 0, no forcing, 1 constant N, 2 variable
+    real(kind=8) :: manning_coefficient, friction_depth
     
     ! Method parameters    
     real(kind=8), allocatable :: dry_tolerance(:)
     logical :: varRefTime = .FALSE. ! Choose dt refinement automatically
     
     ! ========================================================================
-    !  Multi-layer support
+    !  Multi-layer
     ! ========================================================================
     integer :: num_layers
     real(kind=8), allocatable :: rho(:)
@@ -90,13 +96,22 @@ contains
         read(unit,*) rho
         read(unit,*) eta_init
         read(unit,*)
-        read(unit,*) coriolis_force
-        read(unit,*) friction_force
-        read(unit,*) manning_coefficient
-        read(unit,*) friction_depth
-        read(unit,*) wind_force
-        read(unit,*) rho_air
-        read(unit,*) pressure_force
+        read(unit,*) coriolis_forcing
+        if (coordinate_system == 1 .and. coriolis_forcing) then
+            read(unit,*) theta_0
+        else
+            theta_0 = 0.d0
+        endif
+        read(unit,*) friction_forcing
+        if (friction_forcing == 0) then
+            manning_coefficient = 0.d0
+            friction_depth = 1.d10
+        else if (friction_forcing == 1) then
+            read(unit,*) manning_coefficient
+            read(unit,*) friction_depth
+        else if ( friction_forcing > 1 ) then
+            stop "Friction forcing > 1 unhandled."
+        endif
         read(unit,*)
         read(unit,*) dry_tolerance
         read(unit,*) varRefTime
@@ -125,13 +140,11 @@ contains
         write(GEO_PARM_UNIT,*) '   rho:',rho
         write(GEO_PARM_UNIT,*) '   eta_init:',eta_init
         write(GEO_PARM_UNIT,*) ' '
-        write(GEO_PARM_UNIT,*) '   coriolis_force:',coriolis_force
-        write(GEO_PARM_UNIT,*) '   friction_force:',friction_force
+        write(GEO_PARM_UNIT,*) '   coriolis_forcing:',coriolis_forcing
+        write(GEO_PARM_UNIT,*) '   theta_0:',theta_0
+        write(GEO_PARM_UNIT,*) '   friction_forcing:',friction_forcing
         write(GEO_PARM_UNIT,*) '   manning_coefficient:',manning_coefficient
         write(GEO_PARM_UNIT,*) '   friction_depth:',friction_depth
-        write(GEO_PARM_UNIT,*) '   wind_force:',wind_force
-        write(GEO_PARM_UNIT,*) '   rho_air:',rho_air
-        write(GEO_PARM_UNIT,*) '   pressure_force:',pressure_force
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
         write(GEO_PARM_UNIT,*) '   Variable dt Refinement Ratios:',varRefTime
@@ -186,5 +199,104 @@ contains
         endif
         
     end subroutine read_multilayer_data
+
+    ! ==========================================================================
+    !  Calculate the coriolis constant f
+    !   If coordinate_system == 1 then
+    !       A beta-plane approximation is used and y should be in meters
+    !   if coordinate_system == 2 then
+    !       Grid is in lat-long and y should be in degrees which is converted
+    !       to radians
+    ! ==========================================================================
+    real(kind=8) pure function coriolis(y)
+
+        implicit none
+        
+        ! Input
+        real(kind=8), intent(in) :: y
+        
+        ! Locals
+        real(kind=8) :: theta
+        
+        ! Assume beta plane approximation and y is in meters    
+        if (coordinate_system == 1) then
+            theta = y / 111d3 * DEG2RAD + theta_0
+            coriolis = 2.d0 * omega * (sin(theta_0) + (theta - theta_0)     &
+                                                    * cos(theta_0))
+        else if (coordinate_system == 2) then        
+            coriolis = 2.d0 * omega * sin(y * DEG2RAD)
+        else
+            ! Unknown coordinate system, return nothing
+            coriolis = 0.d0
+        endif
+    end function coriolis
+
+    ! ==========================================================================
+    !  Calculate the distance along a sphere
+    !    real(kind=8) spherical_distance(x1,x2)
+    !       x1 = (long,lat)
+    !       x2 = (long,lat)
+    ! ==========================================================================
+    real(kind=8) function spherical_distance(x1,x2) result(distance)
+
+        implicit none
+
+        ! Input
+        real(kind=8), intent(in) :: x1(2),x2(2)
+
+        ! Locals
+        real(kind=8) :: dx ,dy
+
+        dx = (x2(1) - x1(1)) * DEG2RAD
+        dy = (x2(2) - x1(2)) * DEG2RAD
+
+        distance = earth_radius * 2.d0 * asin(sqrt(sin(0.5d0*dy)**2 &
+                                    + cos(x1(2) * DEG2RAD)*cos(x2(2) * DEG2RAD) &
+                                    * sin(0.5d0*dx)**2))
+
+    end function spherical_distance
+
+    !=================================================================
+    ! Transform long,lat --> (x,y) coordinates.
+    !
+    ! On input:
+    !    coords(2) = (longitude (E/W),latitude (N/S))
+    !    projection_center(2) = (longitude (E/W),latitude (N/S)) - coordinates 
+    !                        where projection is true
+    !
+    ! On output:
+    !    x(2)          (meters)
+    !=================================================================
+    pure function latlon2xy(coords,projection_center) result(x)
+
+        real(kind=8), intent(in) :: coords(2), projection_center(2)
+        real(kind=8) :: x(2)
+
+        x(1) = deg2rad * earth_radius * (coords(1) - &
+                    projection_center(1)) * cos(deg2rad * projection_center(2))
+        x(2) = deg2rad * earth_radius * coords(2)
+
+    end function latlon2xy
+
+    !=================================================================
+    ! Transform (x,y) --> (lat,lon) coordinates.
+    !
+    ! On input:
+    !    x(2) = (meters)          
+    !    projection_center(2) = (longitude (E/W),latitude (N/S)) - coordinates 
+    !                        where projection is true
+    !
+    ! On output:
+    !    coords(2) = (longitude,latitude)
+    !=================================================================
+    pure function xy2latlon(x,projection_center) result(coords)
+
+        real(kind=8), intent(in) :: x(2), projection_center(2)
+        real(kind=8) :: coords(2)
+
+        coords(1) = projection_center(1) + x(1) &
+                / (deg2rad * earth_radius * cos(deg2rad * projection_center(2)))
+        coords(2) = x(2) / (deg2rad * earth_radius)
+    end function xy2latlon
 
 end module geoclaw_module
