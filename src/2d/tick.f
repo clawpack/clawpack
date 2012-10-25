@@ -7,7 +7,7 @@ c
       use amr_module
 
       implicit double precision (a-h,o-z)
-
+c     include  "call.i"
 
       logical    vtime, dumpout, dumpchk, rest
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
@@ -38,6 +38,7 @@ c  icheck: counts the number of steps (incrementing by 1
 c          each step) to keep track of when that level should
 c          have its error estimated and finer levels should be regridded.
 c ::::::::::::::::::::::::::::::::::::;::::::::::::::::::::::::::
+c
 
       ncycle         = nstart
       call setbestsrc()     ! need at very start of run, including restart
@@ -50,11 +51,9 @@ c        # output_style 1 or 2
             if (nstart .gt. 0) then
 c              # restart: make sure output times start after restart time
                do ii = 1, nout
-                  if (nout > 0) then
-                   if (tout(ii) .gt. time) then
-                     nextout = ii
-                     go to 2
-                   endif
+                 if (tout(ii) .gt. time) then
+                   nextout = ii
+                   go to 2
                  endif
                end do
   2         continue
@@ -103,10 +102,10 @@ c
       dumpout = .false.  !# may be reset below
 
       if (time.lt.outtime .and. time+1.001*possk(1) .ge. outtime) then
-c     apr 2010 mjb: modified so allow slightly larger timestep to
-c     hit output time exactly, instead of taking minuscule timestep
-c     should still be stable since increase dt in only 3rd digit.
 c        ## adjust time step  to hit outtime exactly, and make output
+c        #  apr 2010 mjb: modified so allow slightly larger timestep to
+c        #  hit output time exactly, instead of taking minuscule timestep
+c        #  should still be stable since increase dt in only 3rd digit.
          oldposs = possk(1)
          possk(1) = outtime - time
 c        write(*,*)" old possk is ", possk(1)
@@ -267,9 +266,10 @@ c
 c                same level goes again. check for ok time step
  106             if ((possk(level)-dtnew(level))/dtnew(level)
      .                .gt. .05)  then
-                    write(6,*)" ***adjusting timestep for level ",level
-                    write(6,*)"   old ntogo dt ",ntogo(level),
-     .                         possk(level)
+
+                    print *," ***adjusting timestep for level"
+                    print *,"    old ntogo dt",ntogo(level),possk(level)
+
 c                   adjust time steps for this and finer levels
                     ntogo(level) = ntogo(level) + 1
                     possk(level) = (tlevel(level-1)-tlevel(level))/
@@ -278,7 +278,7 @@ c                   adjust time steps for this and finer levels
                        kratio(level-1) = ceiling(possk(level-1) /
      .                                           possk(level))
                     endif
-                 write(6,*)"   new ntogo dt ",ntogo(level),possk(level)
+                    print *,"   new ntogo dt ",ntogo(level),possk(level)
                     go to 106
                  endif
                  if (ntogo(level) .gt. 100) then
@@ -316,13 +316,12 @@ c
          if (printout) call outtre(mstart,.true.,nvar,naux)
        endif
 
-      if (vtime) then
-c
-c      ## adjust time steps if variable time step and/or variable refinement ratios in time
-c
+      if ( .not.vtime) goto 201
+
+        ! Adjust time steps if variable time step and/or variable
+        ! refinement ratios in time
         if (.not. varRefTime) then
-c
-c         find new dt for next cycle (passed back from integration routine).
+          ! find new dt for next cycle (passed back from integration routine).
            do 115 i = 2, lfine
              ii = lfine+1-i
              dtnew(ii) = min(dtnew(ii),dtnew(ii+1)*kratio(ii))
@@ -330,7 +329,6 @@ c         find new dt for next cycle (passed back from integration routine).
            possk(1) = dtnew(1)
            do 120 i = 2, mxnest
  120         possk(i) = possk(i-1) / kratio(i-1)
-
         else  ! since refinement ratio in time can change need to set new timesteps in different order
 c             ! use same alg. as when setting refinement when first make new fine grids
           possk(1) = dtnew(1)
@@ -343,11 +341,11 @@ c             ! use same alg. as when setting refinement when first make new fin
                possk(i)    = possk(i-1)/kratio(i-1)        ! set exact timestep on this level
            endif
  125    continue
-        
-        endif
+
 
       endif
-      go to 20
+
+ 201  go to 20
 c
 999   continue
 
@@ -364,17 +362,6 @@ c         # warn the user that calculation finished prematurely
 c
 c  # final output (unless we just did it above)
 c
-      if (.not. dumpout) then
-         if (mod(ncycle,iout).ne.0) then
-           call valout(1,lfine,time,nvar,naux)
-           if (printout) call outtre(mstart,.true.,nvar,naux)
-         endif
-      endif
-
-c  # checkpoint everything for possible future restart
-c  # (unless we just did it based on ichkpt or dumpchk)
-c
-c  # don't checkpoint at all if user set ichkpt=0
       if (nout > 0) then
         if (((iout.lt.iinfinity) .and. (mod(ncycle,iout).ne.0))
      &            .or. ((nout.gt.0) .and. (tout(nout).eq.tfinal) .and.
