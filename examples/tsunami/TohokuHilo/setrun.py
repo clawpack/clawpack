@@ -125,9 +125,10 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 2:
         # Specify a list of output times.
         from numpy import linspace
-        times = []
-        times = linspace(7.75,8.75,9) * 3600.
-        clawdata.output_times =  list(times) #  + [10*3600.]
+        times = [0.0]
+        for i in (linspace(7.75,8.75,9) * 3600.):
+            times.append(i)
+        clawdata.output_times = times
 
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
