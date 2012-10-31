@@ -39,8 +39,8 @@ endif
 # List of sources for this program:
 # ---------------------------------
 
-AMRLIB = $(CLAW)/amrclaw/src/2d
-GEOLIB = $(CLAW)/geoclaw/src/2d
+AMRLIB = $(AMRCLAW)/src/2d
+GEOLIB = $(GEOCLAW)/src/2d
 
 MODULES = \
  $(AMRLIB)/amr_module.f90 \
@@ -51,7 +51,8 @@ MODULES = \
  $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
- $(GEOLIB)/regions_module.f90
+ $(GEOLIB)/regions_module.f90 \
+ $(GEOLIB)/utility_module.f90
 
 SOURCES = \
   $(GEOLIB)/setprob.f90 \
@@ -88,7 +89,7 @@ SOURCES = \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
-  $(AMRLIB)/prefilp.f \
+  $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/bound.f \
@@ -108,7 +109,7 @@ SOURCES = \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
   $(AMRLIB)/grdfit.f \
-  $(AMRLIB)/intfil.f \
+  $(AMRLIB)/intfil_new.f90 \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
   $(AMRLIB)/prepc.f \
@@ -122,7 +123,7 @@ SOURCES = \
   $(AMRLIB)/regrid.f \
   $(AMRLIB)/setuse.f \
   $(AMRLIB)/stst1.f \
-  $(AMRLIB)/trimbd.f \
+  $(AMRLIB)/trimbd_new.f90 \
   $(AMRLIB)/nodget.f \
   $(AMRLIB)/basic.f \
   $(AMRLIB)/outval.f \

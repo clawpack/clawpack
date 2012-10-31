@@ -122,7 +122,7 @@ def setrun(claw_pkg='geoclaw'):
         clawdata.tfinal = days2seconds(241)
 
         # Output files per day requested
-        recurrence = 4
+        recurrence = 24
         clawdata.nout = int((clawdata.tfinal - clawdata.t0) 
                                             * recurrence / (60**2 * 24))
         # clawdata.tfinal = days2seconds(252.0)
@@ -148,7 +148,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 1
+    clawdata.verbosity = 7
 
 
 
@@ -306,10 +306,10 @@ def setgeo(rundata):
     geodata.dry_tolerance = 1.e-3
 
     # Flagging
-    geodata.wave_tolerance = 5.e-1
-    geodata.speed_tolerance = [0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0]
-    geodata.deep_depth = 1.e2
-    geodata.max_level_deep = 3
+    geodata.wave_tolerance = 1.0
+    geodata.speed_tolerance = [1.0,2.0,3.0,4.0]
+    geodata.deep_depth = 100.0
+    geodata.max_level_deep = 2
 
     # Forcing
     geodata.friction_forcing = 1
@@ -385,8 +385,8 @@ def set_storm():
     data.ambient_pressure = 101.3e3 # Nominal atmos pressure
 
     # Source term controls
-    data.wind_forcing = False
-    data.pressure_forcing = True
+    data.wind_forcing = True
+    data.pressure_forcing = False
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-4

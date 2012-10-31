@@ -335,7 +335,7 @@ def setgeo(rundata):
 
     # == Multilayer ==
     geodata.num_layers = 1
-    geodata.rho = 1.0
+    geodata.rho = 1025.0
     geodata.richardson_tolerance = 0.95
 
     return rundata

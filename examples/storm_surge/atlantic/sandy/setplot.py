@@ -46,8 +46,8 @@ def setplot(plotdata):
     full_ylimits = [13.0,41.0]
 
     # Color limits
-    surface_range = 4.0
-    speed_range = 6.0
+    surface_range = 1.0
+    speed_range = 2.0
 
     xlimits = full_xlimits
     ylimits = full_ylimits
@@ -150,7 +150,7 @@ def setplot(plotdata):
     
     # Wind field components
     plotfigure = plotdata.new_plotfigure(name='Wind Components',figno=4)
-    plotfigure.show = surge_data.wind_forcing and False
+    plotfigure.show = surge_data.wind_forcing
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.axescmd = "subplot(121)"

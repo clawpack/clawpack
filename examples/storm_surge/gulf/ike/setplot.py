@@ -126,7 +126,7 @@ def setplot(plotdata):
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Surface - Houston/Galveston',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = False
+    plotfigure.show = True
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()

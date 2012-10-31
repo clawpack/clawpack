@@ -42,6 +42,7 @@ AMRLIB = $(AMRCLAW)/src/2d
 GEOLIB = $(GEOCLAW)/src/2d
 
 MODULES = \
+ $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
@@ -51,7 +52,6 @@ MODULES = \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
  $(GEOLIB)/regions_module.f90 \
- $(GEOLIB)/utility_module.f90 \
  $(GEOLIB)/storm_surge/holland_storm_module.f90 \
  $(GEOLIB)/storm_surge/constant_storm_module.f90 \
  $(GEOLIB)/storm_surge/stommel_storm_module.f90 \

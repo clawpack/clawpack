@@ -43,6 +43,7 @@ AMRLIB = $(AMRCLAW)/src/2d
 GEOLIB = $(GEOCLAW)/src/2d
 
 MODULES = \
+ $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
@@ -88,7 +89,7 @@ SOURCES = \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
-  $(AMRLIB)/prefilp.f \
+  $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/bound.f \
@@ -122,7 +123,7 @@ SOURCES = \
   $(AMRLIB)/regrid.f \
   $(AMRLIB)/setuse.f \
   $(AMRLIB)/stst1.f \
-  $(AMRLIB)/trimbd.f \
+  $(AMRLIB)/trimbd_new.f90 \
   $(AMRLIB)/nodget.f \
   $(AMRLIB)/basic.f \
   $(AMRLIB)/outval.f \

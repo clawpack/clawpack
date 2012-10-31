@@ -131,7 +131,22 @@ def setrun(claw_pkg='geoclaw'):
 
     elif clawdata.outstyle == 2:
         # Specify a list of output times.
-        clawdata.tout =  [0.5, 1.0]   # used if outstyle == 2
+        coarse_time_output = 0.5 # Half day increments
+        fine_time_output = 1.0 / 24.0 # Hour increments
+
+        clawdata.tout = []
+        t = 246.0
+        while (t < 252.0):
+            t += coarse_time_output
+            print t
+            clawdata.tout.append(days2seconds(t))
+        clawdata.tout.append(days2seconds(252.0))
+        while t < date2days('2008091400'):
+            t += fine_time_output
+            print t
+            clawdata.tout.append(days2seconds(t))            
+        clawdata.tout.append(days2seconds(date2days('2008091400')))
+
         clawdata.nout = len(clawdata.tout)
 
     elif clawdata.outstyle == 3:
@@ -149,7 +164,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 1
+    clawdata.verbosity = 7
 
 
 
@@ -306,14 +321,15 @@ def setgeo(rundata):
     geodata.dry_tolerance = 1.e-2
 
     # Flagging
-    geodata.wave_tolerance = 5.e-1
+    geodata.wave_tolerance = 1.0
     geodata.speed_tolerance = [1.0,2.0,3.0,4.0]
-    geodata.deep_depth = 1.e2
-    geodata.max_level_deep = 3
+    geodata.deep_depth = 100.0
+    geodata.max_level_deep = 2
 
     # Forcing
     geodata.friction_forcing = 1
-    geodata.manning_coefficient = 0.025
+    # geodata.manning_coefficient = 0.025
+    geodata.manning_coefficient = 0.0
     geodata.friction_depth = 1.e6
     geodata.coriolis_forcing = True
 
@@ -327,20 +343,20 @@ def setgeo(rundata):
     #                           './bathy/gulf_coarse_bathy.tt3'])
     geodata.topofiles.append([3, 1, 5, rundata.clawdata.t0, rundata.clawdata.tfinal,
                               '../bathy/NOAA_Galveston_Houston.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/galveston_channel.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/houston_harbor.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/houston_channel_3.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/houston_channel_2.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/galveston_channel.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/houston_harbor.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/houston_channel_3.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/houston_channel_2.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/galveston.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/lower_galveston_bay.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           './bathy/upper_galveston_bay.tt3'])
+    #                           '../bathy/galveston.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/lower_galveston_bay.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/upper_galveston_bay.tt3'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
@@ -361,16 +377,16 @@ def setgeo(rundata):
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
     # geodata.regions.append([1, 4, 0.0, 1e10, -99.00, -80.00, 17.00, 32.00]) # entire domain
-    # geodata.regions.append([1, 5, 0.0, 1e10, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
-    # geodata.regions.append([1, 7, 0.0, 1e10, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
-    # geodata.regions.append([1, 7, 0.0, 1e10, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
+    geodata.regions.append([2, 5, 0.0, 1e10, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
+    geodata.regions.append([2, 7, 0.0, 1e10, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
+    geodata.regions.append([2, 7, 0.0, 1e10, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
 
     # == setgauges.data values ==
     geodata.gauges = []
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    geodata.gauges.append([1, -93.0, 28.0,  rundata.clawdata.t0, rundata.clawdata.tfinal])
-    geodata.gauges.append([2, -89.5, 29.6,  rundata.clawdata.t0, rundata.clawdata.tfinal])
-
+    geodate.gauges.append([121, -94.70895, 29.2812, rundata.clawdata.t0, rundata.clawdata.tfinal])  
+    geodate.gauges.append([122, -94.38840, 29.4964, rundata.clawdata.t0, rundata.clawdata.tfinal])    
+    geodate.gauges.append([123, -94.12530, 29.5846, rundata.clawdata.t0, rundata.clawdata.tfinal]) 
 
     # == setfixedgrids.data values ==
     geodata.fixedgrids = []
@@ -399,7 +415,7 @@ def set_storm():
 
     # Source term controls
     data.wind_forcing = True
-    data.pressure_forcing = False
+    data.pressure_forcing = True
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-4
