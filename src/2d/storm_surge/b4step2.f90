@@ -50,7 +50,7 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     end forall
 
     ! Move the topography if needed
-    write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
+    ! write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
     do i=1,num_dtopo
         call movetopo(maxmx,maxmy,mbc,mx,my,                                  &
                       xlower,ylower,dx,dy,t,dt,maux,aux,                      &
@@ -63,7 +63,7 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
 
 
     ! Set wind and pressure aux variables for this grid
-    write(26,*) "B4STEP2:  Setting aux array for wind and pressure"
+    ! write(26,*) "B4STEP2:  Setting aux array for wind and pressure"
     call set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,t,aux)
 
     ! Check Richardson number -- Only implemented for 2 layers

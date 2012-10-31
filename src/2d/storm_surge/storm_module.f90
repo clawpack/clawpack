@@ -264,7 +264,7 @@ contains
         real(kind=8), intent(in) :: t
         
         ! We open this here so that the file flushes and writes to disk
-        open(unit=track_unit,file="fort.track",action="write",access='append')
+        open(unit=track_unit,file="fort.track",action="write",position='append')
 
         write(track_unit,"(3e26.16)") t,storm_location(t)
         
