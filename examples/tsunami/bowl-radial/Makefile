@@ -23,16 +23,15 @@ CLAW_PLOTDIR = _plots               # Directory for plots
 FC ?= gfortran
 FFLAGS ?=
 MAKELEVEL ?= 0
-ifeq ($(MAKELEVEL),0)
+ifeq (${MAKELEVEL},0)
 	# If you want to include NetCDF output add these flags
 	# Note that the NETCDF_INC should point to the location of the hearder files
 	# for NetCDF
 	# NETCDF_INC ?= /usr/include
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
-	# Threading flags
-	# FFLAGS += -D GRID_THREADING
-	# FFLAGS += -D MAX1D=200
+	# Include OpenMP threading
+	FFLAGS += $(OMP_FLAG)
 endif
 
 
@@ -45,12 +44,13 @@ GEOLIB = $(CLAW)/geoclaw/src/2d
 
 MODULES = \
  $(AMRLIB)/amr_module.f90 \
+ $(AMRLIB)/regions_module.f90 \
+ $(AMRLIB)/gauges_module.f90 \
+ $(GEOLIB)/utility_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
- $(GEOLIB)/gauges_module.f90 \
- $(GEOLIB)/regions_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
  $(GEOLIB)/refinement_module.f90
 
@@ -75,9 +75,8 @@ SOURCES = \
   $(GEOLIB)/filpatch_new.f90 \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/amr2ez.f \
+  $(AMRLIB)/amr2.f90 \
   $(GEOLIB)/setaux.f \
-  $(GEOLIB)/setgauges.f \
   $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/flag2refine.f90  \
   $(GEOLIB)/allowflag.f90  \
@@ -88,7 +87,7 @@ SOURCES = \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
-  $(AMRLIB)/prefilp.f \
+  $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/advanc.f \
   $(AMRLIB)/estdt.f \
@@ -123,7 +122,7 @@ SOURCES = \
   $(AMRLIB)/regrid.f \
   $(AMRLIB)/setuse.f \
   $(AMRLIB)/stst1.f \
-  $(AMRLIB)/trimbd.f \
+  $(AMRLIB)/trimbd_new.f90 \
   $(AMRLIB)/nodget.f \
   $(AMRLIB)/basic.f \
   $(AMRLIB)/outval.f \
