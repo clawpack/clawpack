@@ -20,8 +20,6 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
 
       logical outaux
 
-c      iadd(i,j,ivar) = loc + i - 1 + mitot*((ivar-1)*mjtot+j-1)
-c      iaddaux(i,j,ivar) = locaux + i - 1 + mitot*((ivar-1)*mjtot+j-1)
       iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
      .                                      naux*mitot*(j-1)
@@ -200,7 +198,7 @@ c         # and we want to use 1d plotting routines
           ndim = 1
         endif
 
-      write(matunit2,1000) time,nvar,ngrids,naux,ndim
+      write(matunit2,1000) time,4*num_layers,ngrids,naux,ndim
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

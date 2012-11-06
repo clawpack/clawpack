@@ -16,6 +16,5 @@ subroutine setprob()
     call read_dtopo_settings()        !# specifies file with dtopo from earthquake
     call set_qinit()                  !# specifies file with dh if this used instead
     call set_fixed_grids()            !# Fixed grid settings
-    call setgauges()                  !# locations of measuring gauges
 
 end subroutine setprob

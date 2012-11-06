@@ -80,9 +80,9 @@ c     that no slope in topography occurs at the physical boundary.
 c
 c ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::;
 
-      implicit double precision (a-h,o-z)
+      use amr_module, only: mthbc
 
-      common /combc2/ mthbc(4)
+      implicit double precision (a-h,o-z)
 
       dimension val(meqn,nrow,ncol), aux(naux,nrow,ncol)
       logical xperiodic, yperiodic, spheredom
