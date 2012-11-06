@@ -79,9 +79,8 @@ logical function allowflag(x,y,t,level)
             endif
         endif
     enddo
-
-    ! TODO: Correct the assumption that t0 = 0.0
-    if (t == 0.d0 .and. qinit_type > 0) then
+    
+    if (t == t0 .and. qinit_type > 0) then
         if (x > x_low_qinit .and. x < x_hi_qinit .and. &
             y > y_low_qinit .and. y < y_hi_qinit) then
 

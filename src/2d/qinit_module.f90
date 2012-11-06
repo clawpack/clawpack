@@ -1,5 +1,7 @@
 module qinit_module
 
+    use amr_module, only: rinfinity
+
     implicit none
     save
     
@@ -9,8 +11,10 @@ module qinit_module
     ! Work array
     real(kind=8), private, allocatable :: qinit(:)
     
+    ! Initial time
+    real(kind=8) :: t0 = -rinfinity
+
     ! Geometry
-    real(kind=8) :: t0
     real(kind=8) :: x_low_qinit
     real(kind=8) :: y_low_qinit
     real(kind=8) :: t_low_qinit
@@ -26,6 +30,13 @@ module qinit_module
     integer :: max_level_qinit
 
 contains
+
+    ! Hack to work around setting t0 here for later use in allowflag, ugly :(
+    subroutine set_t0(new_t0)
+        implicit none
+        real(kind=8), intent(in) :: new_t0
+        t0 = min(new_t0,t0)
+    end subroutine set_t0
 
     subroutine add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
@@ -129,7 +140,7 @@ contains
         write(GEO_PARM_UNIT,*) '   min_level, max_level, qinit_fname:'
         write(GEO_PARM_UNIT,*)  min_level_qinit, max_level_qinit, qinit_fname
         
-        call read_qinit(qinit_fname)       
+        call read_qinit(qinit_fname)
     
     end subroutine set_qinit
 
