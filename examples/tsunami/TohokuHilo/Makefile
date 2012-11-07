@@ -45,13 +45,14 @@ GEOLIB = $(GEOCLAW)/src/2d
 MODULES = \
 	$(GEOLIB)/utility_module.f90 \
 	$(AMRLIB)/amr_module.f90 \
+	$(AMRLIB)/regions_module.f90 \
+	$(AMRLIB)/gauges_module.f90 \
 	$(GEOLIB)/geoclaw_module.f90 \
 	$(GEOLIB)/topo_module.f90 \
 	$(GEOLIB)/dtopo_module.f90 \
 	$(GEOLIB)/qinit_module.f90 \
-	$(GEOLIB)/refinement_module.f90 \
 	$(GEOLIB)/fixedgrids_module.f90 \
-	$(GEOLIB)/regions_module.f90
+	$(GEOLIB)/refinement_module.f90
 
 SOURCES = \
     $(GEOLIB)/setprob.f90 \
@@ -72,13 +73,11 @@ SOURCES = \
     $(GEOLIB)/flux2fw.f \
     $(GEOLIB)/qad.f \
     $(GEOLIB)/valout.f \
-    $(GEOLIB)/filval.f \
-    $(GEOLIB)/filpatch.f \
+    $(GEOLIB)/filval_new.f90 \
+    $(GEOLIB)/filpatch_new.f90 \
     $(GEOLIB)/bc2amr.f \
     $(GEOLIB)/update.f \
-    $(GEOLIB)/amr2.f \
     $(GEOLIB)/setaux.f90 \
-    $(GEOLIB)/setgauges.f \
     $(GEOLIB)/b4step2.f90 \
     $(GEOLIB)/dumpgauge.f \
     $(GEOLIB)/upbnd.f  \
@@ -88,7 +87,8 @@ SOURCES = \
     $(GEOLIB)/ginit.f \
     $(GEOLIB)/getmaxspeed.f90 \
     $(GEOLIB)/advanc.f \
-    $(AMRLIB)/prefilp.f \
+    $(AMRLIB)/amr2.f \
+    $(AMRLIB)/prefilp_new.f90 \
     $(AMRLIB)/quick_sort1.f \
     $(AMRLIB)/estdt.f \
     $(AMRLIB)/bound.f \
@@ -122,7 +122,7 @@ SOURCES = \
     $(AMRLIB)/regrid.f \
     $(AMRLIB)/setuse.f \
     $(AMRLIB)/stst1.f \
-    $(AMRLIB)/trimbd.f \
+    $(AMRLIB)/trimbd_new.f90 \
     $(AMRLIB)/nodget.f \
     $(AMRLIB)/basic.f \
     $(AMRLIB)/outval.f \

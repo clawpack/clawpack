@@ -316,7 +316,26 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.tprint = False      # time step reporting each level
     clawdata.uprint = False      # update/upbnd reporting
     
-    # More AMR parameters can be set -- see the defaults in pyclaw/data.py
+    
+    # == setregions.data values ==
+    regions = rundata.regiondata.regions
+    # to specify regions of refinement append lines of the form
+    #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
+    regions.append([1, 2, 0., 1e9, 0, 360, -90, 90])
+    regions.append([1, 3, 0., 5.*3600., 132., 220., 5., 40.])
+    regions.append([1, 3, 5.*3600.,  8.*3600., 180., 220., 5., 40.])
+    regions.append([4, 4, 7.*3600., 1e9, 204,205.5,19.4,20.4])
+    regions.append([5, 5, 7.3*3600., 1e9, 204.85, 205, 19.68, 19.85])
+    regions.append([6, 6, 7.5*3600., 1e9, 204.905,204.95,19.72,19.745])
+    
+    # == setgauges.data values ==
+    # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
+    # Velocity gauges:
+    rundata.gaugedata.add_gauge([1125, 204.91802, 19.74517, 7.0*3600., 1.e9]) #Hilo
+    rundata.gaugedata.add_gauge([1126, 204.93003, 19.74167, 7.0*3600., 1.e9]) #Hilo
+    # geodata.gauges.append([11261, 204.93003, 19.739, 7.0*3600., 1.e9]) #Hilo
+    # Tide gauge:
+    rundata.gaugedata.add_gauge([7760, 204.9437, 19.7306,  7.0*3600., 1.e9]) #Hilo
 
     #------------------------------------------------------------------
     # GeoClaw specific parameters:
@@ -388,27 +407,6 @@ def setgeo(rundata):
     geodata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
-
-    # == setregions.data values ==
-    geodata.regions = []
-    # to specify regions of refinement append lines of the form
-    #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    geodata.regions.append([1, 2, 0., 1e9, 0, 360, -90, 90])
-    geodata.regions.append([1, 3, 0., 5.*3600., 132., 220., 5., 40.])
-    geodata.regions.append([1, 3, 5.*3600.,  8.*3600., 180., 220., 5., 40.])
-    geodata.regions.append([4, 4, 7.*3600., 1e9, 204,205.5,19.4,20.4])
-    geodata.regions.append([5, 5, 7.3*3600., 1e9, 204.85, 205, 19.68, 19.85])
-    geodata.regions.append([6, 6, 7.5*3600., 1e9, 204.905,204.95,19.72,19.745])
-    
-    # == setgauges.data values ==
-    rundata.gaugedata.gauges = []
-    # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    # Velocity gauges:
-    rundata.gaugedata.gauges.append([1125, 204.91802, 19.74517, 7.0*3600., 1.e9]) #Hilo
-    rundata.gaugedata.gauges.append([1126, 204.93003, 19.74167, 7.0*3600., 1.e9]) #Hilo
-    # geodata.gauges.append([11261, 204.93003, 19.739, 7.0*3600., 1.e9]) #Hilo
-    # Tide gauge:
-    rundata.gaugedata.gauges.append([7760, 204.9437, 19.7306,  7.0*3600., 1.e9]) #Hilo
 
     # == setfixedgrids.data values ==
     geodata.fixedgrids = []
