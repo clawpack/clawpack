@@ -39,8 +39,8 @@ endif
 # List of sources for this program:
 # ---------------------------------
 
-AMRLIB = $(CLAW)/amrclaw/src/2d
-GEOLIB = $(CLAW)/geoclaw/src/2d
+AMRLIB = $(AMRCLAW)/src/2d
+GEOLIB = $(GEOCLAW)/src/2d
 
 MODULES = \
  $(AMRLIB)/amr_module.f90 \
