@@ -1,8 +1,8 @@
 subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
       
     use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
-    use geoclaw_module, only: friction_forcing, manning_coefficient 
-    use geoclaw_module, only: friction_depth, num_layers, rho
+    use geoclaw_module, only: friction_index, friction_forcing, friction_depth
+    use geoclaw_mdoule, only: num_layers, rho
 
     implicit none
     
@@ -18,6 +18,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     integer :: i, j, m, bottom_index, bottom_layer, layer_index
     logical :: found
     real(kind=8) :: h(num_layers), hu, hv, gamma, dgamma, y, fdt, a(2,2)
+    real(kind=8) :: manning_coefficient
 
     ! Algorithm parameters
     ! Parameter controls when to zero out the momentum at a depth in the
@@ -25,14 +26,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     real(kind=8), parameter :: depth_tolerance = 1.0d-30
 
     ! Friction source term
-    if (friction_forcing > 0) then
-
-        ! Parameter checks
-        if (friction_forcing == 2) stop "Variable friction unimplemented!"
-        if (depth_tolerance > friction_depth) then
-            stop "Parameter depth_tolerance > friction_depth!"
-        endif
-
+    if (friction_forcing) then
         do j=1,my
             do i=1,mx
 
@@ -67,7 +61,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 ! Apply friction source term only if in shallower water
                 if (sum(h) <= friction_depth) then
                     ! Calculate source term
-                    gamma = sqrt(hu**2 + hv**2) * (g * manning_coefficient**2) &
+                    gamma = sqrt(hu**2 + hv**2) * (g * aux(friction_index,i,j)**2) &
                                                 / (h(bottom_layer)**(7/3))
                     dgamma = 1.d0 + dt * gamma
                     q(bottom_index + 2, i, j) = q(bottom_index + 2, i, j) / dgamma

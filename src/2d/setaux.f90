@@ -14,7 +14,8 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
-    use geoclaw_module, only: eta_init, num_layers
+    use geoclaw_module, only: eta_init, num_layers, friction_index
+    use geoclaw_module, only: friction_field_type
     use amr_module, only: mcapa
     use topo_module
     
@@ -44,6 +45,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(1,:,:) = 0.d0 ! Bathymetry
     aux(2,:,:) = 1.d0 ! Grid cell area
     aux(3,:,:) = 1.d0 ! Length ratio for edge
+    aux(friction_index,:,:) = 0.d0 ! Manning's-N friction coefficeint
     aux(4:num_layers + 3,:,:) = 0.d0 ! Initial layer depths for multilayer
     
     ! Set analytical bathymetry here if requested
@@ -53,6 +55,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         end forall
     endif
     
+    ! Set bathymetry
     do j=1-mbc,my+mbc
         ym = ylow + (j - 1.d0) * dy
         y = ylow + (j - 0.5d0) * dy
@@ -80,6 +83,14 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             endif
         enddo
     enddo
+
+    ! Set friction coefficient based on wet/dry interfaces
+    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, eta_init(1) - aux(1,i,j) < 0.d0)
+        aux(friction_index,i,j) = wet_friction_coefficient
+    end forall
+    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, eta_init(1) - aux(1,i,j) >= 0.d0)
+        aux(friction_index,i,j) = dry_friction_coefficient
+    end forall
 
     ! Record initial depths if using multiple layers
     if (num_layers > 1) then
