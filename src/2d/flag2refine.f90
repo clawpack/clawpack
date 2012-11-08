@@ -35,6 +35,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
     use qinit_module, only: min_level_qinit,qinit_type, t0
     
+    use regions_module, only: num_regions, regions
     use refinement_module
  
     implicit none

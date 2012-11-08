@@ -79,8 +79,8 @@ c     The only change is in loop 40
 c     to revert to the original version, set relimit = .false.
 c---------------------last modified 1/04/05-----------------------------
 
-      use geoclaw_module
-      use amr_module
+      use amr_module, only: fwave_method => fwave, mwaves, method
+      use amr_module, only: mthlim
       implicit double precision (a-h,o-z)
 
       external rpn2, rpt2

@@ -10,7 +10,6 @@ c
 
       dimension spoh(maxlv)
 
-      integer verbosity_regrid
       logical  vtime
       data     vtime/.false./
 

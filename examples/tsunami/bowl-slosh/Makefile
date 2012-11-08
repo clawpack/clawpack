@@ -30,9 +30,8 @@ ifeq ($(MAKELEVEL),0)
 	# NETCDF_INC ?= /usr/include
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
-	# Threading flags
-	# FFLAGS += -D GRID_THREADING
-	# FFLAGS += -D MAX1D=200
+	# OpenMP Threading
+	FFLAGS += $(OMP_FLAG)
 endif
 
 # ---------------------------------
@@ -45,12 +44,13 @@ GEOLIB = $(GEOCLAW)/src/2d
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
+ $(AMRLIB)/regions_module.f90 \
+ $(AMRLIB)/gauges_module.f90 \
+ $(GEOLIB)/utility_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
- $(GEOLIB)/gauges_module.f90 \
- $(GEOLIB)/regions_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
  $(GEOLIB)/refinement_module.f90
 
@@ -74,9 +74,7 @@ SOURCES = \
   $(GEOLIB)/filpatch_new.f90 \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/amr2ez.f \
   $(GEOLIB)/setaux.f \
-  $(GEOLIB)/setgauges.f \
   $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/flag2refine.f90  \
@@ -89,6 +87,7 @@ SOURCES = \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
+  $(AMRLIB)/amr2.f90 \
   $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \

@@ -36,7 +36,7 @@ def setplot(plotdata):
         # The cell will be plotted as dry if h < drytol.
         # The best value to use often depends on the application and can
         # be set here (measured in meters):
-        current_data.user.drytol = 1.e-3
+        current_data.user["drytol"] = 1.e-3
 
     plotdata.beforeframe = set_drytol
 

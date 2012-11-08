@@ -38,16 +38,11 @@ def setrun(claw_pkg='geoclaw'):
     
     #probdata = rundata.new_UserData(name='probdata',fname='setprob.data')
 
-
-    #------------------------------------------------------------------
-    # GeoClaw specific parameters:
-    #------------------------------------------------------------------
-    rundata = setgeo(rundata)
-
     #------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
     #   (or to amr2ez.data for AMR)
     #------------------------------------------------------------------
+
     clawdata = rundata.clawdata  # initialized when rundata instantiated
 
 
@@ -63,17 +58,21 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
 
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = -120.0      # west longitude
-    clawdata.upper[0] = -60.0       # east longitude
+    # Shift by dx/2 of finest bathy resolution (1/3 second) so
+    # that cell centers align with bathy points
+    dx2 = 0.5/(3*3600.)
+    clawdata.lower[0] = 132. - dx2   # west longitude
+    clawdata.upper[0] = 222. - dx2  # east longitude
 
-    clawdata.lower[1] = -60.0       # south latitude
-    clawdata.upper[1] = 0.0         # north latitude
+    clawdata.lower[1] = 9. - dx2     # south latitude
+    clawdata.upper[1] = 53. - dx2     # north latitude
 
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 10
-    clawdata.num_cells[1] = 10
+    clawdata.num_cells[0] = 45
+    clawdata.num_cells[1] = 22
+
 
     # ---------------
     # Size of system:
@@ -115,22 +114,26 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 1
+    clawdata.output_style = 2
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 18
-        clawdata.tfinal = 32400.0
+        clawdata.num_output_times = 13
+        clawdata.tfinal = 13.*3600.0
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
         # Specify a list of output times.
-        clawdata.output_times = [0.5, 1.0]
+        from numpy import linspace
+        times = [0.0]
+        for i in (linspace(7.75,8.75,9) * 3600.):
+            times.append(i)
+        clawdata.output_times = times
 
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
-        clawdata.output_step_interval = 1
-        clawdata.total_steps = 1
+        clawdata.output_step_interval = 2
+        clawdata.total_steps = 6
         clawdata.output_t0 = True
         
 
@@ -149,7 +152,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 2
+    clawdata.verbosity = 3
 
 
 
@@ -174,7 +177,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.cfl_max = 1.0
 
     # Maximum number of time steps to allow between output times:
-    clawdata.steps_max = 5000
+    clawdata.steps_max = 50000
 
 
 
@@ -243,12 +246,13 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 3
+    clawdata.amr_levels_max = 4
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    clawdata.refinement_ratios_x = [2,6]
-    clawdata.refinement_ratios_y = [2,6]
-    clawdata.refinement_ratios_t = [2,6]
+    #clawdata.inratx = [3,4,5,8]    #  was 4,30] for 6 levels
+    clawdata.refinement_ratios_x = [3,4,5,8,45]  # 5: 15sec, 6: 1/3 sec
+    clawdata.refinement_ratios_y = [3,4,5,8,45]
+    clawdata.refinement_ratios_t = [1,1,1,1,1,1]
 
 
     # Specify type of each aux variable in clawdata.auxtype.
@@ -267,7 +271,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # width of buffer zone around flagged points:
     # (typically the same as regrid_interval so waves don't escape):
-    clawdata.regrid_buffer_width  = 2
+    clawdata.regrid_buffer_width  = 3
 
     # clustering alg. cutoff for (# flagged pts) / (total # of cells refined)
     # (closer to 1.0 => more small grids may be needed to cover flagged cells)
@@ -312,18 +316,32 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.tprint = False      # time step reporting each level
     clawdata.uprint = False      # update/upbnd reporting
     
-    # More AMR parameters can be set -- see the defaults in pyclaw/data.py
-
+    
     # == setregions.data values ==
-    rundata.regiondata.regions = []
+    regions = rundata.regiondata.regions
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    rundata.regiondata.regions.append([3, 3, 0., 10000., -85,-72,-38,-25])
-    rundata.regiondata.regions.append([3, 3, 8000., 26000., -90,-80,-30,-15])
-
+    regions.append([1, 2, 0., 1e9, 0, 360, -90, 90])
+    regions.append([1, 3, 0., 5.*3600., 132., 220., 5., 40.])
+    regions.append([1, 3, 5.*3600.,  8.*3600., 180., 220., 5., 40.])
+    regions.append([4, 4, 7.*3600., 1e9, 204,205.5,19.4,20.4])
+    regions.append([5, 5, 7.3*3600., 1e9, 204.85, 205, 19.68, 19.85])
+    regions.append([6, 6, 7.5*3600., 1e9, 204.905,204.95,19.72,19.745])
+    
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    rundata.gaugedata.add_gauge([32412, -86.392, -17.975, 0., 1.e10])
+    # Velocity gauges:
+    rundata.gaugedata.add_gauge([1125, 204.91802, 19.74517, 7.0*3600., 1.e9]) #Hilo
+    rundata.gaugedata.add_gauge([1126, 204.93003, 19.74167, 7.0*3600., 1.e9]) #Hilo
+    # geodata.gauges.append([11261, 204.93003, 19.739, 7.0*3600., 1.e9]) #Hilo
+    # Tide gauge:
+    rundata.gaugedata.add_gauge([7760, 204.9437, 19.7306,  7.0*3600., 1.e9]) #Hilo
+
+    #------------------------------------------------------------------
+    # GeoClaw specific parameters:
+    #------------------------------------------------------------------
+
+    rundata = setgeo(rundata)   # Defined below
 
     return rundata
     # end of function setrun
@@ -339,10 +357,10 @@ def setgeo(rundata):
     """
 
     try:
-        geodata = rundata.geodata
+	geodata = rundata.geodata
     except:
         print "*** Error, this rundata has no geodata attribute"
-        raise AttributeError("Missing geodata attribute")
+	raise AttributeError("Missing geodata attribute")
 
     geodata.variable_dt_refinement_ratios = True
        
@@ -357,24 +375,31 @@ def setgeo(rundata):
     # == Algorithm and Initial Conditions ==
     geodata.eta_init = 0.0
     geodata.dry_tolerance = 1.e-3
-    geodata.wave_tolerance = 1.e-1
-    geodata.deep_depth = 1e2
-    geodata.max_level_deep = 3
+    geodata.wave_tolerance = 2.e-2  # 4.e-3 ###Bre changed this number
+    geodata.deep_depth = 2.e2 
+    geodata.max_level_deep = 4 
     geodata.friction_forcing = 1
     geodata.manning_coefficient =.025
-    geodata.friction_depth = 1e6
+    geodata.friction_depth = 500.
 
     # == settopo.data values ==
     geodata.topofiles = []
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
-    geodata.topofiles.append([2, 1, 3, 0., 1.e10, 'etopo10min120W60W60S0S.asc'])
+
+    topodir =   './HAI/'
+    geodata.topofiles.append([3, 1, 1, 0., 1.e10, topodir+'1minlgr.asc'])
+    geodata.topofiles.append([3, 1, 1, 0., 1.e10, topodir+'hawaii_6s.txt'])
+    geodata.topofiles.append([3, 1, 1, 0., 1.e10, topodir+'hilo_3s.asc'])
+    geodata.topofiles.append([3, 6, 6, 7.5*3600., 1.e10, topodir+'hilo_port_1_3s.asc'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
-    geodata.dtopofiles.append([1,3,3,'usgs100227.tt1'])
+    dtopodir = topodir
+    fname = dtopodir + '/Fujii.txydz'  # name of earthquake deformation file
+    geodata.dtopofiles.append([1,3,3,fname])
 
 
     # == setqinit.data values ==

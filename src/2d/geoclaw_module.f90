@@ -42,7 +42,7 @@ module geoclaw_module
     logical :: varRefTime = .FALSE. ! Choose dt refinement automatically
     
     ! ========================================================================
-    !  Multi-layer support
+    !  Multi-layer
     ! ========================================================================
     integer :: num_layers
     real(kind=8), allocatable :: rho(:)

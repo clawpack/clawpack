@@ -117,6 +117,7 @@ c::::::::::::::::::::::::Fixed Grid Output:::::::::::::::::::::::::::::::::
       tc0=time !# start of computational step
       tcf=tc0+dt !# end of computational step
 
+!$OMP CRITICAL (FixedGrids)
 c     # see if any f-grids should be written out
       do ng=1,num_fixed_grids
         if (tc0 > fgrids(ng)%start_time .and. 
@@ -154,6 +155,7 @@ c               # test if arrival times should be output
 
         endif
       enddo
+!$OMP END CRITICAL (FixedGrids)
 c::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
        call b4step2(mx,my,mbc,mx,my,nvar,q,
@@ -161,6 +163,7 @@ c::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 c::::::::::::::::::::::::FIXED GRID DATA before step:::::::::::::::::::::::
 c     # fill in values at fixed grid points effected at time tc0
+!$OMP CRITICAL (FixedGrids)
       do ng=1,num_fixed_grids
 
       if ( (fgrids(ng)%x_low < xlowmbc + mx*dx) .and.
@@ -204,6 +207,8 @@ c        # levelcheck > 0.
       endif
       enddo
       tcfmax=max(tcfmax,tcf)
+
+!$OMP END CRITICAL (FixedGrids)
 c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
@@ -220,10 +225,14 @@ c
         write(outunit,811) mptr, mptr_level, cflgrid
  811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
 c
+
 !$OMP  CRITICAL (cflm)
+
         cflmax = dmax1(cflmax,cflgrid)
         cfl_level = dmax1(cfl_level,cflgrid)
+
 !$OMP END CRITICAL (cflm)
+
 c
 c       # update q
         dtdx = dt/dx
@@ -267,7 +276,7 @@ c        # with source term:   use Godunov splitting
      &             q,maux,aux,time,dt)
          endif
 
-
+!$OMP CRITICAL (FixedGrids)
 c     ::::::::::::::::::::::::Fixed Grid data afterstep:::::::::::::::::::::::
 c     # fill in values at fixed grid points effected at time tcf
       do ng=1,num_fixed_grids
@@ -326,6 +335,7 @@ c        # will be updated only at start of next level 1 step.
 
       endif
       enddo
+!$OMP END CRITICAL (FixedGrids)
 c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
