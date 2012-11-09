@@ -13,11 +13,11 @@ CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
 # ----------------------------------
 
 CLAW_PKG = geoclaw                  # Clawpack package to use
-CLAW_EXE = xgeoclaw                 # Executable to create
-CLAW_setrun_file = setrun.py        # File containing function to make data
-CLAW_OUTDIR = _output               # Directory for output
-CLAW_setplot_file = setplot.py      # File containing function to set plots
-CLAW_PLOTDIR = _plots               # Directory for plots
+EXE = xgeoclaw                 # Executable to create
+SETRUN_FILE = setrun.py        # File containing function to make data
+OUTDIR = _output               # Directory for output
+SETPLOT_FILE = setplot.py      # File containing function to set plots
+PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
@@ -76,6 +76,7 @@ SOURCES = \
   $(GEOLIB)/filpatch_new.f90 \
   $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/trimbd_new.f90 \
+  $(AMRLIB)/bound_new.f90 \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/setaux.f90 \
@@ -91,7 +92,6 @@ SOURCES = \
   $(AMRLIB)/amr2.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
-  $(AMRLIB)/bound.f \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
   $(AMRLIB)/init_iflags.f \
