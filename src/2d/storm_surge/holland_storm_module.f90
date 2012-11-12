@@ -55,7 +55,7 @@ contains
     subroutine set_holland_storm(storm_data_path,storm,log_unit)
 
         use geoclaw_module, only: deg2rad, spherical_distance, coordinate_system
-        use qinit_module, only: t0
+        use amr_module, only: t0
 
         implicit none
 

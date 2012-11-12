@@ -23,7 +23,7 @@
 subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
                        q,aux,amrflags,DONTFLAG,DOFLAG)
 
-    use amr_module, only: mxnest
+    use amr_module, only: mxnest, t0
     use geoclaw_module, only:dry_tolerance, rho, eta_init, num_layers
     use geoclaw_module, only:spherical_distance, coordinate_system
     
@@ -34,11 +34,12 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
     use dtopo_module, only: minleveldtopo,num_dtopo
     
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
-    use qinit_module, only: min_level_qinit,qinit_type, t0
+    use qinit_module, only: min_level_qinit, qinit_type
 
     use storm_module, only: wind_refine, R_refine, storm_location, wind_index
     use storm_module, only: wind_forcing
     
+    use regions_module
     use refinement_module
  
     implicit none
@@ -153,9 +154,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
 
             ! Check if we're in the region where initial perturbation is
             ! specified and need to force refinement:
-            ! This assumes that t0 = 0.d0, should really be t0 but we do
-            ! not have access to that parameter in this routine
-            if (qinit_type > t0 .and. t == 0.d0) then 
+            if (qinit_type > 0 .and. t == t0) then 
                 if (level < min_level_qinit .and. & 
                     x_hi > x_low_qinit .and. x_low < x_hi_qinit .and. &
                     y_hi > y_low_qinit .and. y_low < y_hi_qinit) then
