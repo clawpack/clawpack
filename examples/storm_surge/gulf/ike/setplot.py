@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from geoclaw import topotools
 from clawpack.visclaw import colormaps, geoplot, gaugetools
-from clawpack.clawutil.oldclawdata import Data
+import clawpack.clawutil.clawdata as clawdata
 
 import geoclaw.surge as surge
 
@@ -34,9 +34,12 @@ def setplot(plotdata):
     fig_num_counter = surge.plot.figure_counter()
 
     # Load data from output
-    amrdata = Data(os.path.join(plotdata.outdir,'amr2ez.data'))
-    physics = Data(os.path.join(plotdata.outdir,'physics.data'))
-    surge_data = Data(os.path.join(plotdata.outdir,'surge.data'))
+    amrdata = clawdata.AmrclawInputData(2)
+    amrdata.read(os.path.join(plotdata.outdir,'amrclaw.data'))
+    physics = clawdata.GeoclawInputData(2)
+    physics.read(os.path.join(plotdata.outdir,'physics.data'))
+    surge_data = surge.data.SurgeData()
+    surge_data.read(os.path.join(plotdata.outdir,'surge.data'))
 
     # Load storm track
     track = surge.plot.track_data(os.path.join(plotdata.outdir,'fort.track'))

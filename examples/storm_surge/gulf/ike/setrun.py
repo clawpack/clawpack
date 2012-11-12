@@ -97,7 +97,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 9
+    clawdata.num_aux = 4 + 1 + 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -278,7 +278,7 @@ def setrun(claw_pkg='geoclaw'):
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
     clawdata.aux_type = ['center','capacity','yleft','center','center','center',
-                         'center','center','center']
+                         'center','center']
 
 
     # Flag using refinement routine flag2refine rather than richardson error
@@ -393,7 +393,8 @@ def setgeo(rundata):
     geodata.deep_depth = 100.0
     geodata.max_level_deep = 2
     geodata.friction_forcing = True
-    geodata.manning_coefficient = 0.025
+    geodata.wet_manning_coefficient = 0.025
+    geodata.dry_manning_coefficient = 0.100
     geodata.friction_depth = 1e6
 
     # == settopo.data values ==
@@ -450,7 +451,7 @@ def setgeo(rundata):
 
 def set_storm():
 
-    data = surge.data.StormData()
+    data = surge.data.SurgeData()
 
    # Physics parameters
     data.rho_air = 1.15
