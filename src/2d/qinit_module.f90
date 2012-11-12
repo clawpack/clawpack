@@ -10,9 +10,6 @@ module qinit_module
     
     ! Work array
     real(kind=8), private, allocatable :: qinit(:)
-    
-    ! Initial time
-    real(kind=8) :: t0 = -rinfinity
 
     ! Geometry
     real(kind=8) :: x_low_qinit
@@ -30,13 +27,6 @@ module qinit_module
     integer :: max_level_qinit
 
 contains
-
-    ! Hack to work around setting t0 here for later use in allowflag, ugly :(
-    subroutine set_t0(new_t0)
-        implicit none
-        real(kind=8), intent(in) :: new_t0
-        t0 = min(new_t0,t0)
-    end subroutine set_t0
 
     subroutine add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     

@@ -5,7 +5,6 @@ c
 c
       use geoclaw_module
       use amr_module
-      use qinit_module, only: set_t0
 
       implicit double precision (a-h,o-z)
 c     include  "call.i"
@@ -40,8 +39,6 @@ c          each step) to keep track of when that level should
 c          have its error estimated and finer levels should be regridded.
 c ::::::::::::::::::::::::::::::::::::;::::::::::::::::::::::::::
 c
-
-      call set_t0(t0)
 
       ncycle         = nstart
       call setbestsrc()     ! need at very start of run, including restart
