@@ -31,7 +31,7 @@ ifeq ($(MAKELEVEL),0)
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
 	# Threading flags
-	FFLAGS += -fopenmp
+	FFLAGS += $(OMP_FLAG)
 endif
 
 # ---------------------------------
@@ -44,14 +44,14 @@ GEOLIB = $(GEOCLAW)/src/2d
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
+ $(AMRLIB)/regions_module.f90 \
+ $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
- $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
- $(GEOLIB)/regions_module.f90 \
  $(GEOLIB)/storm_surge/holland_storm_module.f90 \
  $(GEOLIB)/storm_surge/constant_storm_module.f90 \
  $(GEOLIB)/storm_surge/stommel_storm_module.f90 \
@@ -83,8 +83,7 @@ SOURCES = \
   $(GEOLIB)/filval_new.f90 \
   $(GEOLIB)/filpatch_new.f90 \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/amr2ez.f \
-  $(GEOLIB)/setgauges.f \
+  $(AMRLIB)/amr2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/setgrd.f \

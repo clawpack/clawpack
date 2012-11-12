@@ -253,8 +253,8 @@ def setplot(plotdata):
 
     def gaugetopo(current_data):
         q = current_data.q
-        h = q[:,0]
-        eta = q[:,3]
+        h = q[0,:]
+        eta = q[3,:]
         topo = eta - h
         return topo
         

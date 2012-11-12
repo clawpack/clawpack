@@ -46,7 +46,6 @@ MODULES = \
  $(AMRLIB)/amr_module.f90 \
  $(AMRLIB)/regions_module.f90 \
  $(AMRLIB)/gauges_module.f90 \
- $(GEOLIB)/utility_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \

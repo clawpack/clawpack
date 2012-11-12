@@ -34,8 +34,11 @@ module geoclaw_module
     ! Forcing
     logical :: coriolis_forcing ! True then coriolis terms included in src
     real(kind=8) :: theta_0 ! Used if using the beta-plane approximation
-    integer :: friction_forcing ! If 0, no forcing, 1 constant N, 2 variable
-    real(kind=8) :: manning_coefficient, friction_depth
+    logical :: friction_forcing ! Friction forcing will be applied
+    real(kind=8) :: wet_manning_coefficient, dry_manning_coefficient
+    real(kind=8) :: friction_depth
+    integer, parameter :: friction_index = 4 ! Location in aux of friction
+                                             ! coefficients
     
     ! Method parameters    
     real(kind=8), allocatable :: dry_tolerance(:)
@@ -64,7 +67,7 @@ contains
     ! ========================================================================
     subroutine set_geo(file_name)
 
-        use amr_module, only: mcapa
+        use amr_module, only: mcapa, rinfinity
         implicit none
 
         ! Input
@@ -103,14 +106,14 @@ contains
             theta_0 = 0.d0
         endif
         read(unit,*) friction_forcing
-        if (friction_forcing == 0) then
-            manning_coefficient = 0.d0
-            friction_depth = 1.d10
-        else if (friction_forcing == 1) then
-            read(unit,*) manning_coefficient
+        if (friction_forcing) then
+            read(unit,*) wet_manning_coefficient
+            read(unit,*) dry_manning_coefficient
             read(unit,*) friction_depth
-        else if ( friction_forcing > 1 ) then
-            stop "Friction forcing > 1 unhandled."
+        else
+            wet_manning_coefficient = 0.d0
+            dry_manning_coefficient = 0.d0
+            friction_depth = rinfinity
         endif
         read(unit,*)
         read(unit,*) dry_tolerance
@@ -143,7 +146,8 @@ contains
         write(GEO_PARM_UNIT,*) '   coriolis_forcing:',coriolis_forcing
         write(GEO_PARM_UNIT,*) '   theta_0:',theta_0
         write(GEO_PARM_UNIT,*) '   friction_forcing:',friction_forcing
-        write(GEO_PARM_UNIT,*) '   manning_coefficient:',manning_coefficient
+        write(GEO_PARM_UNIT,*) '   manning_coefficients:', &
+                                wet_manning_coefficient, dry_manning_coefficient
         write(GEO_PARM_UNIT,*) '   friction_depth:',friction_depth
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance

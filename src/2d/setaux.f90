@@ -15,7 +15,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: eta_init, num_layers, friction_index
-    use geoclaw_module, only: friction_field_type
+    use geoclaw_module, only: wet_manning_coefficient, dry_manning_coefficient
     use amr_module, only: mcapa
     use topo_module
     
@@ -46,7 +46,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(2,:,:) = 1.d0 ! Grid cell area
     aux(3,:,:) = 1.d0 ! Length ratio for edge
     aux(friction_index,:,:) = 0.d0 ! Manning's-N friction coefficeint
-    aux(4:num_layers + 3,:,:) = 0.d0 ! Initial layer depths for multilayer
+    aux(5:num_layers + 4,:,:) = 0.d0 ! Initial layer depths for multilayer
     
     ! Set analytical bathymetry here if requested
     if (topo_type > 0) then
@@ -84,12 +84,12 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         enddo
     enddo
 
-    ! Set friction coefficient based on wet/dry interfaces
+    ! Set friction coefficient based on initial wet/dry interfaces
     forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, eta_init(1) - aux(1,i,j) < 0.d0)
-        aux(friction_index,i,j) = wet_friction_coefficient
+        aux(friction_index,i,j) = wet_manning_coefficient
     end forall
     forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, eta_init(1) - aux(1,i,j) >= 0.d0)
-        aux(friction_index,i,j) = dry_friction_coefficient
+        aux(friction_index,i,j) = dry_manning_coefficient
     end forall
 
     ! Record initial depths if using multiple layers
@@ -100,23 +100,23 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                     if (eta_init(m) > aux(1,i,j)) then
                         if (eta_init(m+1) > aux(1,i,j)) then
                             ! There's a layer below this one
-                            aux(4+(m-1),i,j) = eta_init(m) - eta_init(m+1)
+                            aux(5+(m-1),i,j) = eta_init(m) - eta_init(m+1)
                         else
                             ! This is the last wet layer
-                            aux(4+(m-1),i,j) = eta_init(m) - aux(1,i,j)
+                            aux(5+(m-1),i,j) = eta_init(m) - aux(1,i,j)
                         endif
                     else
                         ! This layer is dry here
-                        aux(4+(m-1),i,j) = 0.d0
+                        aux(5+(m-1),i,j) = 0.d0
                     endif
                 enddo    
                 ! Handle bottom layer seperately
                 if (eta_init(num_layers) > aux(1,i,j)) then
                     ! Bottom layer is wet here
-                    aux(4+num_layers,i,j) = eta_init(num_layers) - aux(1,i,j)        
+                    aux(5+num_layers,i,j) = eta_init(num_layers) - aux(1,i,j)        
                 else
                     ! Bottom layer is dry here
-                    aux(4+num_layers,i,j) = 0.d0
+                    aux(5+num_layers,i,j) = 0.d0
                 endif
             enddo
         enddo

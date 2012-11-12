@@ -352,7 +352,7 @@ def setgeo(rundata):
     geodata.wave_tolerance = 1.e-2
     geodata.deep_depth = 1e2
     geodata.max_level_deep = 3
-    geodata.friction_forcing = 0
+    geodata.friction_forcing = True
     geodata.manning_coefficient = 0.0
     geodata.friction_depth = 1.e6
 
