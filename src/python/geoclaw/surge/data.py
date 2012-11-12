@@ -5,13 +5,13 @@ Module to setup storm surge parameters
 
 import numpy as np
 
-import clawpack.clawutil.oldclawdata as data
+import clawpack.clawutil.clawdata as clawdata
 
 # Simple hurricane data format
-class StormData(data.Data):
+class SurgeData(clawdata.ClawData):
 
     def __init__(self):
-        super(StormData,self).__init__()
+        super(SurgeData,self).__init__()
         
         # Physics parameters
         self.add_attribute('rho_air',1.15) # Density of air
@@ -47,51 +47,51 @@ class StormData(data.Data):
         self.add_attribute('stommel_wind',1.0)
 
         
-    def write(self,out_file='./surge.data',datasource="setrun.py"):
+    def write(self,out_file='./surge.data',data_source="setrun.py"):
         """Write out the data file to the path given"""
 
         # print "Creating data file %s" % out_file
-        data_file = data.open_datafile(out_file)
+        self.open_data_file(out_file,data_source)
 
-        data.data_write(data_file,self,'rho_air',"(Density of air)")
-        data.data_write(data_file,self,'ambient_pressure',"(Nominal atmospheric pressure)")
-        data.data_write(data_file,self,None)
+        self.data_write('rho_air',description="(Density of air)")
+        self.data_write('ambient_pressure',description="(Nominal atmospheric pressure)")
+        self.data_write()
         
-        data.data_write(data_file,self,'wind_forcing','(Wind source term used)')
-        data.data_write(data_file,self,'pressure_forcing',"(Pressure source term used)")
-        data.data_write(data_file,self,None)
+        self.data_write('wind_forcing',description='(Wind source term used)')
+        self.data_write('pressure_forcing',description="(Pressure source term used)")
+        self.data_write()
         
-        data.data_write(data_file,self,'wind_tolerance','(Wind speed tolerance)')
-        data.data_write(data_file,self,'pressure_tolerance',"(Pressure source term tolerance)")
-        data.data_write(data_file,self,None)
+        self.data_write('wind_tolerance',description='(Wind speed tolerance)')
+        self.data_write('pressure_tolerance',description="(Pressure source term tolerance)")
+        self.data_write()
                 
-        data.data_write(data_file,self,'wind_refine','(Refinement ratios)')
-        data.data_write(data_file,self,'R_refine',"(Refinement ratios)")
-        data.data_write(data_file,self,None)
+        self.data_write('wind_refine',description='(Refinement ratios)')
+        self.data_write('R_refine',description="(Refinement ratios)")
+        self.data_write()
         
-        data.data_write(data_file,self,"storm_type",'(Storm specification type)')
-        data.data_write(data_file,self,'storm_file',"(Location of storm data)")
+        self.data_write("storm_type",description='(Storm specification type)')
+        self.data_write('storm_file',description="(Location of storm data)")
+
+        self.close_data_file()
+
         if self.storm_type == 0 or self.storm_type == 1:
             pass 
         elif self.storm_type == 2:
             # Open another data file called stored in storm_file and write the 
             # following parameters to it
-            storm_file = data.open_datafile(self.storm_file)
-            data.data_write(storm_file,self,"ramp_up_t","(Ramp up time for wind field)")
-            data.data_write(storm_file,self,'velocity',"(Speed of storm)")
-            data.data_write(storm_file,self,'R_eye_init',"(Initial position of storm)")
-            data.data_write(storm_file,self,'A',"(Hurricane model fit parameter)")
-            data.data_write(storm_file,self,'B')
-            data.data_write(storm_file,self,'Pc',"(Pressure in the eye of the hurricane)")
+            self.open_data_file(self.storm_file)
+            self.data_write("ramp_up_t",description="(Ramp up time for wind field)")
+            self.data_write('velocity',description="(Speed of storm)")
+            self.data_write('R_eye_init',description="(Initial position of storm)")
+            self.data_write('A',description="(Hurricane model fit parameter)")
+            self.data_write('B')
+            self.data_write('Pc',description="(Pressure in the eye of the hurricane)")
+            self.close_data_file()
         elif self.storm_type == 3:
             # Open another data file called stored in storm_file and write the 
             # following parameters to it
-            storm_file = data.open_datafile(self.storm_file)
-            data.data_write(storm_file,self,"stommel_wind","(Amplitude of Stommel wind)")
+            self.open_data_file(self.storm_file)
+            self.data_write("stommel_wind",desription="(Amplitude of Stommel wind)")
+            self.close_data_file()
         else:
             raise Exception("Invalid storm type %s." % storm_type)
-            
-
-        data.data_write(data_file,self,None)
-        
-        data_file.close()
