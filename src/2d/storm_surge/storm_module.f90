@@ -86,8 +86,8 @@ contains
         endif
 
         ! Set some parameters
-        wind_index = 4 + num_layers
-        pressure_index = 6 + num_layers
+        wind_index = 5 + num_layers
+        pressure_index = 7 + num_layers
         
         ! Read in parameters
         ! Physics

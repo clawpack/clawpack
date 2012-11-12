@@ -15,7 +15,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
       
     use geoclaw_module, only: g => grav, dry_tolerance
     use geoclaw_module, only: coriolis_forcing, coriolis
-    use geoclaw_module, only: friction_forcing, manning_coefficient 
+    use geoclaw_module, only: friction_forcing, friction_index
     use geoclaw_module, only: friction_depth, num_layers, rho
     use geoclaw_module, only: omega, coordinate_system
 
@@ -36,10 +36,9 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     ! Parameter controls when to zero out the momentum at a depth in the
     ! friction source term
     real(kind=8), parameter :: depth_tolerance = 1.0d-30
-    
+
     ! Friction forcing
-    if (friction_forcing > 0) then
-        if (friction_forcing == 2) stop "Variable friction unimplemented!"
+    if (friction_forcing) then
 
         do i=1,mx1d
 
@@ -74,7 +73,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
             ! Apply friction source term only if in shallower water
             if (sum(h) <= friction_depth) then
                 ! Calculate source term
-                gamma = sqrt(hu**2 + hv**2) * (g * manning_coefficient**2) &
+                gamma = sqrt(hu**2 + hv**2) * (g * aux1d(friction_index,i)**2) &
                                             / (h(bottom_layer)**(7/3))
                 dgamma = 1.d0 + dt * gamma
                 q1d(bottom_index + 2, i) = q1d(bottom_index + 2, i) / dgamma

@@ -7,7 +7,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
     use geoclaw_module, only: g => grav, dry_tolerance
     use geoclaw_module, only: coriolis_forcing, coriolis
-    use geoclaw_module, only: friction_forcing, manning_coefficient 
+    use geoclaw_module, only: friction_forcing, friction_index
     use geoclaw_module, only: friction_depth, num_layers, rho
     use geoclaw_module, only: spherical_distance, coordinate_system
 
@@ -82,8 +82,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     if (wind_forcing) then
         ! Force only the top layer of water, assumes top most layer is last
         ! to go dry
-        aux(pressure_index+1,i,j) = 0.d0
-        aux(pressure_index+2,i,j) = 0.d0
         do j=1,my
             do i=1,mx
                 if (q(1,i,j) / rho(1) > dry_tolerance(1)) then
@@ -91,8 +89,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                                     + aux(wind_index+1,i,j)**2)
                     if (wind_speed > wind_tolerance) then
                         tau = wind_drag(wind_speed) * rho_air * wind_speed
-                        aux(pressure_index+1,i,j) = dt * tau * aux(wind_index,i,j)
-                        aux(pressure_index+2,i,j) = dt * tau * aux(wind_index+1,i,j)
                         q(2,i,j) = q(2,i,j) + dt * tau * aux(wind_index,i,j)
                         q(3,i,j) = q(3,i,j) + dt * tau * aux(wind_index+1,i,j)
                     endif
@@ -156,14 +152,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! ----------------------------------------------------------------
 
     ! Friction source term
-    if (friction_forcing > 0) then
-
-        ! Parameter checks
-        if (friction_forcing == 2) stop "Variable friction unimplemented!"
-        if (depth_tolerance > friction_depth) then
-            stop "Parameter depth_tolerance > friction_depth!"
-        endif
-
+    if (friction_forcing) then
         do j=1,my
             do i=1,mx
 
@@ -203,7 +192,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     ! Non-limited version
                     ! D = manning_coefficient**2 * g * sum(h)**(-7/3) * speed
                     ! Limited Chezy-type coefficient
-                    D = g * manning_coefficient**2 * h(bottom_layer)**(-4/3) * speed * &
+                    D = g * aux(friction_index,i,j)**2 * h(bottom_layer)**(-4/3) * speed * &
                         (1.d0 + (H_break / h(bottom_layer))**theta_f )**(gamma_f / theta_f)
                     gamma = 1.d0 + dt * D
 
