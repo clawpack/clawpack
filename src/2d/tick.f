@@ -1,7 +1,7 @@
 c
 c  -------------------------------------------------------------
 c
-      subroutine tick(nvar,cut,nstart,vtime,time,naux,t0,rest)
+      subroutine tick(nvar,cut,nstart,vtime,time,naux,start_time,rest)
 c
       use geoclaw_module
       use amr_module
@@ -185,7 +185,7 @@ c level 'lbase' stays fixed.
 c
           if (rprint) write(outunit,101) lbase
 101       format(8h  level ,i5,32h  stays fixed during regridding )
-          call regrid(nvar,lbase,cut,naux,t0)
+          call regrid(nvar,lbase,cut,naux,start_time)
           call setbestsrc()     ! need at every grid change
 c         call conck(1,nvar,naux,time,rest)
 c         call outtre(lstart(lbase+1),.true.,nvar,naux)

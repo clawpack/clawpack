@@ -23,7 +23,7 @@
 subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
                        q,aux,amrflags,DONTFLAG,DOFLAG)
 
-    use amr_module, only: mxnest
+    use amr_module, only: mxnest, t0
     use geoclaw_module, only:dry_tolerance,rho,eta_init,num_layers
     
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
@@ -33,7 +33,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
     use dtopo_module, only: minleveldtopo,num_dtopo
     
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
-    use qinit_module, only: min_level_qinit,qinit_type, t0
+    use qinit_module, only: min_level_qinit,qinit_type
     
     use regions_module, only: num_regions, regions
     use refinement_module
