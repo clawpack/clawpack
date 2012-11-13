@@ -21,7 +21,10 @@ PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
-FFLAGS ?=
+FFLAGS ?= 
+#FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
+FFLAGS = -O2
+
 MAKELEVEL ?= 0
 ifeq (${MAKELEVEL},0)
 	# If you want to include NetCDF output add these flags
@@ -57,8 +60,6 @@ SOURCES = \
   $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/movetopo.f \
-  $(GEOLIB)/flag2refine.f90 \
-  $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
@@ -80,6 +81,9 @@ SOURCES = \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/setaux.f90 \
+  $(GEOLIB)/flag2refine.f90  \
+  $(GEOLIB)/flag2refine2.f  \
+  $(GEOLIB)/allowflag.f90  \
   $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
@@ -94,14 +98,17 @@ SOURCES = \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
+  $(AMRLIB)/spest2.f  \
   $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \
   $(AMRLIB)/cleanup.f \
   $(AMRLIB)/colate.f \
+  $(AMRLIB)/colate2.f \
   $(AMRLIB)/errest.f \
   $(AMRLIB)/bufnst.f \
+  $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl.f \
@@ -111,9 +118,11 @@ SOURCES = \
   $(AMRLIB)/intfil_new.f90 \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
+  $(AMRLIB)/nestck2.f \
   $(AMRLIB)/prepc.f \
   $(AMRLIB)/prepf.f \
   $(AMRLIB)/projec.f \
+  $(AMRLIB)/projec2.f \
   $(AMRLIB)/signs.f \
   $(AMRLIB)/findcut.f \
   $(AMRLIB)/smartbis.f \
@@ -136,11 +145,24 @@ SOURCES = \
   $(AMRLIB)/zeroin.f \
   $(AMRLIB)/setflags.f \
   $(AMRLIB)/shiftset.f \
+  $(AMRLIB)/shiftset2.f \
   $(AMRLIB)/conck.f \
   $(AMRLIB)/domshrink.f \
   $(AMRLIB)/domprep.f \
   $(AMRLIB)/domup.f \
   $(AMRLIB)/domcopy.f \
+  $(AMRLIB)/setdomflags.f \
+  $(AMRLIB)/setIndices.f \
+  $(AMRLIB)/coarseGridFlagSet.f \
+  $(AMRLIB)/addflags.f \
+  $(AMRLIB)/baseCheck.f \
+  $(AMRLIB)/drivesort.f \
+  $(AMRLIB)/flagcheck.f \
+  $(AMRLIB)/domgrid.f \
+  $(AMRLIB)/setPhysBndryFlags.f \
+  $(AMRLIB)/griddomup.f \
+  $(AMRLIB)/griddomcopy.f \
+  $(AMRLIB)/griddomshrink.f \
   $(AMRLIB)/coarsen.f \
   $(AMRLIB)/auxcoarsen.f \
   $(AMRLIB)/intcopy.f \
