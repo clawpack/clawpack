@@ -362,6 +362,7 @@ c
 c
 c  # computation is complete to final time or requested number of steps
 c
+      if (output_style == 3) then
        if (ncycle .ge. nstop .and. tfinal .lt. rinfinity) then
 c         # warn the user that calculation finished prematurely
           write(outunit,102) nstop
@@ -369,6 +370,7 @@ c         # warn the user that calculation finished prematurely
   102     format('*** Computation halted after nv(1) = ',i8,
      &           '  steps on coarse grid')
           endif
+      endif
 c
 c  # final output (unless we just did it above)
 c
