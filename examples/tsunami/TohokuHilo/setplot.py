@@ -33,7 +33,7 @@ def setplot(plotdata):
     # an afteraxis function:
 
     def addgauges(current_data):
-        from geoclaw import gaugetools
+        from clawpack.visclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=False)
     
@@ -98,7 +98,7 @@ def setplot(plotdata):
     # Figure for imshow plot
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name='imshow', figno=1)
-    plotfigure.show = False
+    plotfigure.show = True
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('imshow')
@@ -250,8 +250,8 @@ def setplot(plotdata):
 
     def gaugetopo(current_data):
         q = current_data.q
-        h = q[:,0]
-        eta = q[:,3]
+        h = q[0,:]
+        eta = q[3,:]
         topo = eta - h
         return topo
         
@@ -287,10 +287,10 @@ def setplot(plotdata):
     plotitem.show = False
     def speed(current_data):
         from numpy import where, sqrt
-        h = current_data.q[:,0]
+        h = current_data.q[0,:]
         h = where(h>0.01, h, 1.e6)
-        u = 100. * current_data.q[:,1] / h
-        v = 100. * current_data.q[:,2] / h
+        u = 100. * current_data.q[1,:] / h
+        v = 100. * current_data.q[2,:] / h
         s = sqrt(u**2 + v**2)
         return s
     plotitem.plot_var = speed
@@ -299,9 +299,9 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
     def uvel(current_data):
         from numpy import where, sqrt
-        h = current_data.q[:,0]
+        h = current_data.q[0,:]
         h = where(h>0.01, h, 1.e6)
-        u = 100. * current_data.q[:,1] / h
+        u = 100. * current_data.q[1,:] / h
         return u
     plotitem.plot_var = uvel
     plotitem.plotstyle = 'r-'
@@ -310,9 +310,9 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
     def vvel(current_data):
         from numpy import where, sqrt
-        h = current_data.q[:,0]
+        h = current_data.q[0,:]
         h = where(h>0.01, h, 1.e6)
-        v = 100. * current_data.q[:,2] / h
+        v = 100. * current_data.q[2,:] / h
         return v
     plotitem.plot_var = vvel
     plotitem.plotstyle = 'g-'

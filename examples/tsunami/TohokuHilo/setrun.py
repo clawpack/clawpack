@@ -82,7 +82,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 4
+    clawdata.num_aux = 5
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -259,7 +259,7 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    clawdata.aux_type = ['center','capacity','yleft','center']
+    clawdata.aux_type = ['center','capacity','yleft','center','center']
 
 
     # Flag using refinement routine flag2refine rather than richardson error
@@ -378,7 +378,7 @@ def setgeo(rundata):
     geodata.wave_tolerance = 2.e-2  # 4.e-3 ###Bre changed this number
     geodata.deep_depth = 2.e2 
     geodata.max_level_deep = 4 
-    geodata.friction_forcing = 1
+    geodata.friction_forcing = True
     geodata.manning_coefficient =.025
     geodata.friction_depth = 500.
 
@@ -387,11 +387,12 @@ def setgeo(rundata):
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
 
-    topodir =   './HAI/'
+    topodir = './bathy/'
+    # topodir =   './HAI/'
     geodata.topofiles.append([3, 1, 1, 0., 1.e10, topodir+'1minlgr.asc'])
     geodata.topofiles.append([3, 1, 1, 0., 1.e10, topodir+'hawaii_6s.txt'])
-    geodata.topofiles.append([3, 1, 1, 0., 1.e10, topodir+'hilo_3s.asc'])
-    geodata.topofiles.append([3, 6, 6, 7.5*3600., 1.e10, topodir+'hilo_port_1_3s.asc'])
+    # geodata.topofiles.append([3, 1, 1, 0., 1.e10, topodir+'hilo_3s.asc'])
+    # geodata.topofiles.append([3, 6, 6, 7.5*3600., 1.e10, topodir+'hilo_port_1_3s.asc'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
