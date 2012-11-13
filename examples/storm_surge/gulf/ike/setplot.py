@@ -48,12 +48,8 @@ def setplot(plotdata):
     # Limits for plots
     full_xlimits = [-99.0,-50.0]
     full_ylimits = [8.0,32.0]
-    houston_xlimits = [-95.4, -94.41]
+    houston_xlimits = [-95.4, -94.0]
     houston_ylimits = [29.1, 29.92]
-    galveston_xlimits = [-94.84, -94.70]
-    galveston_ylimits = [29.30, 29.40]
-    houston_harbor_xlimits = [-95.321,-95.0747]
-    houston_harbor_ylimits = [29.7000,29.8304]
 
     # Color limits
     surface_range = 6.0
@@ -97,7 +93,7 @@ def setplot(plotdata):
     plotaxes.scaled = True
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
-    plotaxes.afteraxes = pcolor_afteraxes
+    plotaxes.afteraxes = surge_afteraxes
     
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
     surge.plot.add_land(plotaxes)
@@ -116,7 +112,7 @@ def setplot(plotdata):
     plotaxes.scaled = True
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
-    plotaxes.afteraxes = pcolor_afteraxes
+    plotaxes.afteraxes = surge_afteraxes
 
     # Speed
     surge.plot.add_speed(plotaxes,bounds=speed_limits)
@@ -137,10 +133,13 @@ def setplot(plotdata):
     plotaxes.scaled = True
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
-    plotaxes.afteraxes = pcolor_afteraxes
+    def after_with_gauges(cd):
+        surge_afteraxes(cd)
+        surge.plot.gauge_locations(cd)
+    plotaxes.afteraxes = after_with_gauges
     
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
-    surge.plot.add_land(plotaxes)
+    # surge.plot.add_land(plotaxes)
 
 
     # ========================================================================
@@ -156,7 +155,7 @@ def setplot(plotdata):
     plotaxes.scaled = True
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
-    plotaxes.afteraxes = pcolor_afteraxes
+    plotaxes.afteraxes = after_with_gauges
 
     # Speed
     surge.plot.add_speed(plotaxes,bounds=speed_limits)

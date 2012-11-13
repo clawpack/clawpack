@@ -260,8 +260,8 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor'):
             plotitem.imshow_cmin = bounds[0]
             plotitem.imshow_cmax = bounds[1]
         plotitem.add_colorbar = True
-        plotitem.amr_celledges_show = [0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1]
+        plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
     elif plot_type == 'contour':            
         plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
         plotitem.plot_var = geoplot.surface
@@ -272,8 +272,8 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor'):
         # plotitem.contour_max = 2.0
         # plotitem.kwargs = {''}
         plotitem.amr_contour_show = [1,1,1]
-        plotitem.amr_celledges_show = [0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1]
+        plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
         plotitem.amr_contour_colors = 'k'
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
@@ -288,8 +288,8 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor'):
             plotitem.imshow_cmin = bounds[0]
             plotitem.imshow_cmax = bounds[1]
         plotitem.add_colorbar = True
-        plotitem.amr_celledges_show = [0,0,0]
-        plotitem.amr_patchedges_show = [1]
+        plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
     elif plot_type == 'quiver':
         plotitem = plotaxes.new_plotitem(plot_type='2d_quiver')
         plotitem.quiver_var_x = water_u
@@ -372,8 +372,8 @@ def add_land(plotaxes,plot_type='pcolor'):
         plotitem.pcolor_cmin = 0.0
         plotitem.pcolor_cmax = 80.0
         plotitem.add_colorbar = False
-        plotitem.amr_celledges_show = [0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1]
+        plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
     elif plot_type == 'contour':            
         plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
         plotitem.plot_var = geoplot.land

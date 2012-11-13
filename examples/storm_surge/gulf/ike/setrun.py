@@ -341,9 +341,9 @@ def setrun(claw_pkg='geoclaw'):
     regions = rundata.regiondata.regions
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    regions.append([2, 5, rundata.clawdata.t0, rundata.clawdata.tfinal, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
-    regions.append([2, 7, rundata.clawdata.t0, rundata.clawdata.tfinal, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
-    regions.append([2, 7, rundata.clawdata.t0, rundata.clawdata.tfinal, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
+    # regions.append([2, 5, days2seconds(254), rundata.clawdata.tfinal, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
+    # regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
+    # regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
     
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
@@ -407,20 +407,20 @@ def setgeo(rundata):
     #                           './bathy/gulf_coarse_bathy.tt3'])
     geodata.topofiles.append([3, 1, 5, rundata.clawdata.t0, rundata.clawdata.tfinal,
                               '../bathy/NOAA_Galveston_Houston.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              '../bathy/galveston_channel.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              '../bathy/houston_harbor.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              '../bathy/houston_channel_3.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              '../bathy/houston_channel_2.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           '../bathy/galveston.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              '../bathy/lower_galveston_bay.tt3'])
-    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-                              '../bathy/upper_galveston_bay.tt3'])
+    #                           '../bathy/galveston_channel.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           '../bathy/houston_harbor.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           '../bathy/houston_channel_3.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           '../bathy/houston_channel_2.tt3'])
+    # # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    # #                           '../bathy/galveston.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           '../bathy/lower_galveston_bay.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           '../bathy/upper_galveston_bay.tt3'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
