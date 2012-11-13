@@ -34,6 +34,7 @@ c
       use dtopo_module
       use regions_module
       use qinit_module
+      use refinement_module
 
       implicit double precision (a-h, o-z)
 
