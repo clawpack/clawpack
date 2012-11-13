@@ -33,7 +33,6 @@ ifeq (${MAKELEVEL},0)
 	# Include OpenMP threading
 	FFLAGS += $(OMP_FLAG)
 endif
-FFLAGS += -fopenmp
 
 
 # ---------------------------------
