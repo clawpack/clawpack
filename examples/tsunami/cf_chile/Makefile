@@ -23,7 +23,6 @@ PLOTDIR = _plots               # Directory for plots
 FC ?= gfortran
 FFLAGS ?= 
 #FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
-FFLAGS = -O2
 
 MAKELEVEL ?= 0
 ifeq (${MAKELEVEL},0)
@@ -83,7 +82,7 @@ SOURCES = \
   $(GEOLIB)/update.f \
   $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine.f90  \
-  $(GEOLIB)/flag2refine2.f  \
+  $(GEOLIB)/flag2refine2.f90 \
   $(GEOLIB)/allowflag.f90  \
   $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
