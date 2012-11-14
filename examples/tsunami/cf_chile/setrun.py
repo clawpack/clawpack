@@ -368,13 +368,13 @@ def setgeo(rundata):
     geodata.topofiles = []
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
-    geodata.topofiles.append([2, 1, 3, 0., 1.e10, '../chile2012/etopo10min120W60W60S0S.asc'])
+    geodata.topofiles.append([2, 1, 3, 0., 1.e10, '../chile2010/etopo10min120W60W60S0S.asc'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
-    geodata.dtopofiles.append([1,3,3,'../chile2012/usgs100227.tt1'])
+    geodata.dtopofiles.append([1,3,3,'../chile2010/usgs100227.tt1'])
 
 
     # == setqinit.data values ==
