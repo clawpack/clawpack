@@ -91,7 +91,7 @@ subroutine flag2refine(mx,my,mbc,meqn,maux,xlower,ylower,dx,dy,t,level,tolsp, &
             R_eye = storm_location(t)
             do m=1,size(R_refine,1)
                 if (coordinate_system == 2) then
-                    ds = spherical_distance([x_c,y_c],R_eye)
+                    ds = spherical_distance(x_c, y_c, R_eye(1), R_eye(2))
                 else
                     ds = sqrt((x_c - R_eye(1))**2 + (y_c - R_eye(2))**2)
                 end if

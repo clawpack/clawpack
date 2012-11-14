@@ -111,8 +111,8 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 
                 if (coordinate_system == 2) then
                     ! Convert distance in lat-long to meters
-                    dx_meters = spherical_distance([xp,yc],[xm,yc])
-                    dy_meters = spherical_distance([xc,yp],[xc,ym])
+                    dx_meters = spherical_distance(xp,yc,xm,yc)
+                    dy_meters = spherical_distance(xc,yp,xc,ym)
                 else
                     dx_meters = dx
                     dy_meters = dy

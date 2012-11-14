@@ -55,7 +55,7 @@ contains
     subroutine set_holland_storm(storm_data_path,storm,log_unit)
 
         use geoclaw_module, only: deg2rad, spherical_distance, coordinate_system
-        use amr_module, only: t0
+        use amr_module, only: t0, rinfinity
 
         implicit none
 
@@ -95,12 +95,13 @@ contains
                  action='read',iostat=io_status)
         endif
         if (io_status /= 0) then
-            print "(a,i1)", "Error opening storm data file. status = ", io_status
+            print "(a,i2)", "Error opening storm data file. status = ", io_status
             stop 
         endif
 
         ! Count number of data lines
         num_casts = 0
+        last_time = -rinfinity
         do
             read(data_file,fmt=file_format,iostat=io_status) year,month,day, &
                     hour,cast_type,forecast,lat,direction(2),lon,direction(1), &
@@ -178,12 +179,14 @@ contains
             y = storm%track(2:3,i+1)
 
             dt = storm%track(1,i + 1) - storm%track(1,i)
-            ds = spherical_distance([x(1),0.5d0 * (x(2) + y(2))], &
-                                    [y(1),0.5d0 * (x(2) + y(2))])
+
+            ds = spherical_distance(x(1), 0.5d0 * (x(2) + y(2)), &
+                                    y(1), 0.5d0 * (x(2) + y(2)))
             storm%velocity(1,i) = sign(ds / dt,y(1) - x(1))
 
-            ds = spherical_distance([0.5d0 * (x(1) + y(1)),x(2)], &
-                                    [0.5d0 * (x(1) + y(1)),y(2)])
+            
+            ds = spherical_distance(0.5d0 * (x(1) + y(1)), x(2), &
+                                    0.5d0 * (x(1) + y(1)), y(2))
             storm%velocity(2,i) = sign(ds / dt,y(2) - x(2))
         end do
 
@@ -498,7 +501,7 @@ contains
 
                 ! Calculate storm centric polar coordinate location of grid
                 ! cell center, uses Haversine formula
-                r = spherical_distance([x,y],sloc)
+                r = spherical_distance(x, y, sloc(1), sloc(2))
                 theta = atan2((y - sloc(2)) * DEG2RAD,(x - sloc(1)) * DEG2RAD)
 
                 ! Set pressure field
