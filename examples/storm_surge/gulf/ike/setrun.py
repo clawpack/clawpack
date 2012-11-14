@@ -473,7 +473,7 @@ def set_storm():
     data.storm_type = 1 # Type of storm
 
     # Storm type 2 - Idealized storm track
-    data.storm_file = os.path.expandvars('./ike.storm')
+    data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),'ike.storm'))
 
     return data
 

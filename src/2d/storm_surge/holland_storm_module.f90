@@ -76,7 +76,8 @@ contains
         character(len=1) :: direction(2)
 
         ! File format string
-        character(len=*), parameter :: file_format = "(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,47x,i3,2x,i3)"
+        character(len=*), parameter :: file_format = "(8x,i4,i2,i2,i2,6x,a4,"//&
+                            "2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,47x,i3,2x,i3)"
 
         ! Storm type only works on lat-long coordinate systems
         if (coordinate_system /= 2) then
