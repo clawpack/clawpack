@@ -241,22 +241,22 @@ contains
     !       x1 = (long,lat)
     !       x2 = (long,lat)
     ! ==========================================================================
-    real(kind=8) function spherical_distance(x1,x2) result(distance)
+    real(kind=8) pure function spherical_distance(x1,y1,x2,y2) result(distance)
 
         implicit none
 
         ! Input
-        real(kind=8), intent(in) :: x1(2),x2(2)
+        real(kind=8), intent(in) :: x1,y1,x2,y2
 
         ! Locals
         real(kind=8) :: dx ,dy
 
-        dx = (x2(1) - x1(1)) * DEG2RAD
-        dy = (x2(2) - x1(2)) * DEG2RAD
+        dx = (x2 - x1) * DEG2RAD
+        dy = (y2 - y1) * DEG2RAD
 
         distance = earth_radius * 2.d0 * asin(sqrt(sin(0.5d0*dy)**2 &
-                                    + cos(x1(2) * DEG2RAD)*cos(x2(2) * DEG2RAD) &
-                                    * sin(0.5d0*dx)**2))
+                                   + cos(y1 * DEG2RAD)*cos(y2 * DEG2RAD) &
+                                   * sin(0.5d0*dx)**2))
 
     end function spherical_distance
 
