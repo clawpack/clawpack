@@ -71,11 +71,11 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
 
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = -92.0      # west longitude
+    clawdata.lower[0] = -85.0      # west longitude
     clawdata.upper[0] = -45.0      # east longitude
 
     clawdata.lower[1] = 13.0       # south latitude
-    clawdata.upper[1] = 41.0      # north latitude
+    clawdata.upper[1] = 45.0      # north latitude
 
 
     # Number of grid cells:
@@ -389,9 +389,12 @@ def setgeo(rundata):
     geodata.topofiles = []
     # for topography, append lines of the form
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
+    # geodata.topofiles.append([3, 1, 3, rundata.clawdata.t0, 
+    #                                    rundata.clawdata.tfinal, 
+    #                                    '../bathy/atlantic_2min.tt3'])
     geodata.topofiles.append([3, 1, 3, rundata.clawdata.t0, 
                                        rundata.clawdata.tfinal, 
-                                       '../bathy/atlantic_2min.tt3'])
+                                       '../bathy/atlantic_2min_new.tt3'])
     geodata.topofiles.append([3, 1, 5, rundata.clawdata.t0, 
                                        rundata.clawdata.tfinal, 
                                        '../bathy/newyork_3s.tt3'])
