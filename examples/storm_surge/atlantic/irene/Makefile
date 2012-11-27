@@ -13,11 +13,11 @@ CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
 # ----------------------------------
 
 CLAW_PKG = geoclaw                  # Clawpack package to use
-CLAW_EXE = xgeoclaw                 # Executable to create
-CLAW_setrun_file = setrun.py        # File containing function to make data
-CLAW_OUTDIR = _output               # Directory for output
-CLAW_setplot_file = setplot.py      # File containing function to set plots
-CLAW_PLOTDIR = _plots               # Directory for plots
+EXE = xgeoclaw                 # Executable to create
+SETRUN_FILE = setrun.py        # File containing function to make data
+OUTDIR = _output               # Directory for output
+SETPLOT_FILE = setplot.py      # File containing function to set plots
+PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
@@ -31,7 +31,7 @@ ifeq ($(MAKELEVEL),0)
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
 	# Threading flags
-	# FFLAGS += -fopenmp
+	FFLAGS += $(OMP_FLAG)
 endif
 
 # ---------------------------------
@@ -44,14 +44,14 @@ GEOLIB = $(GEOCLAW)/src/2d
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
+ $(AMRLIB)/regions_module.f90 \
+ $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
- $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
- $(GEOLIB)/regions_module.f90 \
  $(GEOLIB)/storm_surge/holland_storm_module.f90 \
  $(GEOLIB)/storm_surge/constant_storm_module.f90 \
  $(GEOLIB)/storm_surge/stommel_storm_module.f90 \
@@ -67,6 +67,7 @@ SOURCES = \
   $(GEOLIB)/storm_surge/b4step2.f90 \
   $(GEOLIB)/storm_surge/tick.f \
   $(GEOLIB)/storm_surge/valout.f \
+  $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate.f \
@@ -81,10 +82,7 @@ SOURCES = \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/filval_new.f90 \
   $(GEOLIB)/filpatch_new.f90 \
-  $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/amr2ez.f \
-  $(GEOLIB)/setgauges.f \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/setgrd.f \
@@ -92,10 +90,11 @@ SOURCES = \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
+  $(AMRLIB)/amr2.f90 \
   $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
-  $(AMRLIB)/bound.f \
+  $(AMRLIB)/bound_new.f90 \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
   $(AMRLIB)/init_iflags.f \
@@ -165,11 +164,6 @@ SOURCES = \
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
-
-# Construct the topography data
-.PHONY: topo
-topo: .data
-	python maketopo.py
 
 ### DO NOT remove this line - make depends on it ###
 
