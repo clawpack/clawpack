@@ -45,10 +45,10 @@ def setplot(plotdata):
     surge_afteraxes = lambda cd: surge.plot.surge_afteraxes(cd,track)
 
     # Limits for plots
-    full_xlimits = [-92.0,-45.0]
-    full_ylimits = [13.0,41.0]
+    full_xlimits = [-85.0,-45.0]
+    full_ylimits = [13.0,45.0]
     newyork_xlimits = [-74.5,-71.0]
-    newyork_ylimits = [40.0,41.0]
+    newyork_ylimits = [40.0,41.5]
 
     # Color limits
     surface_range = 4.0
