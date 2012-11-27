@@ -252,13 +252,14 @@ class PlotProfile(object):
 # ========================================================================
 def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor'):
     if plot_type == 'pcolor' or plot_type == 'imshow':            
-        plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = geoplot.surface_or_depth
         # plotitem.plot_var = geoplot.surface
-        plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+        plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+        # plotitem.pcolor_cmap = geoplot.tsunami_colormap
         if bounds is not None:
-            plotitem.imshow_cmin = bounds[0]
-            plotitem.imshow_cmax = bounds[1]
+            plotitem.pcolor_cmin = bounds[0]
+            plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
@@ -280,13 +281,13 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor'):
 
 def add_speed(plotaxes,bounds=None,plot_type='pcolor'):
     if plot_type == 'pcolor' or plot_type == 'imshow':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = water_speed
         # plotitem.plot_var = 1
-        plotitem.imshow_cmap = plt.get_cmap('PuBu')
+        plotitem.pcolor_cmap = plt.get_cmap('PuBu')
         if bounds is not None:
-            plotitem.imshow_cmin = bounds[0]
-            plotitem.imshow_cmax = bounds[1]
+            plotitem.pcolor_cmin = bounds[0]
+            plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
@@ -313,12 +314,12 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor'):
         
 def add_wind(plotaxes,bounds=None,plot_type='pcolor'):
     if plot_type == 'pcolor' or plot_type == 'imshow':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = wind_speed
-        plotitem.imshow_cmap = plt.get_cmap('PuBu')
+        plotitem.pcolor_cmap = plt.get_cmap('PuBu')
         if bounds is not None:
-            plotitem.imshow_cmin = bounds[0]
-            plotitem.imshow_cmax = bounds[1]
+            plotitem.pcolor_cmin = bounds[0]
+            plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
         # plotitem.amr_imshow_show = [1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
@@ -339,12 +340,12 @@ def add_wind(plotaxes,bounds=None,plot_type='pcolor'):
         
 def add_pressure(plotaxes,bounds=None,plot_type='pcolor'):
     if plot_type == 'pcolor' or plot_type == 'imshow':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = pressure
-        plotitem.imshow_cmap = plt.get_cmap('PuBu')
+        plotitem.pcolor_cmap = plt.get_cmap('PuBu')
         if bounds is not None:
-            plotitem.imshow_cmin = bounds[0]
-            plotitem.imshow_cmax = bounds[1]
+            plotitem.pcolor_cmin = bounds[0]
+            plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1]
@@ -353,12 +354,12 @@ def add_pressure(plotaxes,bounds=None,plot_type='pcolor'):
         
 def add_vorticity(plotaxes,bounds=None,plot_type="pcolor"):
     if plot_type == 'pcolor' or plot_type == 'imshow':            
-        plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = 9
-        plotitem.imshow_cmap = plt.get_cmap('PRGn')
+        plotitem.pcolor_cmap = plt.get_cmap('PRGn')
         if bounds is not None:
-            plotitem.imshow_cmin = bounds[0]
-            plotitem.imshow_cmax = bounds[1]
+            plotitem.pcolor_cmin = bounds[0]
+            plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1]

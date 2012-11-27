@@ -94,9 +94,10 @@ def setplot(plotdata):
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = surge_afteraxes
-    
+
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
     surge.plot.add_land(plotaxes)
+    # surge.plot.add_bathy_contours(plotaxes,contour_levels=[-5000,-1000,0.0])
 
 
     # ========================================================================
@@ -139,7 +140,7 @@ def setplot(plotdata):
     plotaxes.afteraxes = after_with_gauges
     
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
-    # surge.plot.add_land(plotaxes)
+    surge.plot.add_land(plotaxes)
 
 
     # ========================================================================
