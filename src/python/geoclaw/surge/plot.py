@@ -253,8 +253,8 @@ class PlotProfile(object):
 def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor'):
     if plot_type == 'pcolor' or plot_type == 'imshow':            
         plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
-        # plotitem.plotvar = eta
-        plotitem.plot_var = geoplot.surface
+        plotitem.plot_var = geoplot.surface_or_depth
+        # plotitem.plot_var = geoplot.surface
         plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
         if bounds is not None:
             plotitem.imshow_cmin = bounds[0]
@@ -383,7 +383,19 @@ def add_land(plotaxes,plot_type='pcolor'):
         plotitem.amr_contour_colors = ['g']  # color on each level
         plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
         plotitem.celledges_show = 0
-        plotitem.patchedges_show = 0    
+        plotitem.patchedges_show = 0   
+
+def add_bathy_contours(plotaxes,contour_levels=None):
+    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+    plotitem.plot_var = geoplot.topo
+    if contour_levels is None:
+        contour_levels = np.linspace(-5000,0,5)
+    plotitem.contour_levels = contour_levels
+    plotitem.amr_contour_colors = ['y']  # color on each level
+    plotitem.kwargs = {'linestyles':'solid','linewidths':2}
+    plotitem.amr_contour_show = [1,0,0]
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = 0
 
 
 # ===== Storm related plotting =======
