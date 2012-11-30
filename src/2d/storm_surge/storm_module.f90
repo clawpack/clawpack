@@ -188,7 +188,7 @@ contains
             wind_drag = 0.49 + 0.065d0 * 25.d0
         endif
         
-        wind_drag = wind_drag * 10.d-3
+        wind_drag = wind_drag * 1.d-3
     
     end function wind_drag
 
