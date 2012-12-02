@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# encoding: utf-8
 """
 file: topotools.py 
 
@@ -899,8 +901,93 @@ def swapheader (inputfile,outputfile):
     return
     #=========================================================================================
 
+#==============================================================================
+def create_topo_func(loc,verbose=False):
+    """Given a set of (x,z) locations, create a lambda function
+    
+    Create a lambda function that when evaluated will give the topgraphy 
+    height at the point (x,y).
+    
+    :Example: 
+    >>> f = create_topo_profile_func(loc)
+    >>> b = f(x,y)
+    
+    :Input:
+     - *loc* (list) - Create a topography file with the profile denoted by the
+       tuples inside of loc.  A sample set of points are shown below.  Note 
+       that the first value of the list is the x location and the second is 
+       the height of the topography.
+        
+        z (m)
+        ^                                                  o loc[5]  o
+        |                                                    
+        |                                          loc[4]   
+        |--------------------------------------------o-----> x (m) (sea level)
+        |                                            
+        |                                o loc[2] o loc[3]
+        |                         
+        |                         
+        |                           o loc[1]
+        |           
+        |                               
+        |__________________o loc[0]
+        0.0               
+        
+        
+    """
+    
+    cmd_str = "lambda x,y: (x <= %s) * %s" % (loc[0][0],loc[0][1])
+    for i in xrange(0,len(loc)-1):
+        loc_str = " + (%s < x) * (x <= %s)" % (loc[i][0],loc[i+1][0])
+        loc_str = "".join((loc_str," * ((%s - %s) " % (loc[i][1],loc[i+1][1])))
+        loc_str = "".join((loc_str," / (%s - %s)" % (loc[i][0],loc[i+1][0])))
+        loc_str = "".join((loc_str," * (x - %s) + %s)" % (loc[i][0],loc[i][1])))
+        cmd_str = "".join((cmd_str,loc_str))
+    cmd_str = "".join((cmd_str," + (%s < x) * %s" % (loc[-1][0],loc[-1][1])))
+    
+    if verbose:
+        print cmd_str
+    return eval(cmd_str)
 
 
+# Generic, spheroid based conversion
+# TODO: Convert this to using the basemap package instead
+deg2meters = lambda theta,lat:R_earth * theta * np.pi / 180.0 * np.cos(lat * np.pi / 180.0)
+meters2deg = lambda d,lat:d / (R_earth * np.pi / 180.0 * np.cos(lat * np.pi / 180.0))
 
+# Based at lat = 24 degrees
+long2meters = lambda degree_resolution:degree_resolution * 100950.05720513177
+lat2meters = lambda degree_resolution:degree_resolution * 110772.87259559495
 
+def calculate_resolution(ratios,base_resolutions=[0.25,0.25],
+                                print_resolutions=False):
+    r"""Given *ratios* and starting resolutions, calculate level resolutions
+
+    returns a dictionary of resolutions key valued by level"""
+    num_levels = len(ratios) + 1
+
+    degree_resolutions = np.empty((num_levels,2))
+    meter_resolutions = np.empty((num_levels,2))
+    degree_resolutions[0,:] = base_resolutions
+    meter_resolutions[0,0] = long2meters(base_resolutions[0])
+    meter_resolutions[0,1] = lat2meters(base_resolutions[1])
+    for level in xrange(1,num_levels):
+        degree_resolutions[level,:] = degree_resolutions[level-1,:] / ratios[level-1]
+        meter_resolutions[level,0] = long2meters(degree_resolutions[level,0])
+        meter_resolutions[level,1] = lat2meters(degree_resolutions[level,1])
+
+    if print_resolutions:
+        print "Resolutions:"
+        for level in xrange(num_levels):
+            print " Level %s - (%sº,%sº) - (%s m, %s m)" % (str(level+1),
+                                                        degree_resolutions[level,0],
+                                                        degree_resolutions[level,1],
+                                                        meter_resolutions[level,0],
+                                                        meter_resolutions[level,1])
+
+    resolutions = {}
+    for level in xrange(1,num_levels):
+        resolutions[level] = (degree_resolutions,meter_resolutions)
+    return [(degree_resolutions,meter_resolutions) 
+                        for level in xrange(1,num_levels)]
 

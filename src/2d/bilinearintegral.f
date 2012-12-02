@@ -55,19 +55,22 @@ c     !find limits of integral (this should already be true?)
 
 c======================================================================
       function bilinearintegral_s(xim,xip,yjm,yjp,x1,x2,y1,y2,dxx,dyy,
-     &                                      z11,z12,z21,z22,Rearth,pi)
+     &                                      z11,z12,z21,z22)
 c======================================================================
+
+      use geoclaw_module, only: r2d => rad2deg, d2r => deg2rad
+      use geoclaw_module, only: Rearth => earth_radius
 
       implicit none
 
 *     !i/o
       double precision xim,xip,yjm,yjp,x1,x2,y1,y2,dxx,dyy,
-     &                                 z11,z12,z21,z22,Rearth,pi
+     &                                 z11,z12,z21,z22
       double precision bilinearintegral_s
 
 *     !local
       double precision xlo,ylo,xhi,yhi,delx,dely,a,b,c,d
-      double precision xdiffhi,xdifflo,ydiffhi,ydifflo,xdiff2,d2r,r2d
+      double precision xdiffhi,xdifflo,ydiffhi,ydifflo,xdiff2
       double precision adsinint,cbsinint
 
 c#######################################################################
@@ -85,8 +88,6 @@ c#######################################################################
 
 *     !integrate the portion of the bilinear intersected with the
 c     !rectangular cell analytically.
-      d2r = pi/180.d0
-      r2d = 180.d0/pi
 c     !find limits of integral (this should already be true?)
       xlo = max(xim,x1)
       ylo = max(yjm,y1)

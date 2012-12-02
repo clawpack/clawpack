@@ -82,34 +82,34 @@ c
 c
 c     # fluxes initialized in step2
 c
-      mwork0 = (maxm+2*mbc)*(12*meqn + mwaves + meqn*mwaves + 2)
-c
-      if (mwork .lt. mwork0) then
-         write(outunit,*) 'CLAW2 ERROR... mwork must be increased to ',
-     &               mwork0
-         write(*      ,*) 'CLAW2 ERROR... mwork must be increased to ',
-     &               mwork0
-         stop
-      endif
+C       mwork0 = (maxm+2*mbc)*(12*meqn + mwaves + meqn*mwaves + 2)
+C c
+C       if (mwork .lt. mwork0) then
+C          write(outunit,*) 'CLAW2 ERROR... mwork must be increased to ',
+C      &               mwork0
+C          write(*      ,*) 'CLAW2 ERROR... mwork must be increased to ',
+C      &               mwork0
+C          stop
+C       endif
 c
 c     # partition work array into pieces needed for local storage in
 c     # step2 routine. Find starting index of each piece:
 c
-      i0faddm = 1
-      i0faddp = i0faddm + (maxm+2*mbc)*meqn
-      i0gaddm = i0faddp + (maxm+2*mbc)*meqn
-      i0gaddp = i0gaddm + 2*(maxm+2*mbc)*meqn
-      i0q1d   = i0gaddp + 2*(maxm+2*mbc)*meqn
-      i0dtdx1 = i0q1d + (maxm+2*mbc)*meqn
-      i0dtdy1 = i0dtdx1 + (maxm+2*mbc)
-      i0aux1 = i0dtdy1 + (maxm+2*mbc)
-      i0aux2 = i0aux1 + (maxm+2*mbc)*maux
-      i0aux3 = i0aux2 + (maxm+2*mbc)*maux
-c
-c
-      i0next = i0aux3 + (maxm+2*mbc)*maux    !# next free space
-      mused  = i0next - 1                    !# space already used
-      mwork1 = mwork - mused              !# remaining space (passed to step2)
+C       i0faddm = 1
+C       i0faddp = i0faddm + (maxm+2*mbc)*meqn
+C       i0gaddm = i0faddp + (maxm+2*mbc)*meqn
+C       i0gaddp = i0gaddm + 2*(maxm+2*mbc)*meqn
+C       i0q1d   = i0gaddp + 2*(maxm+2*mbc)*meqn
+C       i0dtdx1 = i0q1d + (maxm+2*mbc)*meqn
+C       i0dtdy1 = i0dtdx1 + (maxm+2*mbc)
+C       i0aux1 = i0dtdy1 + (maxm+2*mbc)
+C       i0aux2 = i0aux1 + (maxm+2*mbc)*maux
+C       i0aux3 = i0aux2 + (maxm+2*mbc)*maux
+C c
+C c
+C       i0next = i0aux3 + (maxm+2*mbc)*maux    !# next free space
+C       mused  = i0next - 1                    !# space already used
+C       mwork1 = mwork - mused              !# remaining space (passed to step2)
 
 c
 
@@ -117,27 +117,70 @@ c::::::::::::::::::::::::Fixed Grid Output:::::::::::::::::::::::::::::::::
       tc0=time !# start of computational step
       tcf=tc0+dt !# end of computational step
 
+!$OMP CRITICAL (FixedGrids)
+c     # see if any f-grids should be written out
+      do ng=1,num_fixed_grids
+        if (tc0 > fgrids(ng)%start_time .and. 
+     &      fgrids(ng)%last_output_index < fgrids(ng)%num_output) then
+c     # fgrid ng may need to be written out
+c     # find the first output number that has not been written out and
+c     # find the first output number on a fixed grid that is >= tc0
+c     # which will not be written out
+           if (fgrids(ng)%dt > 0.d0) then
+             ioutfgend= 1+max(0,nint((tc0 - fgrids(ng)%start_time)
+     &                                 / fgrids(ng)%dt))
+           else
+             ioutfgend=1
+           endif
+           ioutfgend = min(ioutfgend,fgrids(ng)%num_output)
+           ioutfgstart = fgrids(ng)%last_output_index + 1
+c     # write-out fgrid times that are less than tc0, and have not been written yet
+c     # these should be the most accurate values at any given point in the fgrid
+c     # since tc0> output time
+           do ioutfg=ioutfgstart,ioutfgend
+             toutfg=fgrids(ng)%start_time+(ioutfg-1)*fgrids(ng)%dt
+             if (toutfg < tc0) then
+c               # write out the solution for fixed grid ng
+c               # test if arrival times should be output
+                ioutflag = fgrids(ng)%output_arrival_times*
+     &                         (fgrids(ng)%num_output-
+     &                          fgrids(ng)%last_output_index)
+                call fgrid_out(ng,fgrids(ng),toutfg,ioutfg,ioutflag)
+
+                fgrids(ng)%last_output_time = toutfg
+                fgrids(ng)%last_output_index = 
+     &                               fgrids(ng)%last_output_index + 1
+             endif
+           enddo
+
+        endif
+      enddo
+!$OMP END CRITICAL (FixedGrids)
+c::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
        call b4step2(mx,my,mbc,mx,my,nvar,q,
      &             xlowmbc,ylowmbc,dx,dy,time,dt,maux,aux)
 
 c::::::::::::::::::::::::FIXED GRID DATA before step:::::::::::::::::::::::
 c     # fill in values at fixed grid points effected at time tc0
-      do ng=1,mfgrids
+!$OMP CRITICAL (FixedGrids)
+      do ng=1,num_fixed_grids
 
-      if ((xlowfg(ng).lt.xlowmbc+mx*dx.and.xhifg(ng).gt.xlowmbc).and.
-     &      (ylowfg(ng).lt.ylowmbc+my*dy.and.yhifg(ng).gt.ylowmbc).and.
-     &      (ilastoutfg(ng).lt.noutfg(ng).and.tcf.ge.tstartfg(ng))) then
+      if ( (fgrids(ng)%x_low < xlowmbc + mx*dx) .and.
+     &     (fgrids(ng)%x_hi  > xlowmbc) .and.
+     &     (fgrids(ng)%y_low < ylowmbc + my*dy) .and.
+     &     (fgrids(ng)%y_hi  > ylowmbc) .and.
+     &     (fgrids(ng)%last_output_index < fgrids(ng)%num_output) .and.
+     &     (tcf >= fgrids(ng)%start_time) ) then
+         
+         if (fgrids(ng)%last_output_time + fgrids(ng)%dt >= tc0 .and.
+     &       fgrids(ng)%last_output_time + fgrids(ng)%dt <= tcf) then
 
-
-         if (tlastoutfg(ng)+dtfg(ng).ge.tc0.and.
-     &                        tlastoutfg(ng)+dtfg(ng).le.tcf) then
 c        # fixedgrid ng has an output time within [tc0,tcf] interval
 c        # and it overlaps this computational grid spatially
-         i0=i0fg(ng) !# index into the ng grid in the work array
-         call fgridinterp(fgridearly(i0),xlowfg(ng),ylowfg(ng),
-     &    xhifg(ng),yhifg(ng),dxfg(ng),dyfg(ng),mxfg(ng),myfg(ng),
-     &    tc0,mfgridvars(ng),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,ioutarrivaltimes(ng),ioutsurfacemax(ng),0)
+         call fgrid_interp(1,fgrids(ng),tc0,q,nvar,mx,my,mbc,dx,dy,
+     &                     xlowmbc,ylowmbc,maux,aux,0)
+     
 c         # routine to spatially interpolate computational solution
 c         # at tc0 to the fixed grid spatial points,
 c         #saving solution, variables and tc0 at every grid point
@@ -152,19 +195,22 @@ c        # at level 1.   Note that all grids are up to date at start of step on 
 c        # New feature added at end of this routine to check more frequently if
 c        # levelcheck > 0.
          if (level .eq. 1) then
-         if (ioutsurfacemax(ng)+ioutarrivaltimes(ng).gt.0) then
-           i0=i0fg2(ng)
-         call fgridinterp(fgridoften(i0),xlowfg(ng),ylowfg(ng),
-     &    xhifg(ng),yhifg(ng),dxfg(ng),dyfg(ng),mxfg(ng),myfg(ng),
-     &    tc0,mfgridvars2(ng),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,ioutarrivaltimes(ng),ioutsurfacemax(ng),2)
+         if (fgrids(ng)%output_surface_max 
+     &       + fgrids(ng)%output_arrival_times > 0) then
+     
+         call fgrid_interp(3,fgrids(ng),tc0,q,nvar,mx,my,mbc,dx,dy,
+     &                     xlowmbc,ylowmbc,maux,aux,2)
+     
          endif
          endif
 
       endif
       enddo
       tcfmax=max(tcfmax,tcf)
+
+!$OMP END CRITICAL (FixedGrids)
 c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 
 c
 c     # take one step on the conservation law:
@@ -172,22 +218,21 @@ c
       call step2(mbig,mx,my,nvar,maux,
      &           mbc,mx,my,
      &              q,aux,dx,dy,dt,cflgrid,
-     &              fm,fp,gm,gp,
-     &              work(i0faddm),work(i0faddp),
-     &              work(i0gaddm),work(i0gaddp),
-     &              work(i0q1d),work(i0dtdx1),work(i0dtdy1),
-     &              work(i0aux1),work(i0aux2),work(i0aux3),
-     &              work(i0next),mwork1,rpn2,rpt2)
+     &              fm,fp,gm,gp,rpn2,rpt2)
 c
 c            
         mptr_level = node(nestlevel,mptr)
         write(outunit,811) mptr, mptr_level, cflgrid
  811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
 c
+
 !$OMP  CRITICAL (cflm)
+
         cflmax = dmax1(cflmax,cflgrid)
         cfl_level = dmax1(cfl_level,cflgrid)
+
 !$OMP END CRITICAL (cflm)
+
 c
 c       # update q
         dtdx = dt/dx
@@ -214,12 +259,14 @@ c
 c     # Copied here from b4step2 since need to do before saving to qc1d:
       do i=1,mitot
         do j=1,mjtot
-          if (q(1,i,j).lt.drytolerance) then
-             q(1,i,j) = max(q(1,i,j),0.d0)
-             do m=2,nvar
+          do k=1,num_layers
+          if (q(3*(k-1)+1,i,j)/rho(k).lt.dry_tolerance(k)) then
+             q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j),0.d0)
+             do m=3*(k-1) + 2,3*(k-1) + 3
                 q(m,i,j)=0.d0
                 enddo
              endif
+         enddo
         enddo
       enddo
 c
@@ -229,41 +276,42 @@ c        # with source term:   use Godunov splitting
      &             q,maux,aux,time,dt)
          endif
 
-
+!$OMP CRITICAL (FixedGrids)
 c     ::::::::::::::::::::::::Fixed Grid data afterstep:::::::::::::::::::::::
 c     # fill in values at fixed grid points effected at time tcf
-      do ng=1,mfgrids
-      if ((xlowfg(ng).lt.xlowmbc+mx*dx.and.xhifg(ng).gt.xlowmbc).and.
-     &      (ylowfg(ng).lt.ylowmbc+my*dy.and.yhifg(ng).gt.ylowmbc).and.
-     &      (ilastoutfg(ng).lt.noutfg(ng).and.tcf.ge.tstartfg(ng))) then
-
-         if (tlastoutfg(ng)+dtfg(ng).ge.tc0
-     &                     .and.tlastoutfg(ng)+dtfg(ng).le.tcf) then
-
+      do ng=1,num_fixed_grids
+      if ((fgrids(ng)%x_low < xlowmbc + mx * dx) .and.
+     &    (fgrids(ng)%x_hi  > xlowmbc) .and.
+     &    (fgrids(ng)%y_low < ylowmbc + my * dy) .and.
+     &    (fgrids(ng)%y_hi  > ylowmbc) .and.
+     &    (fgrids(ng)%last_output_index < fgrids(ng)%num_output) .and.
+     &    (tcf >= fgrids(ng)%start_time)) then
+      
+        if (fgrids(ng)%last_output_time + fgrids(ng)%dt >= tc0 .and.
+     &      fgrids(ng)%last_output_time + fgrids(ng)%dt <= tcf) then
 
 c        # fixedgrid ng has an output time within [tc0,tcf] interval
 c        # and it overlaps this computational grid spatially
-         i0=i0fg(ng) !# index into the ng grid in the work array
+C         i0=i0fg(ng) !# index into the ng grid in the work array
 
-         call fgridinterp(fgridlate(i0),xlowfg(ng),ylowfg(ng),
-     &    xhifg(ng),yhifg(ng),dxfg(ng),dyfg(ng),mxfg(ng),myfg(ng),
-     &    tcf,mfgridvars(ng),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,ioutarrivaltimes(ng),ioutsurfacemax(ng),0)
+        call fgrid_interp(2,fgrids(ng),tcf,q,nvar,mx,my,mbc,dx,dy,
+     &                    xlowmbc,ylowmbc,maux,aux,0)
+
 c            # routine to interpolate solution
 c            # at tcf to the fixed grid storage array,
 c            #saving solution and tcf at every grid point
 
-         endif
+        endif
 
 c        # fill in values for eta if they need to be saved for later checking max/mins
 c        # check for arrival times
-         if (ioutsurfacemax(ng)+ioutarrivaltimes(ng).gt.0) then
-         i0=i0fg2(ng)
-         call fgridinterp(fgridoften(i0),xlowfg(ng),ylowfg(ng),
-     &    xhifg(ng),yhifg(ng),dxfg(ng),dyfg(ng),mxfg(ng),myfg(ng),
-     &    tc0,mfgridvars2(ng),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,ioutarrivaltimes(ng),ioutsurfacemax(ng),1)
-         endif
+        if (fgrids(ng)%output_surface_max 
+     &      + fgrids(ng)%output_arrival_times > 0) then
+
+        call fgrid_interp(3,fgrids(ng),tc0,q,nvar,mx,my,mbc,dx,dy, 
+     &                    xlowmbc,ylowmbc,maux,aux,1)
+     
+        endif
          
 c        # RJL: Modified 8/20/11 
 c        # If levelcheck > 0 then update max/mins at end of step on this grid.
@@ -274,21 +322,22 @@ c        # what level is most relevant for this fixed grid.  Note also that if t
 c        # grids at levelcheck overlapping a portion of the fixed grid then the max/min values 
 c        # will be updated only at start of next level 1 step.
  
-         levelcheck = 0 
-         if (level .eq. levelcheck) then
-         if (ioutsurfacemax(ng)+ioutarrivaltimes(ng).gt.0) then
-           i0=i0fg2(ng)
-         call fgridinterp(fgridoften(i0),xlowfg(ng),ylowfg(ng),
-     &    xhifg(ng),yhifg(ng),dxfg(ng),dyfg(ng),mxfg(ng),myfg(ng),
-     &    tc0,mfgridvars2(ng),q,nvar,mx,my,mbc,dx,dy,nvar,xlowmbc,
-     &    ylowmbc,maux,aux,ioutarrivaltimes(ng),ioutsurfacemax(ng),2)
-          endif
-          endif
+        levelcheck = 0 
+        if (level == levelcheck) then
+        if (fgrids(ng)%output_arrival_times 
+     &      + fgrids(ng)%output_surface_max > 0) then
+
+        call fgrid_interp(3,fgrids(ng),tc0,q,nvar,mx,my,mbc,dx,dy,
+     &    xlowmbc,ylowmbc,maux,aux,2)
+         endif
+         endif
 
 
       endif
       enddo
+!$OMP END CRITICAL (FixedGrids)
 c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 
 c     # output fluxes for debugging purposes:
       if (debug) then

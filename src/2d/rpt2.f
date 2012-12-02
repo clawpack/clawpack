@@ -1,11 +1,12 @@
 c
 c
 c     =====================================================
-      subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,
+      subroutine rpt2(ixy,maxm,meqn,maux,mwaves,mbc,mx,
      &                  ql,qr,aux1,aux2,aux3,
      &                  ilr,asdq,bmasdq,bpasdq)
 c     =====================================================
-      use geoclaw_module
+      use geoclaw_module, only: g => grav, dry_tolerance, rho
+      use geoclaw_module, only: coordinate_system,earth_radius,deg2rad
 
       implicit none
 c
@@ -14,9 +15,7 @@ c     Jacobian.
 
 c-----------------------last modified 1/10/05----------------------
 
-      integer ixy,maxm,meqn,mwaves,mbc,mx,ilr
-      integer maux  ! should be passed in or put into a module
-      parameter (maux=3)
+      integer ixy,maxm,meqn,maux,mwaves,mbc,mx,ilr
 
       double precision  ql(meqn,1-mbc:maxm+mbc)
       double precision  qr(meqn,1-mbc:maxm+mbc)
@@ -30,7 +29,7 @@ c-----------------------last modified 1/10/05----------------------
       double precision  s(3)
       double precision  r(3,3)
       double precision  beta(3)
-      double precision  g,tol,abs_tol
+      double precision  tol,abs_tol
       double precision  hl,hr,hul,hur,hvl,hvr,vl,vr,ul,ur,bl,br
       double precision  uhat,vhat,hhat,roe1,roe3,s1,s2,s3,s1l,s3r
       double precision  delf1,delf2,delf3,dxdcd,dxdcu
@@ -38,27 +37,26 @@ c-----------------------last modified 1/10/05----------------------
 
       integer i,m,mw,mu,mv
 
-      g=grav
-      tol=drytolerance
-      abs_tol=drytolerance
+      tol=dry_tolerance(1)
+      abs_tol=dry_tolerance(1)
 
       if (ixy.eq.1) then
-	     mu = 2
-	     mv = 3
+        mu = 2
+        mv = 3
       else
-	     mu = 3
-	     mv = 2
+        mu = 3
+        mv = 2
       endif
 
 
       do i=2-mbc,mx+mbc
 
-         hl=qr(1,i-1)
-         hr=ql(1,i)
-         hul=qr(mu,i-1)
-         hur=ql(mu,i)
-         hvl=qr(mv,i-1)
-         hvr=ql(mv,i)
+         hl=qr(1,i-1) / rho(1)
+         hr=ql(1,i) / rho(1)
+         hul=qr(mu,i-1) / rho(1)
+         hur=ql(mu,i) / rho(1)
+         hvl=qr(mv,i-1) / rho(1)
+         hvr=ql(mv,i) / rho(1)
 
 c===========determine velocity from momentum===========================
        if (hl.lt.abs_tol) then
@@ -89,18 +87,19 @@ c===========determine velocity from momentum===========================
       dxdcp = 1.d0
       dxdcm = 1.d0
 
-       if (hl.le.drytolerance.and.hr.le.drytolerance) go to 90
+       if (hl / rho(1) <= dry_tolerance(1) .and.
+     &     hr / rho(1) <= dry_tolerance(1)) go to 90
 
 *      !check and see if cell that transverse waves are going in is high and dry
        if (ilr.eq.1) then
-            eta = qr(1,i-1) + aux2(1,i-1)
+            eta = qr(1,i-1) / rho(1) + aux2(1,i-1)
             topo1 = aux1(1,i-1)
             topo3 = aux3(1,i-1)
 c            s1 = vl-sqrt(g*hl)
 c            s3 = vl+sqrt(g*hl)
 c            s2 = 0.5d0*(s1+s3)
        else
-            eta = ql(1,i) + aux2(1,i)
+            eta = ql(1,i) / rho(1) + aux2(1,i)
             topo1 = aux1(1,i)
             topo3 = aux3(1,i)
 c            s1 = vr-sqrt(g*hr)
@@ -109,17 +108,17 @@ c            s2 = 0.5d0*(s1+s3)
        endif
        if (eta.lt.max(topo1,topo3)) go to 90
 
-      if (icoordsys.eq.2) then
+      if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
-            dxdcp=(Rearth*pi/180.d0)
+            dxdcp=(earth_radius*deg2rad)
             dxdcm = dxdcp
          else
             if (ilr.eq.1) then
-               dxdcp = Rearth*pi*cos(aux3(3,i-1))/180.d0
-               dxdcm = Rearth*pi*cos(aux1(3,i-1))/180.d0
+               dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
+               dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
             else
-               dxdcp = Rearth*pi*cos(aux3(3,i))/180.d0
-               dxdcm = Rearth*pi*cos(aux1(3,i))/180.d0
+               dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
+               dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
             endif
          endif
       endif
