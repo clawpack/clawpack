@@ -201,6 +201,7 @@ contains
             write(GEO_PARM_UNIT,*) '   eigen_method:',eigen_method
             write(GEO_PARM_UNIT,*) '   inundation_method:',inundation_method
         endif
+        close(GEO_PARM_UNIT)
         
     end subroutine read_multilayer_data
 
