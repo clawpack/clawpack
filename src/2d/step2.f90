@@ -117,6 +117,9 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
                    faddm,faddp,gaddm,gaddp,cfl1d,wave,s, &
                    amdq,apdq,cqxx,bmadq,bpadq,rpn2,rpt2) 
 
+        cflgrid = max(cflgrid,cfl1d)
+        !write(53,*) 'x-sweep: ',cfl1d,cflgrid
+
         ! Update fluxes
         fm(:,1:mx+1,j) = fm(:,1:mx+1,j) + faddm(:,1:mx+1)
         fp(:,1:mx+1,j) = fp(:,1:mx+1,j) + faddp(:,1:mx+1)
@@ -159,6 +162,7 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
                    bmadq,bpadq,rpn2,rpt2)
 
         cflgrid = max(cflgrid,cfl1d)
+        !write(53,*) 'y-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
         gm(:,i,1:my+1) = gm(:,i,1:my+1) + faddm(:,1:my+1)
