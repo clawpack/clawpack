@@ -376,9 +376,9 @@ def setgeo(rundata):
 
 def set_storm():
 
-    import geoclaw.surge
+    import geoclaw.surge as surge
 
-    data = surge.data.StormData()
+    data = surge.data.SurgeData()
 
    # Physics parameters
     data.rho_air = 1.15

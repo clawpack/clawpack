@@ -21,18 +21,19 @@ CLAW_PKG = geoclaw                  # Clawpack package to use
 EXE = xgeoclaw                 # Executable to create
 SETRUN_FILE = setrun.py        # File containing function to make data
 OUTDIR = _output               # Directory for output
-RESTART = False
+#RESTART = False
 SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran   # default if not set as environment variable
-# Add any desired compiler flags such as -g here:
-FFLAGS ?=  -O2 
-MAKELEVEL ?= 0
-ifeq ($(MAKELEVEL),0)
-	FFLAGS += -fopenmp
-endif
+FC = ifort  
+#FFLAGS =  -C -CB -CU -fpe1 -ftrapuv -g
+FFLAGS =  -g -O2 -openmp
+
+#MAKELEVEL ?= 0
+#ifeq ($(MAKELEVEL),0)
+#	FFLAGS += -fopenmp
+#endif
 
 # ---------------------------------
 # List of sources for this program:

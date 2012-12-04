@@ -13,26 +13,26 @@ CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
 # ----------------------------------
 
 CLAW_PKG = geoclaw                  # Clawpack package to use
-CLAW_EXE = xgeoclaw                 # Executable to create
+EXE = xgeoclaw                 # Executable to create
 CLAW_setrun_file = setrun.py        # File containing function to make data
 CLAW_OUTDIR = _output               # Directory for output
 CLAW_setplot_file = setplot.py      # File containing function to set plots
 CLAW_PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran
-FFLAGS ?=
-MAKELEVEL ?= 0
-ifeq ($(MAKELEVEL),0)
-	# If you want to include NetCDF output add these flags
-	# Note that the NETCDF_INC should point to the location of the hearder files
-	# for NetCDF
-	# NETCDF_INC ?= /usr/include
-	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
-
-	# Threading flags
-	# FFLAGS += -fopenmp
-endif
+FC = ifort
+FFLAGS = -O2 -openmp
+#MAKELEVEL ?= 0
+#ifeq ($(MAKELEVEL),0)
+#	# If you want to include NetCDF output add these flags
+#	# Note that the NETCDF_INC should point to the location of the hearder files
+#	# for NetCDF
+#	# NETCDF_INC ?= /usr/include
+#	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
+#
+#	# Threading flags
+#	# FFLAGS += -fopenmp
+#endif
 
 # ---------------------------------
 # List of sources for this program:
@@ -48,16 +48,16 @@ MODULES = \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
- $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
- $(GEOLIB)/regions_module.f90 \
  $(GEOLIB)/storm_surge/holland_storm_module.f90 \
  $(GEOLIB)/storm_surge/constant_storm_module.f90 \
  $(GEOLIB)/storm_surge/stommel_storm_module.f90 \
  $(GEOLIB)/storm_surge/storm_module.f90
 
 SOURCES = \
+ $(AMRLIB)/gauges_module.f90 \
+ $(AMRLIB)/regions_module.f90 \
   $(GEOLIB)/storm_surge/src2.f90 \
   $(GEOLIB)/storm_surge/src1d.f90 \
   $(GEOLIB)/storm_surge/setaux.f90 \
@@ -83,8 +83,6 @@ SOURCES = \
   $(GEOLIB)/filpatch_new.f90 \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/amr2ez.f \
-  $(GEOLIB)/setgauges.f \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/setgrd.f \
@@ -92,6 +90,7 @@ SOURCES = \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
+  $(AMRLIB)/amr2.f90 \
   $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \

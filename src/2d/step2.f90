@@ -1,3 +1,5 @@
+!
+!     ==========================================================
 subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,rpn2,rpt2)
 !     ==========================================================
 !
@@ -116,6 +118,8 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
         call flux2(1,maxm,meqn,maux,mbc,mx,q1d,dtdx1d,aux1,aux2,aux3, &
                    faddm,faddp,gaddm,gaddp,cfl1d,wave,s, &
                    amdq,apdq,cqxx,bmadq,bpadq,rpn2,rpt2) 
+
+        cflgrid = max(cflgrid,cfl1d)
 
         ! Update fluxes
         fm(:,1:mx+1,j) = fm(:,1:mx+1,j) + faddm(:,1:mx+1)

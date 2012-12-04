@@ -45,7 +45,7 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       dimension work(mwork)
 
       logical    debug,  dump
-      data       debug/.false./,  dump/.false./
+      data       debug/.true./,  dump/.true./
 c
 c     # set tcom = time.  This is in the common block comxyt that could
 c     # be included in the Riemann solver, for example, if t is explicitly

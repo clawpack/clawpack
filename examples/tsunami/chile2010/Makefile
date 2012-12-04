@@ -20,22 +20,24 @@ SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran
-FFLAGS ?= 
-#FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
-FFLAGS = -O2
+FC = gfortran
+#FFLAGS =  -C -CB -CU -fpe1 -ftrapuv -g 
+FFLAGS =   -g -fbounds-check
 
-MAKELEVEL ?= 0
-ifeq (${MAKELEVEL},0)
-	# If you want to include NetCDF output add these flags
-	# Note that the NETCDF_INC should point to the location of the hearder files
-	# for NetCDF
-	# NETCDF_INC ?= /usr/include
-	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
+#FC = gfortran
+#FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
-	# Threading flags
-	FFLAGS += $(OMP_FLAG)
-endif
+#MAKELEVEL ?= 0
+#ifeq (${MAKELEVEL},0)
+#	# If you want to include NetCDF output add these flags
+#	# Note that the NETCDF_INC should point to the location of the hearder files
+#	# for NetCDF
+#	# NETCDF_INC ?= /usr/include
+#	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
+#
+#	# Threading flags
+#	FFLAGS += $(OMP_FLAG)
+#endif
 
 # ---------------------------------
 # List of sources for this program:
@@ -112,9 +114,10 @@ SOURCES = \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl.f \
+  $(AMRLIB)/flglvl2.f \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
-  $(AMRLIB)/grdfit.f \
+  $(AMRLIB)/grdfit2.f \
   $(AMRLIB)/intfil_new.f90 \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
