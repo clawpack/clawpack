@@ -31,7 +31,7 @@ ifeq ($(MAKELEVEL),0)
 	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
 
 	# Threading flags
-	FFLAGS += $(OMP_FLAG)
+	# FFLAGS += $(OMP_FLAG)
 endif
 
 # ---------------------------------
@@ -57,6 +57,7 @@ MODULES = \
  $(GEOLIB)/storm_surge/stommel_storm_module.f90 \
  $(GEOLIB)/storm_surge/storm_module.f90
 
+# Switch source file grdfit2.f and grdfit.f to change flagging strategy
 SOURCES = \
   $(GEOLIB)/storm_surge/src2.f90 \
   $(GEOLIB)/storm_surge/src1d.f90 \
@@ -64,6 +65,7 @@ SOURCES = \
   $(GEOLIB)/storm_surge/setprob.f90 \
   $(GEOLIB)/storm_surge/qinit.f90 \
   $(GEOLIB)/storm_surge/flag2refine.f90 \
+  $(GEOLIB)/storm_surge/flag2refine2.f90 \
   $(GEOLIB)/storm_surge/b4step2.f90 \
   $(GEOLIB)/storm_surge/tick.f \
   $(GEOLIB)/storm_surge/valout.f \
@@ -97,26 +99,32 @@ SOURCES = \
   $(AMRLIB)/bound_new.f90 \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
+  $(AMRLIB)/spest2.f  \
   $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \
   $(AMRLIB)/cleanup.f \
   $(AMRLIB)/colate.f \
+  $(AMRLIB)/colate2.f \
   $(AMRLIB)/errest.f \
   $(AMRLIB)/bufnst.f \
+  $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl.f \
+  $(AMRLIB)/flglvl2.f \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
-  $(AMRLIB)/grdfit.f \
+  $(AMRLIB)/grdfit2.f \
   $(AMRLIB)/intfil_new.f90 \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
+  $(AMRLIB)/nestck2.f \
   $(AMRLIB)/prepc.f \
   $(AMRLIB)/prepf.f \
   $(AMRLIB)/projec.f \
+  $(AMRLIB)/projec2.f \
   $(AMRLIB)/signs.f \
   $(AMRLIB)/findcut.f \
   $(AMRLIB)/smartbis.f \
@@ -140,12 +148,25 @@ SOURCES = \
   $(AMRLIB)/zeroin.f \
   $(AMRLIB)/setflags.f \
   $(AMRLIB)/shiftset.f \
+  $(AMRLIB)/shiftset2.f \
   $(AMRLIB)/conck.f \
   $(AMRLIB)/domshrink.f \
   $(AMRLIB)/domprep.f \
   $(AMRLIB)/domup.f \
   $(AMRLIB)/domcopy.f \
   $(AMRLIB)/coarsen.f \
+  $(AMRLIB)/setdomflags.f \
+  $(AMRLIB)/setIndices.f \
+  $(AMRLIB)/coarseGridFlagSet.f \
+  $(AMRLIB)/setPhysBndryFlags.f \
+  $(AMRLIB)/griddomup.f \
+  $(AMRLIB)/griddomcopy.f \
+  $(AMRLIB)/griddomshrink.f \
+  $(AMRLIB)/domgrid.f \
+  $(AMRLIB)/addflags.f \
+  $(AMRLIB)/baseCheck.f \
+  $(AMRLIB)/drivesort.f \
+  $(AMRLIB)/flagcheck.f \
   $(AMRLIB)/auxcoarsen.f \
   $(AMRLIB)/intcopy.f \
   $(AMRLIB)/preintcopy.f \

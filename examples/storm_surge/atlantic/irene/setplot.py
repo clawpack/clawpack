@@ -47,12 +47,14 @@ def setplot(plotdata):
     # Limits for plots
     full_xlimits = [-85.0,-45.0]
     full_ylimits = [13.0,45.0]
+    full_shrink = 0.8
     newyork_xlimits = [-74.5,-71.0]
     newyork_ylimits = [40.0,41.5]
+    newyork_shrink = 0.5
 
     # Color limits
-    surface_range = 4.0
-    speed_range = 6.0
+    surface_range = 1.5
+    speed_range = 1.0
 
     xlimits = full_xlimits
     ylimits = full_ylimits
@@ -95,7 +97,7 @@ def setplot(plotdata):
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = pcolor_afteraxes
     
-    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
+    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=full_shrink)
     surge.plot.add_land(plotaxes)
 
 
@@ -115,7 +117,7 @@ def setplot(plotdata):
     plotaxes.afteraxes = pcolor_afteraxes
 
     # Speed
-    surge.plot.add_speed(plotaxes,bounds=speed_limits)
+    surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=full_shrink)
 
     # Land
     surge.plot.add_land(plotaxes)
@@ -138,7 +140,28 @@ def setplot(plotdata):
         surge.plot.gauge_locations(cd)
     plotaxes.afteraxes = after_with_gauges
     
-    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
+    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=newyork_shrink)
+    surge.plot.add_land(plotaxes)
+
+    # ========================================================================
+    #  Currents Elevations - New York Area
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Currents - New York',  
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = True
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Currents'
+    plotaxes.scaled = True
+    plotaxes.xlimits = newyork_xlimits
+    plotaxes.ylimits = newyork_ylimits
+    def after_with_gauges(cd):
+        surge_afteraxes(cd)
+        surge.plot.gauge_locations(cd)
+    plotaxes.afteraxes = after_with_gauges
+    
+    surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=newyork_shrink)
     surge.plot.add_land(plotaxes)
 
 
@@ -148,7 +171,7 @@ def setplot(plotdata):
     # Pressure field
     plotfigure = plotdata.new_plotfigure(name='Pressure',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.pressure_forcing
+    plotfigure.show = surge_data.pressure_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -164,7 +187,7 @@ def setplot(plotdata):
     # Wind field
     plotfigure = plotdata.new_plotfigure(name='Wind Speed',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing
+    plotfigure.show = surge_data.wind_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -223,7 +246,7 @@ def setplot(plotdata):
     plotfigure = plotdata.new_plotfigure(name='Surface & topo',   
                                          figno=fig_num_counter.get_counter(),
                                          type='each_gauge')
-    plotfigure.show = True
+    plotfigure.show = False
     plotfigure.clf_each_gauge = True
 
     # Set up for axes in this figure:

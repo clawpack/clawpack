@@ -165,7 +165,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 2
+    clawdata.verbosity = 7
 
 
 
@@ -259,7 +259,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 5
+    clawdata.amr_levels_max = 7
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,2,3,4,8,2]
@@ -335,9 +335,11 @@ def setrun(claw_pkg='geoclaw'):
     regions = rundata.regiondata.regions
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
+    regions.append([1,7,clawdata.t0,clawdata.tfinal,-74.2,-73.8,40.55,41.0])
     
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
+    rundata.gaugedata.add_gauge([1,-74.0,40.55,clawdata.t0,clawdata.tfinal])
 
 
     #------------------------------------------------------------------
@@ -376,14 +378,17 @@ def setgeo(rundata):
 
     # == Algorithm and Initial Conditions ==
     geodata.eta_init = 0.0
-    geodata.dry_tolerance = 1.e-2
-    geodata.wave_tolerance = 1.e0
+    geodata.dry_tolerance = 1.e-3
+    geodata.wave_tolerance = 0.5
+    geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
     geodata.deep_depth = 100.0
     geodata.max_level_deep = 2
     geodata.friction_forcing = True
     geodata.wet_manning_coefficient = 0.025
-    geodata.dry_manning_coefficient = 0.100
+    geodata.dry_manning_coefficient = 0.050
     geodata.friction_depth = 1e6
+
+
 
     # == settopo.data values ==
     geodata.topofiles = []

@@ -171,7 +171,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 2
+    clawdata.verbosity = 7
 
 
 
@@ -265,12 +265,12 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 5
+    clawdata.amr_levels_max = 7
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    clawdata.refinement_ratios_x = [2,2,3,4,8,2]
-    clawdata.refinement_ratios_y = [2,2,3,4,8,2]
-    clawdata.refinement_ratios_t = [2,2,3,4,8,2]
+    clawdata.refinement_ratios_x = [2,2,3,4,4,4]
+    clawdata.refinement_ratios_y = [2,2,3,4,4,4]
+    clawdata.refinement_ratios_t = [2,2,3,4,4,4]
 
 
     # Specify type of each aux variable in clawdata.auxtype.
@@ -341,9 +341,9 @@ def setrun(claw_pkg='geoclaw'):
     regions = rundata.regiondata.regions
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    # regions.append([2, 5, days2seconds(254), rundata.clawdata.tfinal, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
-    # regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
-    # regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
+    regions.append([2, 5, days2seconds(254), rundata.clawdata.tfinal, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
+    regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
+    regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
     
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
@@ -389,13 +389,15 @@ def setgeo(rundata):
     # == Algorithm and Initial Conditions ==
     geodata.eta_init = 0.0
     geodata.dry_tolerance = 1.e-2
-    geodata.wave_tolerance = 1.e0
+    geodata.wave_tolerance = 1.0
+    # geodata.wave_tolerance = 0.5
+    geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
     geodata.deep_depth = 100.0
     geodata.max_level_deep = 2
     geodata.friction_forcing = True
     geodata.wet_manning_coefficient = 0.025
-    geodata.dry_manning_coefficient = 0.100
-    geodata.friction_depth = 1e6
+    geodata.dry_manning_coefficient = 0.050
+    geodata.friction_depth = 1e10
 
     # == settopo.data values ==
     geodata.topofiles = []
@@ -403,20 +405,20 @@ def setgeo(rundata):
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     geodata.topofiles.append([3, 1, 3, rundata.clawdata.t0, rundata.clawdata.tfinal, 
                               '../bathy/gulf_caribbean.tt3'])
-    # geodata.topofiles.append([3, 1, 3, 0., 1.e10, \
+    # geodata.topofiles.append([3, 1, 3, rundata.clawdata.t0, rundata.clawdata.tfinal, \
     #                           './bathy/gulf_coarse_bathy.tt3'])
     geodata.topofiles.append([3, 1, 5, rundata.clawdata.t0, rundata.clawdata.tfinal,
                               '../bathy/NOAA_Galveston_Houston.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           '../bathy/galveston_channel.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           '../bathy/houston_harbor.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           '../bathy/houston_channel_3.tt3'])
+    geodata.topofiles.append([3, 1, 7, rundata.clawdata.t0, rundata.clawdata.tfinal, 
+                              '../bathy/galveston_channel.tt3'])
+    geodata.topofiles.append([3, 1, 7, rundata.clawdata.t0, rundata.clawdata.tfinal, 
+                              '../bathy/houston_harbor.tt3'])
+    geodata.topofiles.append([3, 1, 7, rundata.clawdata.t0, rundata.clawdata.tfinal, 
+                              '../bathy/houston_channel_3.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
     #                           '../bathy/houston_channel_2.tt3'])
-    # # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    # #                           '../bathy/galveston.tt3'])
+    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+    #                           '../bathy/galveston.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
     #                           '../bathy/lower_galveston_bay.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \

@@ -16,6 +16,7 @@ Plotting routines for storm surge simulations with GeoClaw
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 from clawpack.visclaw import colormaps, geoplot, gaugetools
 
@@ -75,7 +76,10 @@ def gaugetopo(current_data):
     return topo
     
 def gauge_afteraxes(current_data):
-    # Change time to hours
+    # Add sea level line
+    add_zeroline(current_data)
+
+    # Change time to days
     plt.xlabel('t (days)')
     plt.ylabel('m')
     locs,labels = plt.xticks()
@@ -83,12 +87,6 @@ def gauge_afteraxes(current_data):
     # locs = np.linspace(-12.0,40,52)
     # labels = range(-12,41)
     plt.xticks(locs,labels)
-    
-    # Add sea level line
-    # t = current_data.t
-    plt.hold(True)
-    plt.plot([0,0],[0,40],'k-')
-    plt.hold(False)
 
 def addgauges(current_data):
     gaugetools.plot_gauge_locations(current_data.plotdata, \
@@ -98,8 +96,8 @@ def add_zeroline(current_data):
     # from pylab import plot, legend, xticks, floor
     t = current_data.t
     #legend(('surface','topography'),loc='lower left')
-    plot(t, 0*t, 'k')
-    n = int(floor(t.max()/3600.) + 2)
+    plt.plot(t, 0*t, 'k')
+    # n = int(floor(t.max()/3600.) + 2)
     # xticks([3600*i for i in range(n)])
 
 
@@ -250,7 +248,7 @@ class PlotProfile(object):
 # ========================================================================
 #  Plot items
 # ========================================================================
-def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor'):
+def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':            
         plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = geoplot.surface_or_depth
@@ -261,8 +259,10 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor'):
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
+        plotitem.colorbar_shrink = shrink
+        plotitem.colorbar_label = "Surface Height (m)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
     elif plot_type == 'contour':            
         plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
         plotitem.plot_var = geoplot.surface
@@ -274,12 +274,12 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor'):
         # plotitem.kwargs = {''}
         plotitem.amr_contour_show = [1,1,1]
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
         plotitem.amr_contour_colors = 'k'
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
 
-def add_speed(plotaxes,bounds=None,plot_type='pcolor'):
+def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = water_speed
@@ -289,6 +289,8 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor'):
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
+        plotitem.colorbar_shrink = shrink
+        plotitem.colorbar_label = "Current (m/s)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
     elif plot_type == 'quiver':
@@ -307,7 +309,7 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor'):
         plotitem.contour_levels = [0.5,1.5,3,4.5,6.0]
         plotitem.amr_contour_show = [1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
         plotitem.amr_contour_colors = 'k'
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
@@ -321,9 +323,11 @@ def add_wind(plotaxes,bounds=None,plot_type='pcolor'):
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
+        plotitem.colorbar_shrink = 0.5
+        plotitem.colorbar_label = "Wind Speed (m/s)"
         # plotitem.amr_imshow_show = [1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
     elif plot_type == 'contour':
         plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
         plotitem.plot_var = wind_speed
@@ -347,8 +351,10 @@ def add_pressure(plotaxes,bounds=None,plot_type='pcolor'):
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
+        plotitem.colorbar_shrink = 0.5
+        plotitem.colorbar_label = "Pressure (mbar)"
         plotitem.amr_celledges_show = [0,0,0]
-        plotitem.amr_patchedges_show = [1]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
     elif plot_type == 'contour':
         pass
         
@@ -364,17 +370,23 @@ def add_vorticity(plotaxes,bounds=None,plot_type="pcolor"):
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1]
         
-def add_land(plotaxes,plot_type='pcolor'):
+def add_land(plotaxes,plot_type='pcolor',topo_min=-10,topo_max=10.0):
     if plot_type == 'pcolor':
         plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.show = True
+        cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
+                                       -0.00001:[0.95,0.9,0.7],
+                                       0.00001:[.5,.7,0],
+                                       1:[.2,.5,.2]})
+        # color_norm = colors.Normalize(topo_min,topo_max,clip=True)
         plotitem.plot_var = geoplot.land
-        plotitem.pcolor_cmap = geoplot.land_colors
-        plotitem.pcolor_cmin = 0.0
-        plotitem.pcolor_cmax = 80.0
+        # plotitem.pcolor_cmap = geoplot.land_colors
+        plotitem.pcolor_cmap = cmap
+        plotitem.pcolor_cmin = topo_min
+        plotitem.pcolor_cmax = topo_max
         plotitem.add_colorbar = False
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
     elif plot_type == 'contour':            
         plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
         plotitem.plot_var = geoplot.land
@@ -386,15 +398,15 @@ def add_land(plotaxes,plot_type='pcolor'):
         plotitem.celledges_show = 0
         plotitem.patchedges_show = 0   
 
-def add_bathy_contours(plotaxes,contour_levels=None):
+def add_bathy_contours(plotaxes,contour_levels=None,color='k'):
     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
     plotitem.plot_var = geoplot.topo
     if contour_levels is None:
-        contour_levels = np.linspace(-5000,0,5)
+        contour_levels = [0.0]
     plotitem.contour_levels = contour_levels
-    plotitem.amr_contour_colors = ['y']  # color on each level
+    plotitem.amr_contour_colors = [color]  # color on each level
     plotitem.kwargs = {'linestyles':'solid','linewidths':2}
-    plotitem.amr_contour_show = [1,0,0]
+    plotitem.amr_contour_show = [0,0,0,0,0,0,1]
     plotitem.celledges_show = 0
     plotitem.patchedges_show = 0
 
