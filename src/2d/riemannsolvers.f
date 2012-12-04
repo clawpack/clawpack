@@ -194,10 +194,12 @@ c        !Determine determinant of eigenvector matrix========
 c        !solve for beta(k) using Cramers Rule=================
          do k=1,3
             do mw=1,3
-               do m=1,3
-                  A(m,mw)=r(m,mw)
-                  A(m,k)=del(m)
-               enddo
+                  A(1,mw)=r(1,mw)
+                  A(1,k)=del(1)
+                  A(2,mw)=r(2,mw)
+                  A(2,k)=del(2)
+                  A(3,mw)=r(3,mw)
+                  A(3,k)=del(3)
             enddo
             det1=A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2))
             det2=A(1,2)*(A(2,1)*A(3,3)-A(2,3)*A(3,1))

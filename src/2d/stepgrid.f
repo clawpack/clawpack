@@ -222,8 +222,8 @@ c
 c
 c            
         mptr_level = node(nestlevel,mptr)
-        write(outunit,811) mptr, mptr_level, cflgrid
- 811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
+c       write(outunit,811) mptr, mptr_level, cflgrid
+c811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
 c
 
 !$OMP  CRITICAL (cflm)
