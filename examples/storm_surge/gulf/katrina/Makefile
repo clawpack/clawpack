@@ -67,7 +67,7 @@ SOURCES = \
   $(GEOLIB)/storm_surge/b4step2.f90 \
   $(GEOLIB)/storm_surge/tick.f \
   $(GEOLIB)/storm_surge/valout.f \
-  $(GEOLIB)/storm_surge/bc2amr.f \
+  $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate.f \

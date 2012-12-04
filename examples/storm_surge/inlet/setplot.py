@@ -33,21 +33,6 @@ def setplot(plotdata):
     amrdata = Data(os.path.join(plotdata.outdir,'amr2ez.data'))
     physics = Data(os.path.join(plotdata.outdir,'physics.data'))
     surge_data = Data(os.path.join(plotdata.outdir,'surge.data'))
-    storm_data = Data(os.path.join(plotdata.outdir,'storm.data'))
-
-    # Load storm track, set to None if it appears we did not write out the track
-    # correctly
-    try:
-        track_file_path = os.path.join(plotdata.outdir,'fort.track')
-        track = np.loadtxt(track_file_path)
-        if track.shape[0] <= 1:
-            track = None
-    except:
-        track = None
-
-    # Location of storm fields
-    wind_field = 4
-    pressure_field = 6
 
     # Limits for plots
     full_xlimits = [amrdata.xlower,amrdata.xupper]
@@ -64,10 +49,6 @@ def setplot(plotdata):
         eta = [eta]
     surface_limits = [eta[0]-surface_range,eta[0]+surface_range]
     speed_limits = [0.0,speed_range]
-    
-    wind_limits = [0,55]
-    pressure_limits = [966,1013]
-    vorticity_limits = [-1.e-2,1.e-2]
 
     # ==========================================================================
     # Gauge functions
@@ -122,31 +103,11 @@ def setplot(plotdata):
         for ref_line in ref_lines:
             plt.plot([ref_line,ref_line],y,'y--')
         plt.hold(False)
-
-
-    # ========================================================================
-    #  Surge related helper functions
-    # ========================================================================
-    # Surge eye location
-    def eye_location(cd):
-        x = track[cd.frameno,1]
-        y = track[cd.frameno,2]
-        
-        return x,y
         
     def hours_figure_title(current_data):
         t = current_data.t / (60**2)
         title = current_data.plotaxes.title
         plt.title('%s at hour %3.2f' % (title,t))
-
-    def surge_afteraxes(current_data):
-        if track is not None:
-            x,y = eye_location(current_data)
-            plt.hold(True)
-            plt.plot(x,y,'rD',markersize=2)
-            plt.hold(False)
-        hours_figure_title(current_data)
-        m_to_km_labels(current_data)
 
     def m_to_km_labels(current_data=None):
         plt.xlabel('km')
@@ -157,45 +118,6 @@ def setplot(plotdata):
         locs,labels = plt.yticks()
         labels = locs/1.e3
         plt.yticks(locs,labels)
-        
-    def storm_wind(current_data):
-        if current_data.level == 1:
-            t = current_data.t
-            u = current_data.q[wind_field,:,:]
-            v = current_data.q[wind_field+1,:,:]
-            plt.hold(True)
-            Q = plt.quiver(current_data.x[::3,::3],current_data.y[::3,::3],
-                        u[::3,::3],v[::3,::3])
-            # plt.quiverkey(Q,0.5,0.5,50,r'$50 \frac{m}{s}$',labelpos='W',
-            #                 fontproperties={'weight':'bold'})
-            plt.hold(False)
-            
-    def wind_x(cd):
-        return cd.q[wind_field,:,:]
-    def wind_y(cd):
-        return cd.q[wind_field+1,:,:]
-    def wind_speed(cd):
-        return np.sqrt(wind_x(cd)**2 + wind_y(cd)**2)
-
-    def pressure(cd):
-        # The division by 100.0 is to convert from Pa to millibars
-        return cd.q[pressure_field,:,:] / 100.0
-
-    def pressure_gradient_x(cd):
-        return cd.q[pressure_field+1,:,:]
-
-    def pressure_gradient_y(cd):
-        return cd.q[pressure_field+2,:,:]
-        
-    def wind_contours(current_data):
-        plt.hold(True)
-        w = wind_speed(current_data)
-        max_w = np.max(np.max(w))
-        levels = [0.0,0.25*max_w,0.5*max_w,0.75*max_w,max_w*0.999]
-        C = plt.contour(current_data.x,current_data.y,w,levels)
-        plt.clabel(C,inline=1)
-        plt.hold(False)
-
 
     # ========================================================================
     #  Water helper functions

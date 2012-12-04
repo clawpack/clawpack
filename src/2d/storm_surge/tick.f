@@ -244,7 +244,7 @@ c         # rjl & mjb changed to cfl_level, 3/17/10
      &                     convert2days(timenew)
               endif
 100       format(' AMRCLAW: level ',i2,'  CFL = ',e8.3,
-     &           '  dt = ',e10.4,  '  final t = ',e3.2)
+     &           '  dt = ',e10.4,  '  final t = ',f6.2)
 
 
 c        # to debug individual grid updates...

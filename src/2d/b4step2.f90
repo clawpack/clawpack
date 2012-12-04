@@ -57,7 +57,7 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
 !     enddo
 
     ! Move the topography if needed
-    write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
+    ! write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
     do i=1,num_dtopo
         call movetopo(maxmx,maxmy,mbc,mx,my,                                  &
                       xlower,ylower,dx,dy,t,dt,maux,aux,                      &
