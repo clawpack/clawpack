@@ -41,23 +41,9 @@ module geoclaw_module
                                              ! coefficients
     
     ! Method parameters    
-    real(kind=8), allocatable :: dry_tolerance(:)
+    real(kind=8) :: dry_tolerance, eta_init
     logical :: varRefTime = .FALSE. ! Choose dt refinement automatically
     
-    ! ========================================================================
-    !  Multi-layer
-    ! ========================================================================
-    integer :: num_layers
-    real(kind=8), allocatable :: rho(:)
-    real(kind=8), allocatable :: eta_init(:)
-    
-    ! Multilayer method Parameters
-    integer :: eigen_method,inundation_method
-
-    ! Loss of hyperbolicity
-    logical :: check_richardson
-    real(kind=8) :: richardson_tolerance
-
 contains
 
     ! ========================================================================
@@ -94,9 +80,9 @@ contains
         read(unit,*) earth_radius
         read(unit,*) coordinate_system
         read(unit,*)
-        read(unit,*) num_layers
-        allocate(rho(num_layers),eta_init(num_layers),dry_tolerance(num_layers))
-        read(unit,*) rho
+!       !read(unit,*) num_layers
+!       !allocate(rho(num_layers),eta_init(num_layers),dry_tolerance(num_layers))
+!       !read(unit,*) rho
         read(unit,*) eta_init
         read(unit,*)
         read(unit,*) coriolis_forcing
@@ -139,8 +125,8 @@ contains
         write(GEO_PARM_UNIT,*) '   earth_radius:',earth_radius
         write(GEO_PARM_UNIT,*) '   coordinate_system:',coordinate_system
         write(GEO_PARM_UNIT,*) ' '
-        write(GEO_PARM_UNIT,*) '   num_layers:',num_layers
-        write(GEO_PARM_UNIT,*) '   rho:',rho
+        !write(GEO_PARM_UNIT,*) '   num_layers:',num_layers
+        !write(GEO_PARM_UNIT,*) '   rho:',rho
         write(GEO_PARM_UNIT,*) '   eta_init:',eta_init
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '   coriolis_forcing:',coriolis_forcing
@@ -155,55 +141,6 @@ contains
 
     end subroutine set_geo
 
-    ! ========================================================================
-    !  read_multilayer_data(file_name)
-    ! ========================================================================
-    subroutine read_multilayer_data(file_name)
-
-        implicit none
-        
-        ! Arguments
-        character(len=*), optional, intent(in) :: file_name
-        
-        ! Locals
-        integer, parameter :: unit = 124
-        integer :: ios
-
-        ! Only read in this data if we are doing multilayer swe
-        if (num_layers > 1) then
-            write(GEO_PARM_UNIT,*) ' '
-            write(GEO_PARM_UNIT,*) '--------------------------------------------'
-            write(GEO_PARM_UNIT,*) 'Multilayer Parameters:'
-            write(GEO_PARM_UNIT,*) '----------------------'
-
-            if (present(file_name)) then
-                call opendatafile(unit, file_name)
-            else
-                call opendatafile(unit, 'multilayer.data')
-            endif
-
-            read(unit,*) check_richardson
-            read(unit,"(d16.8)") richardson_tolerance
-            read(unit,"(i1)") eigen_method
-            read(unit,"(i1)") inundation_method
-            close(unit) 
-
-            ! Open Kappa output file if num_layers > 1
-            ! Open file for writing hyperbolicity warnings if multiple layers
-            if (num_layers > 1 .and. check_richardson) then
-                open(unit=KAPPA_UNIT, file='fort.kappa', iostat=ios, &
-                        status="unknown", action="write")
-                if ( ios /= 0 ) stop "Error opening file name fort.kappa"
-            endif
-
-            write(GEO_PARM_UNIT,*) '   check_richardson:',check_richardson
-            write(GEO_PARM_UNIT,*) '   richardson_tolerance:',richardson_tolerance
-            write(GEO_PARM_UNIT,*) '   eigen_method:',eigen_method
-            write(GEO_PARM_UNIT,*) '   inundation_method:',inundation_method
-        endif
-        close(GEO_PARM_UNIT)
-        
-    end subroutine read_multilayer_data
 
     ! ==========================================================================
     !  Calculate the coriolis constant f

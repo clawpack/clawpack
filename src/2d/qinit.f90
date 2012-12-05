@@ -1,7 +1,8 @@
+
 subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     use qinit_module, only: qinit_type,add_perturbation
-    use geoclaw_module, only: num_layers,rho,eta_init
+    use geoclaw_module, only: eta_init
     
     implicit none
     
@@ -13,19 +14,12 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     ! Locals
     integer :: i,j,m,layer_index
-    real(kind=8) :: eta_below
     
     ! Set flat state based on eta_init
     q = 0.d0
-    do i=1,mx
-        do j=1,my
-            ! Start with bottom layer and work up, set surface below for h
-            eta_below = aux(1,i,j)
-            do m=num_layers,1,-1
-                layer_index = 3*(m-1) + 1
-                q(layer_index,i,j) = max(0.d0,eta_init(m) - eta_below) * rho(m)
-                eta_below = eta_init(m)
-            enddo
+    do j=1,my
+        do i=1,mx
+            q(1,i,j) = max(0.d0,eta_init - aux(1,i,j)) 
         enddo
     enddo
     

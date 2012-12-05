@@ -9,8 +9,7 @@
       integer bsearch
       dimension q(nvar,mitot,mjtot), var(maxvar)
       dimension aux(naux,mitot,mjtot)
-      dimension eta(num_layers)
-      dimension h(num_layers,4)
+      dimension h(4)
 
 c  # see if this grid contains any gauges so data can be output
 c  # may turn out this should be sorted, but for now do linear search
@@ -64,69 +63,50 @@ c Check for dry cells by comparing h to drytol2, which should be smaller
 c than drytolerance to avoid oscillations since when h < drytolerance the
 c velocities are zeroed out which can then lead to increase in h again.
 
-        drytol2 = 0.1d0 * dry_tolerance(1)
+        drytol2 = 0.1d0 * dry_tolerance
 
-          do m=1,num_layers
-              layer_index = 3*(m-1)
-              h(m,1) = q(layer_index+1,iindex,jindex) / rho(m)
-              h(m,2) = q(layer_index+1,iindex+1,jindex) / rho(m)
-              h(m,3) = q(layer_index+1,iindex,jindex+1) / rho(m)
-              h(m,4) = q(layer_index+1,iindex+1,jindex+1) / rho(m)
+              h(1) = q(1,iindex,jindex) 
+              h(2) = q(1,iindex+1,jindex) 
+              h(3) = q(1,iindex,jindex+1)
+              h(4) = q(1,iindex+1,jindex+1) 
               
-              if ((h(m,1) < drytol2) .or.
-     &            (h(m,2) < drytol2) .or.
-     &            (h(m,3) < drytol2) .or.
-     &            (h(m,4) < drytol2)) then
+              if ((h(1) < drytol2) .or.
+     &            (h(2) < drytol2) .or.
+     &            (h(3) < drytol2) .or.
+     &            (h(4) < drytol2)) then
                   ! One of the cells is dry, so just use value from grid cell
                   ! that contains gauge rather than interpolating
                   
                   icell = int(1.d0 + (xgauge(i) - xlow) / hx)
                   jcell = int(1.d0 + (ygauge(i) - ylow) / hy)
                   do ivar=1,3
-                      var(ivar + layer_index) = 
-     &                       q(ivar + layer_index,icell,jcell) / rho(m)
+                      var(ivar) = q(ivar,icell,jcell) 
                   enddo
-                  if (m == num_layers) then
-                      ! This is the bottom layer and we should figure out the
-                      ! topography
-                      topo = aux(1,icell,jcell)
-                  endif
+                  ! This is the bottom layer and we should figure out the
+                  ! topography
+                  topo = aux(1,icell,jcell)
               else
                   ! Linear interpolation between four cells
                   do ivar=1,3
-                      var(layer_index + ivar) = (1.d0 - xoff) * 
-     &                   (1.d0 - yoff)
-     &                 * q(layer_index + ivar,iindex,jindex) / rho(m)
-     &                 + xoff*(1.d0 - yoff) 
-     &                 * q(layer_index + ivar,iindex+1,jindex) / rho(m)
-     &                 + (1.d0 - xoff) * yoff 
-     &                 * q(layer_index + ivar,iindex,jindex+1) / rho(m)
-     &                 + xoff * yoff 
-     &                 * q(layer_index + ivar,iindex+1,jindex+1)/rho(m)
+                      var(ivar) = (1.d0 - xoff) * (1.d0 - yoff)
+     &                               * q(ivar,iindex,jindex) 
+     &                + xoff*(1.d0 - yoff) * q(ivar,iindex+1,jindex) 
+     &                + (1.d0 - xoff) * yoff * q(ivar,iindex,jindex+1) 
+     &                + xoff * yoff * q(ivar,iindex+1,jindex+1)
                   enddo
-                  if (m == num_layers) then
-                      topo = (1.d0 - xoff) * (1.d0 - yoff) 
+                  topo = (1.d0 - xoff) * (1.d0 - yoff) 
      &                        * aux(1,iindex,jindex) 
-     &                      + xoff * (1.d0 - yoff) 
-     &                        * aux(1,iindex+1,jindex) 
-     &                      + (1.d0 - xoff) * yoff 
-     &                        * aux(1,iindex,jindex+1) 
-     &                      + xoff * yoff 
-     &                        * aux(1,iindex+1,jindex+1)
-                  endif
+     &                 + xoff * (1.d0 - yoff) * aux(1,iindex+1,jindex) 
+     &                 + (1.d0 - xoff) * yoff * aux(1,iindex,jindex+1) 
+     &                 + xoff * yoff * aux(1,iindex+1,jindex+1)
               endif
-          enddo
               
           ! Extract surfaces
-          eta(num_layers) = var(3*num_layers-2) + topo
-          do k=num_layers-1,1,-1
-              eta(k) = var(3*k-2) + eta(k+1)
-          enddo
+          eta = var(1) + topo
 
 !$OMP CRITICAL (gaugeio)
-              
           write(OUTGAUGEUNIT,100) igauge(i),level,tgrid, 
-     &              (var(j),j=1,3*num_layers),(eta(j),j=1,num_layers)
+     &              (var(j),j=1,3),eta
 
 !$OMP END CRITICAL (gaugeio)
 

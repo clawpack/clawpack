@@ -45,7 +45,7 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       dimension work(mwork)
 
       logical    debug,  dump
-      data       debug/.false./,  dump/.false./
+      data       debug/.false./,  dump/.true./
 c
 c     # set tcom = time.  This is in the common block comxyt that could
 c     # be included in the Riemann solver, for example, if t is explicitly
@@ -257,16 +257,13 @@ c            # with capa array.
  50      continue
 c
 c     # Copied here from b4step2 since need to do before saving to qc1d:
-      do i=1,mitot
-        do j=1,mjtot
-          do k=1,num_layers
-          if (q(3*(k-1)+1,i,j)/rho(k).lt.dry_tolerance(k)) then
-             q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j),0.d0)
-             do m=3*(k-1) + 2,3*(k-1) + 3
-                q(m,i,j)=0.d0
-                enddo
-             endif
-         enddo
+      do j=1,mjtot
+        do i=1,mitot
+           if (q(1,i,j) .lt.  dry_tolerance) then
+              q(1,i,j) = max(q(1,i,j),0.d0)
+              q(2,i,j) = 0.d0
+              q(3,i,j) = 0.d0
+           endif
         enddo
       enddo
 c

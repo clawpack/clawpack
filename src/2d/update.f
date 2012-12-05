@@ -4,7 +4,7 @@ c -----------------------------------------------------------
 c
       subroutine update (level, nvar, naux)
       
-      use geoclaw_module, only: rho, dry_tolerance
+      use geoclaw_module, only:  dry_tolerance
 c
 c     # modified for shallow water on topography to use surface level eta
 c     # rather than depth h = q(i,j,1)
@@ -56,7 +56,7 @@ c 20   if (mptr .eq. 0) go to 85
 !$OMP&                    etaf,etaav,hav,nwet,hc,huc,hvc),
 !$OMP&            SHARED(lget,numgrids,listgrids,level,intratx,intraty,
 !$OMP&                   nghost,uprint,nvar,naux,mcapa,node,listsp,
-!$OMP&                   alloc,lstart,dry_tolerance,rho),
+!$OMP&                   alloc,lstart,dry_tolerance),
 !$OMP&            DEFAULT(none)
       do ng = 1, numgrids(lget)
 c        mptr    = mget(ng, level)
@@ -157,12 +157,12 @@ c     and is never increased given an increase in mass
                capa=alloc(iaddfaux(iff+ico-1,jff+jco-1))
                endif
 
-            hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa / rho(1)
+            hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa 
             bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
-            huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa / rho(1)
-            hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa / rho(1)
+            huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa 
+            hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa 
 
-            if (hf > dry_tolerance(1)) then
+            if (hf > dry_tolerance) then
                etaf = hf+bf
                nwet=nwet+1
             else
@@ -193,9 +193,9 @@ c     and is never increased given an increase in mass
 
 c     # set h on coarse grid based on surface, not conservative near shoreline
 
-      alloc(iadd(1,i,j)) = hc / capac * rho(1)
-      alloc(iadd(2,i,j)) = huc / capac * rho(1)
-      alloc(iadd(3,i,j)) = hvc / capac * rho(1)
+      alloc(iadd(1,i,j)) = hc / capac 
+      alloc(iadd(2,i,j)) = huc / capac 
+      alloc(iadd(3,i,j)) = hvc / capac 
 c
       if (uprint) write(outunit,103)(alloc(iadd(ivar,i,j)),
      .     ivar=1,nvar)

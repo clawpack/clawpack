@@ -9,8 +9,7 @@ module refinement_module
     ! ========================================================================
     !  Refinement Criteria
     ! ========================================================================
-    real(kind=8), allocatable :: wave_tolerance(:)
-    real(kind=8), allocatable :: speed_tolerance(:)
+    real(kind=8) :: wave_tolerance, speed_tolerance
     real(kind=8) :: deep_depth
     integer :: max_level_deep
     
@@ -30,7 +29,6 @@ contains
     subroutine set_refinement(file_name)
         
         use amr_module, only: mxnest
-        use geoclaw_module, only: num_layers
         use utility_module, only: get_value_count
         
         implicit none
@@ -55,11 +53,9 @@ contains
         endif
 
         ! Basic criteria
-        allocate(wave_tolerance(num_layers))
         read(unit,*) wave_tolerance
         read(unit,'(a)') line
-        allocate(speed_tolerance(get_value_count(line)))
-        read(line,*) (speed_tolerance(i),i=1,size(speed_tolerance))
+        read(line,*) speed_tolerance
         read(unit,*) deep_depth
         read(unit,*) max_level_deep
         close(unit)

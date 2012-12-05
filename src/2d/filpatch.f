@@ -205,7 +205,7 @@ c       interpolate back up
 *       !prevents finding the same slope possibly lratiox*lratioy times
 *       !all fine gid depths will be found before any momentum
          reloop = .false.
-         toldry= dry_tolerance(1)
+         toldry= dry_tolerance
          do ic  = 2, nrowc-1
          do jc  = 2, ncolc-1
             icount(icrse(ic,jc)) = 0
