@@ -80,9 +80,9 @@ c
          !Initialize Riemann problem for grid interface
          do mw=1,mwaves
               s(mw,i)=0.d0
-              do m=1,meqn
-                 fwave(m,mw,i)=0.d0
-              enddo
+                 fwave(1,mw,i)=0.d0
+                 fwave(2,mw,i)=0.d0
+                 fwave(3,mw,i)=0.d0
          enddo
 
 c        !set normal direction
@@ -96,15 +96,15 @@ c        !set normal direction
 
          !zero (small) negative values if they exist
          if (qr(1,i-1).lt.0.d0) then
-            do m=1,meqn
-               qr(m,i-1)=0.d0
-            enddo
+               qr(1,i-1)=0.d0
+               qr(2,i-1)=0.d0
+               qr(3,i-1)=0.d0
          endif
 
          if (ql(1,i).lt.0.d0) then
-            do m=1,meqn
-               ql(m,i)=0.d0
-            enddo
+               ql(1,i)=0.d0
+               ql(2,i)=0.d0
+               ql(3,i)=0.d0
          endif
 
          !skip problem if in a completely dry area
@@ -220,9 +220,9 @@ c     &      bL,bR,uL,uR,vL,vR,phiL,phiR,sE1,sE2,drytol,g,sw,fw)
 c        !eliminate ghost fluxes for wall
          do mw=1,3
             sw(mw)=sw(mw)*wall(mw)
-            do m=1,meqn
-               fw(m,mw)=fw(m,mw)*wall(mw) * rho(1)
-            enddo
+               fw(1,mw)=fw(1,mw)*wall(mw) * rho(1)
+               fw(2,mw)=fw(2,mw)*wall(mw) * rho(1)
+               fw(3,mw)=fw(3,mw)*wall(mw) * rho(1)
          enddo
 
          do mw=1,mwaves
@@ -252,9 +252,9 @@ c               # shouldn't happen unless h > 10 km!
 c                write(6,*) 'speed > 316: i,mw,s(mw,i): ',i,mw,s(mw,i)
 c                endif
 	           s(mw,i)=dxdc*s(mw,i)
-             do m=1,meqn
-               fwave(m,mw,i)=dxdc*fwave(m,mw,i)
-             enddo
+               fwave(1,mw,i)=dxdc*fwave(1,mw,i)
+               fwave(2,mw,i)=dxdc*fwave(2,mw,i)
+               fwave(3,mw,i)=dxdc*fwave(3,mw,i)
           enddo
          enddo
         endif
@@ -264,20 +264,30 @@ c===============================================================================
 
 c============= compute fluctuations=============================================
          do i=2-mbc,mx+mbc
-            do m=1,meqn
-               amdq(m,i)=0.0d0
-               apdq(m,i)=0.0d0
+               amdq(1,i)=0.0d0
+               apdq(1,i)=0.0d0
+               amdq(2,i)=0.0d0
+               apdq(2,i)=0.0d0
+               amdq(3,i)=0.0d0
+               apdq(3,i)=0.0d0
                do  mw=1,mwaves
                   if (s(mw,i).lt.0.d0) then
-                     amdq(m,i)=amdq(m,i) + fwave(m,mw,i)
+                     amdq(1,i)=amdq(1,i) + fwave(1,mw,i)
+                     amdq(2,i)=amdq(2,i) + fwave(2,mw,i)
+                     amdq(3,i)=amdq(3,i) + fwave(3,mw,i)
                   elseif (s(mw,i).gt.0.d0) then
-                     apdq(m,i)=apdq(m,i) + fwave(m,mw,i)
+                     apdq(1,i)=apdq(1,i) + fwave(1,mw,i)
+                     apdq(2,i)=apdq(2,i) + fwave(2,mw,i)
+                     apdq(3,i)=apdq(3,i) + fwave(3,mw,i)
                   else
-	            amdq(m,i) = amdq(m,i) + .5d0*fwave(m,mw,i)
-	            apdq(m,i) = apdq(m,i) + .5d0*fwave(m,mw,i)
+	            amdq(1,i) = amdq(1,i) + .5d0*fwave(1,mw,i)
+	            apdq(1,i) = apdq(1,i) + .5d0*fwave(1,mw,i)
+	            amdq(2,i) = amdq(2,i) + .5d0*fwave(2,mw,i)
+	            apdq(2,i) = apdq(2,i) + .5d0*fwave(2,mw,i)
+	            amdq(3,i) = amdq(3,i) + .5d0*fwave(3,mw,i)
+	            apdq(3,i) = apdq(3,i) + .5d0*fwave(3,mw,i)
                   endif
                enddo
-            enddo
          enddo
 
 

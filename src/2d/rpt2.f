@@ -171,10 +171,12 @@ c============================================================================
 90      continue
 c============= compute fluctuations==========================================
 
-            do  m=1,meqn
-               bmasdq(m,i)=0.0d0
-               bpasdq(m,i)=0.0d0
-            enddo
+               bmasdq(1,i)=0.0d0
+               bpasdq(1,i)=0.0d0
+               bmasdq(2,i)=0.0d0
+               bpasdq(2,i)=0.0d0
+               bmasdq(3,i)=0.0d0
+               bpasdq(3,i)=0.0d0
             do  mw=1,3
                if (s(mw).lt.0.d0) then
                  bmasdq(1,i) =bmasdq(1,i) + dxdcm*s(mw)*beta(mw)*r(1,mw)
