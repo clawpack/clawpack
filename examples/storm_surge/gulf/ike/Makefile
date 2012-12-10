@@ -165,10 +165,5 @@ SOURCES = \
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
 
-# Construct the topography data
-.PHONY: topo
-topo: .data
-	python maketopo.py
-
 ### DO NOT remove this line - make depends on it ###
 
