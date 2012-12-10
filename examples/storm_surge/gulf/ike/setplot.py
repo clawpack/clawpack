@@ -48,12 +48,14 @@ def setplot(plotdata):
     # Limits for plots
     full_xlimits = [-99.0,-50.0]
     full_ylimits = [8.0,32.0]
+    full_shrink = 0.5
     houston_xlimits = [-95.4, -94.0]
     houston_ylimits = [29.1, 29.92]
+    houston_shrink = 0.6
 
     # Color limits
-    surface_range = 6.0
-    speed_range = 6.0
+    surface_range = 3.0
+    speed_range = 1.0
 
     xlimits = full_xlimits
     ylimits = full_ylimits
@@ -95,9 +97,9 @@ def setplot(plotdata):
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = surge_afteraxes
 
-    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
-    surge.plot.add_land(plotaxes)
-    # surge.plot.add_bathy_contours(plotaxes,contour_levels=[-5000,-1000,0.0])
+    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=full_shrink)
+    surge.plot.add_land(plotaxes,topo_min=-10.0,topo_max=5.0)
+    surge.plot.add_bathy_contours(plotaxes)
 
 
     # ========================================================================
@@ -116,10 +118,11 @@ def setplot(plotdata):
     plotaxes.afteraxes = surge_afteraxes
 
     # Speed
-    surge.plot.add_speed(plotaxes,bounds=speed_limits)
+    surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=full_shrink)
 
     # Land
     surge.plot.add_land(plotaxes)
+    surge.plot.add_bathy_contours(plotaxes)
 
     # ========================================================================
     #  Surface Elevations - Houston Ship Channel
@@ -139,16 +142,16 @@ def setplot(plotdata):
         surge.plot.gauge_locations(cd)
     plotaxes.afteraxes = after_with_gauges
     
-    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
+    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=houston_shrink)
     surge.plot.add_land(plotaxes)
-
+    surge.plot.add_bathy_contours(plotaxes)
 
     # ========================================================================
     #  Water Speed - Houston Ship Channel
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Currents - Houston/Galveston',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = False
+    plotfigure.show = True
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -156,13 +159,14 @@ def setplot(plotdata):
     plotaxes.scaled = True
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
+    def after_with_gauges(cd):
+        surge_afteraxes(cd)
+        surge.plot.gauge_locations(cd)
     plotaxes.afteraxes = after_with_gauges
-
-    # Speed
-    surge.plot.add_speed(plotaxes,bounds=speed_limits)
-
-    # Land
+    
+    surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=houston_shrink)
     surge.plot.add_land(plotaxes)
+    surge.plot.add_bathy_contours(plotaxes)
 
     # ========================================================================
     # Hurricane forcing - Entire gulf
@@ -170,7 +174,7 @@ def setplot(plotdata):
     # Pressure field
     plotfigure = plotdata.new_plotfigure(name='Pressure',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.pressure_forcing
+    plotfigure.show = surge_data.pressure_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -227,7 +231,7 @@ def setplot(plotdata):
     # Wind field
     plotfigure = plotdata.new_plotfigure(name='Wind Speed', 
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing
+    plotfigure.show = surge_data.wind_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -295,132 +299,19 @@ def setplot(plotdata):
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     try:
-        plotaxes.xlimits = [amrdata.t0,amrdata.tfinal]
+        # plotaxes.xlimits = [amrdata.t0,amrdata.tfinal]
+        plotaxes.xlimits = [21254400.0 , 22204800.0]
     except:
         pass
     # plotaxes.ylimits = [0,150.0]
-    plotaxes.ylimits = surface_limits
+    plotaxes.ylimits = 'auto'
     plotaxes.title = 'Surface'
     plotaxes.afteraxes = surge.plot.gauge_afteraxes
 
     # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
     plotitem.plot_var = 3
-    plotitem.plotstyle = 'r-'
-
-    # # ==========================================================================
-    # # Galveston Channel
-    # # ==========================================================================
-    # plotfigure = plotdata.new_plotfigure(name='Galveston Bay Entry Channel', figno=2)
-
-    # # Set up for axes in this figure:
-    # plotaxes = plotfigure.new_plotaxes('pcolor')
-    # plotaxes.title = 'Surface'
-    # plotaxes.scaled = True
-    # plotaxes.afteraxes = fixup
-
-    # # Water
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # # plotitem.plot_var = geoplot.surface
-    # plotitem.plot_var = geoplot.surface_or_depth
-    # plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    # plotitem.pcolor_cmin = -0.2
-    # plotitem.pcolor_cmax = 0.2
-    # plotitem.add_colorbar = True
-    # plotitem.amr_celledges_show = [0,0,0]
-    # plotitem.patchedges_show = 1
-
-    # # Land
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # plotitem.plot_var = geoplot.land
-    # plotitem.pcolor_cmap = geoplot.land_colors
-    # plotitem.pcolor_cmin = 0.0
-    # plotitem.pcolor_cmax = 100.0
-    # plotitem.add_colorbar = False
-    # # plotitem.amr_celledges_show = [1,1,0]
-    # plotitem.amr_celledges_show = [0,0,0]
-    # plotitem.patchedges_show = 1
-    # plotaxes.xlimits = galveston_xlimits
-    # plotaxes.ylimits = galveston_ylimits
-
-    # # ==========================================================================
-    # #  City of Houston Area
-    # # ==========================================================================
-    # plotfigure = plotdata.new_plotfigure(name='City of Houston', figno=3)
-
-    # # Set up for axes in this figure:
-    # plotaxes = plotfigure.new_plotaxes('pcolor')
-    # plotaxes.title = 'Surface'
-    # plotaxes.scaled = True
-    # plotaxes.afteraxes = fixup
-
-    # # Water
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # # plotitem.plot_var = geoplot.surface
-    # plotitem.plot_var = geoplot.surface_or_depth
-    # plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    # plotitem.pcolor_cmin = -0.2
-    # plotitem.pcolor_cmax = 0.2
-    # plotitem.add_colorbar = True
-    # plotitem.amr_celledges_show = [0,0,0]
-    # plotitem.patchedges_show = 1
-
-    # # Land
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # plotitem.plot_var = geoplot.land
-    # plotitem.pcolor_cmap = geoplot.land_colors
-    # plotitem.pcolor_cmin = 0.0
-    # plotitem.pcolor_cmax = 100.0
-    # plotitem.add_colorbar = False
-    # # plotitem.amr_celledges_show = [1,1,0]
-    # plotitem.amr_celledges_show = [0,0,0]
-    # plotitem.patchedges_show = 1
-    # plotaxes.xlimits = houston_harbor_xlimits
-    # plotaxes.ylimits = houston_harbor_ylimits
-
-
-    #-----------------------------------------
-    # Figures for gauges
-    #-----------------------------------------
-    # plotfigure = plotdata.new_plotfigure(name='Surface & topo', figno=300, \
-    #                 type='each_gauge')
-    # plotfigure.clf_each_gauge = True
-    # 
-    # # Set up for axes in this figure:
-    # plotaxes = plotfigure.new_plotaxes()
-    # plotaxes.xlimits = 'auto'
-    # plotaxes.ylimits = 'auto'
-    # plotaxes.title = 'Surface'
-    # 
-    # # Plot surface as blue curve:
-    # plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
-    # plotitem.plot_var = 3
-    # plotitem.plotstyle = 'b-'
-    # 
-    # # Plot topo as green curve:
-    # plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
-    # plotitem.show = False
-    # 
-    # def gaugetopo(current_data):
-    #     q = current_data.q
-    #     h = q[0,:]
-    #     eta = q[3,:]
-    #     topo = eta - h
-    #     return topo
-    #     
-    # plotitem.plot_var = gaugetopo
-    # plotitem.plotstyle = 'g-'
-    # 
-    # def add_zeroline(current_data):
-    #     from pylab import plot, legend, xticks, floor
-    #     t = current_data.t
-    #     #legend(('surface','topography'),loc='lower left')
-    #     plot(t, 0*t, 'k')
-    #     n = int(floor(t.max()/3600.) + 2)
-    #     xticks([3600*i for i in range(n)])
-    # 
-    # plotaxes.afteraxes = add_zeroline
-
+    plotitem.plotstyle = 'b-'
 
     #-----------------------------------------
     
@@ -429,7 +320,7 @@ def setplot(plotdata):
 
     plotdata.printfigs = True                # print figures
     plotdata.print_format = 'png'            # file format
-    plotdata.print_framenos = 'all'          # list of frames to print
+    plotdata.print_framenos = 'all'            # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
     plotdata.print_fignos = 'all'            # list of figures to print
     plotdata.html = True                     # create html files of plots?

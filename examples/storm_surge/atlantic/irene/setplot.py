@@ -6,7 +6,6 @@ This module is imported by the plotting routines and then the
 function setplot is called to set the plot parameters.
     
 """
-
 import os
 
 import numpy as np
@@ -16,7 +15,7 @@ import matplotlib.pyplot as plt
 
 from geoclaw import topotools
 from clawpack.visclaw import colormaps, geoplot, gaugetools
-from clawpack.clawutil.oldclawdata import Data
+import clawpack.clawutil.clawdata as clawdata
 
 import geoclaw.surge as surge
 
@@ -25,17 +24,21 @@ try:
 except:
     setplotfg = None
 
-
 def setplot(plotdata):
     r"""Setplot function for surge plotting"""
     
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
+    fig_num_counter = surge.plot.figure_counter()
+
     # Load data from output
-    amrdata = Data(os.path.join(plotdata.outdir,'amr2ez.data'))
-    physics = Data(os.path.join(plotdata.outdir,'physics.data'))
-    surge_data = Data(os.path.join(plotdata.outdir,'surge.data'))
+    amrdata = clawdata.AmrclawInputData(2)
+    amrdata.read(os.path.join(plotdata.outdir,'amrclaw.data'))
+    physics = clawdata.GeoclawInputData(2)
+    physics.read(os.path.join(plotdata.outdir,'physics.data'))
+    surge_data = surge.data.SurgeData()
+    surge_data.read(os.path.join(plotdata.outdir,'surge.data'))
 
     # Load storm track
     track = surge.plot.track_data(os.path.join(plotdata.outdir,'fort.track'))
@@ -44,10 +47,14 @@ def setplot(plotdata):
     # Limits for plots
     full_xlimits = [-85.0,-45.0]
     full_ylimits = [13.0,45.0]
+    full_shrink = 0.8
+    newyork_xlimits = [-74.5,-71.0]
+    newyork_ylimits = [40.0,41.5]
+    newyork_shrink = 0.5
 
     # Color limits
-    surface_range = 4.0
-    speed_range = 6.0
+    surface_range = 1.5
+    speed_range = 1.0
 
     xlimits = full_xlimits
     ylimits = full_ylimits
@@ -78,7 +85,8 @@ def setplot(plotdata):
     # ========================================================================
     #  Surface Elevations - Entire Atlantic
     # ========================================================================
-    plotfigure = plotdata.new_plotfigure(name='Surface - Atlantic', figno=0)
+    plotfigure = plotdata.new_plotfigure(name='Surface - Atlantic',  
+                                         figno=fig_num_counter.get_counter())
     plotfigure.show = True
 
     # Set up for axes in this figure:
@@ -89,14 +97,15 @@ def setplot(plotdata):
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = pcolor_afteraxes
     
-    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits)
+    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=full_shrink)
     surge.plot.add_land(plotaxes)
 
 
     # ========================================================================
     #  Water Speed - Entire Atlantic
     # ========================================================================
-    plotfigure = plotdata.new_plotfigure(name='Currents - Atlantic', figno=1)
+    plotfigure = plotdata.new_plotfigure(name='Currents - Atlantic',  
+                                         figno=fig_num_counter.get_counter())
     plotfigure.show = True
 
     # Set up for axes in this figure:
@@ -108,9 +117,51 @@ def setplot(plotdata):
     plotaxes.afteraxes = pcolor_afteraxes
 
     # Speed
-    surge.plot.add_speed(plotaxes,bounds=speed_limits)
+    surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=full_shrink)
 
     # Land
+    surge.plot.add_land(plotaxes)
+
+    # ========================================================================
+    #  Surface Elevations - New York Area
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Surface - New York',  
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = True
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Surface'
+    plotaxes.scaled = True
+    plotaxes.xlimits = newyork_xlimits
+    plotaxes.ylimits = newyork_ylimits
+    def after_with_gauges(cd):
+        surge_afteraxes(cd)
+        surge.plot.gauge_locations(cd)
+    plotaxes.afteraxes = after_with_gauges
+    
+    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=newyork_shrink)
+    surge.plot.add_land(plotaxes)
+
+    # ========================================================================
+    #  Currents Elevations - New York Area
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Currents - New York',  
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = True
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Currents'
+    plotaxes.scaled = True
+    plotaxes.xlimits = newyork_xlimits
+    plotaxes.ylimits = newyork_ylimits
+    def after_with_gauges(cd):
+        surge_afteraxes(cd)
+        surge.plot.gauge_locations(cd)
+    plotaxes.afteraxes = after_with_gauges
+    
+    surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=newyork_shrink)
     surge.plot.add_land(plotaxes)
 
 
@@ -118,8 +169,9 @@ def setplot(plotdata):
     # Hurricane forcing - Entire Atlantic
     # ========================================================================
     # Pressure field
-    plotfigure = plotdata.new_plotfigure(name='Pressure', figno=2)
-    plotfigure.show = surge_data.pressure_forcing
+    plotfigure = plotdata.new_plotfigure(name='Pressure',  
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = surge_data.pressure_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -133,8 +185,9 @@ def setplot(plotdata):
     surge.plot.add_land(plotaxes)
     
     # Wind field
-    plotfigure = plotdata.new_plotfigure(name='Wind Speed',figno=3)
-    plotfigure.show = surge_data.wind_forcing
+    plotfigure = plotdata.new_plotfigure(name='Wind Speed',  
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = surge_data.wind_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -149,7 +202,8 @@ def setplot(plotdata):
     surge.plot.add_land(plotaxes)
     
     # Wind field components
-    plotfigure = plotdata.new_plotfigure(name='Wind Components',figno=4)
+    plotfigure = plotdata.new_plotfigure(name='Wind Components',  
+                                         figno=fig_num_counter.get_counter())
     plotfigure.show = surge_data.wind_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
@@ -189,9 +243,10 @@ def setplot(plotdata):
     # ========================================================================
     #  Figures for gauges
     # ========================================================================
-    plotfigure = plotdata.new_plotfigure(name='Surface & topo', figno=300, \
-                    type='each_gauge')
-    plotfigure.show = True
+    plotfigure = plotdata.new_plotfigure(name='Surface & topo',   
+                                         figno=fig_num_counter.get_counter(),
+                                         type='each_gauge')
+    plotfigure.show = False
     plotfigure.clf_each_gauge = True
 
     # Set up for axes in this figure:
