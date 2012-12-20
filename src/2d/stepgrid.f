@@ -35,14 +35,14 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
-      parameter (msize=max1d+4)
-      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
+c      parameter (msize=max1d+4)
+c      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
 
       dimension q(nvar,mitot,mjtot)
       dimension fp(nvar,mitot,mjtot),gp(nvar,mitot,mjtot)
       dimension fm(nvar,mitot,mjtot),gm(nvar,mitot,mjtot)
       dimension aux(maux,mitot,mjtot)
-      dimension work(mwork)
+c      dimension work(mwork)
 
       logical    debug,  dump
       data       debug/.false./,  dump/.false./

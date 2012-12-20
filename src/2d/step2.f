@@ -55,9 +55,9 @@ c
       dimension      s(mwaves, 1-mbc:maxm + mbc)
       dimension   amdq(meqn,1-mbc:maxm + mbc)
       dimension   apdq(meqn,1-mbc:maxm + mbc)
-      dimension   cqxx(meqn,1-mbc:maxm + mbc)
-      dimension  bmadq(meqn,1-mbc:maxm + mbc)
-      dimension  bpadq(meqn,1-mbc:maxm + mbc)
+c      dimension   cqxx(meqn,1-mbc:maxm + mbc)
+c      dimension  bmadq(meqn,1-mbc:maxm + mbc)
+c      dimension  bpadq(meqn,1-mbc:maxm + mbc)
 
 
 
@@ -141,7 +141,8 @@ c        # compute modifications fadd and gadd to fluxes along this slice:
          call flux2(1,maxm,meqn,maux,mbc,mx,
      &              q1d,dtdx1d,aux1,aux2,aux3,
      &              faddm,faddp,gaddm,gaddp,cfl1d,
-     &              wave,s,amdq,apdq,cqxx,bmadq,bpadq,rpn2,rpt2)
+     &              wave,s,amdq,apdq,rpn2,rpt2)
+c     &             cqxx,bmadq,bpadq,rpn2,rpt2)
          cflgrid = dmax1(cflgrid,cfl1d)
 c
 c        # update fluxes for use in AMR:
@@ -196,8 +197,8 @@ c        # compute modifications fadd and gadd to fluxes along this slice:
          call flux2(2,maxm,meqn,maux,mbc,my,
      &              q1d,dtdy1d,aux1,aux2,aux3,
      &              faddm,faddp,gaddm,gaddp,cfl1d,
-     &              wave,s,amdq,apdq,
-     &              cqxx,bmadq,bpadq,rpn2,rpt2)
+     &              wave,s,amdq,apdq,rpn2,rpt2)
+c     &              cqxx,bmadq,bpadq,rpn2,rpt2)
 c
          cflgrid = dmax1(cflgrid,cfl1d)
 c
