@@ -89,7 +89,7 @@ c     #prepare slopes - use min-mod limiters
          do ii=-1,1
             coarseval(2+ii) = valc(1,i+ii,j)+ auxc(1,i+ii,j)
             if (valc(1,i+ii,j).le.toldry) then
-               coarseval(2+ii)=eta_init(1)
+               coarseval(2+ii)=eta_init
                endif
             enddo
          s1p=coarseval(3)-coarseval(2)
@@ -100,7 +100,7 @@ c     #prepare slopes - use min-mod limiters
          do jj=-1,1
             coarseval(2+jj) = valc(1,i,j+jj)+ auxc(1,i,j+jj)
             if (valc(1,i,j+jj).le.toldry) then
-               coarseval(2+jj)=eta_init(1)
+               coarseval(2+jj)=eta_init
                endif
             enddo
          s1p=coarseval(3)-coarseval(2)
@@ -112,8 +112,8 @@ c     #prepare slopes - use min-mod limiters
          finemass = 0.d0
          do ico = 1,lratiox
             do jco = 1,lratioy
-               yoff = (float(jco) - .5)/lratioy - .5
-               xoff = (float(ico) - .5)/lratiox - .5
+               yoff = (float(jco) - .5d0)/lratioy - .5d0
+               xoff = (float(ico) - .5d0)/lratiox - .5d0
                jfine = (j-2)*lratioy + nghost + jco
                ifine = (i-2)*lratiox + nghost + ico
                val(1,ifine,jfine) = coarseval(2)
@@ -171,8 +171,8 @@ c     #prepare slopes - use min-mod limiters
                   do jco = 1,lratioy
                      jfine = (j-2)*lratioy + nghost + jco
                      ifine = (i-2)*lratiox + nghost + ico
-                     yoff = (float(jco) - .5)/lratioy - .5
-                     xoff = (float(ico) - .5)/lratiox - .5
+                     yoff = (float(jco) - .5d0)/lratioy - .5d0
+                     xoff = (float(ico) - .5xxdipd0)/lratiox - .5d0
                      hvf = valc(ivar,i,j)+ xoff*slopex + yoff*slopey
                      vf = hvf/val(1,ifine,jfine)
                      if (vf.gt.velmax.or.vf.lt.velmin) then

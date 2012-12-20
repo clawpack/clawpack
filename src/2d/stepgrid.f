@@ -45,7 +45,7 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       dimension work(mwork)
 
       logical    debug,  dump
-      data       debug/.false./,  dump/.true./
+      data       debug/.false./,  dump/.false./
 c
 c     # set tcom = time.  This is in the common block comxyt that could
 c     # be included in the Riemann solver, for example, if t is explicitly
@@ -56,7 +56,7 @@ c     # needed there.
       level = node(nestlevel,mptr)
 
       if (dump) then
-         write(*,*)" dumping grid ",mptr
+         write(outunit,*)" at start of stepgrid: dumping grid ",mptr
          do i = 1, mitot
          do j = 1, mjtot
             write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar)
@@ -222,8 +222,8 @@ c
 c
 c            
         mptr_level = node(nestlevel,mptr)
-c       write(outunit,811) mptr, mptr_level, cflgrid
-c811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
+        write(outunit,811) mptr, mptr_level, cflgrid
+ 811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
 c
 
 !$OMP  CRITICAL (cflm)
@@ -234,6 +234,7 @@ c
 !$OMP END CRITICAL (cflm)
 
 c
+!        write(outunit,*)" updating grid ", mptr
 c       # update q
         dtdx = dt/dx
         dtdy = dt/dy
@@ -252,6 +253,10 @@ c            # with capa array.
            q(m,i,j) = q(m,i,j)
      &           - (dtdx * (fm(m,i+1,j) - fp(m,i,j))
      &           +  dtdy * (gm(m,i,j+1) - gp(m,i,j))) / aux(mcapa,i,j)
+!           write(outunit,543) m,i,j,q(m,i,j),fm(m,i+1,j),fp(m,i,j),
+!     .        gm(m,i,j+1), gp(m,i,j)
+543       format(3i4,5e25.16)
+
          endif
 
  50      continue
@@ -376,9 +381,9 @@ c
             endif
 c
       if (dump) then
-         write(*,*)" at end of stepgrid: dumping grid ",mptr
-         do i = 1, mitot
-         do j = 1, mjtot
+         write(outunit,*)" at end of stepgrid: dumping grid ",mptr
+         do i = mbc+1, mitot-mbc
+         do j = mbc+1, mjtot-mbc
             write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar)
 c            write(*,545) i,j,(q(i,j,ivar),ivar=1,nvar)
          end do

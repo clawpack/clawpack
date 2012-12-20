@@ -35,6 +35,7 @@ c             this will be at a diffeent time.
 c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 c
       lget = level
+
       if (uprint) write(outunit,100) lget
 100   format(19h    updating level ,i5)
 c     need to set up data structure for parallel distrib of grids
@@ -55,7 +56,7 @@ c 20   if (mptr .eq. 0) go to 85
 !$OMP&                    newt,ico, jco,hf,bf,huf,hvf,
 !$OMP&                    etaf,etaav,hav,nwet,hc,huc,hvc),
 !$OMP&            SHARED(lget,numgrids,listgrids,level,intratx,intraty,
-!$OMP&                   nghost,uprint,nvar,naux,mcapa,node,listsp,
+!$OMP&                   nghost,uprint,nvar,naux,mcapa,node,rnode,listsp,
 !$OMP&                   alloc,lstart,dry_tolerance),
 !$OMP&            DEFAULT(none)
       do ng = 1, numgrids(lget)
@@ -115,7 +116,7 @@ c
  101          format(' updating pt. ',2i4,' of grid ',i3,' using ',2i4,
      1               ' of grid ',i4)
               write(outunit,102)(alloc(iadd(ivar,i,j)),ivar=1,nvar)
- 102          format(' old vals: ',4e12.4)
+ 102          format(' old vals: ',4e25.15)
            endif
 c
 c
@@ -199,7 +200,7 @@ c     # set h on coarse grid based on surface, not conservative near shoreline
 c
       if (uprint) write(outunit,103)(alloc(iadd(ivar,i,j)),
      .     ivar=1,nvar)
- 103  format(' new vals: ',4e12.4)
+ 103  format(' new vals: ',4e25.15)
 c
       jff = jff + intraty(lget)
  70   continue
@@ -219,5 +220,6 @@ c      go to 20
 c
 c 85   continue
 c
+
  99   return
       end

@@ -49,8 +49,17 @@ c
       dimension aux1(maux,1-mbc:maxm+mbc)
       dimension aux2(maux,1-mbc:maxm+mbc)
       dimension aux3(maux,1-mbc:maxm+mbc)
-      dimension dtdx1d(1-mbc:maxm+mbc)
-      dimension dtdy1d(1-mbc:maxm+mbc)
+      dimension dtdx1d(1-mbc:maxm+mbc), dtdy1d(1-mbc:maxm+mbc)
+     
+      dimension   wave(meqn, mwaves, 1-mbc:maxm+mbc)
+      dimension      s(mwaves, 1-mbc:maxm + mbc)
+      dimension   amdq(meqn,1-mbc:maxm + mbc)
+      dimension   apdq(meqn,1-mbc:maxm + mbc)
+      dimension   cqxx(meqn,1-mbc:maxm + mbc)
+      dimension  bmadq(meqn,1-mbc:maxm + mbc)
+      dimension  bpadq(meqn,1-mbc:maxm + mbc)
+
+
 
       logical relimit
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom

@@ -23,7 +23,7 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
      .                                      naux*mitot*(j-1)
 c
-      outaux = .false.
+      outaux = .false.    ! leave in for debugging
 
 c     ASCII Output
       if (output_format == 1) then
@@ -155,13 +155,13 @@ c                 # output in 1d format if ny=1:
 
          do j = nghost+1, mjtot-nghost
             do i = nghost+1, mitot-nghost
-               do ivar=1,naux
-                  if (abs(alloc(iaddaux(ivar,i,j))) .lt. 1d-90) then
-                     alloc(iaddaux(ivar,i,j)) = 0.d0
-                  endif
-               enddo
+ !              do ivar=1,naux
+ !                 if (abs(alloc(iaddaux(ivar,i,j))) .lt. 1d-90) then
+ !                    alloc(iaddaux(ivar,i,j)) = 0.d0
+ !                 endif
+ !              enddo
                write(matunit3,109) (alloc(iaddaux(ivar,i,j)), 
-     &                              ivar=1,naux)
+     &                              ivar=1,4)   ! 3 was naux. changed to match 4-x
             enddo
             write(matunit3,*) ' '
          enddo
