@@ -147,7 +147,7 @@ def setplot(plotdata):
         addgauges(current_data)
         t = current_data.t
         t = t / 3600.  # hours
-        pylab.title('Surface at %4.2f hours' % t, fontsize=20)
+        pylab.title('Speeds at %4.2f hours' % t, fontsize=20)
         pylab.xticks(fontsize=15)
         pylab.yticks(fontsize=15)
     plotaxes.afteraxes = fixup
@@ -157,7 +157,7 @@ def setplot(plotdata):
     plotitem.plot_var = water_speed
     plotitem.pcolor_cmap = plt.get_cmap('PuBu')
     plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 1.0
+    plotitem.pcolor_cmax = 0.01
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 1
@@ -204,8 +204,8 @@ def setplot(plotdata):
         topo = eta - h
         return topo
         
-    plotitem.plot_var = gaugetopo
-    plotitem.plotstyle = 'g-'
+    # plotitem.plot_var = gaugetopo
+    # plotitem.plotstyle = 'g-'
 
     def add_zeroline(current_data):
         from pylab import plot, legend, xticks, floor

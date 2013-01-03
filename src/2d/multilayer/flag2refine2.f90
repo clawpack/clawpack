@@ -24,7 +24,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                        tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
 
     use amr_module, only: mxnest, t0
-    use geoclaw_module, only:dry_tolerance, sea_level
+    use geoclaw_module, only:dry_tolerance,rho,eta_init,num_layers
     
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
     use topo_module, only: minleveltopo,mtopofiles
@@ -56,9 +56,9 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     external allowflag
     
     ! Generic locals
-    integer :: i,j,m
+    integer :: i,j,m,k,layer_index
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
-    real(kind=8) :: speed, eta
+    real(kind=8) :: h(num_layers), total_depth, speed, eta, eta_below, ds
 
     ! Initialize flags
     amrflags = DONTFLAG
@@ -120,7 +120,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! specified and need to force refinement:
             ! This assumes that t0 = 0.d0, should really be t0 but we do
             ! not have access to that parameter in this routine
-            if (qinit_type > 0 .and. t == t0) then 
+            if (qinit_type > t0 .and. t == 0.d0) then 
                 if (level < min_level_qinit .and. & 
                     x_hi > x_low_qinit .and. x_low < x_hi_qinit .and. &
                     y_hi > y_low_qinit .and. y_low < y_hi_qinit) then
@@ -134,35 +134,52 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! Refinement not forced, so check if it is allowed and if so,
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
-                    
-                if (q(1,i,j) > dry_tolerance) then
-                    eta = q(1,i,j) + aux(1,i,j)
-
-                    ! Check wave criteria
-                    if (abs(eta - sea_level) > wave_tolerance) then
-                        ! Check to see if we are near shore
-                        if (q(1,i,j) < deep_depth) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
-                        ! Check if we are allowed to flag in deep water
-                        ! anyway
-                        else if (level < max_level_deep) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
-                        endif
-                    endif
+                ! These refinement criteria are checked per layer going backwards
+                ! The bottom layer is checked first and eta_below is set to the 
+                ! bathymetry
+                eta_below = aux(1,i,j)
                 
-                    ! Check speed criteria, note that it might be useful to 
-                    ! also have a per layer criteria since this is not 
-                    ! gradient based
-                    speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2) / q(1,i,j)
-                    do m=1,min(size(speed_tolerance),mxnest)
-                        if (speed > speed_tolerance(m) .and. level <= m) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
+                forall(k=1:num_layers)
+                    h(k) = q(3 * (k - 1) + 1,i,j) / rho(k)
+                end forall
+                total_depth = sum(h)
+
+                do k=num_layers,1,-1
+                    layer_index = 3 * (k - 1)
+                    
+                    ! Extract state
+                    if (h(k) > dry_tolerance(k)) then
+                        eta = h(k) + eta_below
+                    
+                        ! Check wave criteria
+                        if (abs(eta - eta_init(k)) > wave_tolerance(k)) then
+                            ! Check to see if we are near shore
+                            if (total_depth < deep_depth) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            ! Check if we are allowed to flag in deep water
+                            ! anyway
+                            else if (level < max_level_deep) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
                         endif
-                    enddo
-                endif
+                        eta_below = eta
+                    
+                        ! Check speed criteria, note that it might be useful to 
+                        ! also have a per layer criteria since this is not 
+                        ! gradient based
+                        speed = sqrt(q(layer_index+2,i,j)**2 &
+                                   + q(layer_index+3,i,j)**2) &
+                                   / q(layer_index+1,i,j)
+                        do m=1,min(size(speed_tolerance),mxnest)
+                            if (speed > speed_tolerance(m) .and. level <= m) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
+                        enddo
+                    endif
+                enddo
             endif
             
         enddo x_loop

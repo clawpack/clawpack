@@ -35,17 +35,17 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
-C       parameter (msize=max1d+4)
-C       parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
+      parameter (msize=max1d+4)
+      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
 
       dimension q(nvar,mitot,mjtot)
       dimension fp(nvar,mitot,mjtot),gp(nvar,mitot,mjtot)
       dimension fm(nvar,mitot,mjtot),gm(nvar,mitot,mjtot)
       dimension aux(maux,mitot,mjtot)
-C       dimension work(mwork)
+      dimension work(mwork)
 
-      logical, parameter :: debug = .false.
-      logical, parameter :: dump = .false.
+      logical    debug,  dump
+      data       debug/.false./,  dump/.false./
 c
 c     # set tcom = time.  This is in the common block comxyt that could
 c     # be included in the Riemann solver, for example, if t is explicitly
@@ -160,7 +160,7 @@ c::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
        call b4step2(mx,my,mbc,mx,my,nvar,q,
      &             xlowmbc,ylowmbc,dx,dy,time,dt,maux,aux)
-      
+
 c::::::::::::::::::::::::FIXED GRID DATA before step:::::::::::::::::::::::
 c     # fill in values at fixed grid points effected at time tc0
 !$OMP CRITICAL (FixedGrids)
@@ -211,6 +211,7 @@ c        # levelcheck > 0.
 !$OMP END CRITICAL (FixedGrids)
 c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+
 c
 c     # take one step on the conservation law:
 c
@@ -222,7 +223,7 @@ c
 c            
         mptr_level = node(nestlevel,mptr)
 c       write(outunit,811) mptr, mptr_level, cflgrid
-c 811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
+c811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
 c
 
 !$OMP  CRITICAL (cflm)
@@ -256,10 +257,18 @@ c            # with capa array.
  50      continue
 c
 c     # Copied here from b4step2 since need to do before saving to qc1d:
-      forall(i=1:mitot, j=1:mjtot, q(1,i,j) < dry_tolerance)
-        q(1,i,j) = max(q(1,i,j),0.d0)
-        q(2:meqn,i,j) = 0.d0
-      end forall
+      do i=1,mitot
+        do j=1,mjtot
+          do k=1,num_layers
+          if (q(3*(k-1)+1,i,j)/rho(k).lt.dry_tolerance(k)) then
+             q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j),0.d0)
+             do m=3*(k-1) + 2,3*(k-1) + 3
+                q(m,i,j)=0.d0
+                enddo
+             endif
+         enddo
+        enddo
+      enddo
 c
       if (method(5).eq.1) then
 c        # with source term:   use Godunov splitting

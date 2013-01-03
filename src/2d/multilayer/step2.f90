@@ -20,7 +20,7 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
 !------------last modified 12/30/04--------------------------
 !
 
-    use geoclaw_module, only: dry_tolerance
+    use geoclaw_module, only: dry_tolerance, rho
     use amr_module, only: mwaves, mcapa
 
     implicit none
@@ -118,7 +118,7 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
                    amdq,apdq,cqxx,bmadq,bpadq,rpn2,rpt2) 
 
         cflgrid = max(cflgrid,cfl1d)
-        ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
+        !write(53,*) 'x-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
         fm(:,1:mx+1,j) = fm(:,1:mx+1,j) + faddm(:,1:mx+1)
@@ -162,7 +162,7 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
                    bmadq,bpadq,rpn2,rpt2)
 
         cflgrid = max(cflgrid,cfl1d)
-        ! write(53,*) 'y-sweep: ',cfl1d,cflgrid
+        !write(53,*) 'y-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
         gm(:,i,1:my+1) = gm(:,i,1:my+1) + faddm(:,1:my+1)
@@ -186,7 +186,7 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
                 endif
                 p = max(0.d0,dtdxij*fm(1,i+1,j)) + max(0.d0,dtdyij*gm(1,i,j+1)) &
                   - min(0.d0,dtdxij*fp(1,i,j)) - min(0.d0,dtdyij*gp(1,i,j))
-                phi = min(1.d0,abs(qold(1,i,j) / (p+dry_tolerance)))
+                phi = min(1.d0,abs(qold(1,i,j) / rho(1) / (p+dry_tolerance(1))))
 
                 if (phi < 1.d0) then
                     do m=1,meqn

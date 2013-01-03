@@ -33,7 +33,7 @@ c
 !           David George, Vancouver WA, Feb. 2009                           !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      use geoclaw_module, only: g => grav, dry_tolerance, rho
+      use geoclaw_module, only: g => grav, dry_tolerance
       use geoclaw_module, only: earth_radius, deg2rad
       use amr_module, only: mcapa
 
@@ -66,7 +66,7 @@ c
 
       logical rare1,rare2
 
-      drytol=dry_tolerance(1)
+      drytol=dry_tolerance
 
       !loop through Riemann problems at each grid cell
       do i=2-mbc,mx+mbc
@@ -108,21 +108,20 @@ c        !set normal direction
          endif
 
          !skip problem if in a completely dry area
-         if (qr(1,i-1) / rho(1) <= drytol .and.
-     &       ql(1,i) / rho(1) <= drytol) then
+         if (qr(1,i-1) <= drytol .and. ql(1,i) <= drytol) then
             go to 30
          endif
 
          !Riemann problem variables
-         hL = qr(1,i-1) / rho(1)
-         hR = ql(1,i) / rho(1)
-         huL = qr(mu,i-1) / rho(1)
-         huR = ql(mu,i) / rho(1)
+         hL = qr(1,i-1)
+         hR = ql(1,i)
+         huL = qr(mu,i-1)
+         huR = ql(mu,i)
          bL = auxr(1,i-1)
          bR = auxl(1,i)
 
-         hvL=qr(nv,i-1) / rho(1)
-         hvR=ql(nv,i) / rho(1)
+         hvL=qr(nv,i-1)
+         hvR=ql(nv,i)
 
          !check for wet/dry boundary
          if (hR.gt.drytol) then
@@ -220,9 +219,9 @@ c     &      bL,bR,uL,uR,vL,vR,phiL,phiR,sE1,sE2,drytol,g,sw,fw)
 c        !eliminate ghost fluxes for wall
          do mw=1,3
             sw(mw)=sw(mw)*wall(mw)
-               fw(1,mw)=fw(1,mw)*wall(mw) * rho(1)
-               fw(2,mw)=fw(2,mw)*wall(mw) * rho(1)
-               fw(3,mw)=fw(3,mw)*wall(mw) * rho(1)
+               fw(1,mw)=fw(1,mw)*wall(mw)
+               fw(2,mw)=fw(2,mw)*wall(mw)
+               fw(3,mw)=fw(3,mw)*wall(mw)
          enddo
 
          do mw=1,mwaves
@@ -263,33 +262,20 @@ c===============================================================================
 
 
 c============= compute fluctuations=============================================
+         amdq(1:3,:) = 0.d0
+         apdq(1:3,:) = 0.d0
          do i=2-mbc,mx+mbc
-               amdq(1,i)=0.0d0
-               apdq(1,i)=0.0d0
-               amdq(2,i)=0.0d0
-               apdq(2,i)=0.0d0
-               amdq(3,i)=0.0d0
-               apdq(3,i)=0.0d0
-               do  mw=1,mwaves
-                  if (s(mw,i).lt.0.d0) then
-                     amdq(1,i)=amdq(1,i) + fwave(1,mw,i)
-                     amdq(2,i)=amdq(2,i) + fwave(2,mw,i)
-                     amdq(3,i)=amdq(3,i) + fwave(3,mw,i)
-                  elseif (s(mw,i).gt.0.d0) then
-                     apdq(1,i)=apdq(1,i) + fwave(1,mw,i)
-                     apdq(2,i)=apdq(2,i) + fwave(2,mw,i)
-                     apdq(3,i)=apdq(3,i) + fwave(3,mw,i)
-                  else
-	            amdq(1,i) = amdq(1,i) + .5d0*fwave(1,mw,i)
-	            apdq(1,i) = apdq(1,i) + .5d0*fwave(1,mw,i)
-	            amdq(2,i) = amdq(2,i) + .5d0*fwave(2,mw,i)
-	            apdq(2,i) = apdq(2,i) + .5d0*fwave(2,mw,i)
-	            amdq(3,i) = amdq(3,i) + .5d0*fwave(3,mw,i)
-	            apdq(3,i) = apdq(3,i) + .5d0*fwave(3,mw,i)
-                  endif
-               enddo
+            do  mw=1,mwaves
+               if (s(mw,i) < 0.d0) then
+                     amdq(1:3,i) = amdq(1:3,i) + fwave(1:3,mw,i)
+               else if (s(mw,i) > 0.d0) then
+                  apdq(1:3,i)  = apdq(1:3,i) + fwave(1:3,mw,i)
+               else
+                 amdq(1:3,i) = amdq(1:3,i) + 0.5d0 * fwave(1:3,mw,i)
+                 apdq(1:3,i) = apdq(1:3,i) + 0.5d0 * fwave(1:3,mw,i)
+               endif
+            enddo
          enddo
-
 
       return
       end subroutine

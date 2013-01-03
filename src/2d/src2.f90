@@ -2,7 +2,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
       
     use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
     use geoclaw_module, only: friction_index, friction_forcing, friction_depth
-    use geoclaw_module, only: num_layers, rho
 
     implicit none
     
@@ -15,9 +14,8 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
     ! Locals
-    integer :: i, j, m, bottom_index, bottom_layer, layer_index
-    logical :: found
-    real(kind=8) :: h(num_layers), hu, hv, gamma, dgamma, y, fdt, a(2,2)
+    integer :: i, j
+    real(kind=8) :: h, hu, hv, gamma, dgamma, y, fdt, a(2,2)
 
     ! Algorithm parameters
     ! Parameter controls when to zero out the momentum at a depth in the
@@ -28,44 +26,20 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     if (friction_forcing) then
         do j=1,my
             do i=1,mx
-
-                ! Extract depths
-                forall (m=1:num_layers)
-                    h(m) = q(3 * (m-1) + 1,i,j) / rho(m)
-                end forall
-
                 ! Extract appropriate momentum, also zero momentum in dry layers
-                m = num_layers
-                found = .false.
-                do while(.not.found .and. m > 0)
-                    if (h(m) > depth_tolerance) then
-                        ! Extract momentum components and exit loop
-                        bottom_layer = m
-                        bottom_index = 3 * (m - 1)
-                        hu = q(bottom_index + 2, i, j) / rho(m)
-                        hv = q(bottom_index + 3, i, j) / rho(m)
-                        found = .true.
-                    else
-                        ! Set almost dry layers momentum to zero
-                        q(3 * (m - 1) + 2, i, j) = 0.d0
-                        q(3 * (m - 1) + 3, i, j) = 0.d0
+                if (q(1,i,j) < depth_tolerance) then
+                    q(2:3,i,j) = 0.d0
+                else
+                    ! Apply friction source term only if in shallower water
+                    if (q(1,i,j) <= friction_depth) then
+                        ! Calculate source term
+                        gamma = sqrt(q(2,i,j)**2 + q(3,i,j)**2) * g     &   
+                                * aux(friction_index,i,j)**2        &
+                                / (q(1,i,j)**(7.d0/3.d0))
+                        dgamma = 1.d0 + dt * gamma
+                        q(2, i, j) = q(2, i, j) / dgamma
+                        q(3, i, j) = q(3, i, j) / dgamma
                     endif
-                    m = m - 1
-                end do
-
-                if (.not.found) then
-                    cycle
-                endif
-
-                ! Apply friction source term only if in shallower water
-                if (sum(h) <= friction_depth) then
-                    ! Calculate source term
-                    gamma = sqrt(hu**2 + hv**2) * g  &
-                                    * aux(friction_index,i,j)**2 &
-                                    / (h(bottom_layer)**(7/3))
-                    dgamma = 1.d0 + dt * gamma
-                    q(bottom_index + 2, i, j) = q(bottom_index + 2, i, j) / dgamma
-                    q(bottom_index + 3, i, j) = q(bottom_index + 3, i, j) / dgamma
                 endif
             enddo
         enddo
@@ -87,13 +61,8 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
             a(2,2) = a(1,1)
 
             do i=1,mx
-                do m=1,num_layers
-                    layer_index = 3 * (m-1)
-                    q(layer_index + 2,i,j) = q(layer_index + 2, i, j) * a(1,1) &
-                                        + q(layer_index + 3, i, j) * a(1,2)
-                    q(layer_index + 3,i,j) = q(layer_index + 2, i, j) * a(2,1) &
-                                        + q(layer_index + 3, i, j) * a(2,2)
-                enddo
+                q(2,i,j) = q(2, i, j) * a(1,1) + q(3, i, j) * a(1,2)
+                q(3,i,j) = q(2, i, j) * a(2,1) + q(3, i, j) * a(2,2)
             enddo
         enddo
     endif

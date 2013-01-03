@@ -17,7 +17,7 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
     use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
     use amr_module, only: yperdom, spheredom, xupper, yupper
 
-    use geoclaw_module, only: dry_tolerance, sea_level, varRefTime
+    use geoclaw_module, only: rho, dry_tolerance, eta_init, varRefTime
 
     implicit none
 
@@ -89,9 +89,9 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
             fineflag(1) = .false.
             ! interpolate eta to find depth
             do ii=-1,1
-                coarseval(2+ii) = valc(1,i+ii,j) + auxc(1,i+ii,j)
-                if (valc(1,i+ii,j) <= dry_tolerance) then
-                    coarseval(2+ii)=sea_level
+                coarseval(2+ii) = valc(1,i+ii,j) / rho(1) + auxc(1,i+ii,j)
+                if (valc(1,i+ii,j) / rho(1) <= dry_tolerance(1)) then
+                    coarseval(2+ii)=eta_init(1)
                 end if
             end do
             s1p = coarseval(3) - coarseval(2)
@@ -101,9 +101,9 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
             if (s1m*s1p <= 0.d0) slopex=0.d0
 
             do jj=-1,1
-                coarseval(2+jj) = valc(1,i,j+jj) + auxc(1,i,j+jj)
-                if (valc(1,i,j+jj) <= dry_tolerance) then
-                    coarseval(2+jj)=sea_level
+                coarseval(2+jj) = valc(1,i,j+jj) / rho(1) + auxc(1,i,j+jj)
+                if (valc(1,i,j+jj) / rho(1) <= dry_tolerance(1)) then
+                    coarseval(2+jj)=eta_init(1)
                 end if
             end do
             s1p = coarseval(3) - coarseval(2)
@@ -121,11 +121,11 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
                     jfine = (j-2) * refinement_ratio_y + nghost + jco
                     ifine = (i-2) * refinement_ratio_x + nghost + ico
                     val(1,ifine,jfine) = (coarseval(2) + xoff * slopex &
-                                                       + yoff * slopey)
-                    val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine) &
-                                            - aux(1,ifine,jfine))
-                    finemass = finemass + val(1,ifine,jfine)
-                    if (val(1,ifine,jfine) <= dry_tolerance) then
+                                                       + yoff * slopey) * rho(1)
+                    val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine) / rho(1) &
+                                            - aux(1,ifine,jfine)) * rho(1)
+                    finemass = finemass + val(1,ifine,jfine) / rho(1)
+                    if (val(1,ifine,jfine) / rho(1) <= dry_tolerance(1)) then
                         fineflag(1) = .true.
                         val(2,ifine,jfine) = 0.d0
                         val(3,ifine,jfine) = 0.d0
@@ -137,36 +137,36 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
             ! finemass is the total mass in all new fine grid cells
             ! all fine mass has been determined for this coarse grid cell
             ! if all fine cells are dry, momentum has already been set
-            if (finemass >= dry_tolerance) then
+            if (finemass >= dry_tolerance(1)) then
                 do ivar = 2,nvar
                     fineflag(ivar)=.false.
-                    s1p = (valc(ivar,i+1,j) - valc(ivar,i,j))
-                    s1m = (valc(ivar,i,j) - valc(ivar,i-1,j))
+                    s1p = (valc(ivar,i+1,j) - valc(ivar,i,j)) / rho(1)
+                    s1m = (valc(ivar,i,j) - valc(ivar,i-1,j)) / rho(1)
                     slopex = min(abs(s1p), abs(s1m)) &
-                     * sign(1.d0,(valc(ivar,i+1,j) - valc(ivar,i-1,j)))
+                     * sign(1.d0,(valc(ivar,i+1,j) - valc(ivar,i-1,j)) / rho(1))
                     if (s1m*s1p.le.0.d0) slopex=0.d0
                 
-                    s1p = (valc(ivar,i,j+1) - valc(ivar,i,j))
-                    s1m = (valc(ivar,i,j) - valc(ivar,i,j-1))
+                    s1p = (valc(ivar,i,j+1) - valc(ivar,i,j)) / rho(1)
+                    s1m = (valc(ivar,i,j) - valc(ivar,i,j-1)) / rho(1)
                     slopey = min(abs(s1p), abs(s1m)) &
-                     * sign(1.d0,(valc(ivar,i,j+1) - valc(ivar,i,j-1)))
-                    if (s1m*s1p <= 0.d0) slopey=0.d0
+                     * sign(1.d0,(valc(ivar,i,j+1) - valc(ivar,i,j-1)) / rho(1))
+                    if (s1m*s1p.le.0.d0) slopey=0.d0
 
-                    if (valc(1,i,j) > dry_tolerance) then
-                        velmax = valc(ivar,i,j) / valc(1,i,j)
-                        velmin = valc(ivar,i,j) / valc(1,i,j)
+                    if (valc(1,i,j) / rho(1) > dry_tolerance(1)) then
+                        velmax = valc(ivar,i,j)/valc(1,i,j)
+                        velmin = valc(ivar,i,j)/valc(1,i,j)
                     else
                         velmax = 0.d0
                         velmin = 0.d0
                     endif
                
                     do ii = -1,1,2
-                        if (valc(1,i+ii,j) > dry_tolerance) then
+                        if (valc(1,i+ii,j) / rho(1) > dry_tolerance(1)) then
                             vel = valc(ivar,i+ii,j) / valc(1,i+ii,j)
                             velmax = max(vel,velmax)
                             velmin = min(vel,velmin)
                         endif
-                        if (valc(1,i,j+ii) > dry_tolerance) then
+                        if (valc(1,i,j+ii) / rho(1) > dry_tolerance(1)) then
                             vel = valc(ivar,i,j+ii) / valc(1,i,j+ii)
                             velmax = max(vel,velmax)
                             velmin = min(vel,velmin)
@@ -182,14 +182,14 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
                             ifine = (i-2) * refinement_ratio_x + nghost + ico
                             yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
                             xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
-                            hvf = valc(ivar,i,j) + xoff * slopex &
+                            hvf = valc(ivar,i,j) / rho(1) + xoff * slopex &
                                                           + yoff*slopey
-                            vf = hvf / (val(1,ifine,jfine))
+                            vf = hvf / (val(1,ifine,jfine) / rho(1))
                             if (vf > velmax .or. vf < velmin) then
                                 fineflag(ivar) = .true.
                                 exit
                             else
-                                val(ivar,ifine,jfine) = hvf
+                                val(ivar,ifine,jfine) = hvf * rho(1)
                             endif
                         enddo
                     enddo
@@ -199,8 +199,8 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
                     if (fineflag(1) .or. fineflag(ivar)) then
                         ! more mass now, conserve momentum
                         area = real(refinement_ratio_x * refinement_ratio_y,kind=8)
-                        dividemass = max(finemass,valc(1,i,j))
-                        Vnew = area * valc(ivar,i,j) / (dividemass)
+                        dividemass = max(finemass,valc(1,i,j) / rho(1))
+                        Vnew = area * valc(ivar,i,j) / (dividemass * rho(1))
 
                         do ico = 1,refinement_ratio_x
                             do jco = 1,refinement_ratio_y

@@ -22,8 +22,7 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
 FFLAGS ?= 
-#FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
-FFLAGS = -O2
+# FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
 
 MAKELEVEL ?= 0
 ifeq (${MAKELEVEL},0)
@@ -36,6 +35,8 @@ ifeq (${MAKELEVEL},0)
 	# Threading flags
 	FFLAGS += $(OMP_FLAG)
 endif
+
+FFLAGS = -O3 -funroll-loops -finline-functions
 
 # ---------------------------------
 # List of sources for this program:
@@ -69,7 +70,7 @@ SOURCES = \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f90 \
   $(GEOLIB)/src1d.f \
-  $(GEOLIB)/step2.f \
+  $(GEOLIB)/step2.f90 \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
@@ -112,9 +113,10 @@ SOURCES = \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl.f \
+  $(AMRLIB)/flglvl2.f \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
-  $(AMRLIB)/grdfit.f \
+  $(AMRLIB)/grdfit2.f \
   $(AMRLIB)/intfil_new.f90 \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \

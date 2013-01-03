@@ -143,4 +143,54 @@ contains
         
     end subroutine set_multilayer_params
 
+    ! ========================================================================
+    !  read_multilayer_data(file_name)
+    ! ========================================================================
+    subroutine read_multilayer_data(file_name)
+
+        implicit none
+        
+        ! Arguments
+        character(len=*), optional, intent(in) :: file_name
+        
+        ! Locals
+        integer, parameter :: unit = 124
+        integer :: ios
+
+        ! Only read in this data if we are doing multilayer swe
+        if (num_layers > 1) then
+            write(GEO_PARM_UNIT,*) ' '
+            write(GEO_PARM_UNIT,*) '--------------------------------------------'
+            write(GEO_PARM_UNIT,*) 'Multilayer Parameters:'
+            write(GEO_PARM_UNIT,*) '----------------------'
+
+            if (present(file_name)) then
+                call opendatafile(unit, file_name)
+            else
+                call opendatafile(unit, 'multilayer.data')
+            endif
+
+            read(unit,*) check_richardson
+            read(unit,"(d16.8)") richardson_tolerance
+            read(unit,"(i1)") eigen_method
+            read(unit,"(i1)") inundation_method
+            close(unit) 
+
+            ! Open Kappa output file if num_layers > 1
+            ! Open file for writing hyperbolicity warnings if multiple layers
+            if (num_layers > 1 .and. check_richardson) then
+                open(unit=KAPPA_UNIT, file='fort.kappa', iostat=ios, &
+                        status="unknown", action="write")
+                if ( ios /= 0 ) stop "Error opening file name fort.kappa"
+            endif
+
+            write(GEO_PARM_UNIT,*) '   check_richardson:',check_richardson
+            write(GEO_PARM_UNIT,*) '   richardson_tolerance:',richardson_tolerance
+            write(GEO_PARM_UNIT,*) '   eigen_method:',eigen_method
+            write(GEO_PARM_UNIT,*) '   inundation_method:',inundation_method
+        endif
+        close(GEO_PARM_UNIT)
+        
+    end subroutine read_multilayer_data
+
 end module multilayer_module

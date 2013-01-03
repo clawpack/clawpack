@@ -10,6 +10,7 @@ subroutine setprob()
     implicit none
 
     call set_geo()                    !# sets basic parameters g and coord system
+    call read_multilayer_data()       !# Specifies parameters for multiple layers
     call set_refinement()             !# sets refinement control parameters
     call read_topo_settings()         !# specifies topography (bathymetry) files
     call read_dtopo_settings()        !# specifies file with dtopo from earthquake

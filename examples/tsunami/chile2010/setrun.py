@@ -83,7 +83,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 5
+    clawdata.num_aux = 4
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -149,7 +149,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 2
+    clawdata.verbosity = 1
 
 
 
@@ -255,7 +255,7 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    clawdata.aux_type = ['center','capacity','yleft','center','center']
+    clawdata.aux_type = ['center','capacity','yleft','center']
 
 
     # Flag using refinement routine flag2refine rather than richardson error
@@ -323,7 +323,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    rundata.gaugedata.add_gauge([32412, -86.392, -17.975, 0., 1.e10])
+    rundata.gaugedata.gauges.append([32412, -86.392, -17.975, 0., 1.e10])
 
     return rundata
     # end of function setrun
@@ -352,10 +352,10 @@ def setgeo(rundata):
     geodata.earth_radius = 6367.5e3
 
     # == Forcing Options
-    geodata.coriolis_forcing = True
+    geodata.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geodata.eta_init = 0.0
+    geodata.sea_level = 0.0
     geodata.dry_tolerance = 1.e-3
     geodata.wave_tolerance = 1.e-1
     geodata.deep_depth = 1e2
@@ -378,8 +378,8 @@ def setgeo(rundata):
 
 
     # == setqinit.data values ==
-    geodata.qinit_type = 0
-    geodata.qinitfiles = []
+    rundata.qinitdata.qinit_type = 0
+    rundata.qinitdata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
 
@@ -388,11 +388,6 @@ def setgeo(rundata):
     # for fixed grids append lines of the form
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
-    
-    # == Multilayer ==
-    geodata.num_layers = 1
-    geodata.rho = 1025.0
-    geodata.richardson_tolerance = 0.95
 
     return rundata
     # end of function setgeo
