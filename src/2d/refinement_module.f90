@@ -57,7 +57,7 @@ contains
         read(unit,*) wave_tolerance
         read(unit,'(a)') line
         allocate(speed_tolerance(get_value_count(line)))
-        read(line,*) (speed_tolerance(i),i=1,size(speed_tolerance))
+        read(line,*) speed_tolerance
         read(unit,*) deep_depth
         read(unit,*) max_level_deep
         close(unit)

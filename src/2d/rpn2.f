@@ -33,7 +33,7 @@ c
 !           David George, Vancouver WA, Feb. 2009                           !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      use geoclaw_module, only: g => grav, dry_tolerance
+      use geoclaw_module, only: g => grav, drytol => dry_tolerance
       use geoclaw_module, only: earth_radius, deg2rad
       use amr_module, only: mcapa
 
@@ -63,6 +63,7 @@ c
       double precision s1m,s2m
       double precision hstar,hstartest,hstarHLL,sLtest,sRtest
       double precision tw,dxdc
+      double precision pi
 
       logical rare1,rare2
 
@@ -113,14 +114,14 @@ c        !set normal direction
          endif
 
          !Riemann problem variables
-         hL = qr(1,i-1)
-         hR = ql(1,i)
-         huL = qr(mu,i-1)
-         huR = ql(mu,i)
+         hL = qr(1,i-1) 
+         hR = ql(1,i) 
+         huL = qr(mu,i-1) 
+         huR = ql(mu,i) 
          bL = auxr(1,i-1)
          bR = auxl(1,i)
 
-         hvL=qr(nv,i-1)
+         hvL=qr(nv,i-1) 
          hvR=ql(nv,i)
 
          !check for wet/dry boundary
@@ -219,7 +220,8 @@ c     &      bL,bR,uL,uR,vL,vR,phiL,phiR,sE1,sE2,drytol,g,sw,fw)
 c        !eliminate ghost fluxes for wall
          do mw=1,3
             sw(mw)=sw(mw)*wall(mw)
-               fw(1,mw)=fw(1,mw)*wall(mw)
+
+               fw(1,mw)=fw(1,mw)*wall(mw) 
                fw(2,mw)=fw(2,mw)*wall(mw)
                fw(3,mw)=fw(3,mw)*wall(mw)
          enddo
@@ -229,6 +231,8 @@ c        !eliminate ghost fluxes for wall
             fwave(1,mw,i)=fw(1,mw)
             fwave(mu,mw,i)=fw(2,mw)
             fwave(nv,mw,i)=fw(3,mw)
+!            write(51,515) sw(mw),fw(1,mw),fw(2,mw),fw(3,mw)
+!515         format("++sw",4e25.16)
          enddo
 
  30      continue
@@ -237,12 +241,15 @@ c        !eliminate ghost fluxes for wall
 
 c==========Capacity for mapping from latitude longitude to physical space====
 
+        pi = 4.d0*datan(1.d0)
         if (mcapa.gt.0) then
          do i=2-mbc,mx+mbc
           if (ixy.eq.1) then
-             dxdc=(earth_radius*deg2rad)
+!             dxdc=(earth_radius*deg2rad)
+             dxdc=(earth_radius*pi/180.d0) 
           else
-             dxdc=earth_radius*cos(auxl(3,i))*deg2rad
+!             dxdc=earth_radius*cos(auxl(3,i))*deg2rad
+             dxdc=earth_radius*pi*cos(auxl(3,i))/180.d0 
           endif
 
           do mw=1,mwaves
@@ -276,6 +283,14 @@ c============= compute fluctuations=============================================
                endif
             enddo
          enddo
+!--       do i=2-mbc,mx+mbc
+!--            do m=1,meqn
+!--                write(51,151) m,i,amdq(m,i),apdq(m,i)
+!--                write(51,152) fwave(m,1,i),fwave(m,2,i),fwave(m,3,i)
+!--151             format("++3 ampdq ",2i4,2e25.15)
+!--152             format("++3 fwave ",8x,3e25.15)
+!--            enddo
+!--        enddo
 
       return
       end subroutine

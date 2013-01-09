@@ -1,3 +1,4 @@
+! ============================================
 subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
 ! ============================================
 ! 
@@ -11,7 +12,8 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
 ! 
 ! Also calls movetopo if topography might be moving.
 
-    use geoclaw_module, only:dry_tolerance, sea_level, g => grav
+    use geoclaw_module, only: dry_tolerance
+    use geoclaw_module, only: g => grav
     use topo_module
     use dtopo_module
     
@@ -24,7 +26,8 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
     ! Local storage
-    integer :: i,j
+    integer :: index,i,j,k
+    real(kind=8) :: h,u,v
 
     ! Check for NaNs in the solution
     call check4nans(maxmx,maxmy,meqn,mbc,mx,my,q,t,1)
@@ -32,13 +35,14 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     ! check for h < 0 and reset to zero
     ! check for h < drytolerance
     ! set hu = hv = 0 in all these cells
-    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, q(1,i,j) < dry_tolerance)
+    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc,q(1,i,j) < dry_tolerance)
         q(1,i,j) = max(q(1,i,j),0.d0)
         q(2:3,i,j) = 0.d0
     end forall
 
     ! Move the topography if needed
     ! write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
+
     do i=1,num_dtopo
         call movetopo(maxmx,maxmy,mbc,mx,my,                                  &
                       xlower,ylower,dx,dy,t,dt,maux,aux,                      &

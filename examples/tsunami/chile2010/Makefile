@@ -20,21 +20,27 @@ SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran
-FFLAGS ?= 
-# FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
 
-MAKELEVEL ?= 0
-ifeq (${MAKELEVEL},0)
-	# If you want to include NetCDF output add these flags
-	# Note that the NETCDF_INC should point to the location of the hearder files
-	# for NetCDF
-	# NETCDF_INC ?= /usr/include
-	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
+#FC = gfortran
+FC = ifort
+#FFLAGS =  -C -CB -CU -fpe1 -ftrapuv -g 
+FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
+#FFLAGS =   -O2 -fbounds-check
 
-	# Threading flags
-	FFLAGS += $(OMP_FLAG)
-endif
+#FC = gfortran
+#FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
+
+#MAKELEVEL ?= 0
+#ifeq (${MAKELEVEL},0)
+#	# If you want to include NetCDF output add these flags
+#	# Note that the NETCDF_INC should point to the location of the hearder files
+#	# for NetCDF
+#	# NETCDF_INC ?= /usr/include
+#	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
+#
+#	# Threading flags
+#	FFLAGS += $(OMP_FLAG)
+#endif
 
 FFLAGS = -O3 -funroll-loops -finline-functions
 
@@ -69,21 +75,22 @@ SOURCES = \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f90 \
-  $(GEOLIB)/src1d.f \
-  $(GEOLIB)/step2.f90 \
+  $(GEOLIB)/src1d.f90 \
+  $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
   $(GEOLIB)/filval_new.f90 \
-  $(GEOLIB)/filpatch_new.f90 \
+  $(GEOLIB)/filpatch.f \
   $(AMRLIB)/prefilp_new.f90 \
-  $(AMRLIB)/trimbd_new.f90 \
-  $(AMRLIB)/bound_new.f90 \
+  $(AMRLIB)/trimbd_new.f \
+  $(AMRLIB)/bound_new.f \
+  $(AMRLIB)/intfil_new.f \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
   $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine.f90  \
-  $(GEOLIB)/flag2refine2.f  \
+  $(GEOLIB)/flag2refine2.f90  \
   $(GEOLIB)/allowflag.f90  \
   $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
@@ -97,7 +104,7 @@ SOURCES = \
   $(AMRLIB)/amr2.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
-  $(AMRLIB)/check4nans.f \
+  $(AMRLIB)/check4nans.f90 \
   $(AMRLIB)/spest.f  \
   $(AMRLIB)/spest2.f  \
   $(AMRLIB)/init_iflags.f \
@@ -117,7 +124,6 @@ SOURCES = \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
   $(AMRLIB)/grdfit2.f \
-  $(AMRLIB)/intfil_new.f90 \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
   $(AMRLIB)/nestck2.f \

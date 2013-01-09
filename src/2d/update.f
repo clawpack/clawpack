@@ -34,6 +34,7 @@ c             this will be at a diffeent time.
 c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 c
       lget = level
+
       if (uprint) write(outunit,100) lget
 100   format(19h    updating level ,i5)
 c     need to set up data structure for parallel distrib of grids
@@ -55,7 +56,7 @@ c 20   if (mptr .eq. 0) go to 85
 !$OMP&                    etaf,etaav,hav,nwet,hc,huc,hvc),
 !$OMP&            SHARED(lget,numgrids,listgrids,level,intratx,intraty,
 !$OMP&                   nghost,uprint,nvar,naux,mcapa,node,listsp,
-!$OMP&                   alloc,lstart,dry_tolerance)
+!$OMP&                   alloc,lstart,dry_tolerance),
 !$OMP&            DEFAULT(none)
       do ng = 1, numgrids(lget)
 c        mptr    = mget(ng, level)
@@ -114,7 +115,7 @@ c
  101          format(' updating pt. ',2i4,' of grid ',i3,' using ',2i4,
      1               ' of grid ',i4)
               write(outunit,102)(alloc(iadd(ivar,i,j)),ivar=1,nvar)
- 102          format(' old vals: ',4e12.4)
+ 102          format(' old vals: ',4e25.15)
            endif
 c
 c
@@ -154,12 +155,12 @@ c     and is never increased given an increase in mass
                capa=1.0d0
             else
                capa=alloc(iaddfaux(iff+ico-1,jff+jco-1))
-               endif
+            endif
 
-            hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa
+            hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa 
             bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
-            huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa
-            hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa
+            huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa 
+            hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa 
 
             if (hf > dry_tolerance) then
                etaf = hf+bf
@@ -191,14 +192,13 @@ c     and is never increased given an increase in mass
          endif
 
 c     # set h on coarse grid based on surface, not conservative near shoreline
-
-      alloc(iadd(1,i,j)) = hc / capac
-      alloc(iadd(2,i,j)) = huc / capac
-      alloc(iadd(3,i,j)) = hvc / capac
+      alloc(iadd(1,i,j)) = hc / capac 
+      alloc(iadd(2,i,j)) = huc / capac 
+      alloc(iadd(3,i,j)) = hvc / capac 
 c
       if (uprint) write(outunit,103)(alloc(iadd(ivar,i,j)),
      .     ivar=1,nvar)
- 103  format(' new vals: ',4e12.4)
+ 103  format(' new vals: ',4e25.15)
 c
       jff = jff + intraty(lget)
  70   continue
@@ -218,5 +218,6 @@ c      go to 20
 c
 c 85   continue
 c
+
  99   return
       end

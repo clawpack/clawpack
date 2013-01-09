@@ -65,46 +65,48 @@ c velocities are zeroed out which can then lead to increase in h again.
 
         drytol2 = 0.1d0 * dry_tolerance
 
-        h(1) = q(1,iindex,jindex)
-        h(2) = q(1,iindex+1,jindex)
-        h(3) = q(1,iindex,jindex+1)
-        h(4) = q(1,iindex+1,jindex+1)
+              h(1) = q(1,iindex,jindex) 
+              h(2) = q(1,iindex+1,jindex) 
+              h(3) = q(1,iindex,jindex+1)
+              h(4) = q(1,iindex+1,jindex+1) 
               
-        if ((h(1) < drytol2) .or. (h(2) < drytol2) .or.
-     &      (h(3) < drytol2) .or. (h(4) < drytol2)) then
-            ! One of the cells is dry, so just use value from grid cell
-            ! that contains gauge rather than interpolating
-            icell = int(1.d0 + (xgauge(i) - xlow) / hx)
-            jcell = int(1.d0 + (ygauge(i) - ylow) / hy)
-            do ivar=1,nvar
-                var(ivar) = q(ivar,icell,jcell)
-            enddo
-            topo = aux(1,icell,jcell)
-            
-        else
-            ! Linear interpolation between four cells
-            do ivar=1,nvar
-              var(ivar) = (1.d0 - xoff) * (1.d0 - yoff) 
-     &                 * q(ivar,iindex,jindex) 
-     &                 + xoff * (1.d0 - yoff) * q(ivar,iindex+1,jindex) 
-     &                 + (1.d0 - xoff) * yoff * q(ivar,iindex,jindex+1)
-     &                 + xoff * yoff * q(ivar,iindex+1,jindex+1)
-            enddo
-            topo = (1.d0 - xoff) * (1.d0 - yoff) * aux(1,iindex,jindex) 
-     &           + xoff * (1.d0 - yoff) * aux(1,iindex+1,jindex) 
-     &           + (1.d0 - xoff) * yoff * aux(1,iindex,jindex+1)
-     &           + xoff * yoff * aux(1,iindex+1,jindex+1)
-            
-        endif
-      
+              if ((h(1) < drytol2) .or.
+     &            (h(2) < drytol2) .or.
+     &            (h(3) < drytol2) .or.
+     &            (h(4) < drytol2)) then
+                  ! One of the cells is dry, so just use value from grid cell
+                  ! that contains gauge rather than interpolating
+                  
+                  icell = int(1.d0 + (xgauge(i) - xlow) / hx)
+                  jcell = int(1.d0 + (ygauge(i) - ylow) / hy)
+                  do ivar=1,3
+                      var(ivar) = q(ivar,icell,jcell) 
+                  enddo
+                  ! This is the bottom layer and we should figure out the
+                  ! topography
+                  topo = aux(1,icell,jcell)
+              else
+                  ! Linear interpolation between four cells
+                  do ivar=1,3
+                      var(ivar) = (1.d0 - xoff) * (1.d0 - yoff)
+     &                               * q(ivar,iindex,jindex) 
+     &                + xoff*(1.d0 - yoff) * q(ivar,iindex+1,jindex) 
+     &                + (1.d0 - xoff) * yoff * q(ivar,iindex,jindex+1) 
+     &                + xoff * yoff * q(ivar,iindex+1,jindex+1)
+                  enddo
+                  topo = (1.d0 - xoff) * (1.d0 - yoff) 
+     &                        * aux(1,iindex,jindex) 
+     &                 + xoff * (1.d0 - yoff) * aux(1,iindex+1,jindex) 
+     &                 + (1.d0 - xoff) * yoff * aux(1,iindex,jindex+1) 
+     &                 + xoff * yoff * aux(1,iindex+1,jindex+1)
+              endif
               
           ! Extract surfaces
           eta = var(1) + topo
 
 !$OMP CRITICAL (gaugeio)
-              
           write(OUTGAUGEUNIT,100) igauge(i),level,tgrid, 
-     &              (var(j),j=1,nvar), var(1)+topo
+     &              (var(j),j=1,3),eta
 
 !$OMP END CRITICAL (gaugeio)
 

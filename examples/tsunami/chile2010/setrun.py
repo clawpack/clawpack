@@ -115,7 +115,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 1
+    clawdata.output_style = 3
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -130,7 +130,7 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 1
+        clawdata.total_steps = 2
         clawdata.output_t0 = True
         
 
@@ -163,7 +163,8 @@ def setrun(claw_pkg='geoclaw'):
 
     # Initial time step for variable dt.
     # If dt_variable==0 then dt=dt_initial for all steps:
-    clawdata.dt_initial = 0.016
+    #clawdata.dt_initial = 0.016
+    clawdata.dt_initial = 372.65674
 
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1e+99
@@ -243,7 +244,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 3
+    clawdata.amr_levels_max = 1
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,6]
@@ -309,7 +310,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.pprint = False      # proj. of tagged points
     clawdata.rprint = False      # print regridding summary
     clawdata.sprint = False      # space/memory output
-    clawdata.tprint = False      # time step reporting each level
+    clawdata.tprint = True       # time step reporting each level
     clawdata.uprint = False      # update/upbnd reporting
     
     # More AMR parameters can be set -- see the defaults in pyclaw/data.py

@@ -23,7 +23,7 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
      .                                      naux*mitot*(j-1)
 c
-      outaux = .false.
+      outaux = .false.    ! leave in for debugging
 
 c     ASCII Output
       if (output_format == 1) then
@@ -98,9 +98,15 @@ c                 # output in 1d format if ny=1:
               endif
             enddo
 
-            eta = alloc(iadd(1,i,j)) + alloc(iaddaux(1,i,j))
+            ! Extract depth and momenta
+              h = alloc(iadd(1,i,j)) 
+              hu = alloc(iadd(2,i,j))
+              hv = alloc(iadd(3,i,j))
 
-            write(matunit1,109) (alloc(iadd(k,i,j)),k=1,nvar), eta
+            ! Calculate surfaces
+            eta = h + alloc(iaddaux(1,i,j))
+
+            write(matunit1,109) h,hu,hv,eta
             
           enddo
           write(matunit1,*) ' '
@@ -149,13 +155,13 @@ c                 # output in 1d format if ny=1:
 
          do j = nghost+1, mjtot-nghost
             do i = nghost+1, mitot-nghost
-               do ivar=1,naux
-                  if (abs(alloc(iaddaux(ivar,i,j))) .lt. 1d-90) then
-                     alloc(iaddaux(ivar,i,j)) = 0.d0
-                  endif
-               enddo
+ !              do ivar=1,naux
+ !                 if (abs(alloc(iaddaux(ivar,i,j))) .lt. 1d-90) then
+ !                    alloc(iaddaux(ivar,i,j)) = 0.d0
+ !                 endif
+ !              enddo
                write(matunit3,109) (alloc(iaddaux(ivar,i,j)), 
-     &                              ivar=1,naux)
+     &                              ivar=1,4)   ! 3 was naux. changed to match 4-x
             enddo
             write(matunit3,*) ' '
          enddo
@@ -179,7 +185,7 @@ c         # and we want to use 1d plotting routines
           ndim = 1
         endif
 
-      write(matunit2,1000) time,4,ngrids,naux,ndim
+      write(matunit2,1000) time,nvar+1,ngrids,naux,ndim
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

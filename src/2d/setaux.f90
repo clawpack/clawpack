@@ -9,7 +9,9 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !        aux(2,i,j) = area ratio (capacity function -- set mcapa = 2)
 !        aux(3,i,j) = length ratio for edge
 !     
-!     aux(4:num_layers + 3,i,j) = Initial layer depths for linearized problem
+!     aux(4,i,j) = seems to allow for variable friction
+!     ripped out 5:4+num_layers   for multi-layer  - only one layer code for
+!     tsunamis
 !
 
 

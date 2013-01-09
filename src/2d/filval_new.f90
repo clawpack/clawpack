@@ -89,8 +89,8 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
             fineflag(1) = .false.
             ! interpolate eta to find depth
             do ii=-1,1
-                coarseval(2+ii) = valc(1,i+ii,j) + auxc(1,i+ii,j)
-                if (valc(1,i+ii,j) <= dry_tolerance) then
+                coarseval(2+ii) = valc(1,i+ii,j)  + auxc(1,i+ii,j)
+                if (valc(1,i+ii,j)  <= dry_tolerance) then
                     coarseval(2+ii)=sea_level
                 end if
             end do

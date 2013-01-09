@@ -180,7 +180,8 @@ c  this is set during timestepping
 c
       do level = lbase+1, lfine   
          dtc = possk(level-1)
-         dtf = cfl/(spoh(level) + tiny(1.d0))
+!        dtf = cfl/(spoh(level) + tiny(1.d0)) ! orig code
+         dtf = cfl/(spoh(level) )  ! changed to match 4-x
          if (dtf .gt. dtc) then
             kratio(level-1) = 1  ! cant have larger timestep than parent level
             possk(level)    = dtc  ! cant have larger timestep than parent level

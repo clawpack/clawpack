@@ -5,7 +5,7 @@ c     =====================================================
      &                  ql,qr,aux1,aux2,aux3,
      &                  ilr,asdq,bmasdq,bpasdq)
 c     =====================================================
-      use geoclaw_module, only: g => grav, dry_tolerance
+      use geoclaw_module, only: g => grav, tol => dry_tolerance
       use geoclaw_module, only: coordinate_system,earth_radius,deg2rad
 
       implicit none
@@ -35,9 +35,13 @@ c-----------------------last modified 1/10/05----------------------
       double precision  delf1,delf2,delf3,dxdcd,dxdcu
       double precision  dxdcm,dxdcp,topo1,topo3,eta
 
+C       double precision  pi   ! remove when return deg2rad to orig form of 5.0
+
       integer i,m,mw,mu,mv
 
-      tol=dry_tolerance
+C =======
+C       pi = 4.d0*datan(1.d0)   ! remove when return deg2rad
+C >>>>>>> mjb/omp-tests
       abs_tol=dry_tolerance
 
       if (ixy.eq.1) then
@@ -50,11 +54,11 @@ c-----------------------last modified 1/10/05----------------------
 
       do i=2-mbc,mx+mbc
 
-         hl=qr(1,i-1)
-         hr=ql(1,i)
-         hul=qr(mu,i-1)
-         hur=ql(mu,i)
-         hvl=qr(mv,i-1)
+         hl=qr(1,i-1) 
+         hr=ql(1,i) 
+         hul=qr(mu,i-1) 
+         hur=ql(mu,i) 
+         hvl=qr(mv,i-1) 
          hvr=ql(mv,i)
 
 c===========determine velocity from momentum===========================
@@ -86,11 +90,12 @@ c===========determine velocity from momentum===========================
       dxdcp = 1.d0
       dxdcm = 1.d0
 
-      if (hl <= dry_tolerance .and. hr <= dry_tolerance) go to 90
+      if (hl <= dry_tolerance .and.
+     &    hr <= dry_tolerance) go to 90
 
 *      !check and see if cell that transverse waves are going in is high and dry
        if (ilr.eq.1) then
-            eta = qr(1,i-1) + aux2(1,i-1)
+            eta = qr(1,i-1)  + aux2(1,i-1)
             topo1 = aux1(1,i-1)
             topo3 = aux3(1,i-1)
 c            s1 = vl-sqrt(g*hl)
@@ -108,15 +113,20 @@ c            s2 = 0.5d0*(s1+s3)
 
       if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
-            dxdcp=(earth_radius*deg2rad)
+!            dxdcp=(earth_radius*deg2rad)
+           dxdcp=(earth_radius*pi/180.d0)
             dxdcm = dxdcp
          else
             if (ilr.eq.1) then
-               dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
-               dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
+!              dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
+!              dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
+              dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
+              dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
             else
-               dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
-               dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
+!               dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
+!               dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
+               dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
+               dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
             endif
          endif
       endif

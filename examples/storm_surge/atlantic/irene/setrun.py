@@ -431,7 +431,11 @@ def setgeo(rundata):
     # ----------------------
 
 
+<<<<<<< HEAD
+    import geoclaw.surge as surge
+=======
 def set_storm():
+>>>>>>> rjleveque/omp-tests
 
     data = surge.data.SurgeData()
 
