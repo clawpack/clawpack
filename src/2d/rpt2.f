@@ -29,7 +29,7 @@ c-----------------------last modified 1/10/05----------------------
       double precision  s(3)
       double precision  r(3,3)
       double precision  beta(3)
-      double precision  tol,abs_tol
+      double precision  abs_tol
       double precision  hl,hr,hul,hur,hvl,hvr,vl,vr,ul,ur,bl,br
       double precision  uhat,vhat,hhat,roe1,roe3,s1,s2,s3,s1l,s3r
       double precision  delf1,delf2,delf3,dxdcd,dxdcu
@@ -42,7 +42,7 @@ C       double precision  pi   ! remove when return deg2rad to orig form of 5.0
 C =======
 C       pi = 4.d0*datan(1.d0)   ! remove when return deg2rad
 C >>>>>>> mjb/omp-tests
-      abs_tol=dry_tolerance
+      abs_tol=tol
 
       if (ixy.eq.1) then
         mu = 2
@@ -90,8 +90,7 @@ c===========determine velocity from momentum===========================
       dxdcp = 1.d0
       dxdcm = 1.d0
 
-      if (hl <= dry_tolerance .and.
-     &    hr <= dry_tolerance) go to 90
+      if (hl <= tol .and. hr <= tol) go to 90
 
 *      !check and see if cell that transverse waves are going in is high and dry
        if (ilr.eq.1) then
@@ -113,20 +112,20 @@ c            s2 = 0.5d0*(s1+s3)
 
       if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
-!            dxdcp=(earth_radius*deg2rad)
-           dxdcp=(earth_radius*pi/180.d0)
+             dxdcp=(earth_radius*deg2rad)
+C            dxdcp=(earth_radius*pi/180.d0)
             dxdcm = dxdcp
          else
             if (ilr.eq.1) then
-!              dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
-!              dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
-              dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
-              dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
+               dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
+               dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
+!              dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
+!              dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
             else
-!               dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
-!               dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
-               dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
-               dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
+               dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
+               dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
+!               dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
+!               dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
             endif
          endif
       endif

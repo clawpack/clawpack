@@ -103,6 +103,7 @@ c        # no capa array:
     5       continue
          endif
 
+         print *,'starting x-sweeps'
 c
 c
 c     # perform x-sweeps

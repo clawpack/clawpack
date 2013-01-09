@@ -53,7 +53,6 @@ c
 
       !local only
       integer m,i,mw,maxiter,mu,nv
-      real(kind=8) :: drytol
       double precision wall(3)
       double precision fw(3,3)
       double precision sw(3)
@@ -66,8 +65,6 @@ c
       double precision pi
 
       logical rare1,rare2
-
-      drytol=dry_tolerance
 
       !loop through Riemann problems at each grid cell
       do i=2-mbc,mx+mbc

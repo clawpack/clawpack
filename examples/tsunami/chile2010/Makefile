@@ -20,15 +20,13 @@ SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-
-#FC = gfortran
-FC = ifort
+# FC = ifort
 #FFLAGS =  -C -CB -CU -fpe1 -ftrapuv -g 
-FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
+# FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
 #FFLAGS =   -O2 -fbounds-check
 
-#FC = gfortran
-#FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
+FC = gfortran
+FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
 #MAKELEVEL ?= 0
 #ifeq (${MAKELEVEL},0)
@@ -42,7 +40,7 @@ FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
 #	FFLAGS += $(OMP_FLAG)
 #endif
 
-FFLAGS = -O3 -funroll-loops -finline-functions
+# FFLAGS = -O3 -funroll-loops -finline-functions
 
 # ---------------------------------
 # List of sources for this program:
