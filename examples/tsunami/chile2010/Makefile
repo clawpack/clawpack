@@ -20,9 +20,9 @@ PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC = ifort
-FFLAGS = -g -check all -traceback -fpe0 -ftrapuv -fp-model precise
+#FFLAGS = -g -check all -traceback -fpe0 -ftrapuv -fp-model precise
 #FFLAGS =  -C -CB -CU -fpe1 -ftrapuv -g 
-# FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
+FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
 #FFLAGS =   -O2 -fbounds-check
 
 # FC = gfortran
@@ -79,7 +79,7 @@ SOURCES = \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
   $(GEOLIB)/filval_new.f90 \
-  $(GEOLIB)/filpatch.f \
+  $(GEOLIB)/filpatch_new.f90 \
   $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/trimbd_new.f \
   $(AMRLIB)/bound_new.f \
