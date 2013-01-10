@@ -1,7 +1,7 @@
 subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-    use qinit_module, only: qinit_type,add_perturbation
-    use geoclaw_module, only: num_layers,rho,eta_init
+    use qinit_module, only: qinit_type, add_perturbation
+    use multilayer_module, only: num_layers, eta_init
     
     implicit none
     
@@ -23,7 +23,7 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
             eta_below = aux(1,i,j)
             do m=num_layers,1,-1
                 layer_index = 3*(m-1) + 1
-                q(layer_index,i,j) = max(0.d0,eta_init(m) - eta_below) * rho(m)
+                q(layer_index,i,j) = max(0.d0,eta_init(m) - eta_below)
                 eta_below = eta_init(m)
             enddo
         enddo

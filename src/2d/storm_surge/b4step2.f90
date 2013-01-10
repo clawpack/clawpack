@@ -11,9 +11,11 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
 ! 
 ! Also calls movetopo if topography might be moving.
 
-    use geoclaw_module, only:num_layers,dry_tolerance,rho
-    use geoclaw_module, only:KAPPA_UNIT,check_richardson,richardson_tolerance
-    use geoclaw_module, only:g => grav
+    use geoclaw_module, only: dry_tolerance, g => grav
+
+    use multilayer_module, only: num_layers, rho, KAPPA_UNIT, check_richardson
+    use mulilayer_module, only: richardson_tolerance
+
     use topo_module
     use dtopo_module
 
@@ -45,7 +47,8 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     ! check for h < drytolerance
     ! set hu = hv = 0 in all these cells
     forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, k=1:num_layers, &
-           q(3*(k-1)+1,i,j) / rho(k) < dry_tolerance(k))
+                                q(3*(k-1)+1,i,j) < dry_tolerance(k))
+        q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j), 0.d0)
         q(3*(k-1)+2:3*(k-1)+3,i,j) = 0.d0
     end forall
 
@@ -73,7 +76,7 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
                 dry_state = .false.
                 do k=1,num_layers
                     index = 3*(k-1)
-                      h(k) = q(index+1,i,j) / rho(k)
+                      h(k) = q(index+1,i,j)
                       if (h(k) > dry_tolerance(k)) then
                           u(k) = q(index+2,i,j) / q(index+1,i,j)
                           v(k) = q(index+3,i,j) / q(index+1,i,j)

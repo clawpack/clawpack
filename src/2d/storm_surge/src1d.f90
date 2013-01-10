@@ -16,8 +16,10 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     use geoclaw_module, only: g => grav, dry_tolerance
     use geoclaw_module, only: coriolis_forcing, coriolis
     use geoclaw_module, only: friction_forcing, friction_index
-    use geoclaw_module, only: friction_depth, num_layers, rho
+    use geoclaw_module, only: friction_depth
     use geoclaw_module, only: omega, coordinate_system
+
+    use multilayer_module, only: num_layers, rho
 
     implicit none
 
@@ -43,41 +45,24 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
         do i=1,mx1d
 
             ! Extract depths
-            forall (m=1:num_layers)
-                h(m) = q1d(3 * (m-1) + 1,i) / rho(m)
-            end forall
+            h = q1d(1,i)
+            hu = q1d(2,i)
+            hv = q1d(3,i)
 
-            ! Extract appropriate momentum, also zero momentum in dry layers
-            m = num_layers
-            found = .false.
-            do while(.not.found .and. m > 0)
-                if (h(m) > depth_tolerance) then
-                    ! Extract momentum components and exit loop
-                    bottom_layer = m
-                    bottom_index = 3 * (m - 1)
-                    hu = q1d(bottom_index + 2, i) / rho(m)
-                    hv = q1d(bottom_index + 3, i) / rho(m)
-                    found = .true.
-                else
-                    ! Set almost dry layers momentum to zero
-                    q1d(3 * (m - 1) + 2, i) = 0.d0
-                    q1d(3 * (m - 1) + 3, i) = 0.d0
-                endif
-                m = m - 1
-            end do
-
-            if (.not.found) then
-                cycle
+            ! If depth is near-zero, set momentum to zero
+            if (h < depth_tolerance) then
+                q1d(2:3,i) = 0.d0
+                cycle 
             endif
-
+            
             ! Apply friction source term only if in shallower water
-            if (sum(h) <= friction_depth) then
+            if (h <= friction_depth) then
                 ! Calculate source term
                 gamma = sqrt(hu**2 + hv**2) * (g * aux1d(friction_index,i)**2) &
-                                            / (h(bottom_layer)**(7/3))
+                                            / h**(7.d0/3.d0)
                 dgamma = 1.d0 + dt * gamma
-                q1d(bottom_index + 2, i) = q1d(bottom_index + 2, i) / dgamma
-                q1d(bottom_index + 3, i) = q1d(bottom_index + 3, i) / dgamma
+                q1d(2, i) = q1d(2, i) / dgamma
+                q1d(3, i) = q1d(3, i) / dgamma
             endif
         enddo
     endif
@@ -95,14 +80,9 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
             a(2,1) = -fdt + fdt**3 / 6.d0
             a(2,2) = a(1,1)
     
-            do m=1,num_layers
-                q1d(layer_index + 2,i) = q1d(layer_index + 2,i) * a(1,1) &
-                                       + q1d(layer_index + 3,i) * a(1,2)
-                q1d(layer_index + 3,i) = q1d(layer_index + 2,i) * a(2,1) &
-                                       + q1d(layer_index + 3,i) * a(2,2)
-            enddo
+            q1d(2,i) = q1d(2,i) * a(1,1) + q1d(3,i) * a(1,2)
+            q1d(3,i) = q1d(2,i) * a(2,1) + q1d(3,i) * a(2,2)
         enddo
-        
     endif
     
     ! = Wind Forcing =========================================================

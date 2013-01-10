@@ -4,7 +4,7 @@ c
       subroutine valout (lst, lend, time, nvar, naux)
 c
       use amr_module
-      use geoclaw_module, only: num_layers, rho
+      use multilayer_module, only: num_layers, rho
       use storm_module, only: wind_index, pressure_index
       use storm_module, only: output_storm_location
 
@@ -109,9 +109,9 @@ c                 # output in 1d format if ny=1:
             ! Extract all but bottom layer depth and momenta
             do k=1,num_layers-1
               index = 3 * (k - 1)
-              h(k) = alloc(iadd(index+1,i,j)) / rho(k)
-              hu(k) = alloc(iadd(index+2,i,j)) / rho(k)
-              hv(k) = alloc(iadd(index+3,i,j)) / rho(k)
+              h(k) = alloc(iadd(index+1,i,j))
+              hu(k) = alloc(iadd(index+2,i,j))
+              hv(k) = alloc(iadd(index+3,i,j))
             enddo
             ! Extract bottom layer
             index = 3 * (num_layers - 1) 

@@ -13,13 +13,17 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !     aux(wind_index:wind_index+1, i ,j) = Wind Field (x,y)
 !     aux(pressure_index, i , j) = Pressure Field
 
+    use amr_module, only: mcapa
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
-    use geoclaw_module, only: num_layers, eta_init, friction_index
-    use geoclaw_module, only: wet_manning_coefficient, dry_manning_coefficient
+    use geoclaw_module, only: friction_index, wet_manning_coefficient
+    use geoclaw_module, only: dry_manning_coefficient
+
+    use multilayer_module, only: num_layers, eta_init
+
     use storm_module, only: wind_index, pressure_index, set_storm_fields
     use storm_module, only: ambient_pressure
-    use amr_module, only: mcapa
+    
     use topo_module
     
     implicit none

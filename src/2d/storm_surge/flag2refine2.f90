@@ -24,8 +24,11 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                        tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
 
     use amr_module, only: mxnest, t0
-    use geoclaw_module, only:dry_tolerance, rho, eta_init, num_layers
+
+    use geoclaw_module, only: dry_tolerance
     use geoclaw_module, only:spherical_distance, coordinate_system
+
+    use multilayer_module, only: num_layers, rho, eta_init
     
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
     use topo_module, only: minleveltopo,mtopofiles
@@ -172,9 +175,9 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                 ! The bottom layer is checked first and eta_below is set to the 
                 ! bathymetry
                 eta_below = aux(1,i,j)
-                
+
                 forall(k=1:num_layers)
-                    h(k) = q(3 * (k - 1) + 1,i,j) / rho(k)
+                    h(k) = q(3 * (k - 1) + 1,i,j)
                 end forall
                 total_depth = sum(h)
 
@@ -186,7 +189,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                         eta = h(k) + eta_below
                     
                         ! Check wave criteria
-                        if (abs(eta - eta_init(k)) > wave_tolerance(k)) then
+                        if (abs(eta - eta_init(k)) > wave_tolerance then
                             ! Check to see if we are near shore
                             if (total_depth < deep_depth) then
                                 amrflags(i,j) = DOFLAG
