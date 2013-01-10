@@ -108,9 +108,6 @@ c
       logical limit, relimit
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
-
-
-      pi = 4.d0*datan(1.d0)    ! delete after testing and returning to deg2rad
       relimit = .false.
 c
       limit = .false.
@@ -143,23 +140,21 @@ c   # Set fadd for the donor-cell upwind method (Godunov)
       if (ixy.eq.1) mu=2
       if (ixy.eq.2) mu=3
       do 40 i=1-mbc+1,mx+mbc-1
-         if (coordinate_system.eq.2) then
-!     	  if (ixy.eq.1) dxdc=earth_radius*deg2rad
-      	  if (ixy.eq.1) dxdc=earth_radius*pi/180.d0
-!	        if (ixy.eq.2) dxdc=earth_radius*cos(aux2(3,i))*deg2rad
-                if (ixy.eq.2) dxdc=earth_radius*pi*cos(aux2(3,i))/180.d0
-	      else
-	       dxdc=1.d0
-	      endif
+          if (coordinate_system.eq.2) then
+     	      if (ixy.eq.1) dxdc=earth_radius*deg2rad
+	          if (ixy.eq.2) dxdc=earth_radius*cos(aux2(3,i))*deg2rad
+	        else
+	          dxdc=1.d0
+	        endif
 
-         do m=1,meqn
+          do m=1,meqn
             faddp(m,i) = faddp(m,i) - apdq(m,i)
             faddm(m,i) = faddm(m,i) + amdq(m,i)
-         enddo
-         if (relimit) then
+          enddo
+          if (relimit) then
             faddp(1,i) = faddp(1,i) + dxdc*q1d(mu,i)
             faddm(1,i) = faddp(1,i)
-         endif
+          endif
    40       continue
 c
 c     # compute maximum wave speed for checking Courant number:

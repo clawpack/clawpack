@@ -62,7 +62,6 @@ c
       double precision s1m,s2m
       double precision hstar,hstartest,hstarHLL,sLtest,sRtest
       double precision tw,dxdc
-      double precision pi
 
       logical rare1,rare2
 
@@ -237,16 +236,12 @@ c        !eliminate ghost fluxes for wall
 
 
 c==========Capacity for mapping from latitude longitude to physical space====
-
-        pi = 4.d0*datan(1.d0)
         if (mcapa.gt.0) then
          do i=2-mbc,mx+mbc
           if (ixy.eq.1) then
-!             dxdc=(earth_radius*deg2rad)
-             dxdc=(earth_radius*pi/180.d0) 
+             dxdc=(earth_radius*deg2rad)
           else
-!             dxdc=earth_radius*cos(auxl(3,i))*deg2rad
-             dxdc=earth_radius*pi*cos(auxl(3,i))/180.d0 
+             dxdc=earth_radius*cos(auxl(3,i))*deg2rad
           endif
 
           do mw=1,mwaves

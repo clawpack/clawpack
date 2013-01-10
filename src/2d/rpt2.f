@@ -35,13 +35,8 @@ c-----------------------last modified 1/10/05----------------------
       double precision  delf1,delf2,delf3,dxdcd,dxdcu
       double precision  dxdcm,dxdcp,topo1,topo3,eta
 
-C       double precision  pi   ! remove when return deg2rad to orig form of 5.0
-
       integer i,m,mw,mu,mv
 
-C =======
-C       pi = 4.d0*datan(1.d0)   ! remove when return deg2rad
-C >>>>>>> mjb/omp-tests
       abs_tol=tol
 
       if (ixy.eq.1) then
@@ -113,19 +108,14 @@ c            s2 = 0.5d0*(s1+s3)
       if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
              dxdcp=(earth_radius*deg2rad)
-C            dxdcp=(earth_radius*pi/180.d0)
             dxdcm = dxdcp
          else
             if (ilr.eq.1) then
                dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
                dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
-!              dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
-!              dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
             else
                dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
                dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
-!               dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
-!               dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
             endif
          endif
       endif
