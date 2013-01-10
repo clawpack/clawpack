@@ -72,7 +72,7 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
     ! Parameters
     ! Relimit fluxes to maintain positivity
     logical, parameter :: relimit = .false.
-    
+
     ! Store mesh parameters in common block
     dxcom = dx
     dycom = dy

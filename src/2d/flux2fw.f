@@ -118,6 +118,7 @@ c
 c     # initialize flux increments:
 c     -----------------------------
 c
+
       do 30 jside=1,2
          do 20 m=1,meqn
             do 10 i = 1-mbc, mx+mbc
@@ -128,6 +129,7 @@ c
    10          continue
    20       continue
    30    continue
+
 c
 c
 c     # solve Riemann problem at each interface and compute Godunov updates
@@ -135,6 +137,7 @@ c     ---------------------------------------------------------------------
 c
       call rpn2(ixy,maxm,meqn,maux,mwaves,mbc,mx,q1d,q1d,
      &          aux2,aux2,fwave,s,amdq,apdq)
+
 c
 c   # Set fadd for the donor-cell upwind method (Godunov)
       if (ixy.eq.1) mu=2
