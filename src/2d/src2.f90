@@ -26,7 +26,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     if (friction_forcing) then
         do j=1,my
             do i=1,mx
-                ! Extract appropriate momentum, also zero momentum in dry layers
+                ! Extract appropriate momentum
                 if (q(1,i,j) < depth_tolerance) then
                     q(2:3,i,j) = 0.d0
                 else

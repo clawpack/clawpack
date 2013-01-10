@@ -40,26 +40,9 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
             ! If depth is near-zero, set momentum to zero
             if (h < depth_tolerance) then
                 q1d(2:3,i) = 0.d0
-                cycle !<<<<< DIFFERENCE
-                      !      Only when friction_depth < depth_tolerance but 
-                      !      should not do anything anyway, should cycle
+                cycle 
             endif
-! =======
-!              h = q1d(1,i)
-
-!             ! Extract appropriate momentum, also zero momentum in dry layers
-!              if (h > depth_tolerance) then
-!                  ! Extract momentum components and exit loop
-!                  hu = q1d(2, i)
-!                  hv = q1d(3, i)
-!              else
-!                  ! Set almost dry layers momentum to zero
-!                  q1d(2, i) = 0.d0
-!                  q1d(3, i) = 0.d0
-!              endif
-
-! >>>>>>> mjb/omp-tests
-
+            
             ! Apply friction source term only if in shallower water
             if (h <= friction_depth) then
                 ! Calculate source term
