@@ -1,4 +1,3 @@
-
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
@@ -20,13 +19,14 @@ SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-# FC = ifort
+FC = ifort
+FFLAGS = -g -check all -traceback -fpe0 -ftrapuv -fp-model precise
 #FFLAGS =  -C -CB -CU -fpe1 -ftrapuv -g 
 # FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
 #FFLAGS =   -O2 -fbounds-check
 
-FC = gfortran
-FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
+# FC = gfortran
+# FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
 #MAKELEVEL ?= 0
 #ifeq (${MAKELEVEL},0)
@@ -74,7 +74,7 @@ SOURCES = \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f90 \
   $(GEOLIB)/src1d.f90 \
-  $(GEOLIB)/step2.f \
+  $(GEOLIB)/step2.f90 \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
@@ -195,4 +195,3 @@ topo: .data
 	python maketopo.py
 
 ### DO NOT remove this line - make depends on it ###
-
