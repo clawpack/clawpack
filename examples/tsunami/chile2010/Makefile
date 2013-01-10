@@ -26,7 +26,7 @@ PLOTDIR = _plots               # Directory for plots
 #FFLAGS =   -O2 -fbounds-check
 
 FC = gfortran
-FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
+FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero -g
 
 #MAKELEVEL ?= 0
 #ifeq (${MAKELEVEL},0)
@@ -74,7 +74,7 @@ SOURCES = \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f90 \
   $(GEOLIB)/src1d.f90 \
-  $(GEOLIB)/step2.f \
+  $(GEOLIB)/step2.f90 \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \

@@ -63,6 +63,7 @@ c      dimension  bpadq(meqn,1-mbc:maxm + mbc)
 
       logical relimit
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
+
 c
 
 c     # to relimit fluxes to maintain positivity
@@ -102,8 +103,6 @@ c        # no capa array:
             dtdy1d(i) = dtdy
     5       continue
          endif
-
-         print *,'starting x-sweeps'
 c
 c
 c     # perform x-sweeps

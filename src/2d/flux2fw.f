@@ -4,8 +4,7 @@ c     =====================================================
       subroutine flux2(ixy,maxm,meqn,maux,mbc,mx,
      &                 q1d,dtdx1d,aux1,aux2,aux3,
      &                 faddm,faddp,gaddm,gaddp,cfl1d,fwave,s,
-     &                 amdq,apdq,rpn2,rpt2)
-c     &                 amdq,apdq,cqxx,bmasdq,bpasdq,rpn2,rpt2)
+     &                 amdq,apdq,cqxx,bmasdq,bpasdq,rpn2,rpt2)
 c     =====================================================
 c
 c     # clawpack routine ...  modified for AMRCLAW
@@ -108,8 +107,6 @@ c
       logical limit, relimit
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
-
-
       pi = 4.d0*datan(1.d0)    ! delete after testing and returning to deg2rad
       relimit = .false.
 c
@@ -121,6 +118,7 @@ c
 c     # initialize flux increments:
 c     -----------------------------
 c
+
       do 30 jside=1,2
          do 20 m=1,meqn
             do 10 i = 1-mbc, mx+mbc
@@ -131,6 +129,7 @@ c
    10          continue
    20       continue
    30    continue
+
 c
 c
 c     # solve Riemann problem at each interface and compute Godunov updates
@@ -138,14 +137,15 @@ c     ---------------------------------------------------------------------
 c
       call rpn2(ixy,maxm,meqn,maux,mwaves,mbc,mx,q1d,q1d,
      &          aux2,aux2,fwave,s,amdq,apdq)
+
 c
 c   # Set fadd for the donor-cell upwind method (Godunov)
       if (ixy.eq.1) mu=2
       if (ixy.eq.2) mu=3
       do 40 i=1-mbc+1,mx+mbc-1
          if (coordinate_system.eq.2) then
-!     	  if (ixy.eq.1) dxdc=earth_radius*deg2rad
-      	  if (ixy.eq.1) dxdc=earth_radius*pi/180.d0
+     	  if (ixy.eq.1) dxdc=earth_radius*deg2rad
+       	  if (ixy.eq.1) dxdc=earth_radius*pi/180.d0
 !	        if (ixy.eq.2) dxdc=earth_radius*cos(aux2(3,i))*deg2rad
                 if (ixy.eq.2) dxdc=earth_radius*pi*cos(aux2(3,i))/180.d0
 	      else
