@@ -1,10 +1,5 @@
 ! ============================================================================
-!  Program:     /Users/mandli/src/local/shallow_water/2d/multi_layer
-!  File:        multilayer_module
-!  Created:     2010-10-12
-!  Author:      Kyle Mandli
-! ============================================================================
-!      Copyright (C) 2010-10-12 Kyle Mandli <mandli@amath.washington.edu>
+!      Copyright (C) 2010-10-12 Kyle Mandli <kyle.mandli@gmail.com>
 !
 !  Distributed under the terms of the Berkeley Software Distribution (BSD) 
 !  license
@@ -17,8 +12,8 @@ module multilayer_module
     
     ! Physical parameters
     integer :: num_layers
-    double precision, allocatable :: rho(:)
-    double precision :: r,one_minus_r
+    real(kind=8), allocatable :: rho(:)
+    real(kind=8) :: r,one_minus_r
     
     ! Algorithm parameters
     integer :: eigen_method,inundation_method
