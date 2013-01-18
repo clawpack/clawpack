@@ -1,4 +1,6 @@
-subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,rpn2,rpt2)
+subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my, &
+                 qold,aux,dx,dy,dt,cflgrid, &
+                 fm,fp,gm,gp,rpn2,rpt2)
 !     ==========================================================
 !
 !     # clawpack routine ...  modified for AMRCLAW
@@ -56,9 +58,9 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
     real(kind=8) ::     s(mwaves, 1-mbc:maxm + mbc)
     real(kind=8) ::  amdq(meqn,1-mbc:maxm + mbc)
     real(kind=8) ::  apdq(meqn,1-mbc:maxm + mbc)
-    real(kind=8) ::  cqxx(meqn,1-mbc:maxm + mbc)
-    real(kind=8) :: bmadq(meqn,1-mbc:maxm + mbc)
-    real(kind=8) :: bpadq(meqn,1-mbc:maxm + mbc)
+!     real(kind=8) ::  cqxx(meqn,1-mbc:maxm + mbc)
+!     real(kind=8) :: bmadq(meqn,1-mbc:maxm + mbc)
+!     real(kind=8) :: bpadq(meqn,1-mbc:maxm + mbc)
     
     ! Looping scalar storage
     integer :: i,j,m,thread_num
@@ -114,8 +116,7 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
 
         ! Compute modifications fadd and gadd to fluxes along this slice:
         call flux2(1,maxm,meqn,maux,mbc,mx,q1d,dtdx1d,aux1,aux2,aux3, &
-                   faddm,faddp,gaddm,gaddp,cfl1d,wave,s, &
-                   amdq,apdq,cqxx,bmadq,bpadq,rpn2,rpt2) 
+                   faddm,faddp,gaddm,gaddp,cfl1d,wave,s,amdq,apdq,rpn2,rpt2) 
 
         cflgrid = max(cflgrid,cfl1d)
         ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
@@ -158,8 +159,7 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,
         
         ! Compute modifications fadd and gadd to fluxes along this slice
         call flux2(2,maxm,meqn,maux,mbc,my,q1d,dtdy1d,aux1,aux2,aux3, &
-                   faddm,faddp,gaddm,gaddp,cfl1d,wave,s,amdq,apdq,cqxx, &
-                   bmadq,bpadq,rpn2,rpt2)
+                   faddm,faddp,gaddm,gaddp,cfl1d,wave,s,amdq,apdq,rpn2,rpt2)
 
         cflgrid = max(cflgrid,cfl1d)
         ! write(53,*) 'y-sweep: ',cfl1d,cflgrid
