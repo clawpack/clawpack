@@ -439,8 +439,6 @@ contains
 
         use geoclaw_module, only: rad2deg
 
-        use multilayer_module, only: rho, num_layers
-
         implicit none
 
         ! Time of the wind field requested
