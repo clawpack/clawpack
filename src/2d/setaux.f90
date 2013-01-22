@@ -50,7 +50,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(friction_index,:,:) = 0.d0 ! Manning's-N friction coefficeint
     
     ! Set analytical bathymetry here if requested
-    if (topo_type > 0) then
+    if (test_topography > 0) then
         forall (i=1-mbc:mx+mbc,j=1-mbc:my+mbc)
             aux(1,i,j) = analytic_topography(xlow + (i - 0.5d0) * dx,ylow + (j - 0.5d0) * dy)
         end forall
@@ -73,7 +73,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             endif
             
             ! Use input topography files if available
-            if (mtopofiles > 0 .and. topo_type == 0) then
+            if (mtopofiles > 0 .and. test_topography == 0) then
                 topo_integral = 0.d0
                 call cellgridintegrate(topo_integral,xm,x,xp,ym,y,yp, &
                     xlowtopo,ylowtopo,xhitopo,yhitopo,dxtopo,dytopo, &
