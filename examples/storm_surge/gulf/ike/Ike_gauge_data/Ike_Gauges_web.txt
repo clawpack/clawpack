@@ -1,0 +1,14 @@
+Depth(1) is from google earth and uses the Gebco data set (in feet)
+Depth(2) is from Casey Dietrich using the ADCIRC grid with an offset for ND88
+
+Gauge	 Latitude   Longitude   Status    Depth (ft)   Depth      Offset
+
+R        27  37.734  97  07.056    OK     51.0         -15.62     0.146
+S        28  12.464  96  33.022    OK     39.0         -12.3      0.146
+T        28  26.083  96  12.842    Lost   0.0            0.0      0.0
+U        28  37.503  95  45.141    OK     43.0         -13.9      0.152
+V        28  52.224  95  18.907    OK     24.0         -12.5      0.152
+W        29  04.284  95  02.375    OK     38.0         -12.8      0.152
+X        29  16.876  94  42.537    OK     23.0         -9.3       0.152
+Y        29  29.786  94  23.304    OK     28.0         -8.45      0.152
+Z        29  35.081  94  07.520    OK     31.0         -9.2       0.152

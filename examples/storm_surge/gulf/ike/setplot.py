@@ -14,11 +14,11 @@ import matplotlib
 
 import matplotlib.pyplot as plt
 
-from geoclaw import topotools
+from clawpack.geoclaw import topotools
 from clawpack.visclaw import colormaps, geoplot, gaugetools
 import clawpack.clawutil.clawdata as clawdata
 
-import geoclaw.surge as surge
+import clawpack.geoclaw.surge as surge
 
 try:
     from setplotfg import setplotfg
@@ -59,7 +59,7 @@ def setplot(plotdata):
 
     xlimits = full_xlimits
     ylimits = full_ylimits
-    eta = physics.eta_init
+    eta = physics.sea_level
     if not isinstance(eta,list):
         eta = [eta]
     surface_limits = [eta[0]-surface_range,eta[0]+surface_range]
@@ -298,11 +298,10 @@ def setplot(plotdata):
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    try:
+    # try:
         # plotaxes.xlimits = [amrdata.t0,amrdata.tfinal]
-        plotaxes.xlimits = [21254400.0 , 22204800.0]
-    except:
-        pass
+    # except:
+        # pass
     # plotaxes.ylimits = [0,150.0]
     plotaxes.ylimits = 'auto'
     plotaxes.title = 'Surface'

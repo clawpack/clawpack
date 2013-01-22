@@ -345,9 +345,27 @@ def setrun(claw_pkg='geoclaw'):
     
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    rundata.gaugedata.gauges.append([121, -94.70895, 29.2812, rundata.clawdata.t0, rundata.clawdata.tfinal])  
-    rundata.gaugedata.gauges.append([122, -94.38840, 29.4964, rundata.clawdata.t0, rundata.clawdata.tfinal])    
-    rundata.gaugedata.gauges.append([123, -94.12530, 29.5846, rundata.clawdata.t0, rundata.clawdata.tfinal]) 
+    # rundata.gaugedata.gauges.append([121, -94.70895, 29.2812, rundata.clawdata.t0, rundata.clawdata.tfinal])  
+    # rundata.gaugedata.gauges.append([122, -94.38840, 29.4964, rundata.clawdata.t0, rundata.clawdata.tfinal])    
+    # rundata.gaugedata.gauges.append([123, -94.12530, 29.5846, rundata.clawdata.t0, rundata.clawdata.tfinal]) 
+
+    # Stations from Andrew Kennedy
+    # Station R
+    rundata.gaugedata.gauges.append([1,-97.1176, 27.6289, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    #Station S:
+    rundata.gaugedata.gauges.append([2,-96.55036666666666, 28.207733333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    #Station U:
+    rundata.gaugedata.gauges.append([3,-95.75235, 28.62505, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    #Station V:
+    rundata.gaugedata.gauges.append([4,-95.31511666666667, 28.8704, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    #Station W:
+    rundata.gaugedata.gauges.append([5,-95.03958333333334, 29.0714, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    #Station X:
+    rundata.gaugedata.gauges.append([6,-94.70895, 29.281266666666667, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    #Station Y:
+    rundata.gaugedata.gauges.append([7,-94.3884, 29.496433333333332, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    #Station Z:
+    rundata.gaugedata.gauges.append([8,-94.12533333333333, 29.584683333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
 
 
     #------------------------------------------------------------------
