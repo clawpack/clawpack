@@ -94,8 +94,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
                 ! Modify momentum in each layer
                 if (h > dry_tolerance) then
-                    layer_index = 3 * (m - 1)
-
                     q(2, i, j) = q(2, i, j) - dt * h * P_atmos_x / rho
                     q(3, i, j) = q(3, i, j) - dt * h * P_atmos_y / rho
                 end if
