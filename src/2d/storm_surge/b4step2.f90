@@ -13,9 +13,6 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
 
     use geoclaw_module, only: dry_tolerance, g => grav
 
-    use multilayer_module, only: num_layers, rho, KAPPA_UNIT, check_richardson
-    use mulilayer_module, only: richardson_tolerance
-
     use topo_module
     use dtopo_module
 
@@ -30,15 +27,8 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
     ! Local storage
-    integer :: index,i,j,k
-    real(kind=8) :: h(num_layers),u(num_layers),v(num_layers)
-    real(kind=8) :: kappa,one_minus_r
-    logical :: dry_state(num_layers)
-
-
-    ! Format strings
-    character(len=*), parameter :: hyp_warning = '("Hyperbolicity may have failed at index (",i4,",",i4,")")'
-    character(len=*), parameter :: hyp_info = '("  layer = ",i2,"  kappa = ",d16.8)'
+    integer :: index, i, j, k
+    real(kind=8) :: h, u, v
 
     ! Check for NaNs in the solution
     call check4nans(maxmx,maxmy,meqn,mbc,mx,my,q,t,1)
@@ -46,10 +36,9 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     ! check for h < 0 and reset to zero
     ! check for h < drytolerance
     ! set hu = hv = 0 in all these cells
-    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, k=1:num_layers, &
-                                q(3*(k-1)+1,i,j) < dry_tolerance(k))
-        q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j), 0.d0)
-        q(3*(k-1)+2:3*(k-1)+3,i,j) = 0.d0
+    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc,q(1,i,j) < dry_tolerance)
+        q(1,i,j) = max(q(1,i,j),0.d0)
+        q(2:3,i,j) = 0.d0
     end forall
 
     ! Move the topography if needed
@@ -68,48 +57,6 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     ! Set wind and pressure aux variables for this grid
     ! write(26,*) "B4STEP2:  Setting aux array for wind and pressure"
     call set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,t,aux)
-
-    ! Check Richardson number -- Only implemented for 2 layers
-    if (num_layers == 2 .and. check_richardson) then
-        do i=1,mx
-            do j=1,my
-                dry_state = .false.
-                do k=1,num_layers
-                    index = 3*(k-1)
-                      h(k) = q(index+1,i,j)
-                      if (h(k) > dry_tolerance(k)) then
-                          u(k) = q(index+2,i,j) / q(index+1,i,j)
-                          v(k) = q(index+3,i,j) / q(index+1,i,j)
-                      else
-                          dry_state(k) = .true.
-                          u(k) = 0.d0
-                          v(k) = 0.d0
-                      endif
-                  enddo
-              
-                  ! Calculate for each layer pairing
-                  do k=1,num_layers-1
-                      one_minus_r = 1.d0 - rho(k) / rho(k+1)
-                      if (sum(h(k:k+1)) > dry_tolerance(k)) then
-                          kappa = (u(k) - u(k+1))**2 / (g*one_minus_r*sum(h(k:k+1)))
-                          if (kappa > richardson_tolerance) then
-                              write(KAPPA_UNIT,hyp_warning) i,j
-                              write(KAPPA_UNIT,hyp_info) k,kappa
-                              print hyp_warning, i,j
-                              print hyp_info, k,kappa
-                          endif
-                          kappa = (v(k) - v(k+1))**2 / (g*one_minus_r*sum(h(k:k+1)))
-                          if (kappa > richardson_tolerance) then
-                              write(KAPPA_UNIT,hyp_warning) i,j
-                              write(KAPPA_UNIT,hyp_info) k,kappa
-                              print hyp_warning, i,j
-                              print hyp_info, k,kappa
-                          endif
-                      endif
-                  enddo
-              enddo
-          enddo
-      endif
 
 end subroutine b4step2
     

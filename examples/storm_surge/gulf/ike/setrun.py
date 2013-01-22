@@ -8,11 +8,9 @@ that will be read in by the Fortran code.
 """
 
 import os
-import numpy as np
 import datetime
 
-import clawpack.clawutil.clawdata as data
-import geoclaw.surge as surge
+import clawpack.geoclaw.surge as surge
 
 #                           days   s/hour    hours/day            
 days2seconds = lambda days: days * 60.0**2 * 24.0
@@ -230,7 +228,7 @@ def setrun(claw_pkg='geoclaw'):
     #   4 or 'vanleer'  ==> van Leer
     clawdata.limiter = ['mc', 'mc', 'mc']
 
-    clawdata.fwave = True    # True ==> use f-wave version of algorithms
+    clawdata.use_fwaves = True    # True ==> use f-wave version of algorithms
     
     # Source terms splitting:
     #   src_split == 0 or 'none'    ==> no source term (src routine never called)
@@ -347,9 +345,9 @@ def setrun(claw_pkg='geoclaw'):
     
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    rundata.gaugedata.add_gauge([121, -94.70895, 29.2812, rundata.clawdata.t0, rundata.clawdata.tfinal])  
-    rundata.gaugedata.add_gauge([122, -94.38840, 29.4964, rundata.clawdata.t0, rundata.clawdata.tfinal])    
-    rundata.gaugedata.add_gauge([123, -94.12530, 29.5846, rundata.clawdata.t0, rundata.clawdata.tfinal]) 
+    rundata.gaugedata.gauges.append([121, -94.70895, 29.2812, rundata.clawdata.t0, rundata.clawdata.tfinal])  
+    rundata.gaugedata.gauges.append([122, -94.38840, 29.4964, rundata.clawdata.t0, rundata.clawdata.tfinal])    
+    rundata.gaugedata.gauges.append([123, -94.12530, 29.5846, rundata.clawdata.t0, rundata.clawdata.tfinal]) 
 
 
     #------------------------------------------------------------------
@@ -387,7 +385,7 @@ def setgeo(rundata):
     geodata.coriolis_forcing = True
 
     # == Algorithm and Initial Conditions ==
-    geodata.eta_init = 0.0
+    geodata.sea_level = 0.0
     geodata.dry_tolerance = 1.e-2
     geodata.wave_tolerance = 1.0
     # geodata.wave_tolerance = 0.5
@@ -430,8 +428,8 @@ def setgeo(rundata):
     #   [topotype, minlevel,maxlevel,fname]
 
     # == setqinit.data values ==
-    geodata.qinit_type = 0
-    geodata.qinitfiles = []
+    rundata.qinitdata.qinit_type = 0
+    rundata.qinitdata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
 
@@ -440,11 +438,6 @@ def setgeo(rundata):
     # for fixed grids append lines of the form
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
-    
-    # == Multilayer ==
-    geodata.num_layers = 1
-    geodata.rho = 1025.0
-    geodata.richardson_tolerance = 0.95
 
     return rundata
     # end of function setgeo

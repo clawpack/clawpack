@@ -433,11 +433,13 @@ contains
                                     ylower,dx,dy,t,aux, wind_index, &
                                     pressure_index, storm)
 
-        use geoclaw_module, only: g => grav, rho, num_layers
+        use geoclaw_module, only: g => grav
         use geoclaw_module, only: coriolis, deg2rad
         use geoclaw_module, only: spherical_distance
 
         use geoclaw_module, only: rad2deg
+
+        use multilayer_module, only: rho, num_layers
 
         implicit none
 

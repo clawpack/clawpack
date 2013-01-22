@@ -11,8 +11,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use geoclaw_module, only: friction_depth
     use geoclaw_module, only: spherical_distance, coordinate_system
 
-    use multilayer_module, only: num_layers, rho
-
     implicit none
     
     ! Input parameters
@@ -26,11 +24,13 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! Locals
     integer :: i, j, m, bottom_index, bottom_layer, layer_index
     logical :: found
-    real(kind=8) :: h(num_layers), hu, hv, gamma, a(2,2)
+    real(kind=8) :: h, hu, hv, fdt, gamma, dgamma, a(2,2)
     real(kind=8) :: P_atmos_x, P_atmos_y, tau, wind_speed
     real(kind=8) :: xm, xc, xp, ym, yc, yp, dx_meters, dy_meters
 
     real(kind=8) :: D, speed
+
+    real(kind=8), parameter :: rho = 1025.d0
 
     ! Algorithm parameters
     ! Parameter controls when to zero out the momentum at a depth in the
@@ -43,11 +43,11 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
         ! to go dry
         do j=1,my
             do i=1,mx
-                if (q(1,i,j) / rho(1) > dry_tolerance(1)) then
+                if (q(1,i,j) > dry_tolerance) then
                     wind_speed = sqrt(aux(wind_index,i,j)**2 &
                                     + aux(wind_index+1,i,j)**2)
                     if (wind_speed > wind_tolerance) then
-                        tau = wind_drag(wind_speed) * rho_air * wind_speed / rho(1)
+                        tau = wind_drag(wind_speed) * rho_air * wind_speed / rho
                         q(2,i,j) = q(2,i,j) + dt * tau * aux(wind_index,i,j)
                         q(3,i,j) = q(3,i,j) + dt * tau * aux(wind_index+1,i,j)
                     endif
@@ -78,9 +78,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 endif
 
                 ! Extract depths
-                forall (m=1:num_layers)
-                    h(m) = q(3 * (m-1) + 1,i,j)
-                end forall
+                h = q(1,i,j)
 
                 ! Calculate gradient of Pressure
                 P_atmos_x = (aux(pressure_index,i+1,j) &
@@ -95,16 +93,12 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 endif
 
                 ! Modify momentum in each layer
-                do m=1,num_layers
-                    if (h(m) > dry_tolerance(m)) then
-                        layer_index = 3 * (m - 1)
+                if (h > dry_tolerance) then
+                    layer_index = 3 * (m - 1)
 
-                        q(layer_index + 2, i, j) = q(layer_index + 2, i, j) &
-                                                        - dt * h(m) * P_atmos_x / rho(m)
-                        q(layer_index + 3, i, j) = q(layer_index + 3, i, j) &
-                                                        - dt * h(m) * P_atmos_y / rho(m)
-                    end if
-                enddo
+                    q(2, i, j) = q(2, i, j) - dt * h * P_atmos_x / rho
+                    q(3, i, j) = q(3, i, j) - dt * h * P_atmos_y / rho
+                end if
             enddo
         enddo
     endif
@@ -139,8 +133,8 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     !       lead to slow downs.
     if (coriolis_forcing) then
         do j=1,my
-            y = ylower + (j - 0.5d0) * dy
-            fdt = coriolis(y) * dt ! Calculate f dependent on coordinate system
+            yc = ylower + (j - 0.5d0) * dy
+            fdt = coriolis(yc) * dt ! Calculate f dependent on coordinate system
 
             ! Calculate matrix components
             a(1,1) = 1.d0 - 0.5d0 * fdt**2 + fdt**4 / 24.d0

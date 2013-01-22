@@ -4,14 +4,14 @@ c
       subroutine valout (lst, lend, time, nvar, naux)
 c
       use amr_module
-      use multilayer_module, only: num_layers, rho
+
       use storm_module, only: wind_index, pressure_index
       use storm_module, only: output_storm_location
 
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2, matname3
 
-      real(kind=8), dimension(num_layers) :: h, hu, hv, eta
+      real(kind=8) :: h, hu, hv, eta
       real(kind=8) :: storm_field(3)
 
 c     # Output the results for a general system of conservation laws
@@ -107,23 +107,10 @@ c                 # output in 1d format if ny=1:
             enddo
 
             ! Extract all but bottom layer depth and momenta
-            do k=1,num_layers-1
-              index = 3 * (k - 1)
-              h(k) = alloc(iadd(index+1,i,j))
-              hu(k) = alloc(iadd(index+2,i,j))
-              hv(k) = alloc(iadd(index+3,i,j))
-            enddo
-            ! Extract bottom layer
-            index = 3 * (num_layers - 1) 
-            h(num_layers) = alloc(iadd(index+1,i,j)) / rho(num_layers)
-            hu(num_layers) = alloc(iadd(index+2,i,j)) / rho(num_layers)
-            hv(num_layers) = alloc(iadd(index+3,i,j)) / rho(num_layers)
-
-            ! Calculate surfaces
-            eta(num_layers) = h(num_layers) + alloc(iaddaux(1,i,j))
-            do k=num_layers-1,1,-1
-              eta(k) = h(k) + eta(k+1)
-            enddo
+            h = alloc(iadd(1,i,j))
+            hu = alloc(iadd(2,i,j))
+            hv = alloc(iadd(3,i,j))
+            eta = h + alloc(iaddaux(1,i,j))
 
             ! Storm fields and location
             storm_field(1) = alloc(iaddaux(wind_index,i,j))
@@ -133,9 +120,7 @@ c                 # output in 1d format if ny=1:
               storm_field(k) = 0.d0
             end forall
 
-            write(matunit1,109) (h(k),hu(k),hv(k),k=1,num_layers),
-     &                          (eta(k),k=1,num_layers), 
-     &                          (storm_field(k),k=1,3)
+            write(matunit1,109) h,hu,hv,eta,(storm_field(k),k=1,3)
             
           enddo
           write(matunit1,*) ' '
@@ -214,7 +199,7 @@ c         # and we want to use 1d plotting routines
           ndim = 1
         endif
 
-      write(matunit2,1000) time,4*num_layers + 3,ngrids,naux,ndim
+      write(matunit2,1000) time,4 + 3,ngrids,naux,ndim
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

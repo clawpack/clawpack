@@ -1,7 +1,6 @@
 subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     use qinit_module, only: qinit_type, add_perturbation
-    use multilayer_module, only: num_layers, eta_init
     
     implicit none
     
@@ -12,8 +11,7 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
     
     ! Locals
-    integer :: i,j,m,layer_index
-    real(kind=8) :: eta_below
+    integer :: i,j,m
     
     ! Set flat state based on eta_init
     q = 0.d0

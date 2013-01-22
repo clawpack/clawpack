@@ -10,8 +10,6 @@
 
 module storm_module
 
-    use geoclaw_module, only: num_layers
-
     use holland_storm_module, only: holland_storm_type
     use constant_storm_module, only: constant_storm_type
     use stommel_storm_module, only: stommel_storm_type
@@ -86,8 +84,8 @@ contains
         endif
 
         ! Set some parameters
-        wind_index = 5 + num_layers
-        pressure_index = 7 + num_layers
+        wind_index = 5
+        pressure_index = 7
         
         ! Read in parameters
         ! Physics

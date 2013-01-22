@@ -63,12 +63,12 @@ SOURCES = \
   $(GEOLIB)/storm_surge/src1d.f90 \
   $(GEOLIB)/storm_surge/setaux.f90 \
   $(GEOLIB)/storm_surge/setprob.f90 \
-  $(GEOLIB)/storm_surge/qinit.f90 \
   $(GEOLIB)/storm_surge/flag2refine.f90 \
   $(GEOLIB)/storm_surge/flag2refine2.f90 \
   $(GEOLIB)/storm_surge/b4step2.f90 \
   $(GEOLIB)/storm_surge/tick.f \
   $(GEOLIB)/storm_surge/valout.f \
+  $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/allowflag.f90 \
@@ -117,7 +117,7 @@ SOURCES = \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
   $(AMRLIB)/grdfit2.f \
-  $(AMRLIB)/intfil_new.f90 \
+  $(AMRLIB)/intfil_new.f \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
   $(AMRLIB)/nestck2.f \

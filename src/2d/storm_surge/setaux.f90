@@ -17,9 +17,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: friction_index, wet_manning_coefficient
-    use geoclaw_module, only: dry_manning_coefficient
-
-    use multilayer_module, only: num_layers, eta_init
+    use geoclaw_module, only: dry_manning_coefficient, sea_level
 
     use storm_module, only: wind_index, pressure_index, set_storm_fields
     use storm_module, only: ambient_pressure
@@ -53,7 +51,6 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(2,:,:) = 1.d0 ! Grid cell area
     aux(3,:,:) = 1.d0 ! Length ratio for edge
     aux(friction_index,:,:) = 0.d0 ! Friction field
-    aux(5:num_layers + 3,:,:) = 0.d0 ! Initial layer depths for multilayer
 
     ! Set these to something non-offensive
     aux(wind_index,:,:) = 0.d0 ! Wind speed x-direction
@@ -61,7 +58,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(pressure_index,:,:) = ambient_pressure ! Pressure field
 
     ! Set analytical bathymetry here if requested
-    if (topo_type > 0) then
+    if (test_topography > 0) then
         forall (i=1-mbc:mx+mbc,j=1-mbc:my+mbc)
             aux(1,i,j) = analytic_topography(xlow + (i - 0.5d0) * dx, &
                                              ylow + (j - 0.5d0) * dy)
@@ -84,7 +81,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             endif
             
             ! Use input topography files if available
-            if (mtopofiles > 0 .and. topo_type == 0) then
+            if (mtopofiles > 0 .and. test_topography == 0) then
                 topo_integral = 0.d0
                 call cellgridintegrate(topo_integral,xm,x,xp,ym,y,yp, &
                     xlowtopo,ylowtopo,xhitopo,yhitopo,dxtopo,dytopo, &
@@ -97,42 +94,12 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     enddo
 
     ! Set friction coefficient based on initial wet/dry interfaces
-    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, eta_init(1) - aux(1,i,j) < 0.d0)
+    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, sea_level - aux(1,i,j) < 0.d0)
         aux(friction_index,i,j) = wet_manning_coefficient
     end forall
-    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, eta_init(1) - aux(1,i,j) >= 0.d0)
+    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, sea_level - aux(1,i,j) >= 0.d0)
         aux(friction_index,i,j) = dry_manning_coefficient
     end forall
-
-    ! Record initial depths if using multiple layers
-    if (num_layers > 1) then
-        do j=1-mbc,my+mbc
-            do i=1-mbc,mx+mbc
-                do m=1,num_layers-1
-                    if (eta_init(m) > aux(1,i,j)) then
-                        if (eta_init(m+1) > aux(1,i,j)) then
-                            ! There's a layer below this one
-                            aux(5+(m-1),i,j) = eta_init(m) - eta_init(m+1)
-                        else
-                            ! This is the last wet layer
-                            aux(5+(m-1),i,j) = eta_init(m) - aux(1,i,j)
-                        endif
-                    else
-                        ! This layer is dry here
-                        aux(5+(m-1),i,j) = 0.d0
-                    endif
-                enddo    
-                ! Handle bottom layer seperately
-                if (eta_init(num_layers) > aux(1,i,j)) then
-                    ! Bottom layer is wet here
-                    aux(5+num_layers,i,j) = eta_init(num_layers) - aux(1,i,j)        
-                else
-                    ! Bottom layer is dry here
-                    aux(5+num_layers,i,j) = 0.d0
-                endif
-            enddo
-        enddo
-    endif
 
     ! Output bathymetry for debugging
     if (.false.) then
