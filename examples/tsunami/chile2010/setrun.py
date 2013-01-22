@@ -209,7 +209,7 @@ def setrun(claw_pkg='geoclaw'):
     #   4 or 'vanleer'  ==> van Leer
     clawdata.limiter = ['mc', 'mc', 'mc']
 
-    clawdata.fwave = True    # True ==> use f-wave version of algorithms
+    clawdata.use_fwaves = True    # True ==> use f-wave version of algorithms
     
     # Source terms splitting:
     #   src_split == 0 or 'none'    ==> no source term (src routine never called)

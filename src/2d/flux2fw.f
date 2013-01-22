@@ -80,7 +80,7 @@ c     The only change is in loop 40
 c     to revert to the original version, set relimit = .false.
 c---------------------last modified 1/04/05-----------------------------
 
-      use amr_module, only: fwave_method => fwave, mwaves, method
+      use amr_module, only: use_fwaves, mwaves, method
       use amr_module, only: mthlim
       use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
 
