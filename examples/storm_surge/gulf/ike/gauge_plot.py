@@ -17,7 +17,7 @@ Ike_landfall = 256
 
 # Load in station info
 stations = {}
-station_info_file = open(os.path.join(base_path,'ike_Gauges_web.txt'),'r')
+station_info_file = open(os.path.join(base_path,'Ike_Gauges_web.txt'),'r')
 
 # Skip past header
 station_info_file.readline()
