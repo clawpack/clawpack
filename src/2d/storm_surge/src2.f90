@@ -30,7 +30,11 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
     real(kind=8) :: D, speed
 
+    ! Physics parameters
     real(kind=8), parameter :: rho = 1025.d0
+    real(kind=8), parameter :: H_break = 2.d0
+    real(kind=8), parameter :: theta_f = 10.d0
+    real(kind=8), parameter :: gamma_f = 4.d0 / 3.d0
 
     ! Algorithm parameters
     ! Parameter controls when to zero out the momentum at a depth in the
@@ -103,27 +107,47 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! ----------------------------------------------------------------
 
     ! Friction source term
+!     if (friction_forcing) then
+!         do j=1,my
+!             do i=1,mx
+!                 ! Extract appropriate momentum
+!                 if (q(1,i,j) < depth_tolerance) then
+!                     q(2:3,i,j) = 0.d0
+!                 else
+!                     ! Apply friction source term only if in shallower water
+!                     if (q(1,i,j) <= friction_depth) then
+!                         ! Calculate source term
+!                         gamma = sqrt(q(2,i,j)**2 + q(3,i,j)**2) * g     &   
+!                                 * aux(friction_index,i,j)**2        &
+!                                 / (q(1,i,j)**(7.d0/3.d0))
+!                         dgamma = 1.d0 + dt * gamma
+!                         q(2, i, j) = q(2, i, j) / dgamma
+!                         q(3, i, j) = q(3, i, j) / dgamma
+!                     endif
+!                 endif
+!             enddo
+!         enddo
+!     endif
+
+    ! Hybrid friction formula with a spatially varying Manning's-N factor
     if (friction_forcing) then
         do j=1,my
             do i=1,mx
-                ! Extract appropriate momentum
                 if (q(1,i,j) < depth_tolerance) then
                     q(2:3,i,j) = 0.d0
                 else
-                    ! Apply friction source term only if in shallower water
                     if (q(1,i,j) <= friction_depth) then
-                        ! Calculate source term
-                        gamma = sqrt(q(2,i,j)**2 + q(3,i,j)**2) * g     &   
-                                * aux(friction_index,i,j)**2        &
-                                / (q(1,i,j)**(7.d0/3.d0))
-                        dgamma = 1.d0 + dt * gamma
-                        q(2, i, j) = q(2, i, j) / dgamma
-                        q(3, i, j) = q(3, i, j) / dgamma
+                        tau = g * aux(friction_index,i,j)**2 / q(1,i,j)**(7.d0 / 3.d0) &
+                              * (1 + (H_break / q(1,i,j))**theta_f)**(gamma_f / theta_f) &
+                              * sqrt(q(2,i,j)**2 + q(3,i,j)**2)
+                        q(2,i,j) = q(2,i,j) / (1.d0 + dt * tau)
+                        q(3,i,j) = q(3,i,j) / (1.d0 + dt * tau)
                     endif
                 endif
             enddo
         enddo
     endif
+
     ! End of friction source term
 
     ! Coriolis source term

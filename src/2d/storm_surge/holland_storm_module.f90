@@ -384,6 +384,10 @@ contains
                 print *,"    first time = ",storm%track(1,1)
                 print *,"   ERROR = ",i
                 stop
+            else if (i > storm%num_casts + 2) then
+                print *,"Invalid storm indexing, i > num_casts + 2..."
+                print *,"This really should not happen, what have you done?"
+                stop
             endif
         endif
 
