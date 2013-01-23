@@ -263,7 +263,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 7
+    clawdata.amr_levels_max = 5
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,2,3,4,4,4]
@@ -349,24 +349,35 @@ def setrun(claw_pkg='geoclaw'):
     # rundata.gaugedata.gauges.append([122, -94.38840, 29.4964, rundata.clawdata.t0, rundata.clawdata.tfinal])    
     # rundata.gaugedata.gauges.append([123, -94.12530, 29.5846, rundata.clawdata.t0, rundata.clawdata.tfinal]) 
 
+    # Gauges from Ike AWR paper (2011 Dawson et al)
+    rundata.gaugedata.gauges.append([1, -95.04, 29.07, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([2, -94.71, 29.28, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([3, -94.39, 29.49, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([4, -94.13, 29.58, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([5, -95.00, 29.70, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([6, -95.14, 29.74, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([7, -95.08, 29.55, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([8, -94.75, 29.76, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([9, -95.27, 29.72, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([10, -94.51, 29.52, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    
     # Stations from Andrew Kennedy
     # Station R
-    rundata.gaugedata.gauges.append([1,-97.1176, 27.6289, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([ord('R'),-97.1176, 27.6289, rundata.clawdata.t0, rundata.clawdata.tfinal])
     #Station S:
-    rundata.gaugedata.gauges.append([2,-96.55036666666666, 28.207733333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([ord('S'),-96.55036666666666, 28.207733333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
     #Station U:
-    rundata.gaugedata.gauges.append([3,-95.75235, 28.62505, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([ord('U'),-95.75235, 28.62505, rundata.clawdata.t0, rundata.clawdata.tfinal])
     #Station V:
-    rundata.gaugedata.gauges.append([4,-95.31511666666667, 28.8704, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([ord('V'),-95.31511666666667, 28.8704, rundata.clawdata.t0, rundata.clawdata.tfinal])
     #Station W:
-    rundata.gaugedata.gauges.append([5,-95.03958333333334, 29.0714, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([ord('W'),-95.03958333333334, 29.0714, rundata.clawdata.t0, rundata.clawdata.tfinal])
     #Station X:
-    rundata.gaugedata.gauges.append([6,-94.70895, 29.281266666666667, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([ord('X'),-94.70895, 29.281266666666667, rundata.clawdata.t0, rundata.clawdata.tfinal])
     #Station Y:
-    rundata.gaugedata.gauges.append([7,-94.3884, 29.496433333333332, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    rundata.gaugedata.gauges.append([ord('Y'),-94.3884, 29.496433333333332, rundata.clawdata.t0, rundata.clawdata.tfinal])
     #Station Z:
-    rundata.gaugedata.gauges.append([8,-94.12533333333333, 29.584683333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
-
+    rundata.gaugedata.gauges.append([ord('Z'),-94.12533333333333, 29.584683333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
 
     #------------------------------------------------------------------
     # GeoClaw specific parameters:
@@ -407,7 +418,8 @@ def setgeo(rundata):
     geodata.dry_tolerance = 1.e-2
     geodata.wave_tolerance = 1.0
     # geodata.wave_tolerance = 0.5
-    geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
+    # geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
+    geodata.speed_tolerance = [1e6 * rundata.clawdata.amr_levels_max]
     geodata.deep_depth = 100.0
     geodata.max_level_deep = 2
     geodata.friction_forcing = True

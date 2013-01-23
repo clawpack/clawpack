@@ -53,7 +53,7 @@ for (name,station_data) in stations.iteritems():
     mean_water = data['mean_water'].transpose()[0,:]
 
     # Load GeoClaw gauge data
-    gauge = gaugetools.GaugeSolution(index,location=station_data['location'])
+    gauge = gaugetools.GaugeSolution(ord(name),location=station_data['location'])
     gauge.read(output_path='./_output',file_name='fort.gauge')
 
     # Plot 
