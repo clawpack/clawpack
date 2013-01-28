@@ -75,13 +75,6 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.lower[1] = 8.0       # south latitude
     clawdata.upper[1] = 32.0      # north latitude
 
-
-
-    # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 10
-    clawdata.num_cells[1] = 10
-
-
     # Number of grid cells:
     degree_factor = 4 # (0.25º,0.25º) ~ (25237.5 m, 27693.2 m) resolution
     clawdata.num_cells[0] = int(clawdata.upper[0] - clawdata.lower[0]) * degree_factor
@@ -95,7 +88,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 4 + 1 + 3
+    clawdata.num_aux = 4 + 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -107,7 +100,6 @@ def setrun(claw_pkg='geoclaw'):
     # -------------
 
     clawdata.t0 = days2seconds(246.0)
-
 
     # Restart from checkpoint file of a previous run?
     # Note: If restarting, you must also change the Makefile to set:
@@ -276,7 +268,7 @@ def setrun(claw_pkg='geoclaw'):
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
     clawdata.aux_type = ['center','capacity','yleft','center','center','center',
-                         'center','center']
+                         'center']
 
 
     # Flag using refinement routine flag2refine rather than richardson error

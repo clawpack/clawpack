@@ -9,13 +9,12 @@ function setplot is called to set the plot parameters.
 
 import os
 
-import numpy as np
-import matplotlib
+# import numpy as np
+# import matplotlib
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-from clawpack.geoclaw import topotools
-from clawpack.visclaw import colormaps, geoplot, gaugetools
+from clawpack.visclaw import colormaps
 import clawpack.clawutil.clawdata as clawdata
 
 import clawpack.geoclaw.surge as surge
@@ -37,7 +36,7 @@ def setplot(plotdata):
     amrdata = clawdata.AmrclawInputData(2)
     amrdata.read(os.path.join(plotdata.outdir,'amrclaw.data'))
     physics = clawdata.GeoclawInputData(2)
-    physics.read(os.path.join(plotdata.outdir,'physics.data'))
+    physics.read(os.path.join(plotdata.outdir,'geoclaw.data'))
     surge_data = surge.data.SurgeData()
     surge_data.read(os.path.join(plotdata.outdir,'surge.data'))
 
@@ -49,8 +48,8 @@ def setplot(plotdata):
     full_xlimits = [-99.0,-50.0]
     full_ylimits = [8.0,32.0]
     full_shrink = 0.5
-    houston_xlimits = [-95.4, -94.0]
-    houston_ylimits = [29.1, 29.92]
+    houston_xlimits = [-(95.0 + 26.0 / 60.0), -(94.0 + 25.0 / 60.0)]
+    houston_ylimits = [29.1, 29.0 + 55.0 / 60.0]
     houston_shrink = 0.6
 
     # Color limits
@@ -71,7 +70,7 @@ def setplot(plotdata):
 
     def pcolor_afteraxes(current_data):
         surge_afteraxes(current_data)
-        surge.plot.gauge_locations(current_data)
+        surge.plot.gauge_locations(current_data,gaugenos=[6])
     
     def contour_afteraxes(current_data):
         surge_afteraxes(current_data)
@@ -159,9 +158,6 @@ def setplot(plotdata):
     plotaxes.scaled = True
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
-    def after_with_gauges(cd):
-        surge_afteraxes(cd)
-        surge.plot.gauge_locations(cd)
     plotaxes.afteraxes = after_with_gauges
     
     surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=houston_shrink)

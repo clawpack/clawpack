@@ -317,29 +317,35 @@ contains
 
         ! Figure out where we are relative to the last time we checked for the
         ! index (stored in last_storm_index)
-        t0 = storm%track(1,last_storm_index - 1)
-        t1 = storm%track(1,last_storm_index)
-        if (t0 < t .and. t <= t1) then
-            index = last_storm_index
-        else if ( t1 < t ) then
-            found = .false.
-            do index=last_storm_index+1,storm%num_casts
-                if (t < storm%track(1,index)) then
-                    found = .true.
-                    exit
-                endif
-            enddo
-            ! Assume we have gone past last forecast time
-            if (.not. found) then
-                index = storm%num_casts + 1
-            endif
-        else ! t <= t0
-            if (last_storm_index == 2) then
-                index = -1
-            else
-                do index=last_storm_index-1,2,-1
-                    if (storm%track(1,index-1) < t) exit
+        
+        ! Check if we are already beyond the end of the last forecast time
+        if (last_storm_index == storm%num_casts + 1) then
+            index = storm%num_casts + 1
+        else
+            t0 = storm%track(1,last_storm_index - 1)
+            t1 = storm%track(1,last_storm_index)
+            if (t0 < t .and. t <= t1) then
+                index = last_storm_index
+            else if ( t1 < t ) then
+                found = .false.
+                do index=last_storm_index+1,storm%num_casts
+                    if (t < storm%track(1,index)) then
+                        found = .true.
+                        exit
+                    endif
                 enddo
+                ! Assume we have gone past last forecast time
+                if (.not. found) then
+                    index = storm%num_casts + 1
+                endif
+            else ! t <= t0
+                if (last_storm_index == 2) then
+                    index = -1
+                else
+                    do index=last_storm_index-1,2,-1
+                        if (storm%track(1,index-1) < t) exit
+                    enddo
+                endif
             endif
         endif
 
