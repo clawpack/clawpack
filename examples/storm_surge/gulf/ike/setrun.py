@@ -123,8 +123,6 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        #                 day     s/hour  hours/day
-        
         clawdata.tfinal = days2seconds(date2days('2008091400'))
 
         # Ike 2008091400 = 257 days
@@ -161,7 +159,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 7
+    clawdata.verbosity = 1
 
 
 
@@ -356,20 +354,20 @@ def setrun(claw_pkg='geoclaw'):
     # Stations from Andrew Kennedy
     # Station R
     rundata.gaugedata.gauges.append([ord('R'),-97.1176, 27.6289, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    #Station S:
+    # Station S:
     rundata.gaugedata.gauges.append([ord('S'),-96.55036666666666, 28.207733333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    #Station U:
+    # Station U:
     rundata.gaugedata.gauges.append([ord('U'),-95.75235, 28.62505, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    #Station V:
+    # Station V:
     rundata.gaugedata.gauges.append([ord('V'),-95.31511666666667, 28.8704, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    #Station W:
-    rundata.gaugedata.gauges.append([ord('W'),-95.03958333333334, 29.0714, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    #Station X:
-    rundata.gaugedata.gauges.append([ord('X'),-94.70895, 29.281266666666667, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    #Station Y:
-    rundata.gaugedata.gauges.append([ord('Y'),-94.3884, 29.496433333333332, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    #Station Z:
-    rundata.gaugedata.gauges.append([ord('Z'),-94.12533333333333, 29.584683333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    # Station W: Same as gauge 1
+    # rundata.gaugedata.gauges.append([ord('W'),-95.03958333333334, 29.0714, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    # Station X: Same as gauge 2 above
+    # rundata.gaugedata.gauges.append([ord('X'),-94.70895, 29.281266666666667, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    # Station Y: Same as gauge 3 above
+    # rundata.gaugedata.gauges.append([ord('Y'),-94.3884, 29.496433333333332, rundata.clawdata.t0, rundata.clawdata.tfinal])
+    # Station Z: Same as gauge 4 above
+    # rundata.gaugedata.gauges.append([ord('Z'),-94.12533333333333, 29.584683333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
 
     #------------------------------------------------------------------
     # GeoClaw specific parameters:
