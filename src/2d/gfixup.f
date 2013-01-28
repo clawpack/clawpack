@@ -183,7 +183,7 @@ c
          if (abs(spoh(level)) < tiny(1.d0)) then
            print *,"Floating point divide by zero possible."
            print *,"Maybe due to completely dry grid."
-           print "(a,i2,1d16.8)","   spoh(",level,") = ",spoh(level)
+           print "(a,i2,a,1d16.8)","   spoh(",level,") = ",spoh(level)
            print *,"   cfl = ",cfl
            dtf = huge(1.d0)
          else
