@@ -414,7 +414,7 @@ def setgeo(rundata):
     geodata.max_level_deep = 2
     geodata.friction_forcing = True
     geodata.wet_manning_coefficient = 0.025
-    geodata.dry_manning_coefficient = 0.050
+    geodata.dry_manning_coefficient = 0.03
     geodata.friction_depth = 1e10
 
     # == settopo.data values ==
@@ -473,8 +473,8 @@ def set_storm():
     data.ambient_pressure = 101.3e3 # Nominal atmos pressure
 
     # Source term controls
-    data.wind_forcing = True
-    data.pressure_forcing = True
+    data.wind_forcing = False
+    data.pressure_forcing = False
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-4

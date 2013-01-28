@@ -11,7 +11,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use geoclaw_module, only: friction_depth
     use geoclaw_module, only: spherical_distance, coordinate_system
 
-    use geoclaw_module, only: pi, omega
+    use geoclaw_module, only: pi
 
     implicit none
     
@@ -29,8 +29,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     real(kind=8) :: h, hu, hv, fdt, gamma, dgamma, a(2,2)
     real(kind=8) :: P_atmos_x, P_atmos_y, tau, wind_speed
     real(kind=8) :: xm, xc, xp, ym, yc, yp, dx_meters, dy_meters
-
-    real(kind=8) :: D, speed, u, v
 
     ! Physics parameters
     real(kind=8), parameter :: rho = 1025.d0
@@ -106,31 +104,38 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
             enddo
         enddo
     endif
+    
+    ! Coriolis source term
+    ! TODO: May want to remove the internal calls to coriolis as this could 
+    !       lead to slow downs.
+    if (coriolis_forcing) then
+        do j=1,my
+            yc = ylower + (j - 0.5d0) * dy
+            fdt = coriolis(yc) * dt ! Calculate f dependent on coordinate system
+            
+            ! Calculate matrix components
+            a(1,1) = 1.d0 - 0.5d0 * fdt**2 + fdt**4 / 24.d0
+            a(1,2) =  fdt - fdt**3 / 6.d0
+            a(2,1) = -fdt + fdt**3 / 6.d0
+            a(2,2) = a(1,1)
+
+            do i=1,mx
+                hu = q(2,i,j)
+                hv = q(3,i,j)
+
+                q(2,i,j) = hu + fdt * hv
+                q(3,i,j) = hv - fdt * hu
+!                 hu = q(2,i,j)
+!                 hv = q(3,i,j)
+!                 q(2,i,j) = hu * a(1,1) + hv * a(1,2)
+!                 q(3,i,j) = hu * a(2,1) + hv * a(2,2)
+            enddo
+        enddo
+    endif
+    ! End of coriolis source term
+
     ! ----------------------------------------------------------------
-
     ! Friction source term
-!     if (friction_forcing) then
-!         do j=1,my
-!             do i=1,mx
-!                 ! Extract appropriate momentum
-!                 if (q(1,i,j) < depth_tolerance) then
-!                     q(2:3,i,j) = 0.d0
-!                 else
-!                     ! Apply friction source term only if in shallower water
-!                     if (q(1,i,j) <= friction_depth) then
-!                         ! Calculate source term
-!                         gamma = sqrt(q(2,i,j)**2 + q(3,i,j)**2) * g     &   
-!                                 * aux(friction_index,i,j)**2        &
-!                                 / (q(1,i,j)**(7.d0/3.d0))
-!                         dgamma = 1.d0 + dt * gamma
-!                         q(2, i, j) = q(2, i, j) / dgamma
-!                         q(3, i, j) = q(3, i, j) / dgamma
-!                     endif
-!                 endif
-!             enddo
-!         enddo
-!     endif
-
     ! Hybrid friction formula with a spatially varying Manning's-N factor
     if (friction_forcing) then
         do j=1,my
@@ -151,37 +156,5 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     endif
 
     ! End of friction source term
-
-    ! Coriolis source term
-    ! TODO: May want to remove the internal calls to coriolis as this could 
-    !       lead to slow downs.
-    if (coriolis_forcing) then
-        do j=1,my
-            yc = ylower + (j - 0.5d0) * dy
-            fdt = coriolis(yc) * dt ! Calculate f dependent on coordinate system
-            
-            ! Calculate matrix components
-            a(1,1) = 1.d0 - 0.5d0 * fdt**2 + fdt**4 / 24.d0
-            a(1,2) =  fdt - fdt**3 / 6.d0
-            a(2,1) = -fdt + fdt**3 / 6.d0
-            a(2,2) = a(1,1)
-
-            do i=1,mx
-                if (q(1,i,j) > dry_tolerance) then
-                    u = q(2,i,j) / q(1,i,j)
-                    v = q(3,i,j) / q(1,i,j)
-
-                    q(2,i,j) = q(1,i,j) * (u + fdt * v)
-                    q(3,i,j) = q(1,i,j) * (v - fdt * u)
-                endif
-!                 hu = q(2,i,j)
-!                 hv = q(3,i,j)
-!                 q(2,i,j) = hu * a(1,1) + hv * a(1,2)
-!                 q(3,i,j) = hu * a(2,1) + hv * a(2,2)
-            enddo
-        enddo
-
-    endif
-    ! End of coriolis source term
 
 end subroutine src2
