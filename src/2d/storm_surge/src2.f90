@@ -30,10 +30,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     real(kind=8) :: P_atmos_x, P_atmos_y, tau, wind_speed
     real(kind=8) :: xm, xc, xp, ym, yc, yp, dx_meters, dy_meters
 
-    real(kind=8) :: D, speed
-
-    ! Temporaries
-    real(kind=8) :: a11, a12, a21, a22, hu0, hv0, cor, ct, ycell, w
+    real(kind=8) :: D, speed, u, v
 
     ! Physics parameters
     real(kind=8), parameter :: rho = 1025.d0
@@ -174,8 +171,8 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     u = q(2,i,j) / q(1,i,j)
                     v = q(3,i,j) / q(1,i,j)
 
-                    q(2,i,j) = q(1,i,j) * (u * a(1,1) + v * a(1,2))
-                    q(3,i,j) = q(1,i,j) * (u * a(2,1) + v * a(2,2))
+                    q(2,i,j) = q(1,i,j) * (u + fdt * v)
+                    q(3,i,j) = q(1,i,j) * (v - fdt * u)
                 endif
 !                 hu = q(2,i,j)
 !                 hv = q(3,i,j)
