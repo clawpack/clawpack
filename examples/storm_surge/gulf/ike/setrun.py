@@ -253,7 +253,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 5
+    clawdata.amr_levels_max = 7
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,2,3,4,4,4]
@@ -329,7 +329,7 @@ def setrun(claw_pkg='geoclaw'):
     regions = rundata.regiondata.regions
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    regions.append([2, 5, days2seconds(254), rundata.clawdata.tfinal, -95.40, -94.42, 29.10, 29.92]) # Galveston Bay and inland
+    regions.append([2, 5, days2seconds(254), rundata.clawdata.tfinal, -95.8666, -93.4, 28.63333, 30.2]) # Subdomain, Houston and Galveston
     regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
     regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
     
@@ -408,8 +408,8 @@ def setgeo(rundata):
     geodata.dry_tolerance = 1.e-2
     geodata.wave_tolerance = 1.0
     # geodata.wave_tolerance = 0.5
-    # geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
-    geodata.speed_tolerance = [1e6 * rundata.clawdata.amr_levels_max]
+    geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
+    # geodata.speed_tolerance = [1e6 * rundata.clawdata.amr_levels_max]
     geodata.deep_depth = 100.0
     geodata.max_level_deep = 2
     geodata.friction_forcing = True
@@ -423,8 +423,6 @@ def setgeo(rundata):
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     geodata.topofiles.append([3, 1, 3, rundata.clawdata.t0, rundata.clawdata.tfinal, 
                               '../bathy/gulf_caribbean.tt3'])
-    # geodata.topofiles.append([3, 1, 3, rundata.clawdata.t0, rundata.clawdata.tfinal, \
-    #                           './bathy/gulf_coarse_bathy.tt3'])
     geodata.topofiles.append([3, 1, 5, rundata.clawdata.t0, rundata.clawdata.tfinal,
                               '../bathy/NOAA_Galveston_Houston.tt3'])
     geodata.topofiles.append([3, 1, 7, rundata.clawdata.t0, rundata.clawdata.tfinal, 
@@ -473,8 +471,8 @@ def set_storm():
     data.ambient_pressure = 101.3e3 # Nominal atmos pressure
 
     # Source term controls
-    data.wind_forcing = False
-    data.pressure_forcing = False
+    data.wind_forcing = True
+    data.pressure_forcing = True
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-4
