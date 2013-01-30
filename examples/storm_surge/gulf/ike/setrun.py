@@ -402,20 +402,20 @@ def setgeo(rundata):
 
     # == Forcing Options
     geodata.coriolis_forcing = True
+    geodata.friction_forcing = True
+    geodata.wet_manning_coefficient = 0.025
+    geodata.dry_manning_coefficient = 0.03
+    geodata.friction_depth = 1e10
 
     # == Algorithm and Initial Conditions ==
     geodata.sea_level = 0.0
     geodata.dry_tolerance = 1.e-2
     geodata.wave_tolerance = 1.0
     # geodata.wave_tolerance = 0.5
-    geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
-    # geodata.speed_tolerance = [1e6 * rundata.clawdata.amr_levels_max]
+    # geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
+    geodata.speed_tolerance = 1e6
     geodata.deep_depth = 100.0
     geodata.max_level_deep = 2
-    geodata.friction_forcing = True
-    geodata.wet_manning_coefficient = 0.025
-    geodata.dry_manning_coefficient = 0.03
-    geodata.friction_depth = 1e10
 
     # == settopo.data values ==
     geodata.topofiles = []
