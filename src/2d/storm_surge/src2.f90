@@ -11,7 +11,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use geoclaw_module, only: friction_depth
     use geoclaw_module, only: spherical_distance, coordinate_system
 
-    use geoclaw_module, only: pi
+    use geoclaw_module, only: pi, omega
 
     implicit none
     
@@ -40,6 +40,10 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! Parameter controls when to zero out the momentum at a depth in the
     ! friction source term
     real(kind=8), parameter :: depth_tolerance = 1.0d-30
+    ! Parameter controls how fast water must be going to have the Coriolis
+    ! source term applied
+    real(kind=8), parameter :: coriolis_tolerance = 1.0d-3
+
 
     ! wind -----------------------------------------------------------
     if (wind_forcing) then
@@ -106,8 +110,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     endif
     
     ! Coriolis source term
-    ! TODO: May want to remove the internal calls to coriolis as this could 
-    !       lead to slow downs.
     if (coriolis_forcing) then
         do j=1,my
             yc = ylower + (j - 0.5d0) * dy
@@ -120,15 +122,18 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
             a(2,2) = a(1,1)
 
             do i=1,mx
-                hu = q(2,i,j)
-                hv = q(3,i,j)
-
-                q(2,i,j) = hu + fdt * hv
-                q(3,i,j) = hv - fdt * hu
-!                 hu = q(2,i,j)
-!                 hv = q(3,i,j)
-!                 q(2,i,j) = hu * a(1,1) + hv * a(1,2)
-!                 q(3,i,j) = hu * a(2,1) + hv * a(2,2)
+                if (q(1,i,j) > dry_tolerance) then
+                    if (q(2,i,j) / q(1,i,j) > coriolis_tolerance .and.  &
+                        q(3,i,j) / q(1,i,j) > coriolis_tolerance) then
+                    
+                        hu = q(2,i,j)
+                        hv = q(3,i,j)
+                        q(2,i,j) = hu + fdt * hv
+                        q(3,i,j) = hv - fdt * hu
+!                         q(2,i,j) = hu * a(1,1) + hv * a(1,2)
+!                         q(3,i,j) = hu * a(2,1) + hv * a(2,2)
+                    endif
+                endif
             enddo
         enddo
     endif
