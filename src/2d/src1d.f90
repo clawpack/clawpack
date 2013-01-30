@@ -7,8 +7,8 @@
 subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
       
     use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
-    use geoclaw_module, only: friction_forcing, friction_depth, friction_index
-    use geoclaw_module, only: omega, coordinate_system
+    use geoclaw_module, only: friction_forcing, friction_depth
+    use geoclaw_module, only: omega, coordinate_system, manning_coefficient
 
     implicit none
 
@@ -46,7 +46,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
             ! Apply friction source term only if in shallower water
             if (h <= friction_depth) then
                 ! Calculate source term
-                gamma = sqrt(hu**2 + hv**2) * (g * aux1d(friction_index,i)**2) &
+                gamma = sqrt(hu**2 + hv**2) * (g * manning_coefficient**2) &
                                             / h**(7.d0/3.d0)
                 dgamma = 1.d0 + dt * gamma
                 q1d(2, i) = q1d(2, i) / dgamma

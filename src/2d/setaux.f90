@@ -16,8 +16,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
-    use geoclaw_module, only: sea_level, friction_index
-    use geoclaw_module, only: wet_manning_coefficient, dry_manning_coefficient
+    use geoclaw_module, only: sea_level
     use amr_module, only: mcapa
     use topo_module
     
@@ -47,7 +46,6 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(1,:,:) = 0.d0 ! Bathymetry
     aux(2,:,:) = 1.d0 ! Grid cell area
     aux(3,:,:) = 1.d0 ! Length ratio for edge
-    aux(friction_index,:,:) = 0.d0 ! Manning's-N friction coefficeint
     
     ! Set analytical bathymetry here if requested
     if (test_topography > 0) then
@@ -84,14 +82,6 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             endif
         enddo
     enddo
-
-    ! Set friction coefficient based on initial wet/dry interfaces
-    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, sea_level - aux(1,i,j) < 0.d0)
-        aux(friction_index,i,j) = wet_manning_coefficient
-    end forall
-    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, sea_level - aux(1,i,j) >= 0.d0)
-        aux(friction_index,i,j) = dry_manning_coefficient
-    end forall
 
     ! Output for debugging
     if (.false.) then

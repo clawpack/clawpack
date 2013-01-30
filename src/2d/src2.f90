@@ -1,7 +1,8 @@
 subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
       
     use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
-    use geoclaw_module, only: friction_index, friction_forcing, friction_depth
+    use geoclaw_module, only: friction_forcing, friction_depth
+    use geoclaw_module, only: manning_coefficient
 
     implicit none
     
@@ -34,8 +35,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     if (q(1,i,j) <= friction_depth) then
                         ! Calculate source term
                         gamma = sqrt(q(2,i,j)**2 + q(3,i,j)**2) * g     &   
-                                * aux(friction_index,i,j)**2        &
-                                / (q(1,i,j)**(7.d0/3.d0))
+                              * manning_coefficient**2 / (q(1,i,j)**(7.d0/3.d0))
                         dgamma = 1.d0 + dt * gamma
                         q(2, i, j) = q(2, i, j) / dgamma
                         q(3, i, j) = q(3, i, j) / dgamma

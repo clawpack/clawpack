@@ -25,8 +25,8 @@ PLOTDIR = _plots               # Directory for plots
 # FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
 #FFLAGS =   -O2 -fbounds-check
 
-FC = gfortran
-FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
+FC ?= gfortran
+FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
 #MAKELEVEL ?= 0
 #ifeq (${MAKELEVEL},0)
