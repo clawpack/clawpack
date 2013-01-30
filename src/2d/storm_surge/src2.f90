@@ -40,10 +40,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! Parameter controls when to zero out the momentum at a depth in the
     ! friction source term
     real(kind=8), parameter :: depth_tolerance = 1.0d-30
-    ! Parameter controls how fast water must be going to have the Coriolis
-    ! source term applied
-    real(kind=8), parameter :: coriolis_tolerance = 1.0d-3
-
 
     ! wind -----------------------------------------------------------
     if (wind_forcing) then
@@ -110,37 +106,30 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     endif
     
     ! Coriolis source term
+    ! Use backward Euler to solve, q_t = A q -> q^n+1 = (I + dt * A)^-1 q^n
     if (coriolis_forcing) then
         do j=1,my
             yc = ylower + (j - 0.5d0) * dy
             fdt = coriolis(yc) * dt ! Calculate f dependent on coordinate system
-            
+
             ! Calculate matrix components
-            a(1,1) = 1.d0 - 0.5d0 * fdt**2 + fdt**4 / 24.d0
-            a(1,2) =  fdt - fdt**3 / 6.d0
-            a(2,1) = -fdt + fdt**3 / 6.d0
-            a(2,2) = a(1,1)
+            a(1,1) = -fdt**2 / (fdt**2 + 1.d0) + 1.d0
+            a(1,2) = -fdt / (fdt**2 + 1.d0)
+            a(2,1) = fdt / (fdt**2 + 1.d0)
+            a(2,2) = 1 / (fdt**2 + 1.d0)
 
             do i=1,mx
-                if (q(1,i,j) > dry_tolerance) then
-                    if (q(2,i,j) / q(1,i,j) > coriolis_tolerance .and.  &
-                        q(3,i,j) / q(1,i,j) > coriolis_tolerance) then
-                    
-                        hu = q(2,i,j)
-                        hv = q(3,i,j)
-                        q(2,i,j) = hu + fdt * hv
-                        q(3,i,j) = hv - fdt * hu
-!                         q(2,i,j) = hu * a(1,1) + hv * a(1,2)
-!                         q(3,i,j) = hu * a(2,1) + hv * a(2,2)
-                    endif
-                endif
+                hu = q(2,i,j)
+                hv = q(3,i,j)
+                q(2,i,j) = hu * a(1,1) + hv * a(1,2)
+                q(3,i,j) = hu * a(2,1) + hv * a(2,2)
             enddo
         enddo
     endif
     ! End of coriolis source term
 
     ! ----------------------------------------------------------------
-    ! Friction source term
+    ! Friction source term - Use backward Euler to solve
     ! Hybrid friction formula with a spatially varying Manning's-N factor
     if (friction_forcing) then
         do j=1,my
