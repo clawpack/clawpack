@@ -10,6 +10,8 @@ that will be read in by the Fortran code.
 import os
 import datetime
 
+import numpy as np
+
 import clawpack.geoclaw.surge as surge
 
 #                           days   s/hour    hours/day            
@@ -403,8 +405,7 @@ def setgeo(rundata):
     # == Forcing Options
     geodata.coriolis_forcing = True
     geodata.friction_forcing = True
-    geodata.wet_manning_coefficient = 0.025
-    geodata.dry_manning_coefficient = 0.03
+    geodata.manning_coefficient = 0.025
     geodata.friction_depth = 1e10
 
     # == Algorithm and Initial Conditions ==
@@ -473,6 +474,11 @@ def set_storm():
     # Source term controls
     data.wind_forcing = True
     data.pressure_forcing = True
+
+    # Variable friction
+    data.variable_friction = 1
+    data.friction_depths = [np.infty,0.0,-np.infty]
+    data.manning_coefficients = [0.030, 0.025]
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-4

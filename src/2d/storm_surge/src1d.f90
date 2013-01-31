@@ -11,12 +11,11 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag
     use storm_module, only: pressure_tolerance, wind_tolerance
-    use storm_module, only: wind_index, pressure_index
+    use storm_module, only: friction_index, wind_index, pressure_index
       
     use geoclaw_module, only: g => grav, dry_tolerance
     use geoclaw_module, only: coriolis_forcing, coriolis
-    use geoclaw_module, only: friction_forcing, friction_index
-    use geoclaw_module, only: friction_depth
+    use geoclaw_module, only: friction_forcing, friction_depth
     use geoclaw_module, only: omega, coordinate_system
 
     implicit none

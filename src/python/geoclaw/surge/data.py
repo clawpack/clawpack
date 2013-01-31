@@ -20,6 +20,11 @@ class SurgeData(clawdata.ClawData):
         # Source term controls
         self.add_attribute('wind_forcing',True)
         self.add_attribute('pressure_forcing',True)
+
+        # Variable friction support
+        self.add_attribute('variable_friction',0)
+        self.add_attribute('friction_depths',[np.infty,-np.infty])
+        self.add_attribute('manning_coefficients',[0.025])
         
         # Source term algorithm parameters
         self.add_attribute('wind_tolerance',1e-6)
@@ -59,6 +64,21 @@ class SurgeData(clawdata.ClawData):
         
         self.data_write('wind_forcing',description='(Wind source term used)')
         self.data_write('pressure_forcing',description="(Pressure source term used)")
+        self.data_write()
+
+        self.data_write('variable_friction',description="(method for setting variable friction)")
+        if self.variable_friction == 0:
+            pass
+        elif self.variable_friction == 1:
+            # Depth based levels define manning coefficients
+            self.data_write('friction_depths',description="(depth levels to set friction)")
+            self.data_write('manning_coefficients',description="(Manning's-N coefficients)")
+        elif self.variable_friction == 2:
+            raise NotImplementedError("Friction fields read in from files has"
+                                      " not been implemented yet.")
+        else:
+            raise ValueError("Invalid variable friction method %s." 
+                                                       % self.variable_friction)
         self.data_write()
         
         self.data_write('wind_tolerance',description='(Wind speed tolerance)')

@@ -3,12 +3,11 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag
     use storm_module, only: pressure_tolerance, wind_tolerance
-    use storm_module, only: wind_index, pressure_index
+    use storm_module, only: friction_index, wind_index, pressure_index
 
     use geoclaw_module, only: g => grav, dry_tolerance
     use geoclaw_module, only: coriolis_forcing, coriolis
-    use geoclaw_module, only: friction_forcing, friction_index
-    use geoclaw_module, only: friction_depth
+    use geoclaw_module, only: friction_forcing
     use geoclaw_module, only: spherical_distance, coordinate_system
 
     use geoclaw_module, only: pi, omega
@@ -137,13 +136,11 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 if (q(1,i,j) < depth_tolerance) then
                     q(2:3,i,j) = 0.d0
                 else
-                    if (q(1,i,j) <= friction_depth) then
-                        tau = g * aux(friction_index,i,j)**2 / q(1,i,j)**(7.d0 / 3.d0) &
-                              * (1 + (H_break / q(1,i,j))**theta_f)**(gamma_f / theta_f) &
-                              * sqrt(q(2,i,j)**2 + q(3,i,j)**2)
-                        q(2,i,j) = q(2,i,j) / (1.d0 + dt * tau)
-                        q(3,i,j) = q(3,i,j) / (1.d0 + dt * tau)
-                    endif
+                    tau = g * aux(friction_index,i,j)**2 / q(1,i,j)**(7.d0 / 3.d0) &
+                          * (1 + (H_break / q(1,i,j))**theta_f)**(gamma_f / theta_f) &
+                          * sqrt(q(2,i,j)**2 + q(3,i,j)**2)
+                    q(2,i,j) = q(2,i,j) / (1.d0 + dt * tau)
+                    q(3,i,j) = q(3,i,j) / (1.d0 + dt * tau)
                 endif
             enddo
         enddo

@@ -16,11 +16,13 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     use amr_module, only: mcapa
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
-    use geoclaw_module, only: friction_index, wet_manning_coefficient
-    use geoclaw_module, only: dry_manning_coefficient, sea_level
+    use geoclaw_module, only: sea_level
+    use geoclaw_module, only: const_manning_coefficient => manning_coefficient
 
     use storm_module, only: wind_index, pressure_index, set_storm_fields
     use storm_module, only: ambient_pressure
+    use storm_module, only: variable_friction, friction_index
+    use storm_module, only: friction_depths, manning_coefficients
     
     use topo_module
     
@@ -93,13 +95,29 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         enddo
     enddo
 
-    ! Set friction coefficient based on initial wet/dry interfaces
-    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, sea_level - aux(1,i,j) < 0.d0)
-        aux(friction_index,i,j) = wet_manning_coefficient
-    end forall
-    forall(i=1-mbc:mx+mbc, j=1-mbc:my+mbc, sea_level - aux(1,i,j) >= 0.d0)
-        aux(friction_index,i,j) = dry_manning_coefficient
-    end forall
+    ! Set friction coefficient based on a set of depth levels
+    select case(variable_friction)
+        case(0) 
+            ! No variable friction
+            aux(friction_index,:,:) = const_manning_coefficient
+
+        case(1) 
+            ! Specify friction by depth
+            do m=1,size(friction_depths) - 1
+                forall (i=1-mbc:mx+mbc, j=1-mbc:my+mbc,                      &
+                        sea_level - aux(1,i,j) >  friction_depths(m+1) .and. &
+                        sea_level - aux(1,i,j) <= friction_depths(m))
+                    aux(friction_index,i,j) = manning_coefficients(m)
+                end forall
+            enddo
+
+        case(2) 
+            ! Specify friction by an input file
+            stop "Friction fields specified via file is not supported."
+
+        case default
+            stop "Invalid variable friction specification."
+    end select
 
     ! Output bathymetry for debugging
     if (.false.) then
