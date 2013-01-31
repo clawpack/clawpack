@@ -242,7 +242,7 @@ def setplot(plotdata):
     # Wind field
     plotfigure = plotdata.new_plotfigure(name='Wind Speed', 
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing and True
+    plotfigure.show = surge_data.wind_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
