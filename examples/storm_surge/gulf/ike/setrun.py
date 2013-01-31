@@ -477,6 +477,7 @@ def set_storm():
 
     # Variable friction
     data.variable_friction = 1
+    # data.friction_depths = [1e10,0.0,-1e10]
     data.friction_depths = [np.infty,0.0,-np.infty]
     data.manning_coefficients = [0.030, 0.025]
     

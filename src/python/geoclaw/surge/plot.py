@@ -21,8 +21,9 @@ import matplotlib.colors as colors
 from clawpack.visclaw import colormaps, geoplot, gaugetools
 
 # Location of storm fields
-wind_field = 4
-pressure_field = 6
+friction_field = 4
+wind_field = 5
+pressure_field = 7
 
 class figure_counter(object):
 
@@ -131,6 +132,9 @@ def surge_afteraxes(current_data,track):
         plt.plot(x,y,'rD',markersize=2)
         plt.hold(False)
     days_figure_title(current_data)
+
+def friction(cd):
+    return cd.q[friction_field,:,:]
     
 def storm_wind(current_data):
     if current_data.level == 1:
@@ -143,7 +147,7 @@ def storm_wind(current_data):
         # plt.quiverkey(Q,0.5,0.5,50,r'$50 \frac{m}{s}$',labelpos='W',
         #                 fontproperties={'weight':'bold'})
         plt.hold(False)
-        
+
 def wind_x(cd):
     return cd.q[wind_field,:,:]
 def wind_y(cd):
@@ -292,7 +296,7 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.colorbar_shrink = shrink
         plotitem.colorbar_label = "Current (m/s)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1,1,1,1,1]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
     elif plot_type == 'quiver':
         plotitem = plotaxes.new_plotitem(plot_type='2d_quiver')
         plotitem.quiver_var_x = water_u
@@ -314,6 +318,20 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
         
+def add_friction(plotaxes,bounds=None,plot_type='pcolor'):
+    if plot_type == 'pcolor' or plot_type == 'imshow':
+        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem.plot_var = friction_field
+        plotitem.pcolor_cmap = plt.get_cmap('YlOrRd')
+        if bounds is not None:
+            plotitem.pcolor_cmin = bounds[0]
+            plotitem.pcolor_cmax = bounds[1]
+        plotitem.add_colorbar = True
+        plotitem.colorbar_shrink = 0.5
+        plotitem.colorbar_label = "Manning's-N Coefficients"
+        plotitem.amr_celledges_show = [0,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
+
 def add_wind(plotaxes,bounds=None,plot_type='pcolor'):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')

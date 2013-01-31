@@ -115,9 +115,12 @@ contains
             case(0) ! No variable friction
                 continue
             case(1) ! Specify friction by depth
-                read(unit,*) line
+                read(unit,'(a)') line
                 allocate(friction_depths(get_value_count(line)))
-                allocate(manning_coefficients(get_value_count(line)-1))
+                read(line,*) friction_depths
+                read(unit,'(a)') line
+                allocate(manning_coefficients(get_value_count(line)))
+                read(line,*) manning_coefficients
             case(2) ! Specify friction by an input file
                 stop "Friction fields specified via file is not supported."
             case default

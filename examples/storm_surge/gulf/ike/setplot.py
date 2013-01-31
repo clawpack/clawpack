@@ -66,6 +66,7 @@ def setplot(plotdata):
     
     wind_limits = [0,55]
     pressure_limits = [966,1013]
+    friction_bounds = [0.01,0.04]
     vorticity_limits = [-1.e-2,1.e-2]
 
     def pcolor_afteraxes(current_data):
@@ -167,6 +168,20 @@ def setplot(plotdata):
     # ========================================================================
     # Hurricane forcing - Entire gulf
     # ========================================================================
+    # Friction field
+    plotfigure = plotdata.new_plotfigure(name='Friction',
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = surge_data.variable_friction and True
+
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.xlimits = full_xlimits
+    plotaxes.ylimits = full_ylimits
+    plotaxes.title = "Manning's N Coefficients"
+    plotaxes.afteraxes = surge_afteraxes
+    plotaxes.scaled = True
+
+    surge.plot.add_friction(plotaxes,bounds=friction_bounds)
+
     # Pressure field
     plotfigure = plotdata.new_plotfigure(name='Pressure',  
                                          figno=fig_num_counter.get_counter())
@@ -227,7 +242,7 @@ def setplot(plotdata):
     # Wind field
     plotfigure = plotdata.new_plotfigure(name='Wind Speed', 
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing and False
+    plotfigure.show = surge_data.wind_forcing and True
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits

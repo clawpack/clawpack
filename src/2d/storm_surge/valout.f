@@ -5,14 +5,14 @@ c
 c
       use amr_module
 
-      use storm_module, only: wind_index, pressure_index
+      use storm_module, only: friction_index, wind_index, pressure_index
       use storm_module, only: output_storm_location
 
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2, matname3
 
       real(kind=8) :: h, hu, hv, eta
-      real(kind=8) :: storm_field(3)
+      real(kind=8) :: storm_field(4)
 
 c     # Output the results for a general system of conservation laws
 c     # in 2 dimensions
@@ -113,14 +113,15 @@ c                 # output in 1d format if ny=1:
             eta = h + alloc(iaddaux(1,i,j))
 
             ! Storm fields and location
-            storm_field(1) = alloc(iaddaux(wind_index,i,j))
-            storm_field(2) = alloc(iaddaux(wind_index+1,i,j))
-            storm_field(3) = alloc(iaddaux(pressure_index,i,j))
-            forall (k=1:3,abs(storm_field(k)) < 1d-90)
+            storm_field(1) = alloc(iaddaux(friction_index,i,j))
+            storm_field(2) = alloc(iaddaux(wind_index,i,j))
+            storm_field(3) = alloc(iaddaux(wind_index+1,i,j))
+            storm_field(4) = alloc(iaddaux(pressure_index,i,j))
+            forall (k=1:4,abs(storm_field(k)) < 1d-90)
               storm_field(k) = 0.d0
             end forall
 
-            write(matunit1,109) h,hu,hv,eta,(storm_field(k),k=1,3)
+            write(matunit1,109) h,hu,hv,eta,(storm_field(k),k=1,4)
             
           enddo
           write(matunit1,*) ' '
@@ -199,7 +200,7 @@ c         # and we want to use 1d plotting routines
           ndim = 1
         endif
 
-      write(matunit2,1000) time,4 + 3,ngrids,naux,ndim
+      write(matunit2,1000) time,4 + 4,ngrids,naux,ndim
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,
