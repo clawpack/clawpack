@@ -7,11 +7,12 @@
 !    If variable_friction > 0 then the data located here will override the basic
 !    friction coefficient data in GeoClaw and will be ignored.
 !
-!    Types of specifications:
-!       0 = No variable friction, constant value used
-!       1 = Depth based specification only
-!       2 = File and depth based specification, where data from a file is not
-!           available the depth based specification will be used.
+!    Precidence of specification:
+!      file based
+!      region based
+!      depth based
+!      constant value from geoclaw_module
+!    
 ! ==============================================================================
 
 module friction_module
@@ -20,17 +21,26 @@ module friction_module
     save
 
     ! Parameters
-    integer, parameter :: friction_index = 4
+    integer, public, parameter :: friction_index = 4
 
     ! Whether to use variable friction and what type to specify
-    integer :: variable_friction
+    logical, public :: variable_friction
 
-    ! Support for depth based specification
-    real(kind=8), allocatable :: friction_depths(:)
-    real(kind=8), allocatable :: manning_coefficients(:)
+    ! Support for region based specification
+    type friction_region_type
+        ! Bounds of region
+        real(kind=8) :: lower(2), upper(2)
+
+        ! Coefficients in the region based on depths
+        real(kind=8), pointer :: depths(:)
+        real(kind=8), pointer :: manning_coefficients(:)
+
+    end type friction_region_type
+    integer, private :: num_friction_regions = 0
+    type(friction_region_type), pointer, private :: friction_regions(:)
 
     ! Support for file based specification
-    type friction_field_type
+    type friction_file_type
         ! Domain specification
         integer :: num_cells(2)
         real(kind=8) :: lower(2), upper(2), dx(2)
@@ -40,12 +50,10 @@ module friction_module
 
         ! Array containing coefficients
         real(kind=8), pointer :: data(:,:)
+    end type friction_file_type
 
-    end type friction_field_type
-
-    ! Multi-file support
-    integer :: num_friction_files
-    type(friction_field_type), pointer :: friction_field(:)
+    integer, private :: num_friction_files = 0
+    type(friction_file_type), pointer, private :: friction_files(:)
 
 contains
 
@@ -60,6 +68,7 @@ contains
 
         ! Locals
         integer, parameter :: unit = 54
+        integer :: m, file_type
         character(len=128) :: line
 
         ! Open data file
@@ -69,32 +78,39 @@ contains
             call opendatafile(unit,'friction.data')
         endif
 
-        ! Read in data
+        ! Basic switch to turn on variable friction
         read(unit,*) variable_friction
-        if (variable_friction > 0) then
-            print *,"You have elected to use a variable friction field, note"
-            print *,"that this overrides all friction parameter settings from"
-            print *,"the geoclaw data parameters."
+        read(unit,'(a)')
+
+        if (variable_friction) then
+            ! Region based friction
+            read(unit,'(i2)') num_friction_regions
+            allocate(friction_regions(num_friction_regions))
+            read(unit,*)
+            do m=1,num_friction_regions
+                read(unit,*) friction_regions(m)%lower
+                read(unit,*) friction_regions(m)%upper
+                read(unit,'(a)') line
+                allocate(friction_regions(m)%depths(get_value_count(line)))
+                read(line,*) friction_regions(m)%depths
+                read(unit,'(a)') line
+                allocate(friction_regions(m)%manning_coefficients(get_value_count(line)))
+                read(line,*) friction_regions(m)%manning_coefficients
+                read(unit,*)
+            enddo
+
+            ! File based friction
+            read(unit,"(i2)") num_friction_files
+            allocate(friction_files(num_friction_files))
+            do m=1,num_friction_files
+                read(unit,"(a,i1)") line, file_type
+
+                ! Open and read in friction file
+                print *,"*** WARNING *** File based friction specification unimplemented."
+                friction_files = read_friction_file(line, file_type)
+            enddo
         endif
-        select case(variable_friction)
-            case(0) ! No variable friction
-                continue
-            case(1:2) ! Specify friction by depth
-                read(unit,'(a)') line
-                allocate(friction_depths(get_value_count(line)))
-                read(line,*) friction_depths
-                read(unit,'(a)') line
-                allocate(manning_coefficients(get_value_count(line)))
-                read(line,*) manning_coefficients
 
-                ! Specify friction by an input file
-                if (variable_friction == 2) then
-                    stop "Friction fields specified via file is not supported."
-                endif
-
-            case default
-                stop "Invalid variable friction specification."
-        end select
         close(unit)
 
     end subroutine setup_variable_friction
@@ -102,7 +118,8 @@ contains
     ! ==========================================================================
     !  set_friction_field - 
     ! ==========================================================================
-    subroutine set_friction_field(mx, my, num_ghost, num_aux, aux)
+    subroutine set_friction_field(mx, my, num_ghost, num_aux, xlower, ylower, &
+                                  dx, dy, aux)
 
         use geoclaw_module, only: manning_coefficient, sea_level
 
@@ -110,39 +127,49 @@ contains
 
         ! Input
         integer, intent(in) :: mx, my, num_ghost, num_aux
+        real(kind=8), intent(in) :: xlower, ylower, dx, dy
         real(kind=8), intent(in out) :: aux(num_aux,                           &
                                             1-num_ghost:mx+num_ghost,&
                                             1-num_ghost:my+num_ghost)
 
         ! Locals
-        integer :: m,i,j
+        integer :: m,i,j,k
+        real(kind=8) :: x, y
 
-        select case(variable_friction)
-            case(0) 
-                ! No variable friction
-                aux(friction_index,:,:) = manning_coefficient
+        if (.not.variable_friction) then
+            ! No variable friction
+            aux(friction_index,i,j) = manning_coefficient
+        else
+            ! Set region based coefficients
+            do m=1, num_friction_regions
+                do i=1 - num_ghost, mx + num_ghost
+                    do j=1 - num_ghost, my + num_ghost                        
+                        x = xlower + (i-0.5d0) * dx
+                        y = ylower + (j-0.5d0) * dy
+                        if (friction_regions(m)%lower(1) < x .and.   &
+                            friction_regions(m)%lower(2) < y .and.   &
+                            friction_regions(m)%upper(1) >= x .and.  &
+                            friction_regions(m)%upper(2) >= y) then
 
-            case(1:2) 
-                ! Specify friction by depth
-                do m=1,size(friction_depths) - 1
-                    forall(i=1 - num_ghost:mx + num_ghost,           &
-                           j=1 - num_ghost:my + num_ghost,           &
-                           friction_depths(m+1) <= aux(1,i,j) - sea_level .and.&
-                           friction_depths(m) > aux(1,i,j) - sea_level)
+                            do k=1,size(friction_regions(m)%depths) - 1
+                                if (friction_regions(m)%depths(k+1)            &
+                                                <= aux(1,i,j) - sea_level.and. &
+                                    friction_regions(m)%depths(k)              &
+                                                 > aux(1,i,j) - sea_level) then
 
-                        aux(friction_index,i,j) = manning_coefficients(m)
-                    end forall
-                end do
+                                    aux(friction_index,i,j) = &
+                                     friction_regions(m)%manning_coefficients(k)
+                                endif
+                            enddo
+                        endif
+                    enddo
+                enddo
+            enddo
 
-                ! Additionally read in data file info
-                if (variable_friction == 2) then
-                    ! Specify friction by an input file
-                    stop "Friction fields specified via file is not supported."
-                endif
-
-            case default
-                stop "Invalid variable friction specification."
-        end select
+            if (num_friction_files > 0) then
+                stop "*** ERROR *** File based friction specification not implemented."
+            endif
+        end if
 
     end subroutine set_friction_field
 
@@ -151,7 +178,7 @@ contains
     !  read_friction_file - Reads an input file containing info on friction
     !    coefficients.
     ! ==========================================================================
-    type(friction_field_type) function read_friction_file(path, file_type) result(field)
+    type(friction_file_type) function read_friction_file(path, file_type) result(file)
         
         implicit none
 
@@ -187,20 +214,20 @@ contains
             ! ================================================================
             case(2:3)
                 ! Read header
-                read(unit,*) field%num_cells(1)
-                read(unit,*) field%num_cells(2)
-                read(unit,*) field%lower(1)
-                read(unit,*) field%lower(2)
-                read(unit,*) field%dx(1)
-                read(unit,*) field%no_data_value
+                read(unit,*) file%num_cells(1)
+                read(unit,*) file%num_cells(2)
+                read(unit,*) file%lower(1)
+                read(unit,*) file%lower(2)
+                read(unit,*) file%dx(1)
+                read(unit,*) file%no_data_value
 
                 ! Calculate upper corner
-                field%dx(2) = field%dx(1)
-                field%upper(1) = field%lower(1) + field%dx(1) * (field%num_cells(1) - 1)
-                field%upper(2) = field%lower(2) + field%dx(2) * (field%num_cells(2) - 1)
+                file%dx(2) = file%dx(1)
+                file%upper(1) = file%lower(1) + file%dx(1) * (file%num_cells(1) - 1)
+                file%upper(2) = file%lower(2) + file%dx(2) * (file%num_cells(2) - 1)
 
                 ! Allocate data array
-                allocate(field%data(field%num_cells(1),field%num_cells(2)))
+                allocate(file%data(file%num_cells(1),file%num_cells(2)))
 
                 ! Read in data
                 missing = 0

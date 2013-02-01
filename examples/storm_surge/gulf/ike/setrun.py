@@ -432,14 +432,14 @@ def setgeo(rundata):
                               '../bathy/houston_harbor.tt3'])
     geodata.topofiles.append([3, 1, 7, rundata.clawdata.t0, rundata.clawdata.tfinal, 
                               '../bathy/houston_channel_3.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           '../bathy/houston_channel_2.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/houston_channel_2.tt3'])
     # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
     #                           '../bathy/galveston.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           '../bathy/lower_galveston_bay.tt3'])
-    # geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
-    #                           '../bathy/upper_galveston_bay.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/lower_galveston_bay.tt3'])
+    geodata.topofiles.append([3, 1, 7, 0., 1.e10, \
+                              '../bathy/upper_galveston_bay.tt3'])
 
     # == setdtopo.data values ==
     geodata.dtopofiles = []
@@ -497,10 +497,19 @@ def set_friction(rundata):
     data = rundata.frictiondata
 
     # Variable friction
-    data.variable_friction = 1
-    # data.friction_depths = [1e10,0.0,-1e10]
-    data.friction_depths = [np.infty,0.0,-np.infty]
-    data.manning_coefficients = [0.030, 0.025]
+    data.variable_friction = True
+
+    # Region based friction
+    # Entire domain
+    data.friction_regions.append([rundata.clawdata.lower, 
+                                  rundata.clawdata.upper,
+                                  [np.infty,0.0,-np.infty], 
+                                  [0.030, 0.025]])
+
+    # La-Tex Shelf
+    data.friction_regions.append([(-98, 25.25), (-90, 30),
+                                  [np.infty,0.0,-200.0,-np.infty],
+                                  [0.030, 0.02, 0.025]])
 
     return data
 

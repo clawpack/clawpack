@@ -91,7 +91,7 @@ class SurgeData(clawdata.ClawData):
             self.data_write("stommel_wind",desription="(Amplitude of Stommel wind)")
         else:
             self.close_data_file()
-            raise Exception("Invalid storm type %s." % storm_type)
+            raise ValueError("Invalid storm type %s." % self.storm_type)
 
         self.close_data_file()
 
@@ -105,10 +105,13 @@ class FrictionData(clawdata.ClawData):
         super(FrictionData, self).__init__()
 
         # Variable friction support
-        self.add_attribute('variable_friction',0)
-        self.add_attribute('friction_depths',[np.infty,-np.infty])
-        self.add_attribute('manning_coefficients',[0.025])
-        self.add_attribute('friction_files',None)
+        self.add_attribute('variable_friction',False)
+
+        # Region support
+        self.add_attribute('friction_regions',[])
+
+        # File support
+        self.add_attribute('friction_files',[])
 
 
     def write(self, out_file='friction.data', data_source='setrun.py'):
@@ -116,16 +119,24 @@ class FrictionData(clawdata.ClawData):
         self.open_data_file(out_file,data_source)
 
         self.data_write('variable_friction',description="(method for setting variable friction)")
-        if self.variable_friction == 0:
-            pass
-        elif self.variable_friction == 1:
-            # Depth based levels define manning coefficients
-            self.data_write('friction_depths',description="(depth levels to set friction)")
-            self.data_write('manning_coefficients',description="(Manning's-N coefficients)")
-        elif self.variable_friction == 2:
-            raise NotImplementedError("Friction fields read in from files has"
-                                      " not been implemented yet.")
-        else:
-            raise ValueError("Invalid variable friction method %s." 
-                                                       % self.variable_friction)
+        self.data_write()
+        if self.variable_friction:
+            # Region based friction
+            self.data_write(value=len(self.friction_regions),
+                            alt_name='num_friction_regions',
+                            description="(Friction Regions)")
+            self.data_write()
+            for region in self.friction_regions:
+                self.data_write(value=region[0],alt_name="lower")
+                self.data_write(value=region[1],alt_name="upper")
+                self.data_write(value=region[2],alt_name="depths")
+                self.data_write(value=region[3],alt_name="manning_coefficients")
+                self.data_write()
+
+            # File based friction
+            self.data_write(value=len(self.friction_files),
+                            alt_name='num_friction_files')
+            for friction_file in self.friction_files:
+                self._out_file.write("'%s' %s\n " % friction_file)
+
         self.close_data_file()
