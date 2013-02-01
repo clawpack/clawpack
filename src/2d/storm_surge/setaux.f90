@@ -95,7 +95,7 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     enddo
 
     ! Set friction coefficient based on a set of depth levels
-    call set_friction_field([mx,my],mbc,maux,aux)
+    call set_friction_field(mx,my,mbc,maux,aux)
 
     ! Output bathymetry for debugging
     if (.false.) then

@@ -102,17 +102,17 @@ contains
     ! ==========================================================================
     !  set_friction_field - 
     ! ==========================================================================
-    subroutine set_friction_field(num_cells, num_ghost, num_aux, aux)
+    subroutine set_friction_field(mx, my, num_ghost, num_aux, aux)
 
         use geoclaw_module, only: manning_coefficient, sea_level
 
         implicit none
 
         ! Input
-        integer, intent(in) :: num_cells(2), num_ghost, num_aux
+        integer, intent(in) :: mx, my, num_ghost, num_aux
         real(kind=8), intent(in out) :: aux(num_aux,                           &
-                                            1-num_ghost:num_cells(1)+num_ghost,&
-                                            1-num_ghost:num_cells(2)+num_ghost)
+                                            1-num_ghost:mx+num_ghost,&
+                                            1-num_ghost:my+num_ghost)
 
         ! Locals
         integer :: m,i,j
@@ -125,8 +125,8 @@ contains
             case(1:2) 
                 ! Specify friction by depth
                 do m=1,size(friction_depths) - 1
-                    forall(i=1 - num_ghost:num_cells(1) + num_ghost,           &
-                           j=1 - num_ghost:num_cells(2) + num_ghost,           &
+                    forall(i=1 - num_ghost:mx + num_ghost,           &
+                           j=1 - num_ghost:my + num_ghost,           &
                            friction_depths(m+1) <= aux(1,i,j) - sea_level .and.&
                            friction_depths(m) > aux(1,i,j) - sea_level)
 
