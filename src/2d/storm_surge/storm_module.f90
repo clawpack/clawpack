@@ -23,12 +23,7 @@ module storm_module
     integer, parameter :: track_unit = 424
 
     ! Locations of wind and pressure fields
-    integer :: friction_index, wind_index, pressure_index
-
-    ! Variable friction controls
-    integer :: variable_friction
-    real(kind=8), allocatable :: friction_depths(:)
-    real(kind=8), allocatable :: manning_coefficients(:)
+    integer :: wind_index, pressure_index
     
     ! Source term control and parameters
     logical :: wind_forcing, pressure_forcing
@@ -89,7 +84,6 @@ contains
         endif
 
         ! Set some parameters
-        friction_index = 4
         wind_index = 5
         pressure_index = 7
         
@@ -102,30 +96,6 @@ contains
         ! Forcing terms
         read(unit,*) wind_forcing
         read(unit,*) pressure_forcing
-        read(unit,*)
-
-        ! Variable friction controls
-        read(unit,*) variable_friction
-        if (variable_friction > 0) then
-            print *,"You have elected to use a variable friction field, note"
-            print *,"that this overrides all friction parameter settings from"
-            print *,"the geoclaw data parameters."
-        endif
-        select case(variable_friction)
-            case(0) ! No variable friction
-                continue
-            case(1) ! Specify friction by depth
-                read(unit,'(a)') line
-                allocate(friction_depths(get_value_count(line)))
-                read(line,*) friction_depths
-                read(unit,'(a)') line
-                allocate(manning_coefficients(get_value_count(line)))
-                read(line,*) manning_coefficients
-            case(2) ! Specify friction by an input file
-                stop "Friction fields specified via file is not supported."
-            case default
-                stop "Invalid variable friction specification."
-        end select
         read(unit,*)
         
         ! Source term algorithm parameters
@@ -190,7 +160,7 @@ contains
     end subroutine set_storm
 
     ! ========================================================================
-    !   double precision function wind_drag(wind_speed)
+    !   real(kind=8) function wind_drag(wind_speed)
     ! ========================================================================
     !  Calculates the drag coefficient for wind given the given wind speed.
     !  Based on the modeling from the paper by Weisberg and Zheng (2006).

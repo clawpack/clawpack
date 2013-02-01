@@ -5,8 +5,10 @@ c
 c
       use amr_module
 
-      use storm_module, only: friction_index, wind_index, pressure_index
+      use storm_module, only: wind_index, pressure_index
       use storm_module, only: output_storm_location
+
+      use friction_module, only: friction_index
 
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2, matname3

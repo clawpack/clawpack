@@ -20,11 +20,6 @@ class SurgeData(clawdata.ClawData):
         # Source term controls
         self.add_attribute('wind_forcing',True)
         self.add_attribute('pressure_forcing',True)
-
-        # Variable friction support
-        self.add_attribute('variable_friction',0)
-        self.add_attribute('friction_depths',[np.infty,-np.infty])
-        self.add_attribute('manning_coefficients',[0.025])
         
         # Source term algorithm parameters
         self.add_attribute('wind_tolerance',1e-6)
@@ -65,6 +60,60 @@ class SurgeData(clawdata.ClawData):
         self.data_write('wind_forcing',description='(Wind source term used)')
         self.data_write('pressure_forcing',description="(Pressure source term used)")
         self.data_write()
+        
+        self.data_write('wind_tolerance',description='(Wind speed tolerance)')
+        self.data_write('pressure_tolerance',description="(Pressure source term tolerance)")
+        self.data_write()
+                
+        self.data_write('wind_refine',description='(Refinement ratios)')
+        self.data_write('R_refine',description="(Refinement ratios)")
+        self.data_write()
+        
+        self.data_write("storm_type",description='(Storm specification type)')
+        self.data_write('storm_file',description="(Location of storm data)")
+
+        if self.storm_type == 0 or self.storm_type == 1:
+            pass 
+        elif self.storm_type == 2:
+            # Open another data file called stored in storm_file and write the 
+            # following parameters to it
+            self.open_data_file(self.storm_file)
+            self.data_write("ramp_up_t",description="(Ramp up time for wind field)")
+            self.data_write('velocity',description="(Speed of storm)")
+            self.data_write('R_eye_init',description="(Initial position of storm)")
+            self.data_write('A',description="(Hurricane model fit parameter)")
+            self.data_write('B')
+            self.data_write('Pc',description="(Pressure in the eye of the hurricane)")
+        elif self.storm_type == 3:
+            # Open another data file called stored in storm_file and write the 
+            # following parameters to it
+            self.open_data_file(self.storm_file)
+            self.data_write("stommel_wind",desription="(Amplitude of Stommel wind)")
+        else:
+            self.close_data_file()
+            raise Exception("Invalid storm type %s." % storm_type)
+
+        self.close_data_file()
+
+
+
+class FrictionData(clawdata.ClawData):
+    r"""Data class representing variable friction parameters and data sources"""
+
+    def __init__(self):
+
+        super(FrictionData, self).__init__()
+
+        # Variable friction support
+        self.add_attribute('variable_friction',0)
+        self.add_attribute('friction_depths',[np.infty,-np.infty])
+        self.add_attribute('manning_coefficients',[0.025])
+        self.add_attribute('friction_files',None)
+
+
+    def write(self, out_file='friction.data', data_source='setrun.py'):
+
+        self.open_data_file(out_file,data_source)
 
         self.data_write('variable_friction',description="(method for setting variable friction)")
         if self.variable_friction == 0:
@@ -79,39 +128,4 @@ class SurgeData(clawdata.ClawData):
         else:
             raise ValueError("Invalid variable friction method %s." 
                                                        % self.variable_friction)
-        self.data_write()
-        
-        self.data_write('wind_tolerance',description='(Wind speed tolerance)')
-        self.data_write('pressure_tolerance',description="(Pressure source term tolerance)")
-        self.data_write()
-                
-        self.data_write('wind_refine',description='(Refinement ratios)')
-        self.data_write('R_refine',description="(Refinement ratios)")
-        self.data_write()
-        
-        self.data_write("storm_type",description='(Storm specification type)')
-        self.data_write('storm_file',description="(Location of storm data)")
-
         self.close_data_file()
-
-        if self.storm_type == 0 or self.storm_type == 1:
-            pass 
-        elif self.storm_type == 2:
-            # Open another data file called stored in storm_file and write the 
-            # following parameters to it
-            self.open_data_file(self.storm_file)
-            self.data_write("ramp_up_t",description="(Ramp up time for wind field)")
-            self.data_write('velocity',description="(Speed of storm)")
-            self.data_write('R_eye_init',description="(Initial position of storm)")
-            self.data_write('A',description="(Hurricane model fit parameter)")
-            self.data_write('B')
-            self.data_write('Pc',description="(Pressure in the eye of the hurricane)")
-            self.close_data_file()
-        elif self.storm_type == 3:
-            # Open another data file called stored in storm_file and write the 
-            # following parameters to it
-            self.open_data_file(self.storm_file)
-            self.data_write("stommel_wind",desription="(Amplitude of Stommel wind)")
-            self.close_data_file()
-        else:
-            raise Exception("Invalid storm type %s." % storm_type)

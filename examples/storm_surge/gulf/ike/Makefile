@@ -55,7 +55,8 @@ MODULES = \
  $(GEOLIB)/storm_surge/holland_storm_module.f90 \
  $(GEOLIB)/storm_surge/constant_storm_module.f90 \
  $(GEOLIB)/storm_surge/stommel_storm_module.f90 \
- $(GEOLIB)/storm_surge/storm_module.f90
+ $(GEOLIB)/storm_surge/storm_module.f90 \
+ $(GEOLIB)/storm_surge/friction_module.f90
 
 # Switch source file grdfit2.f and grdfit.f to change flagging strategy
 SOURCES = \

@@ -463,23 +463,17 @@ def setgeo(rundata):
     # ----------------------
 
 
-def set_storm():
+def set_storm(rundata):
 
-    data = surge.data.SurgeData()
+    data = rundata.stormdata
 
-   # Physics parameters
+    # Physics parameters
     data.rho_air = 1.15
     data.ambient_pressure = 101.3e3 # Nominal atmos pressure
 
     # Source term controls
     data.wind_forcing = True
     data.pressure_forcing = True
-
-    # Variable friction
-    data.variable_friction = 1
-    # data.friction_depths = [1e10,0.0,-1e10]
-    data.friction_depths = [np.infty,0.0,-np.infty]
-    data.manning_coefficients = [0.030, 0.025]
     
     # Source term algorithm parameters
     data.wind_tolerance = 1e-4
@@ -498,6 +492,19 @@ def set_storm():
     return data
 
 
+def set_friction(rundata):
+
+    data = rundata.frictiondata
+
+    # Variable friction
+    data.variable_friction = 1
+    # data.friction_depths = [1e10,0.0,-1e10]
+    data.friction_depths = [np.infty,0.0,-np.infty]
+    data.manning_coefficients = [0.030, 0.025]
+
+    return data
+
+
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
     import sys
@@ -506,8 +513,9 @@ if __name__ == '__main__':
     else:
         rundata = setrun()
 
+    rundata.add_data(surge.data.SurgeData(),'stormdata')
+    set_storm(rundata)
+    rundata.add_data(surge.data.FrictionData(),'frictiondata')
+    set_friction(rundata)
+
     rundata.write()
-
-    storm_data = set_storm()
-    storm_data.write()
-

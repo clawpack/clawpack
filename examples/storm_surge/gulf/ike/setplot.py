@@ -39,6 +39,8 @@ def setplot(plotdata):
     physics.read(os.path.join(plotdata.outdir,'geoclaw.data'))
     surge_data = surge.data.SurgeData()
     surge_data.read(os.path.join(plotdata.outdir,'surge.data'))
+    friction_data = surge.data.FrictionData()
+    friction_data.read(os.path.join(plotdata.outdir,'friction.data'))
 
     # Load storm track
     track = surge.plot.track_data(os.path.join(plotdata.outdir,'fort.track'))
@@ -171,7 +173,7 @@ def setplot(plotdata):
     # Friction field
     plotfigure = plotdata.new_plotfigure(name='Friction',
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.variable_friction and True
+    plotfigure.show = friction_data.variable_friction and True
 
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits

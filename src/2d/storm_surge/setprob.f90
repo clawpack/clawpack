@@ -9,6 +9,7 @@ subroutine setprob()
     use fixedgrids_module, only: set_fixed_grids
     use refinement_module, only: set_refinement
     use storm_module, only: set_storm
+    use friction_module, only: setup_variable_friction
     
     implicit none
 
@@ -20,5 +21,6 @@ subroutine setprob()
     call set_fixed_grids()            ! Fixed grid settings
 
     call set_storm()                  ! Set storm parameters
+    call setup_variable_friction()    ! Set variable friction parameters
     
 end subroutine setprob
