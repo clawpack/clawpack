@@ -411,8 +411,8 @@ def setgeo(rundata):
     # == Algorithm and Initial Conditions ==
     geodata.sea_level = 0.0
     geodata.dry_tolerance = 1.e-2
-    geodata.wave_tolerance = 1.0
-    # geodata.wave_tolerance = 0.5
+    # geodata.wave_tolerance = 1.0
+    geodata.wave_tolerance = 0.5
     # geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
     geodata.speed_tolerance = 1e6
     geodata.deep_depth = 100.0
