@@ -1,7 +1,7 @@
 subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
       
     use storm_module, only: wind_forcing, pressure_forcing
-    use storm_module, only: rho_air, wind_drag
+    use storm_module, only: rho_air, wind_drag, ambient_pressure
     use storm_module, only: pressure_tolerance, wind_tolerance
     use storm_module, only: wind_index, pressure_index
 
@@ -86,22 +86,19 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 h = q(1,i,j)
 
                 ! Calculate gradient of Pressure
-                P_atmos_x = (aux(pressure_index,i+1,j) &
-                                    - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
-                P_atmos_y = (aux(pressure_index,i,j+1) &
-                                    - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
-                if (abs(P_atmos_x) < pressure_tolerance) then
-                    P_atmos_x = 0.d0
-                endif
-                if (abs(P_atmos_y) < pressure_tolerance) then
-                    P_atmos_y = 0.d0
-                endif
+                if (abs(aux(pressure_index,i,j) - ambient_pressure)      &
+                                                    >= pressure_tolerance) then
+                    P_atmos_x = (aux(pressure_index,i+1,j) &
+                                - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
+                    P_atmos_y = (aux(pressure_index,i,j+1) &
+                                - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
 
-                ! Modify momentum in each layer
-                if (h > dry_tolerance) then
-                    q(2, i, j) = q(2, i, j) - dt * h * P_atmos_x / rho
-                    q(3, i, j) = q(3, i, j) - dt * h * P_atmos_y / rho
-                end if
+                    ! Modify momentum in each layer
+                    if (h > dry_tolerance) then
+                        q(2, i, j) = q(2, i, j) - dt * h * P_atmos_x / rho
+                        q(3, i, j) = q(3, i, j) - dt * h * P_atmos_y / rho
+                    end if
+                endif
             enddo
         enddo
     endif
@@ -114,10 +111,9 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
             fdt = coriolis(yc) * dt ! Calculate f dependent on coordinate system
 
             ! Calculate matrix components
-            a(1,1) = -fdt**2 / (fdt**2 + 1.d0) + 1.d0
-            a(1,2) = -fdt / (fdt**2 + 1.d0)
-            a(2,1) = fdt / (fdt**2 + 1.d0)
-            a(2,2) = 1 / (fdt**2 + 1.d0)
+            a(1,:) = [1.d0,  fdt]
+            a(2,:) = [-fdt, 1.d0]
+            a = a / (1.d0 + fdt**2)
 
             do i=1,mx
                 hu = q(2,i,j)

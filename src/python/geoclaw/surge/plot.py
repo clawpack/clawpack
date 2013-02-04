@@ -120,18 +120,21 @@ def bathy_ref_lines(current_data):
 def eye_location(cd,track):
     return track.get_track(cd.frameno)
     
-def days_figure_title(current_data):
-    t = current_data.t / (60**2 * 24)
-    title = current_data.plotaxes.title
-    plt.title('%s at day %3.2f' % (title,t))
+def days_figure_title(current_data, land_fall=0.0):
+    t = (current_data.t - land_fall) / (60**2 * 24) 
+    days = int(t)
+    hours = (t - int(t)) * 24.0
 
-def surge_afteraxes(current_data,track):
+    title = current_data.plotaxes.title
+    plt.title('%s at day %3i, hour %2.1f' % (title,days,hours))
+
+def surge_afteraxes(current_data, track, land_fall=0.0):
     x,y = eye_location(current_data,track)
     if x is not None and y is not None:
         plt.hold(True)
         plt.plot(x,y,'rD',markersize=2)
         plt.hold(False)
-    days_figure_title(current_data)
+    days_figure_title(current_data,land_fall)
 
 def friction(cd):
     return cd.q[friction_field,:,:]
@@ -278,7 +281,7 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         # plotitem.kwargs = {''}
         plotitem.amr_contour_show = [1,1,1]
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,0,0,0]
         plotitem.amr_contour_colors = 'k'
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
@@ -296,7 +299,7 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.colorbar_shrink = shrink
         plotitem.colorbar_label = "Current (m/s)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,0,0,0]
     elif plot_type == 'quiver':
         plotitem = plotaxes.new_plotitem(plot_type='2d_quiver')
         plotitem.quiver_var_x = water_u
