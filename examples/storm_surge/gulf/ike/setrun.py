@@ -11,8 +11,10 @@ import os
 import datetime
 
 import numpy as np
+import datetime
 
 import clawpack.geoclaw.surge as surge
+
 
 #                           days   s/hour    hours/day            
 days2seconds = lambda days: days * 60.0**2 * 24.0
@@ -101,7 +103,9 @@ def setrun(claw_pkg='geoclaw'):
     # Initial time:
     # -------------
 
-    clawdata.t0 = days2seconds(246.0)
+    land_fall = datetime.datetime(2008,9,13,7)
+    t_length = (land_fall - datetime.datetime(2008,1,1,0))
+    clawdata.t0 = (t_length.days - 10.0) * 24.0 * 60**2 + t_length.seconds
 
     # Restart from checkpoint file of a previous run?
     # Note: If restarting, you must also change the Makefile to set:
@@ -125,10 +129,11 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.tfinal = days2seconds(date2days('2008091400'))
+        # clawdata.tfinal = days2seconds(date2days('2008091400'))
+        clawdata.tfinal = (t_length.days + 2.0) * 24.0 * 60**2 + t_length.seconds
 
         # Ike 2008091400 = 257 days
-        recurrence = 24
+        recurrence = 4
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) 
                                             * recurrence / (60**2 * 24))
 
@@ -255,7 +260,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 5
+    clawdata.amr_levels_max = 1
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,2,3,4,4,4]
@@ -403,7 +408,7 @@ def setgeo(rundata):
     geodata.earth_radius = 6367.5e3
 
     # == Forcing Options
-    geodata.coriolis_forcing = True
+    geodata.coriolis_forcing = False
     geodata.friction_forcing = True
     geodata.manning_coefficient = 0.025
     geodata.friction_depth = 1e10

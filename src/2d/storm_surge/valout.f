@@ -7,13 +7,14 @@ c
 
       use storm_module, only: wind_index, pressure_index
       use storm_module, only: output_storm_location
+      use storm_module, only: wind_tolerance, rho_air, wind_drag
 
       use friction_module, only: friction_index
 
       implicit double precision (a-h,o-z)
       character*10  matname1, matname2, matname3
 
-      real(kind=8) :: h, hu, hv, eta
+      real(kind=8) :: h, hu, hv, eta, wind_speed
       real(kind=8) :: storm_field(4)
 
 c     # Output the results for a general system of conservation laws
@@ -116,8 +117,22 @@ c                 # output in 1d format if ny=1:
 
             ! Storm fields and location
             storm_field(1) = alloc(iaddaux(friction_index,i,j))
+            ! Actually output the wind field stress term
             storm_field(2) = alloc(iaddaux(wind_index,i,j))
             storm_field(3) = alloc(iaddaux(wind_index+1,i,j))
+            wind_speed = sqrt(storm_field(2)**2 + storm_field(3)**2)
+            if (wind_speed > wind_tolerance) then
+              storm_field(2) = wind_drag(wind_speed) * rho_air
+     &                      * wind_speed * storm_field(2) / 1025.d0
+              storm_field(3) = wind_drag(wind_speed) * rho_air 
+     &                      * wind_speed * storm_field(3) / 1025.d0
+            else
+              storm_field(2) = 0.d0
+              storm_field(3) = 0.d0
+            endif
+            if (abs(storm_field(2)) > 0.002d0) then
+              print *,storm_field(2)
+            endif
             storm_field(4) = alloc(iaddaux(pressure_index,i,j))
             forall (k=1:4,abs(storm_field(k)) < 1d-90)
               storm_field(k) = 0.d0
@@ -212,7 +227,7 @@ c
 
       write(6,601) matlabu,time
   601 format('AMRCLAW: Frame ',i4,
-     &       ' output files done at time t = ', d12.6,/)
+     &       ' output files done at time t = ', d13.6,/)
 
       matlabu = matlabu + 1
 

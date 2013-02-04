@@ -13,6 +13,7 @@ import os
 # import matplotlib
 
 # import matplotlib.pyplot as plt
+import datetime
 
 from clawpack.visclaw import colormaps
 import clawpack.clawutil.clawdata as clawdata
@@ -44,19 +45,28 @@ def setplot(plotdata):
 
     # Load storm track
     track = surge.plot.track_data(os.path.join(plotdata.outdir,'fort.track'))
-    surge_afteraxes = lambda cd: surge.plot.surge_afteraxes(cd,track)
+
+    # Calculate landfall time, off by a day, maybe leap year issue?
+    landfall_dt = datetime.datetime(2008,9,13,7) - datetime.datetime(2008,1,1,0)
+    landfall = (landfall_dt.days - 1.0) * 24.0 * 60**2 + landfall_dt.seconds
+
+    # Set afteraxes function
+    surge_afteraxes = lambda cd: surge.plot.surge_afteraxes(cd,track,landfall)
 
     # Limits for plots
     full_xlimits = [-99.0,-50.0]
     full_ylimits = [8.0,32.0]
     full_shrink = 0.5
+    latex_xlimits = [-97.5,-88.5]
+    latex_ylimits = [27.5,30.5]
+    latex_shrink = 0.5
     houston_xlimits = [-(95.0 + 26.0 / 60.0), -(94.0 + 25.0 / 60.0)]
     houston_ylimits = [29.1, 29.0 + 55.0 / 60.0]
     houston_shrink = 0.6
 
     # Color limits
-    surface_range = 3.0
-    speed_range = 1.0
+    surface_range = 5.0
+    speed_range = 2.5
 
     xlimits = full_xlimits
     ylimits = full_ylimits
@@ -66,7 +76,8 @@ def setplot(plotdata):
     surface_limits = [eta[0]-surface_range,eta[0]+surface_range]
     speed_limits = [0.0,speed_range]
     
-    wind_limits = [0,55]
+    # wind_limits = [0,40]
+    wind_limits = [-0.002,0.002]
     pressure_limits = [966,1013]
     friction_bounds = [0.01,0.04]
     vorticity_limits = [-1.e-2,1.e-2]
@@ -127,7 +138,46 @@ def setplot(plotdata):
     surge.plot.add_bathy_contours(plotaxes)
 
     # ========================================================================
-    #  Surface Elevations - Houston Ship Channel
+    #  Surface Elevations - LaTex Shelf
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Surface - LaTex Shelf',  
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = True
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Surface'
+    plotaxes.scaled = True
+    plotaxes.xlimits = latex_xlimits
+    plotaxes.ylimits = latex_ylimits
+    def after_with_gauges(cd):
+        surge_afteraxes(cd)
+        surge.plot.gauge_locations(cd)
+    plotaxes.afteraxes = after_with_gauges
+    
+    surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=latex_shrink)
+    surge.plot.add_land(plotaxes)
+
+    # ========================================================================
+    #  Water Speed - LaTex Shelf
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Currents - LaTex Shelf',  
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = True
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Currents'
+    plotaxes.scaled = True
+    plotaxes.xlimits = latex_xlimits
+    plotaxes.ylimits = latex_ylimits
+    plotaxes.afteraxes = after_with_gauges
+    
+    surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=latex_shrink)
+    surge.plot.add_land(plotaxes)
+
+    # ========================================================================
+    #  Surface Elevations - Houston/Galveston
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Surface - Houston/Galveston',  
                                          figno=fig_num_counter.get_counter())
@@ -149,7 +199,7 @@ def setplot(plotdata):
     surge.plot.add_bathy_contours(plotaxes)
 
     # ========================================================================
-    #  Water Speed - Houston Ship Channel
+    #  Water Speed - Houston/Galveston
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Currents - Houston/Galveston',  
                                          figno=fig_num_counter.get_counter())
@@ -173,7 +223,7 @@ def setplot(plotdata):
     # Friction field
     plotfigure = plotdata.new_plotfigure(name='Friction',
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = friction_data.variable_friction and True
+    plotfigure.show = friction_data.variable_friction and False
 
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -244,7 +294,7 @@ def setplot(plotdata):
     # Wind field
     plotfigure = plotdata.new_plotfigure(name='Wind Speed', 
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing and False
+    plotfigure.show = surge_data.wind_forcing and True
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -261,12 +311,14 @@ def setplot(plotdata):
     # Wind field components
     plotfigure = plotdata.new_plotfigure(name='Wind Components', 
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing and False
+    plotfigure.show = surge_data.wind_forcing and True
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.axescmd = "subplot(121)"
     plotaxes.xlimits = full_xlimits
     plotaxes.ylimits = full_ylimits
+    # plotaxes.xlimits = latex_xlimits
+    # plotaxes.ylimits = latex_ylimits
     plotaxes.title = "X-Component of Wind Field"
     plotaxes.afteraxes = surge_afteraxes
     plotaxes.scaled = True
@@ -286,6 +338,8 @@ def setplot(plotdata):
     plotaxes.axescmd = "subplot(122)"
     plotaxes.xlimits = full_xlimits
     plotaxes.ylimits = full_ylimits
+    # plotaxes.xlimits = latex_xlimits
+    # plotaxes.ylimits = latex_ylimits
     plotaxes.title = "Y-Component of Wind Field"
     plotaxes.afteraxes = surge_afteraxes
     plotaxes.scaled = True
