@@ -15,6 +15,7 @@ import datetime
 
 import clawpack.geoclaw.surge as surge
 
+ike_landfall = datetime.datetime(2008,9,13,7) - datetime.datetime(2008,1,1,0)
 
 #                           days   s/hour    hours/day            
 days2seconds = lambda days: days * 60.0**2 * 24.0
@@ -102,10 +103,7 @@ def setrun(claw_pkg='geoclaw'):
     # -------------
     # Initial time:
     # -------------
-
-    land_fall = datetime.datetime(2008,9,13,7)
-    t_length = (land_fall - datetime.datetime(2008,1,1,0))
-    clawdata.t0 = (t_length.days - 10.0) * 24.0 * 60**2 + t_length.seconds
+    clawdata.t0 = days2seconds(ike_landfall.days - 10.0) + ike_landfall.seconds
 
     # Restart from checkpoint file of a previous run?
     # Note: If restarting, you must also change the Makefile to set:
@@ -130,10 +128,8 @@ def setrun(claw_pkg='geoclaw'):
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
         # clawdata.tfinal = days2seconds(date2days('2008091400'))
-        clawdata.tfinal = (t_length.days + 2.0) * 24.0 * 60**2 + t_length.seconds
-
-        # Ike 2008091400 = 257 days
-        recurrence = 4
+        clawdata.tfinal = days2seconds(ike_landfall.days + 2) + ike_landfall.seconds
+        recurrence = 24
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) 
                                             * recurrence / (60**2 * 24))
 
@@ -187,7 +183,8 @@ def setrun(claw_pkg='geoclaw'):
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    clawdata.cfl_desired = 0.75
+    # clawdata.cfl_desired = 0.75
+    clawdata.cfl_desired = 0.5
     clawdata.cfl_max = 1.0
 
     # Maximum number of time steps to allow between output times:
@@ -201,7 +198,7 @@ def setrun(claw_pkg='geoclaw'):
     # ------------------
 
     # Order of accuracy:  1 => Godunov,  2 => Lax-Wendroff plus limiters
-    clawdata.order = 2
+    clawdata.order = 1
     
     # Use dimensional splitting? (not yet available for AMR)
     clawdata.dimensional_split = 'unsplit'
@@ -210,7 +207,7 @@ def setrun(claw_pkg='geoclaw'):
     #  0 or 'none'      ==> donor cell (only normal solver used)
     #  1 or 'increment' ==> corner transport of waves
     #  2 or 'all'       ==> corner transport of 2nd order corrections too
-    clawdata.transverse_waves = 2
+    clawdata.transverse_waves = 0
 
     # Number of waves in the Riemann solution:
     clawdata.num_waves = 3
@@ -260,7 +257,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 1
+    clawdata.amr_levels_max = 5
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,2,3,4,4,4]
@@ -408,7 +405,7 @@ def setgeo(rundata):
     geodata.earth_radius = 6367.5e3
 
     # == Forcing Options
-    geodata.coriolis_forcing = False
+    geodata.coriolis_forcing = True
     geodata.friction_forcing = True
     geodata.manning_coefficient = 0.025
     geodata.friction_depth = 1e10
@@ -490,6 +487,7 @@ def set_storm(rundata):
     
     # Storm parameters
     data.storm_type = 1 # Type of storm
+    data.landfall = days2seconds(ike_landfall.days - 1) + ike_landfall.seconds
 
     # Storm type 2 - Idealized storm track
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),'ike.storm'))
@@ -508,7 +506,7 @@ def set_friction(rundata):
     # Entire domain
     data.friction_regions.append([rundata.clawdata.lower, 
                                   rundata.clawdata.upper,
-                                  [np.infty,0.0,-np.infty], 
+                                  [np.infty,0.0,-np.infty],
                                   [0.030, 0.025]])
 
     # La-Tex Shelf

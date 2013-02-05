@@ -21,18 +21,7 @@ PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
-FFLAGS ?=
-MAKELEVEL ?= 0
-ifeq ($(MAKELEVEL),0)
-	# If you want to include NetCDF output add these flags
-	# Note that the NETCDF_INC should point to the location of the hearder files
-	# for NetCDF
-	# NETCDF_INC ?= /usr/include
-	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
-
-	# Threading flags
-	# FFLAGS += $(OMP_FLAG)
-endif
+FFLAGS ?= -W -Wall -fbounds-check -pedantic-errors -Wunderflow -ffpe-trap=zero,overflow -g
 
 # ---------------------------------
 # List of sources for this program:
@@ -83,8 +72,6 @@ SOURCES = \
   $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
-  $(GEOLIB)/filval_new.f90 \
-  $(GEOLIB)/filpatch_new.f90 \
   $(GEOLIB)/update.f \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
@@ -93,11 +80,15 @@ SOURCES = \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
-  $(AMRLIB)/amr2.f90 \
+  $(GEOLIB)/filval_new.f90 \
+  $(GEOLIB)/filpatch_new.f90 \
   $(AMRLIB)/prefilp_new.f90 \
+  $(AMRLIB)/trimbd_new.f90 \
+  $(AMRLIB)/bound_new.f90 \
+  $(AMRLIB)/intfil_new.f90 \
+  $(AMRLIB)/amr2.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
-  $(AMRLIB)/bound_new.f90 \
   $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest.f  \
   $(AMRLIB)/spest2.f  \
@@ -118,7 +109,6 @@ SOURCES = \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
   $(AMRLIB)/grdfit2.f \
-  $(AMRLIB)/intfil_new.f \
   $(AMRLIB)/moment.f \
   $(AMRLIB)/nestck.f \
   $(AMRLIB)/nestck2.f \
@@ -134,7 +124,6 @@ SOURCES = \
   $(AMRLIB)/regrid.f \
   $(AMRLIB)/setuse.f \
   $(AMRLIB)/stst1.f \
-  $(AMRLIB)/trimbd_new.f90 \
   $(AMRLIB)/nodget.f \
   $(AMRLIB)/basic.f \
   $(AMRLIB)/outval.f \

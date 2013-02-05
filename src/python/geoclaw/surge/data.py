@@ -3,8 +3,6 @@
 Module to setup storm surge parameters
 """ 
 
-import numpy as np
-
 import clawpack.clawutil.clawdata as clawdata
 
 # Simple hurricane data format
@@ -31,6 +29,7 @@ class SurgeData(clawdata.ClawData):
         
         # Storm parameters
         self.add_attribute("storm_type",1) # Type of storm
+        self.add_attribute("landfall",0.0)
 
         # Storm type 1 - Read in file track
         self.add_attribute("storm_file",'./storm.data')
@@ -70,6 +69,7 @@ class SurgeData(clawdata.ClawData):
         self.data_write()
         
         self.data_write("storm_type",description='(Storm specification type)')
+        self.data_write('landfall',description="(Landfall time of storm)")
         self.data_write('storm_file',description="(Location of storm data)")
 
         if self.storm_type == 0 or self.storm_type == 1:

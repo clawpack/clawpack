@@ -76,8 +76,8 @@ def setplot(plotdata):
     surface_limits = [eta[0]-surface_range,eta[0]+surface_range]
     speed_limits = [0.0,speed_range]
     
-    # wind_limits = [0,40]
-    wind_limits = [-0.002,0.002]
+    wind_limits = [0,40]
+    # wind_limits = [-0.002,0.002]
     pressure_limits = [966,1013]
     friction_bounds = [0.01,0.04]
     vorticity_limits = [-1.e-2,1.e-2]
@@ -135,7 +135,7 @@ def setplot(plotdata):
 
     # Land
     surge.plot.add_land(plotaxes)
-    surge.plot.add_bathy_contours(plotaxes)
+    surge.plot.add_bathy_contours(plotaxes)    
 
     # ========================================================================
     #  Surface Elevations - LaTex Shelf
@@ -154,6 +154,7 @@ def setplot(plotdata):
         surge_afteraxes(cd)
         surge.plot.gauge_locations(cd)
     plotaxes.afteraxes = after_with_gauges
+    plotaxes.afteraxes = surge_afteraxes
     
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=latex_shrink)
     surge.plot.add_land(plotaxes)
@@ -172,6 +173,7 @@ def setplot(plotdata):
     plotaxes.xlimits = latex_xlimits
     plotaxes.ylimits = latex_ylimits
     plotaxes.afteraxes = after_with_gauges
+    plotaxes.afteraxes = surge_afteraxes
     
     surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=latex_shrink)
     surge.plot.add_land(plotaxes)
@@ -181,7 +183,7 @@ def setplot(plotdata):
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Surface - Houston/Galveston',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = True
+    plotfigure.show = False
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -203,7 +205,7 @@ def setplot(plotdata):
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Currents - Houston/Galveston',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = True
+    plotfigure.show = False
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -249,52 +251,11 @@ def setplot(plotdata):
     surge.plot.add_pressure(plotaxes,bounds=pressure_limits)
     # add_pressure(plotaxes)
     surge.plot.add_land(plotaxes)
-
-    # Pressure gradient
-    dp = 1.e3
-    plotfigure = plotdata.new_plotfigure(name='Pressure Gradient', 
-                                         figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.pressure_forcing and False
-    plotfigure.kwargs = {'figsize':(16,6)}
-    
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.axescmd = "subplot(121)"
-    plotaxes.xlimits = full_xlimits
-    plotaxes.ylimits = full_ylimits
-    plotaxes.title = "X-Component of Pressure Gradient"
-    plotaxes.afteraxes = surge_afteraxes
-    plotaxes.scaled = True
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
-    plotitem.plot_var = surge.plot.pressure_gradient_x
-    plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
-    plotitem.imshow_cmin = -dp
-    plotitem.imshow_cmax = dp
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1]
-    
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.axescmd = "subplot(122)"
-    plotaxes.xlimits = full_xlimits
-    plotaxes.ylimits = full_ylimits
-    plotaxes.title = "Y-Component of Pressure Gradient"
-    plotaxes.afteraxes = surge_afteraxes
-    plotaxes.scaled = True
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
-    plotitem.plot_var = surge.plot.pressure_gradient_y
-    plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
-    plotitem.imshow_cmin = -dp
-    plotitem.imshow_cmax = dp
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1]
     
     # Wind field
     plotfigure = plotdata.new_plotfigure(name='Wind Speed', 
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing and True
+    plotfigure.show = surge_data.wind_forcing and False
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -307,53 +268,6 @@ def setplot(plotdata):
     # add_wind(plotaxes,bounds=wind_limits,plot_type='contour')
     # add_wind(plotaxes,bounds=wind_limits,plot_type='quiver')
     surge.plot.add_land(plotaxes)
-    
-    # Wind field components
-    plotfigure = plotdata.new_plotfigure(name='Wind Components', 
-                                         figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing and True
-    
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.axescmd = "subplot(121)"
-    plotaxes.xlimits = full_xlimits
-    plotaxes.ylimits = full_ylimits
-    # plotaxes.xlimits = latex_xlimits
-    # plotaxes.ylimits = latex_ylimits
-    plotaxes.title = "X-Component of Wind Field"
-    plotaxes.afteraxes = surge_afteraxes
-    plotaxes.scaled = True
-
-    surge.plot.add_land(plotaxes)
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
-    plotitem.plot_var = surge.plot.wind_x
-    plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
-    plotitem.imshow_cmin = -wind_limits[1]
-    plotitem.imshow_cmax = wind_limits[1]
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1]
-    
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.axescmd = "subplot(122)"
-    plotaxes.xlimits = full_xlimits
-    plotaxes.ylimits = full_ylimits
-    # plotaxes.xlimits = latex_xlimits
-    # plotaxes.ylimits = latex_ylimits
-    plotaxes.title = "Y-Component of Wind Field"
-    plotaxes.afteraxes = surge_afteraxes
-    plotaxes.scaled = True
-
-    surge.plot.add_land(plotaxes)
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
-    plotitem.plot_var = surge.plot.wind_y
-    plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
-    plotitem.imshow_cmin = -wind_limits[1]
-    plotitem.imshow_cmax = wind_limits[1]
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1]
 
     # ========================================================================
     #  Figures for gauges
@@ -378,6 +292,77 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
     plotitem.plot_var = 3
     plotitem.plotstyle = 'b-'
+
+    # ========================================================================
+    #  Water Velocity Components - Entire Gulf
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Velocity Components - Entire Domain',  
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = True
+
+    # X-Component
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = "subplot(121)"
+    plotaxes.title = 'Velocity, X-Component'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = surge_afteraxes
+
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = surge.plot.water_u
+    plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+    plotitem.pcolor_cmin = -speed_limits[1]
+    plotitem.pcolor_cmax = speed_limits[1]
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1]
+
+    surge.plot.add_land(plotaxes)
+
+    # Y-Component
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = "subplot(122)"
+    plotaxes.title = 'Velocity, Y-Component'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = surge_afteraxes
+
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = surge.plot.water_v
+    plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+    plotitem.pcolor_cmin = -speed_limits[1]
+    plotitem.pcolor_cmax = speed_limits[1]
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1]
+    
+    surge.plot.add_land(plotaxes)
+
+    # ==========================================================================
+    #  Depth
+    # ==========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Depth - Entire Domain', 
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = False
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'depth'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = surge_afteraxes
+
+    plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+    plotitem.plot_var = 0
+    plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+    plotitem.imshow_cmin = 0
+    plotitem.imshow_cmax = 100
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1]
 
     #-----------------------------------------
     

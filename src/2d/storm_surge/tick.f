@@ -5,6 +5,7 @@ c
 c
       use geoclaw_module
       use amr_module
+      use storm_module, only: landfall
       use utility_module,only: convert2days
 
 
@@ -241,7 +242,7 @@ c         # rjl & mjb changed to cfl_level, 3/17/10
               endif
           if (method(4).ge.level) then
               write(6,100) level,cfl_level,possk(level), 
-     &                     convert2days(timenew)
+     &                     convert2days(timenew - landfall)
               endif
 100       format(' AMRCLAW: level ',i2,'  CFL = ',e8.3,
      &           '  dt = ',e10.4,  '  final t = ',f6.2)

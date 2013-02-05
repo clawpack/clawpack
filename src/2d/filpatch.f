@@ -252,7 +252,7 @@ c       interpolate back up
                etacrse(icrse(ic+i,jc)) = valcrse(ivalc(1,ic+i,jc))
      &              +  auxcrse(iauxc(ic+i,jc))
                if (valcrse(ivalc(1,ic+i,jc)).lt.toldry) then
-                  etacrse(icrse(ic+i,jc)) = eta_init
+                  etacrse(icrse(ic+i,jc)) = sea_level
                endif
             enddo
             s1 = etacrse(icrse(ic,jc))- etacrse(icrse(ic-1,jc))
@@ -267,7 +267,7 @@ c       interpolate back up
                etacrse(icrse(ic,jc+j)) = valcrse(ivalc(1,ic,jc+j))
      &              +  auxcrse(iauxc(ic,jc+j))
                if (valcrse(ivalc(1,ic,jc+j)).lt.toldry) then
-                  etacrse(icrse(ic,jc+j)) = eta_init
+                  etacrse(icrse(ic,jc+j)) = sea_level
                endif
             enddo
             s1 = etacrse(icrse(ic,jc))  - etacrse(icrse(ic,jc-1))
@@ -291,7 +291,7 @@ c convert this part of filpatch_new.f90 and see if it matches.
 !--                b = auxcrse(iauxc(ic,jc))
 !--
 !--                if (h .lt. dry_tolerance) then
-!--                    etacrse(icrse(ic,jc)) = eta_init
+!--                    etacrse(icrse(ic,jc)) = sea_level
 !--                else
 !--                    etacrse(icrse(ic,jc)) = h + b
 !--                endif

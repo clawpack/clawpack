@@ -172,7 +172,7 @@ c     #prepare slopes - use min-mod limiters
                      jfine = (j-2)*lratioy + nghost + jco
                      ifine = (i-2)*lratiox + nghost + ico
                      yoff = (float(jco) - .5d0)/lratioy - .5d0
-                     xoff = (float(ico) - .5xxdipd0)/lratiox - .5d0
+                     xoff = (float(ico) - .5d0)/lratiox - .5d0
                      hvf = valc(ivar,i,j)+ xoff*slopex + yoff*slopey
                      vf = hvf/val(1,ifine,jfine)
                      if (vf.gt.velmax.or.vf.lt.velmin) then

@@ -35,6 +35,7 @@ module storm_module
 
     ! Storm object
     integer :: storm_type
+    real(kind=8) :: landfall = 0.d0
     type(holland_storm_type) :: holland_storm
     type(constant_storm_type) :: constant_storm
     type(stommel_storm_type) :: stommel_storm
@@ -114,6 +115,7 @@ contains
         
         ! Storm Setup 
         read(unit,"(i1)") storm_type
+        read(unit,"(d16.8)") landfall
         read(unit,*) storm_file_path
         
         close(unit)

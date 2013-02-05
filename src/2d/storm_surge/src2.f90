@@ -38,9 +38,8 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     real(kind=8), parameter :: gamma_f = 4.d0 / 3.d0
 
     ! Algorithm parameters
-    ! Parameter controls when to zero out the momentum at a depth in the
-    ! friction source term
-    real(kind=8), parameter :: depth_tolerance = 1.0d-30
+    ! Here to prevent a divide by zero in friction term
+    real(kind=8), parameter :: friction_tolerance = 1.0d-30
 
     ! wind -----------------------------------------------------------
     if (wind_forcing) then
@@ -102,7 +101,28 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
             enddo
         enddo
     endif
-    
+
+    ! ----------------------------------------------------------------
+    ! Friction source term - Use backward Euler to solve
+    ! Hybrid friction formula with a spatially varying Manning's-N factor
+    if (friction_forcing) then
+        do j=1,my
+            do i=1,mx
+                if (q(1,i,j) < friction_tolerance) then
+                    q(2:3,i,j) = 0.d0
+                else
+                    tau = g * aux(friction_index,i,j)**2 / q(1,i,j)**(7.d0 / 3.d0) &
+                            * (1.d0 + (H_break / q(1,i,j))**theta_f)**(gamma_f / theta_f) &
+                            * sqrt(q(2,i,j)**2 + q(3,i,j)**2)
+                    q(2,i,j) = q(2,i,j) / (1.d0 + dt * tau)
+                    q(3,i,j) = q(3,i,j) / (1.d0 + dt * tau)
+
+                endif
+            enddo
+        enddo
+    endif
+    ! End of friction source term
+
     ! Coriolis source term
     ! Use backward Euler to solve, q_t = A q -> q^n+1 = (I + dt * A)^-1 q^n
     if (coriolis_forcing) then
@@ -124,26 +144,5 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
         enddo
     endif
     ! End of coriolis source term
-
-    ! ----------------------------------------------------------------
-    ! Friction source term - Use backward Euler to solve
-    ! Hybrid friction formula with a spatially varying Manning's-N factor
-    if (friction_forcing) then
-        do j=1,my
-            do i=1,mx
-                if (q(1,i,j) < depth_tolerance) then
-                    q(2:3,i,j) = 0.d0
-                else
-                    tau = g * aux(friction_index,i,j)**2 / q(1,i,j)**(7.d0 / 3.d0) &
-                          * (1 + (H_break / q(1,i,j))**theta_f)**(gamma_f / theta_f) &
-                          * sqrt(q(2,i,j)**2 + q(3,i,j)**2)
-                    q(2,i,j) = q(2,i,j) / (1.d0 + dt * tau)
-                    q(3,i,j) = q(3,i,j) / (1.d0 + dt * tau)
-                endif
-            enddo
-        enddo
-    endif
-
-    ! End of friction source term
 
 end subroutine src2
