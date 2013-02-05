@@ -21,12 +21,6 @@ ike_landfall = datetime.datetime(2008,9,13,7) - datetime.datetime(2008,1,1,0)
 days2seconds = lambda days: days * 60.0**2 * 24.0
 seconds2days = lambda seconds: seconds / (60.0**2 * 24.0)
 
-def date2days(t_string):
-    r""""""
-    t = datetime.date(int(t_string[0:4]),int(t_string[4:6]),int(t_string[6:8]))
-    first_of_year = datetime.date(int(t_string[0:4]),1,1)
-    return (t - first_of_year).days
-
 #------------------------------
 def setrun(claw_pkg='geoclaw'):
 #------------------------------
@@ -183,7 +177,6 @@ def setrun(claw_pkg='geoclaw'):
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    # clawdata.cfl_desired = 0.75
     clawdata.cfl_desired = 0.5
     clawdata.cfl_max = 1.0
 
@@ -198,7 +191,7 @@ def setrun(claw_pkg='geoclaw'):
     # ------------------
 
     # Order of accuracy:  1 => Godunov,  2 => Lax-Wendroff plus limiters
-    clawdata.order = 1
+    clawdata.order = 2
     
     # Use dimensional splitting? (not yet available for AMR)
     clawdata.dimensional_split = 'unsplit'
@@ -257,7 +250,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 5
+    clawdata.amr_levels_max = 1
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,2,3,4,4,4]
