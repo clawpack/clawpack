@@ -54,8 +54,8 @@ def setplot(plotdata):
     surge_afteraxes = lambda cd: surge.plot.surge_afteraxes(cd,track,landfall)
 
     # Limits for plots
-    full_xlimits = [-99.0,-50.0]
-    full_ylimits = [8.0,32.0]
+    full_xlimits = [amrdata.lower[0],amrdata.upper[0]]
+    full_ylimits = [amrdata.lower[1],amrdata.upper[1]]
     full_shrink = 0.5
     latex_xlimits = [-97.5,-88.5]
     latex_ylimits = [27.5,30.5]
@@ -80,7 +80,7 @@ def setplot(plotdata):
     # wind_limits = [-0.002,0.002]
     pressure_limits = [966,1013]
     friction_bounds = [0.01,0.04]
-    vorticity_limits = [-1.e-2,1.e-2]
+    # vorticity_limits = [-1.e-2,1.e-2]
 
     def pcolor_afteraxes(current_data):
         surge_afteraxes(current_data)
@@ -198,7 +198,7 @@ def setplot(plotdata):
     
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=houston_shrink)
     surge.plot.add_land(plotaxes)
-    surge.plot.add_bathy_contours(plotaxes)
+    # surge.plot.add_bathy_contours(plotaxes)
 
     # ========================================================================
     #  Water Speed - Houston/Galveston
@@ -217,7 +217,7 @@ def setplot(plotdata):
     
     surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=houston_shrink)
     surge.plot.add_land(plotaxes)
-    surge.plot.add_bathy_contours(plotaxes)
+    # surge.plot.add_bathy_contours(plotaxes)
 
     # ========================================================================
     # Hurricane forcing - Entire gulf
