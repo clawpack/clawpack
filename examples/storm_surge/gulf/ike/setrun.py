@@ -15,7 +15,8 @@ import datetime
 
 import clawpack.geoclaw.surge as surge
 
-ike_landfall = datetime.datetime(2008,9,13,7) - datetime.datetime(2008,1,1,0)
+# Ike landfall according to the track file seems to be off by a day
+ike_landfall = datetime.datetime(2008,9,13 - 1,7) - datetime.datetime(2008,1,1,0)
 
 #                           days   s/hour    hours/day            
 days2seconds = lambda days: days * 60.0**2 * 24.0
@@ -69,7 +70,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Lower and upper edge of computational domain:
     clawdata.lower[0] = -99.0      # west longitude
-    clawdata.upper[0] = -50.0      # east longitude
+    clawdata.upper[0] = -70.0      # east longitude
 
     clawdata.lower[1] = 8.0       # south latitude
     clawdata.upper[1] = 32.0      # north latitude
@@ -97,7 +98,7 @@ def setrun(claw_pkg='geoclaw'):
     # -------------
     # Initial time:
     # -------------
-    clawdata.t0 = days2seconds(ike_landfall.days - 10.0) + ike_landfall.seconds
+    clawdata.t0 = days2seconds(ike_landfall.days - 4.0) + ike_landfall.seconds
 
     # Restart from checkpoint file of a previous run?
     # Note: If restarting, you must also change the Makefile to set:
@@ -177,7 +178,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    clawdata.cfl_desired = 0.5
+    clawdata.cfl_desired = 0.75
     clawdata.cfl_max = 1.0
 
     # Maximum number of time steps to allow between output times:
@@ -191,7 +192,7 @@ def setrun(claw_pkg='geoclaw'):
     # ------------------
 
     # Order of accuracy:  1 => Godunov,  2 => Lax-Wendroff plus limiters
-    clawdata.order = 2
+    clawdata.order = 1
     
     # Use dimensional splitting? (not yet available for AMR)
     clawdata.dimensional_split = 'unsplit'
@@ -200,7 +201,7 @@ def setrun(claw_pkg='geoclaw'):
     #  0 or 'none'      ==> donor cell (only normal solver used)
     #  1 or 'increment' ==> corner transport of waves
     #  2 or 'all'       ==> corner transport of 2nd order corrections too
-    clawdata.transverse_waves = 0
+    clawdata.transverse_waves = 1
 
     # Number of waves in the Riemann solution:
     clawdata.num_waves = 3
@@ -250,7 +251,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 1
+    clawdata.amr_levels_max = 5
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,2,3,4,4,4]
@@ -406,11 +407,11 @@ def setgeo(rundata):
     # == Algorithm and Initial Conditions ==
     geodata.sea_level = 0.0
     geodata.dry_tolerance = 1.e-2
-    # geodata.wave_tolerance = 1.0
-    geodata.wave_tolerance = 0.5
+    geodata.wave_tolerance = 1.0
+    # geodata.wave_tolerance = 0.5
     # geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
     geodata.speed_tolerance = 1e6
-    geodata.deep_depth = 100.0
+    geodata.deep_depth = 50.0
     geodata.max_level_deep = 2
 
     # == settopo.data values ==
@@ -480,7 +481,7 @@ def set_storm(rundata):
     
     # Storm parameters
     data.storm_type = 1 # Type of storm
-    data.landfall = days2seconds(ike_landfall.days - 1) + ike_landfall.seconds
+    data.landfall = days2seconds(ike_landfall.days) + ike_landfall.seconds
 
     # Storm type 2 - Idealized storm track
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),'ike.storm'))
