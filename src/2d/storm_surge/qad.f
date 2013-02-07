@@ -365,9 +365,9 @@ c      # It would be better to incorporate these source terms into the
 c      # the f-wave formulation?
 C
 C    Need to add this here again due to wind and pressure sources
-     if (method(5) .ne. 0) then
-         call src1d(nvar,nghost,lenbc,qc1d,maux,auxc1d,tgrid,delt)
-         endif
+C      if (method(5) .ne. 0) then
+C          call src1d(nvar,nghost,lenbc,qc1d,maux,auxc1d,tgrid,delt)
+C          endif
 
        return
        end
