@@ -157,6 +157,7 @@ def setplot(plotdata):
     plotaxes.afteraxes = surge_afteraxes
     
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=latex_shrink)
+    # surge.plot.add_surface_elevation(plotaxes,plot_type='contour')
     surge.plot.add_land(plotaxes)
 
     # ========================================================================
@@ -176,6 +177,7 @@ def setplot(plotdata):
     plotaxes.afteraxes = surge_afteraxes
     
     surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=latex_shrink)
+    # surge.plot.add_surface_elevation(plotaxes,plot_type='contour')
     surge.plot.add_land(plotaxes)
 
     # ========================================================================
@@ -298,7 +300,7 @@ def setplot(plotdata):
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Velocity Components - Entire Domain',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = True
+    plotfigure.show = False
 
     # X-Component
     plotaxes = plotfigure.new_plotaxes()
