@@ -49,6 +49,11 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
     real(kind=8) :: P_gradient(2), S(2), Ddt, dtdx, dtdy, cfl, u, v
 
+    ! CFL check parameters
+    dtdx = dt / dx
+    dtdy = dt / dy
+
+    ! Primary loops over grid
     do j=1,my
         ym = ylower + (j - 1.d0) * dy
         yc = ylower + (j - 0.5d0) * dy
@@ -119,8 +124,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 q(3,i,j) = hu * a(2,1) + hv * a(2,2)
 
                 ! Check CFL estimate
-                dtdx = dt / dx
-                dtdy = dt / dy
                 if (mcapa > 0) then
                     dtdx = dtdx / aux(mcapa,i,j)
                     dtdy = dtdy / aux(mcapa,i,j)
@@ -131,6 +134,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                           dtdy * (v - sqrt(g * h)), dtdy * (v + sqrt(g * h)))
                 if (cfl > cflv1) then
                     print CFL_FORMAT, cfl,cflv1
+                    print "('h,u,v(',i3,',',i3,') = ',4d12.4)", i,j,h,u,v
                 endif
             endif
         enddo

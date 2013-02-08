@@ -69,7 +69,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Lower and upper edge of computational domain:
     clawdata.lower[0] = -99.0      # west longitude
-    clawdata.upper[0] = -70.0      # east longitude
+    clawdata.upper[0] = -50.0      # east longitude
 
     clawdata.lower[1] = 8.0       # south latitude
     clawdata.upper[1] = 32.0      # north latitude
@@ -193,7 +193,7 @@ def setrun(claw_pkg='geoclaw'):
     # ------------------
 
     # Order of accuracy:  1 => Godunov,  2 => Lax-Wendroff plus limiters
-    clawdata.order = 1
+    clawdata.order = 2
     
     # Use dimensional splitting? (not yet available for AMR)
     clawdata.dimensional_split = 'unsplit'
