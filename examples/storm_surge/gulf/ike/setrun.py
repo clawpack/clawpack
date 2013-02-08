@@ -11,11 +11,10 @@ import os
 import datetime
 
 import numpy as np
-import datetime
 
 import clawpack.geoclaw.surge as surge
 
-# Ike landfall according to the track file seems to be off by a day
+# Need to adjust the date a bit due to weirdness with leap year (I think)
 ike_landfall = datetime.datetime(2008,9,13 - 1,7) - datetime.datetime(2008,1,1,0)
 
 #                           days   s/hour    hours/day            
@@ -98,7 +97,7 @@ def setrun(claw_pkg='geoclaw'):
     # -------------
     # Initial time:
     # -------------
-    clawdata.t0 = days2seconds(ike_landfall.days - 4.0) + ike_landfall.seconds
+    clawdata.t0 = days2seconds(ike_landfall.days - 5) + ike_landfall.seconds
 
     # Restart from checkpoint file of a previous run?
     # Note: If restarting, you must also change the Makefile to set:
@@ -157,7 +156,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 1
+    clawdata.verbosity = 7
 
 
 
@@ -178,8 +177,10 @@ def setrun(claw_pkg='geoclaw'):
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    clawdata.cfl_desired = 0.75
-    clawdata.cfl_max = 1.0
+    # clawdata.cfl_desired = 0.75
+    # clawdata.cfl_max = 1.0
+    clawdata.cfl_desired = 0.25
+    clawdata.cfl_max = 0.5
 
     # Maximum number of time steps to allow between output times:
     clawdata.steps_max = 5000
@@ -201,7 +202,7 @@ def setrun(claw_pkg='geoclaw'):
     #  0 or 'none'      ==> donor cell (only normal solver used)
     #  1 or 'increment' ==> corner transport of waves
     #  2 or 'all'       ==> corner transport of 2nd order corrections too
-    clawdata.transverse_waves = 1
+    clawdata.transverse_waves = 2
 
     # Number of waves in the Riemann solution:
     clawdata.num_waves = 3
@@ -223,6 +224,7 @@ def setrun(claw_pkg='geoclaw'):
     #   src_split == 1 or 'godunov' ==> Godunov (1st order) splitting used, 
     #   src_split == 2 or 'strang'  ==> Strang (2nd order) splitting used,  not recommended.
     clawdata.source_split = 'godunov'
+    # clawdata.source_split = 'strang'
 
 
     # --------------------
@@ -327,10 +329,11 @@ def setrun(claw_pkg='geoclaw'):
     regions = rundata.regiondata.regions
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    regions.append([2, 5, days2seconds(254), rundata.clawdata.tfinal, -95.8666, -93.4, 28.63333, 30.2]) # Subdomain, Houston and Galveston
-    regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
-    regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
-    
+    # regions.append([2, 5, days2seconds(254), rundata.clawdata.tfinal, -95.8666, -93.4, 28.63333, 30.2]) # Subdomain, Houston and Galveston
+    # regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -94.84, -94.70, 29.30, 29.40]) # Channel into Galveston bay
+    # regions.append([2, 7, days2seconds(254), rundata.clawdata.tfinal, -95.37, -95.9, 29.60, 29.83]) # Houston ship channel [-95º 22',-94º 54'] x [29º 36',29º 50']
+    # regions.append([2, 7, rundata.clawdata.t0, rundata.clawdata.tfinal, -71.0, -68, 19.0, 22])
+
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
     # rundata.gaugedata.gauges.append([121, -94.70895, 29.2812, rundata.clawdata.t0, rundata.clawdata.tfinal])  
@@ -410,8 +413,8 @@ def setgeo(rundata):
     geodata.wave_tolerance = 1.0
     # geodata.wave_tolerance = 0.5
     # geodata.speed_tolerance = [0.25,0.5,1.0,2.0,3.0,4.0]
-    geodata.speed_tolerance = 1e6
-    geodata.deep_depth = 50.0
+    geodata.speed_tolerance = [1.0,2.0,3.0]
+    geodata.deep_depth = 200.0
     geodata.max_level_deep = 2
 
     # == settopo.data values ==
