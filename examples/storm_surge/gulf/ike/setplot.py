@@ -12,7 +12,7 @@ import os
 # import numpy as np
 # import matplotlib
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import datetime
 
 from clawpack.visclaw import colormaps
@@ -241,7 +241,7 @@ def setplot(plotdata):
     # Pressure field
     plotfigure = plotdata.new_plotfigure(name='Pressure',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.pressure_forcing and False
+    plotfigure.show = surge_data.pressure_forcing and True
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -257,7 +257,7 @@ def setplot(plotdata):
     # Wind field
     plotfigure = plotdata.new_plotfigure(name='Wind Speed', 
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = surge_data.wind_forcing and False
+    plotfigure.show = surge_data.wind_forcing and True
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = full_xlimits
@@ -269,6 +269,56 @@ def setplot(plotdata):
     surge.plot.add_wind(plotaxes,bounds=wind_limits,plot_type='imshow')
     # add_wind(plotaxes,bounds=wind_limits,plot_type='contour')
     # add_wind(plotaxes,bounds=wind_limits,plot_type='quiver')
+    surge.plot.add_land(plotaxes)
+    
+    # Surge field
+    plotfigure = plotdata.new_plotfigure(name='Surge Field', 
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = ((surge_data.wind_forcing or surge_data.pressure_forcing) 
+                        and True)
+    
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.xlimits = full_xlimits
+    plotaxes.ylimits = full_ylimits
+    plotaxes.title = "Storm Surge Source Term S"
+    plotaxes.afteraxes = surge_afteraxes
+    plotaxes.scaled = True
+    
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = surge.plot.pressure_field + 1
+    plotitem.pcolor_cmap = plt.get_cmap('PuBu')
+    # plotitem.pcolor_cmin = 0.0
+    # plotitem.pcolor_cmax = 0.15
+    plotitem.add_colorbar = True
+    plotitem.colorbar_shrink = 0.5
+    plotitem.colorbar_label = "Source Strength"
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
+    
+    surge.plot.add_land(plotaxes)
+
+    plotfigure = plotdata.new_plotfigure(name='Friction/Coriolis Source', 
+                                         figno=fig_num_counter.get_counter())
+    plotfigure.show = True
+    
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.xlimits = full_xlimits
+    plotaxes.ylimits = full_ylimits
+    plotaxes.title = "Friction/Coriolis Source"
+    plotaxes.afteraxes = surge_afteraxes
+    plotaxes.scaled = True
+    
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = surge.plot.pressure_field + 2
+    plotitem.pcolor_cmap = plt.get_cmap('PuBu')
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 1e-4
+    plotitem.add_colorbar = True
+    plotitem.colorbar_shrink = 0.5
+    plotitem.colorbar_label = "Source Strength"
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
+    
     surge.plot.add_land(plotaxes)
 
     # ========================================================================

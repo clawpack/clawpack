@@ -87,7 +87,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 4 + 3
+    clawdata.num_aux = 4 + 3 + 2
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -98,6 +98,7 @@ def setrun(claw_pkg='geoclaw'):
     # Initial time:
     # -------------
     clawdata.t0 = days2seconds(ike_landfall.days - 5) + ike_landfall.seconds
+    # clawdata.t0 = days2seconds(ike_landfall.days - 1) + ike_landfall.seconds
 
     # Restart from checkpoint file of a previous run?
     # Note: If restarting, you must also change the Makefile to set:
@@ -156,7 +157,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 7
+    clawdata.verbosity = 2
 
 
 
@@ -177,10 +178,10 @@ def setrun(claw_pkg='geoclaw'):
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    # clawdata.cfl_desired = 0.75
-    # clawdata.cfl_max = 1.0
-    clawdata.cfl_desired = 0.25
-    clawdata.cfl_max = 0.5
+    clawdata.cfl_desired = 0.75
+    clawdata.cfl_max = 1.0
+    # clawdata.cfl_desired = 0.25
+    # clawdata.cfl_max = 0.5
 
     # Maximum number of time steps to allow between output times:
     clawdata.steps_max = 5000
@@ -266,7 +267,7 @@ def setrun(claw_pkg='geoclaw'):
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
     clawdata.aux_type = ['center','capacity','yleft','center','center','center',
-                         'center']
+                         'center', 'center', 'center']
 
 
     # Flag using refinement routine flag2refine rather than richardson error
@@ -485,6 +486,7 @@ def set_storm(rundata):
     # Storm parameters
     data.storm_type = 1 # Type of storm
     data.landfall = days2seconds(ike_landfall.days) + ike_landfall.seconds
+    data.ramp_width = 100e3
 
     # Storm type 2 - Idealized storm track
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),'ike.storm'))
