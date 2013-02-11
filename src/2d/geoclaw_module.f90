@@ -163,7 +163,7 @@ contains
 
     ! ==========================================================================
     !  Calculate the distance along a sphere
-    !    real(kind=8) spherical_distance(x1,x2)
+    !    real(kind=8) spherical_distance(x1,y1,x2,y2)
     !       x1 = (long,lat)
     !       x2 = (long,lat)
     ! ==========================================================================
