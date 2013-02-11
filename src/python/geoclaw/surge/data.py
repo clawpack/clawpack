@@ -20,8 +20,8 @@ class SurgeData(clawdata.ClawData):
         self.add_attribute('pressure_forcing',True)
         
         # Source term algorithm parameters
-        self.add_attribute('wind_tolerance',1e-6)
-        self.add_attribute('pressure_tolerance',1e-4) # Pressure source term tolerance
+        # self.add_attribute('wind_tolerance',1e-6)
+        # self.add_attribute('pressure_tolerance',1e-4) # Pressure source term tolerance
 
         # AMR parameters
         self.add_attribute('wind_refine',[20.0,40.0,60.0])
@@ -60,9 +60,9 @@ class SurgeData(clawdata.ClawData):
         self.data_write('pressure_forcing',description="(Pressure source term used)")
         self.data_write()
         
-        self.data_write('wind_tolerance',description='(Wind speed tolerance)')
-        self.data_write('pressure_tolerance',description="(Pressure source term tolerance)")
-        self.data_write()
+        # self.data_write('wind_tolerance',description='(Wind speed tolerance)')
+        # self.data_write('pressure_tolerance',description="(Pressure source term tolerance)")
+        # self.data_write()
                 
         self.data_write('wind_refine',description='(Refinement ratios)')
         self.data_write('R_refine',description="(Refinement ratios)")

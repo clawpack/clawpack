@@ -28,7 +28,7 @@ module storm_module
     ! Source term control and parameters
     logical :: wind_forcing, pressure_forcing
     integer :: wind_type
-    real(kind=8) :: pressure_tolerance, wind_tolerance
+!     real(kind=8) :: pressure_tolerance, wind_tolerance
 
     ! AMR Parameters
     real(kind=8), allocatable :: R_refine(:), wind_refine(:)
@@ -36,6 +36,7 @@ module storm_module
     ! Storm object
     integer :: storm_type
     real(kind=8) :: landfall = 0.d0
+    real(kind=8) :: ramp_width
     type(holland_storm_type) :: holland_storm
     type(constant_storm_type) :: constant_storm
     type(stommel_storm_type) :: stommel_storm
@@ -99,10 +100,10 @@ contains
         read(unit,*) pressure_forcing
         read(unit,*)
         
-        ! Source term algorithm parameters
-        read(unit,*) wind_tolerance
-        read(unit,*) pressure_tolerance
-        read(unit,*)
+!         ! Source term algorithm parameters
+!         read(unit,*) wind_tolerance
+!         read(unit,*) pressure_tolerance
+!         read(unit,*)
         
         ! AMR parameters
         read(unit,'(a)') line
@@ -127,9 +128,9 @@ contains
         write(log_unit,"(a,1d16.8)") "ambient_pressure = ",ambient_pressure
         write(log_unit,*) ""
 
-        write(log_unit,"(a,1d16.8)") "wind_tolerance =     ", wind_tolerance
-        write(log_unit,"(a,1d16.8)") "pressure_tolerance = ", pressure_tolerance
-        write(log_unit,*) ""
+!         write(log_unit,"(a,1d16.8)") "wind_tolerance =     ", wind_tolerance
+!         write(log_unit,"(a,1d16.8)") "pressure_tolerance = ", pressure_tolerance
+!         write(log_unit,*) ""
 
         write(log_unit,*) "Wind Nesting = ", (wind_refine(i),i=1,size(wind_refine,1))
         write(log_unit,*) "R Nesting = ", (R_refine(i),i=1,size(R_refine,1))

@@ -476,8 +476,8 @@ def set_storm(rundata):
     data.pressure_forcing = True
     
     # Source term algorithm parameters
-    data.wind_tolerance = 1e-4
-    data.pressure_tolerance = 1e-4 # Pressure source term tolerance
+    # data.wind_tolerance = 1e-4
+    # data.pressure_tolerance = 1e-4 # Pressure source term tolerance
 
     # AMR parameters
     data.wind_refine = [20.0,40.0,60.0] # m/s
@@ -486,7 +486,6 @@ def set_storm(rundata):
     # Storm parameters
     data.storm_type = 1 # Type of storm
     data.landfall = days2seconds(ike_landfall.days) + ike_landfall.seconds
-    data.ramp_width = 100e3
 
     # Storm type 2 - Idealized storm track
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),'ike.storm'))

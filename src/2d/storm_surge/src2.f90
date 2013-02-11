@@ -2,7 +2,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
       
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag, ambient_pressure
-    use storm_module, only: pressure_tolerance, wind_tolerance
+!     use storm_module, only: pressure_tolerance, wind_tolerance
     use storm_module, only: wind_index, pressure_index
 
     use friction_module, only: friction_index

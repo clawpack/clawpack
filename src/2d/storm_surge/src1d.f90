@@ -10,7 +10,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
       
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag
-    use storm_module, only: pressure_tolerance, wind_tolerance
+!     use storm_module, only: pressure_tolerance, wind_tolerance
     use storm_module, only: wind_index, pressure_index
 
     use friction_module, only: friction_index
@@ -94,11 +94,11 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
             if (q1d(1,i) > dry_tolerance) then
                 wind_speed = sqrt(aux1d(wind_index,i)**2 &
                                 + aux1d(wind_index+1,i)**2)
-                if (wind_speed > wind_tolerance) then
+!                 if (wind_speed > wind_tolerance) then
                     tau = wind_drag(wind_speed) * rho_air * wind_speed / rho
                     q1d(2,i) = q1d(2,i) + dt * tau * aux1d(wind_index,i)
                     q1d(3,i) = q1d(3,i) + dt * tau * aux1d(wind_index+1,i)
-                endif
+!                 endif
             endif
         enddo
     endif
