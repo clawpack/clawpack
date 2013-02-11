@@ -47,7 +47,7 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                          "'  is larger than input cfl_max = ', d12.4," // &
                          "' in src2.')"
 
-    real(kind=8) :: P_gradient(2), S(2), Ddt, dtdx, dtdy, cfl, u, v
+    real(kind=8) :: P_gradient(2), S(2), Ddt, dtdx, dtdy, cfl, u, v, hu0, hv0
 
     ! CFL check parameters
     dtdx = dt / dx
@@ -80,39 +80,42 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 q(2,i,j) = 0.d0
                 q(3,i,j) = 0.d0
             else
-                hu = q(2,i,j)
-                hv = q(3,i,j)
+                hu0 = q(2,i,j)
+                hv0 = q(3,i,j)
                 S = 0.d0
 
                 ! Wind
                 wind_speed = sqrt(aux(wind_index,i,j)**2 + aux(wind_index+1,i,j)**2)
-                if (wind_speed > wind_tolerance) then
+!                 if (wind_speed > wind_tolerance) then
                     tau = wind_drag(wind_speed) * rho_air * wind_speed / rho
                     S = S + tau * aux(wind_index:wind_index+1,i,j)
-                endif
+!                 endif
 
                 ! Pressure
-                if (abs(aux(pressure_index,i,j) - ambient_pressure)      &
-                                                    >= pressure_tolerance) then
+!                 if (abs(aux(pressure_index,i,j) - ambient_pressure)      &
+!                                                     >= pressure_tolerance) then
                     P_gradient(1) = (aux(pressure_index,i+1,j) &
                                 - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
                     P_gradient(2) = (aux(pressure_index,i,j+1) &
                                 - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
 
-                    ! Add pressure to source terms
-                    S = S - h * P_gradient / rho
-                endif
+!                     if (any(abs(P_gradient) >= pressure_tolerance)) then
+                        ! Add pressure to source terms
+                        S = S - h * P_gradient / rho
+!                     endif
+!                 endif
+                aux(pressure_index+1,i,j) = sqrt(S(1)**2 + S(2)**2)
 
                 ! Friction and Coriolis
                 Ddt = g * aux(friction_index,i,j)**2 / h**(7.d0 / 3.d0) &
                         * (1.d0 + (H_break / h)**theta_f)**(gamma_f / theta_f) &
-                        * sqrt(hu**2 + hv**2) * dt * 0.5d0
+                        * sqrt(hu0**2 + hv0**2) * dt * 0.5d0
 
                 ! Matrix I + dt / 2 A
                 a(1,:) = [1.d0 - Ddt, fdt]
                 a(2,:) = [-fdt, 1.d0 - Ddt]
-                hu = a(1,1) * hu + a(1,2) * hv + dt * S(1)
-                hv = a(2,1) * hu + a(2,2) * hv + dt * S(2)
+                hu = a(1,1) * hu0 + a(1,2) * hv0 + dt * S(1)
+                hv = a(2,1) * hu0 + a(2,2) * hv0 + dt * S(2)
 
                 ! Matrix (I - dt A / 2)^-1
                 a(1,:) = [1.d0 + Ddt, -fdt]
@@ -136,10 +139,12 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     print CFL_FORMAT, cfl,cflv1
                     print "('h,u,v(',i3,',',i3,') = ',4d12.4)", i,j,h,u,v
                 endif
+
+                aux(pressure_index+2,i,j) = sqrt((q(2,i,j) - hu0)**2  &
+                                               + (q(3,i,j) - hv0)**2)
             endif
         enddo
     enddo
-
 
 !     ! wind -----------------------------------------------------------
 !     if (wind_forcing) then

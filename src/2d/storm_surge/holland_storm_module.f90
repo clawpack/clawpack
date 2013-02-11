@@ -29,6 +29,7 @@ module holland_storm_module
         real(kind=8), allocatable :: max_wind_radius(:)
         real(kind=8), allocatable :: max_wind_speed(:)
         real(kind=8), allocatable :: central_pressure(:)
+        real(kind=8), allocatable :: rrp(:)
 
         ! Approximate velocity of storm, approximated via the track points
         ! using a first order difference on the sphere
@@ -48,6 +49,9 @@ module holland_storm_module
 
     ! Sampling adjustment from 1 min to 10 min winds
     real(kind=8), parameter :: sampling_time = 0.88d0 
+
+    ! Storm field ramping width - Represents crudely the ramping radial area
+    real(kind=8), parameter :: RAMP_WIDTH = 100.0d3
 
 contains
 
@@ -126,6 +130,7 @@ contains
         allocate(storm%max_wind_speed(num_casts))
         allocate(storm%max_wind_radius(num_casts))
         allocate(storm%central_pressure(num_casts))
+        allocate(storm%rrp(num_casts))
 
         ! Now re-read the file's contents
         i = 0
@@ -163,9 +168,11 @@ contains
             !  max_wind_speed - Convert knots to m/s
             !  max_wind_radius  - convert from nm to m
             !  central_pressure - convert from mbar to Pa
+            !  Radius of last isobar contour - convert from nm to m
             storm%max_wind_speed(i) = real(max_wind_speed,kind=8) * 0.51444444d0
-            storm%max_wind_radius(i) = real(max_wind_radius,kind=8) * 1.852000003180799d0
+            storm%max_wind_radius(i) = real(max_wind_radius,kind=8) * 1.852000003180799d0 * 1000.d0
             storm%central_pressure(i) = real(central_pressure,kind=8) * 100.d0
+            storm%rrp(i) = real(RRP,kind=8) * 1.852000003180799d0 * 1000.d0
 
         enddo
 
@@ -289,7 +296,7 @@ contains
         real(kind=8) :: junk(2)
 
         call get_holland_storm_data(t,storm,location, &
-                                            junk,junk(1),junk(1),junk(1))
+                                        junk,junk(1),junk(1),junk(1),junk(1))
 
         if (DEBUG .and. .false.) then
             print "('Storm Location = ',2d16.8)",location
@@ -359,7 +366,8 @@ contains
     subroutine get_holland_storm_data(t, storm, location, velocity, &
                                                 max_wind_radius,    &
                                                 max_wind_speed,     &
-                                                central_pressure)
+                                                central_pressure,   &
+                                                rrp)
 
         use geoclaw_module, only: deg2rad, latlon2xy, xy2latlon
 
@@ -372,10 +380,10 @@ contains
         ! Output
         real(kind=8), intent(out) :: location(2), velocity(2)
         real(kind=8), intent(out) :: max_wind_radius, max_wind_speed
-        real(kind=8), intent(out) :: central_pressure
+        real(kind=8), intent(out) :: central_pressure, rrp
 
         ! Local
-        real(kind=8) :: fn(7), fnm(7), weight, tn, tnm, x(2)
+        real(kind=8) :: fn(8), fnm(8), weight, tn, tnm, x(2)
         integer :: i
 
         ! Increment storm data index if needed and not at end of forecast
@@ -410,7 +418,8 @@ contains
             
             fn = [xy2latlon(x,storm%track(2:3,i)), &
                   storm%velocity(:,i), storm%max_wind_radius(i), &
-                  storm%max_wind_speed(i), storm%central_pressure(i)]
+                  storm%max_wind_speed(i), storm%central_pressure(i), &
+                  storm%rrp(i)]
         else
             ! Inbetween two forecast time points (the function storm_index
             ! ensures that we are not before the first data point, i.e. i > 1)
@@ -419,10 +428,10 @@ contains
             weight = (t - tnm) / (tn - tnm)
             fn = [storm%track(2:3,i),storm%velocity(:,i), &
                   storm%max_wind_radius(i),storm%max_wind_speed(i), &
-                  storm%central_pressure(i)]
+                  storm%central_pressure(i), storm%rrp(i)]
             fnm = [storm%track(2:3,i - 1),storm%velocity(:,i - 1), &
                    storm%max_wind_radius(i - 1),storm%max_wind_speed(i - 1), &
-                  storm%central_pressure(i - 1)]
+                  storm%central_pressure(i - 1), storm%rrp(i - 1)]
             fn = weight * (fn - fnm) + fnm
         endif
 
@@ -432,6 +441,7 @@ contains
         max_wind_radius = fn(5)
         max_wind_speed = fn(6)
         central_pressure = fn(7)
+        rrp = fn(8)
 
     end subroutine get_holland_storm_data
 
@@ -465,12 +475,12 @@ contains
 
         ! Local storage
         real(kind=8) :: x, y, r, theta, sloc(2)
-        real(kind=8) :: f, mwr, mws, Pc, Pa, dp, wind, tv(2)
-        real(kind=8) :: mod_mws, trans_speed
+        real(kind=8) :: f, mwr, mws, Pc, Pa, dp, wind, tv(2), rrp
+        real(kind=8) :: mod_mws, trans_speed, ramp
         integer :: i,j
 
         ! Get interpolated storm data
-        call get_holland_storm_data(t,storm,sloc,tv,mwr,mws,Pc)
+        call get_holland_storm_data(t,storm,sloc,tv,mwr,mws,Pc,rrp)
         
         ! Other quantities of interest
         Pa = storm%ambient_pressure
@@ -496,11 +506,11 @@ contains
         if (B > 2.5d0) B = 2.5d0
 
         if (DEBUG) print "('Holland B = ',d16.8)",B
-        if (DEBUG) print "('Holland A = ',d16.8)",(mwr)**B
+        if (DEBUG) print "('Holland A = ',d16.8)",(mwr / 1000.d0)**B
 
         ! Set initial wind and pressure field, do not really need to do this
-        aux(wind_index:wind_index+1,:,:) = 0.d0
-        aux(pressure_index,:,:) = Pa
+!         aux(wind_index:wind_index+1,:,:) = 0.d0
+!         aux(pressure_index,:,:) = Pa
         
         ! Set fields
         do j=1-mbc,my+mbc
@@ -515,11 +525,11 @@ contains
                 theta = atan2((y - sloc(2)) * DEG2RAD,(x - sloc(1)) * DEG2RAD)
 
                 ! Set pressure field
-                aux(pressure_index,i,j) = Pc + dp * exp(-(mwr*1000.d0/r)**B)
+                aux(pressure_index,i,j) = Pc + dp * exp(-(mwr / r)**B)
 
                 ! Speed of wind at this point
-                wind = sqrt((mwr * 1000.d0 / r)**B &
-                        * exp(1.d0 - (mwr * 1000.d0 / r)**B) * mws**2.d0 &
+                wind = sqrt((mwr / r)**B &
+                        * exp(1.d0 - (mwr / r)**B) * mws**2.d0 &
                         + (r * f)**2.d0 / 4.d0) - r * f / 2.d0
 
                 ! Convert wind velocity from top of atmospheric boundary layer
@@ -539,8 +549,18 @@ contains
                 ! storm wind speed.  This is tapered to zero as the storm wind
                 ! tapers to zero toward the eye of the storm and at long
                 ! distances from the storm
-                aux(wind_index,i,j) = aux(wind_index,i,j) + (abs(wind) / mws) * tv(1)
-                aux(wind_index+1,i,j) = aux(wind_index+1,i,j) + (abs(wind) / mws) * tv(2)
+                aux(wind_index,i,j) = aux(wind_index,i,j)                 &
+                                                    + (abs(wind) / mws) * tv(1)
+                aux(wind_index+1,i,j) = aux(wind_index+1,i,j)             &
+                                                    + (abs(wind) / mws) * tv(2)
+
+                ! Apply distance ramp down(up) to fields to limit scope
+                ramp = 0.5d0 * (1.d0 - tanh((r - rrp) / RAMP_WIDTH))
+                aux(pressure_index,i,j) = Pa + (aux(pressure_index,i,j) - Pa) &
+                                        * ramp
+                aux(wind_index:wind_index+1,i,j) =                        &
+                                        aux(wind_index:wind_index+1,i,j)  &
+                                        * ramp
             enddo
         enddo
 

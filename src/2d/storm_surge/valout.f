@@ -14,7 +14,8 @@ c
       character*10  matname1, matname2, matname3
 
       real(kind=8) :: h, hu, hv, eta
-      real(kind=8) :: storm_field(4)
+      integer, parameter :: NUM_FIELDS = 6
+      real(kind=8) :: storm_field(NUM_FIELDS)
 
 c     # Output the results for a general system of conservation laws
 c     # in 2 dimensions
@@ -120,11 +121,14 @@ c                 # output in 1d format if ny=1:
             storm_field(2) = alloc(iaddaux(wind_index,i,j))
             storm_field(3) = alloc(iaddaux(wind_index+1,i,j))
             storm_field(4) = alloc(iaddaux(pressure_index,i,j))
-            forall (k=1:4,abs(storm_field(k)) < 1d-90)
+            storm_field(5) = alloc(iaddaux(pressure_index+1,i,j))
+            storm_field(6) = alloc(iaddaux(pressure_index+2,i,j))
+            forall (k=1:NUM_FIELDS,abs(storm_field(k)) < 1d-90)
               storm_field(k) = 0.d0
             end forall
 
-            write(matunit1,109) h,hu,hv,eta,(storm_field(k),k=1,4)
+            write(matunit1,109) h,hu,hv,eta,
+     &                         (storm_field(k),k=1,NUM_FIELDS)
             
           enddo
           write(matunit1,*) ' '
@@ -203,7 +207,7 @@ c         # and we want to use 1d plotting routines
           ndim = 1
         endif
 
-      write(matunit2,1000) time,4 + 4,ngrids,naux,ndim
+      write(matunit2,1000) time,4 + NUM_FIELDS,ngrids,naux,ndim
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,
