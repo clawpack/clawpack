@@ -257,7 +257,7 @@ class PlotProfile(object):
 # ========================================================================
 def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':            
-        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_pcolor')
         plotitem.plot_var = geoplot.surface_or_depth
         # plotitem.plot_var = geoplot.surface
         plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
@@ -288,7 +288,7 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
 
 def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem = plotaxes.new_plotitem(name='speed',plot_type='2d_pcolor')
         plotitem.plot_var = water_speed
         # plotitem.plot_var = 1
         plotitem.pcolor_cmap = plt.get_cmap('PuBu')
@@ -393,7 +393,7 @@ def add_vorticity(plotaxes,bounds=None,plot_type="pcolor"):
         
 def add_land(plotaxes,plot_type='pcolor',topo_min=-10,topo_max=10.0):
     if plot_type == 'pcolor':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem = plotaxes.new_plotitem(name='land',plot_type='2d_pcolor')
         plotitem.show = True
         cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
                                        -0.00001:[0.95,0.9,0.7],
