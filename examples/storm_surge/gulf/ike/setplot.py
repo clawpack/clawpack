@@ -159,6 +159,8 @@ def setplot(plotdata):
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=latex_shrink)
     # surge.plot.add_surface_elevation(plotaxes,plot_type='contour')
     surge.plot.add_land(plotaxes)
+    plotaxes.plotitem_dict['surface'].amr_patchedges_show = [1,1,1,0,0,0,0]
+    plotaxes.plotitem_dict['land'].amr_patchedges_show = [1,1,1,0,0,0,0]
 
     # ========================================================================
     #  Water Speed - LaTex Shelf
@@ -179,13 +181,15 @@ def setplot(plotdata):
     surge.plot.add_speed(plotaxes,bounds=speed_limits,shrink=latex_shrink)
     # surge.plot.add_surface_elevation(plotaxes,plot_type='contour')
     surge.plot.add_land(plotaxes)
+    plotaxes.plotitem_dict['speed'].amr_patchedges_show = [1,1,1,0,0,0,0]
+    plotaxes.plotitem_dict['land'].amr_patchedges_show = [1,1,1,0,0,0,0]
 
     # ========================================================================
     #  Surface Elevations - Houston/Galveston
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Surface - Houston/Galveston',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = False
+    plotfigure.show = True
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -193,9 +197,9 @@ def setplot(plotdata):
     plotaxes.scaled = True
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
-    def after_with_gauges(cd):
-        surge_afteraxes(cd)
-        surge.plot.gauge_locations(cd)
+    # def after_with_gauges(cd):
+    #     surge_afteraxes(cd)
+    #     surge.plot.gauge_locations(cd)
     plotaxes.afteraxes = after_with_gauges
     
     surge.plot.add_surface_elevation(plotaxes,bounds=surface_limits,shrink=houston_shrink)
@@ -207,7 +211,7 @@ def setplot(plotdata):
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Currents - Houston/Galveston',  
                                          figno=fig_num_counter.get_counter())
-    plotfigure.show = False
+    plotfigure.show = True
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -287,8 +291,8 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = surge.plot.pressure_field + 1
     plotitem.pcolor_cmap = plt.get_cmap('PuBu')
-    # plotitem.pcolor_cmin = 0.0
-    # plotitem.pcolor_cmax = 0.15
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 1e-3
     plotitem.add_colorbar = True
     plotitem.colorbar_shrink = 0.5
     plotitem.colorbar_label = "Source Strength"
@@ -312,7 +316,7 @@ def setplot(plotdata):
     plotitem.plot_var = surge.plot.pressure_field + 2
     plotitem.pcolor_cmap = plt.get_cmap('PuBu')
     plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 1e-4
+    plotitem.pcolor_cmax = 1e-3
     plotitem.add_colorbar = True
     plotitem.colorbar_shrink = 0.5
     plotitem.colorbar_label = "Source Strength"

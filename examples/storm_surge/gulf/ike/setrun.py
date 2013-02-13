@@ -123,7 +123,7 @@ def setrun(claw_pkg='geoclaw'):
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
         # clawdata.tfinal = days2seconds(date2days('2008091400'))
-        clawdata.tfinal = days2seconds(ike_landfall.days + 2) + ike_landfall.seconds
+        clawdata.tfinal = days2seconds(ike_landfall.days + 1) + ike_landfall.seconds
         recurrence = 24
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) 
                                             * recurrence / (60**2 * 24))
@@ -354,13 +354,13 @@ def setrun(claw_pkg='geoclaw'):
     rundata.gaugedata.gauges.append([10, -94.51, 29.52, rundata.clawdata.t0, rundata.clawdata.tfinal])
     
     # Stations from Andrew Kennedy
-    # Station R
+    # Station R - 82
     rundata.gaugedata.gauges.append([ord('R'),-97.1176, 27.6289, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    # Station S:
+    # Station S - 83
     rundata.gaugedata.gauges.append([ord('S'),-96.55036666666666, 28.207733333333334, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    # Station U:
+    # Station U - 85
     rundata.gaugedata.gauges.append([ord('U'),-95.75235, 28.62505, rundata.clawdata.t0, rundata.clawdata.tfinal])
-    # Station V:
+    # Station V - 86
     rundata.gaugedata.gauges.append([ord('V'),-95.31511666666667, 28.8704, rundata.clawdata.t0, rundata.clawdata.tfinal])
     # Station W: Same as gauge 1
     # rundata.gaugedata.gauges.append([ord('W'),-95.03958333333334, 29.0714, rundata.clawdata.t0, rundata.clawdata.tfinal])
@@ -505,12 +505,12 @@ def set_friction(rundata):
     data.friction_regions.append([rundata.clawdata.lower, 
                                   rundata.clawdata.upper,
                                   [np.infty,0.0,-np.infty],
-                                  [0.030, 0.025]])
+                                  [0.030, 0.022]])
 
     # La-Tex Shelf
     data.friction_regions.append([(-98, 25.25), (-90, 30),
                                   [np.infty,0.0,-200.0,-np.infty],
-                                  [0.030, 0.02, 0.025]])
+                                  [0.030, 0.02, 0.022]])
 
     
     # 0.012 for LaTex shelf?

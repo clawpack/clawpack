@@ -41,7 +41,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! Here to prevent a divide by zero in friction term
     real(kind=8), parameter :: friction_tolerance = 1.0d-30
 
-
     character(len=*), parameter :: CFL_FORMAT =   &
                         "('*** WARNING *** Courant number  =', d12.4," // &
                          "'  is larger than input cfl_max = ', d12.4," // &
@@ -140,8 +139,8 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     print "('h,u,v(',i3,',',i3,') = ',4d12.4)", i,j,h,u,v
                 endif
 
-                aux(pressure_index+2,i,j) = sqrt((q(2,i,j) - hu0)**2  &
-                                               + (q(3,i,j) - hv0)**2)
+                aux(pressure_index+2,i,j) = sqrt((q(2,i,j) - hu0 - dt*S(1))**2  &
+                                               + (q(3,i,j) - hv0 - dt*S(2))**2)
             endif
         enddo
     enddo
