@@ -512,6 +512,10 @@ def set_friction(rundata):
                                   [np.infty,0.0,-200.0,-np.infty],
                                   [0.030, 0.02, 0.025]])
 
+    
+    # 0.012 for LaTex shelf?
+    # 0.022 everywhere else?
+
     return data
 
 

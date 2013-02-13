@@ -88,7 +88,7 @@ class SurgeData(clawdata.ClawData):
             # Open another data file called stored in storm_file and write the 
             # following parameters to it
             self.open_data_file(self.storm_file)
-            self.data_write("stommel_wind",desription="(Amplitude of Stommel wind)")
+            self.data_write("stommel_wind",description="(Amplitude of Stommel wind)")
         else:
             self.close_data_file()
             raise ValueError("Invalid storm type %s." % self.storm_type)
