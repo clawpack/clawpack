@@ -251,11 +251,15 @@ def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None,
         # Plot on local bathy
         patch_axes[i].imshow(Z,vmin=depth_extent[0],vmax=depth_extent[1],
                              extent=extent)#,cmap=cmap,norm=color_norm)
+        patch_axes[i].contour(X,Y,Z,levels=[0.0],colors='r')
         patch_axes[i].set_title(file_name)
         patch_axes[i].set_xlim(extent[0:2])
         patch_axes[i].set_ylim(extent[2:])
         patch_axes[i].set_xlabel('longitude')
         patch_axes[i].set_ylabel('latitude')
+
+        # Output extents
+        print "Region %s: %s" % (file_name,extent)
 
     # Fix up figures
     region_axes.set_xlim(region_extent[0:2])
