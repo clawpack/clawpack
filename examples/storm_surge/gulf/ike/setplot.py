@@ -418,7 +418,7 @@ def setplot(plotdata):
     plotitem.imshow_cmax = 100
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1]
+    plotitem.amr_patchedges_show = [1,1,1,1,1,1,1,1,1]
 
     #-----------------------------------------
     

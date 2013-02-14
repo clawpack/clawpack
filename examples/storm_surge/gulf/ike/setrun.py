@@ -69,7 +69,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Lower and upper edge of computational domain:
     clawdata.lower[0] = -99.0      # west longitude
-    clawdata.upper[0] = -50.0      # east longitude
+    clawdata.upper[0] = -70.0      # east longitude
 
     clawdata.lower[1] = 8.0       # south latitude
     clawdata.upper[1] = 32.0      # north latitude
@@ -254,7 +254,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 5
+    clawdata.amr_levels_max = 7
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,2,3,4,4,4]
@@ -509,8 +509,8 @@ def set_friction(rundata):
 
     # La-Tex Shelf
     data.friction_regions.append([(-98, 25.25), (-90, 30),
-                                  [np.infty,0.0,-200.0,-np.infty],
-                                  [0.030, 0.02, 0.022]])
+                                  [np.infty,-10.0,-200.0,-np.infty],
+                                  [0.030, 0.012, 0.022]])
 
     return data
 
