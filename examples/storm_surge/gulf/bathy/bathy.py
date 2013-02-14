@@ -87,8 +87,8 @@ def plot(path,coastlines=True,axes=None):
     # color_norm = colors.Normalize(depth_extent[0],depth_extent[1],clip=True)
 
     # Plot data
-    # plot = axes.imshow(Z,vmin=depth_extent[0], vmax=depth_extent[1],
-    #                      extent=region_extent, cmap=cmap, norm=color_norm)
+    plot = axes.imshow(Z,vmin=depth_extent[0], vmax=depth_extent[1],
+                         extent=region_extent)#, cmap=cmap, norm=color_norm)
     levels = range(0,int(-np.min(Z)),500)
     axes.contour(X,Y,-Z,levels=levels,colors='gray')
 

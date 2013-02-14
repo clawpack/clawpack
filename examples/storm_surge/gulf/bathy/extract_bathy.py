@@ -212,8 +212,8 @@ def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None,
     # Plot region data
     region_plot = region_axes.imshow(Z,vmin=depth_extent[0],
                                        vmax=depth_extent[1],
-                                       extent=region_extent,
-                                       cmap=cmap,norm=color_norm)
+                                       extent=region_extent)#,
+                                       # cmap=cmap,norm=color_norm)
     
     if plot_coastline:
         region_axes.contour(X,Y,Z,levels=[0.0],colors='r')
@@ -226,7 +226,7 @@ def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None,
 
         # Plot on region figure
         region_axes.imshow(Z,vmin=depth_extent[0],vmax=depth_extent[1],
-                             extent=extent,cmap=cmap,norm=color_norm)
+                             extent=extent)#,cmap=cmap,norm=color_norm)
 
         # Plot boundaries of local bathy on region plot
         if patch_edges:
@@ -250,7 +250,7 @@ def plot_bathy(paths,region_path,patch_edges=True,patch_names=True,names=None,
 
         # Plot on local bathy
         patch_axes[i].imshow(Z,vmin=depth_extent[0],vmax=depth_extent[1],
-                             extent=extent,cmap=cmap,norm=color_norm)
+                             extent=extent)#,cmap=cmap,norm=color_norm)
         patch_axes[i].set_title(file_name)
         patch_axes[i].set_xlim(extent[0:2])
         patch_axes[i].set_ylim(extent[2:])
