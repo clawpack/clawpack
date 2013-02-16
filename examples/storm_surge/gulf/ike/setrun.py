@@ -500,8 +500,9 @@ def set_storm(rundata):
     data.rho_air = 1.15
     data.ambient_pressure = 101.3e3 # Nominal atmos pressure
 
-    # Source term controls
+    # Source term controls - These are currently not respected
     data.wind_forcing = True
+    data.drag_law = 1 # Garret drag law
     data.pressure_forcing = True
     
     # Source term algorithm parameters

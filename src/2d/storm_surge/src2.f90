@@ -2,7 +2,6 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
       
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag, ambient_pressure
-!     use storm_module, only: pressure_tolerance, wind_tolerance
     use storm_module, only: wind_index, pressure_index
 
     use friction_module, only: friction_index
@@ -25,10 +24,9 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
     ! Locals
-    integer :: i, j, m, bottom_index, bottom_layer, layer_index
-    logical :: found
+    integer :: i, j, m
     real(kind=8) :: h, hu, hv, fdt, gamma, dgamma, a(2,2)
-    real(kind=8) :: P_atmos_x, P_atmos_y, tau, wind_speed
+    real(kind=8) :: P_atmos_x, P_atmos_y, tau, wind_speed, theta
     real(kind=8) :: xm, xc, xp, ym, yc, yp, dx_meters, dy_meters
 
     ! Physics parameters
@@ -84,9 +82,10 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 S = 0.d0
 
                 ! Wind
+                theta = 0.d0
                 wind_speed = sqrt(aux(wind_index,i,j)**2 + aux(wind_index+1,i,j)**2)
 !                 if (wind_speed > wind_tolerance) then
-                    tau = wind_drag(wind_speed) * rho_air * wind_speed / rho
+                    tau = wind_drag(wind_speed,theta) * rho_air * wind_speed / rho
                     S = S + tau * aux(wind_index:wind_index+1,i,j)
 !                 endif
 

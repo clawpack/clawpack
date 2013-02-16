@@ -31,7 +31,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     integer :: i, m, bottom_index, bottom_layer, layer_index
     logical :: found
     real(kind=8) :: h, hu, hv, gamma, dgamma, y, fdt, a(2,2), tau
-    real(kind=8) :: wind_speed, P_atmos_x, P_atmos_y
+    real(kind=8) :: wind_speed, theta, P_atmos_x, P_atmos_y
 
     ! Algorithm parameters
     ! Parameter controls when to zero out the momentum at a depth in the
@@ -92,10 +92,11 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
         ! Assumes that the top-most layer goes dry last
         do i=1,mx1d
             if (q1d(1,i) > dry_tolerance) then
+                theta = 0.d0
                 wind_speed = sqrt(aux1d(wind_index,i)**2 &
                                 + aux1d(wind_index+1,i)**2)
 !                 if (wind_speed > wind_tolerance) then
-                    tau = wind_drag(wind_speed) * rho_air * wind_speed / rho
+                    tau = wind_drag(wind_speed,theta) * rho_air * wind_speed / rho
                     q1d(2,i) = q1d(2,i) + dt * tau * aux1d(wind_index,i)
                     q1d(3,i) = q1d(3,i) + dt * tau * aux1d(wind_index+1,i)
 !                 endif

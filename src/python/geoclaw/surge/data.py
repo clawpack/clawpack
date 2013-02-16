@@ -17,6 +17,7 @@ class SurgeData(clawdata.ClawData):
 
         # Source term controls
         self.add_attribute('wind_forcing',True)
+        self.add_attribute('drag_law',1)
         self.add_attribute('pressure_forcing',True)
         
         # Source term algorithm parameters
@@ -57,6 +58,7 @@ class SurgeData(clawdata.ClawData):
         self.data_write()
         
         self.data_write('wind_forcing',description='(Wind source term used)')
+        self.data_write('drag_law',description='(Type of drag law to use)')
         self.data_write('pressure_forcing',description="(Pressure source term used)")
         self.data_write()
         

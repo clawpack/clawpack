@@ -27,8 +27,17 @@ module storm_module
     
     ! Source term control and parameters
     logical :: wind_forcing, pressure_forcing
-    integer :: wind_type
-!     real(kind=8) :: pressure_tolerance, wind_tolerance
+
+    ! Wind drag law support
+    abstract interface
+        real(kind=8) pure function drag_function(speed, theta)
+            implicit none
+            real(kind=8), intent(in) :: speed, theta
+        end function drag_function
+    end interface
+        
+    ! Function pointer to wind drag requested
+    procedure (drag_function), pointer :: wind_drag
 
     ! AMR Parameters
     real(kind=8), allocatable :: R_refine(:), wind_refine(:)
@@ -75,7 +84,7 @@ contains
         
         ! Locals
         integer, parameter :: unit = 13
-        integer :: i
+        integer :: i, drag_law
         character(len=200) :: storm_file_path, line
         
         ! Open file
@@ -97,9 +106,22 @@ contains
 
         ! Forcing terms
         read(unit,*) wind_forcing
+        read(unit,*) drag_law
+        if (.not.wind_forcing) drag_law = 0
+        select case(drag_law)
+            case(0)
+                wind_drag => no_wind_drag
+            case(1)
+                wind_drag => garret_wind_drag
+            case(3)
+                wind_drag => powell_wind_drag
+            case default
+                stop "*** ERROR *** Invalid wind drag law."
+        end select
         read(unit,*) pressure_forcing
         read(unit,*)
         
+        ! Set drag law function pointer
 !         ! Source term algorithm parameters
 !         read(unit,*) wind_tolerance
 !         read(unit,*) pressure_tolerance
@@ -163,35 +185,55 @@ contains
     end subroutine set_storm
 
     ! ========================================================================
-    !   real(kind=8) function wind_drag(wind_speed)
+    !   real(kind=8) function *_wind_drag(wind_speed)
     ! ========================================================================
     !  Calculates the drag coefficient for wind given the given wind speed.
     !  Based on the modeling from the paper by Weisberg and Zheng (2006).
     !  
     !  Input:
     !      wind_speed = Magnitude of the wind in the cell
+    !      theta = Angle with primary hurricane motion
     !
     !  Output:
     !      wind_drag = Coefficient of drag
     ! ==========================================================================
-    real(kind=8) pure function wind_drag(wind_speed)
+    real(kind=8) pure function powell_wind_drag(wind_speed, theta) result(wind_drag)
     
         implicit none
         
         ! Input
-        real(kind=8), intent(in) :: wind_speed
-        
-        if (wind_speed <= 11.d0) then
-            wind_drag = 1.2d0
-        else if ((wind_speed > 11.d0).and.(wind_speed <= 25.d0)) then
-            wind_drag = 0.49d0 + 0.065d0 * wind_speed
-        else
-            wind_drag = 0.49 + 0.065d0 * 25.d0
-        endif
-        
-        wind_drag = wind_drag * 1.d-3
+        real(kind=8), intent(in) :: wind_speed, theta
+
+        wind_drag = min(2.d-3, (0.75d0 + 0.067d0 * wind_speed) * 1d-3)
     
-    end function wind_drag
+    end function powell_wind_drag
+
+    ! This version ignores direction
+    real(kind=8) pure function garret_wind_drag(wind_speed, theta) result(wind_drag)
+    
+        implicit none
+        
+        ! Input
+        real(kind=8), intent(in) :: wind_speed, theta
+  
+        wind_drag = min(2.d-3, (0.75d0 + 0.067d0 * wind_speed) * 1d-3)      
+!         if (wind_speed <= 11.d0) then
+!             wind_drag = 1.2d0
+!         else if ((wind_speed > 11.d0).and.(wind_speed <= 25.d0)) then
+!             wind_drag = 0.49d0 + 0.065d0 * wind_speed
+!         else
+!             wind_drag = 0.49 + 0.065d0 * 25.d0
+!         endif
+        
+!         wind_drag = wind_drag * 1.d-3
+    
+    end function garret_wind_drag
+
+    real(kind=8) pure function no_wind_drag(wind_speed, theta) result(wind_drag)
+        implicit none
+        real(kind=8), intent(in) :: wind_speed, theta
+        wind_drag = 0.d0
+    end function no_wind_drag
 
     ! ==========================================================================
     ! Wrapper functions for all storm types
