@@ -113,7 +113,7 @@ contains
                 wind_drag => no_wind_drag
             case(1)
                 wind_drag => garret_wind_drag
-            case(3)
+            case(2)
                 wind_drag => powell_wind_drag
             case default
                 stop "*** ERROR *** Invalid wind drag law."
@@ -197,14 +197,79 @@ contains
     !  Output:
     !      wind_drag = Coefficient of drag
     ! ==========================================================================
-    real(kind=8) pure function powell_wind_drag(wind_speed, theta) result(wind_drag)
+    real(kind=8) function powell_wind_drag(wind_speed, theta) result(wind_drag)
     
         implicit none
         
         ! Input
         real(kind=8), intent(in) :: wind_speed, theta
 
-        wind_drag = min(2.d-3, (0.75d0 + 0.067d0 * wind_speed) * 1d-3)
+        ! Locals
+        real(kind=8) :: weight, left_drag, right_drag, rear_drag, drag(2)
+
+        ! Calculate sector drags
+        if (wind_speed <= 15.708d0) then
+            left_drag = 7.5d-4 + 6.6845d-05 * wind_speed
+            right_drag = left_drag
+            rear_drag = left_drag
+        else if (15.708d0 < wind_speed .and. wind_speed <= 18.7d0) then
+            left_drag = 1.8d-3
+            right_drag = 7.5d-4 + 6.6845d-05 * wind_speed
+            rear_drag = right_drag
+        else if (18.7d0 < wind_speed .and. wind_speed <= 25.d0) then
+            left_drag = 1.8d-3
+            right_drag = 2.0d-3
+            rear_drag = right_drag
+        else if (25.0d0 < wind_speed .and. wind_speed <= 30.d0) then
+            left_drag = 1.8d-3 + 5.4d-3 * (wind_speed - 25.d0)
+            right_drag = 2.0d-3
+            rear_drag = right_drag
+        else if (30.0d0 < wind_speed .and. wind_speed <= 35.d0) then
+            left_drag = 4.5d-3 - 2.33333d-4 * (wind_speed - 30.d0)
+            right_drag = 2.0d-3
+            rear_drag = right_drag
+        else if (35.0d0 < wind_speed .and. wind_speed <= 45.d0) then
+            left_drag = 4.5d-3 - 2.33333d-4 * (wind_speed - 30.d0)
+            right_drag = 2.d-3 + 1.d-4 * (wind_speed - 35.d0)
+            rear_drag = 2.d-3 - 1.d-4 * (wind_speed - 35.d0)
+        else
+            left_drag = 1.0d-3
+            right_drag = 3.0d-3
+            rear_drag = left_drag
+        endif
+
+        ! Calculate weights
+        ! Left sector =  [240.d0,  20.d0] - Center = 310
+        ! Left Right sector = [310, 85] - Width = 145
+        ! Right sector = [ 20.d0, 150.d0] - Center = 85
+        ! Right Rear sector = [85, 195] - Width = 
+        ! Rear sector =  [150.d0, 240.d0] - 195
+        ! Rear-Left sector = [85, 195] - Width = 
+
+        ! Left - Right sector
+        if (310.d0 < theta .and. theta <= 360.d0) then
+            weight = (theta - 310.d0) / 135.d0
+            drag = [left_drag, right_drag]
+
+        ! Left - Right sector
+        else if (0.d0 < theta .and. theta <= 85.d0) then
+            weight = (theta + 50.d0) / 135.d0
+            drag = [left_drag, right_drag]
+
+        ! Right - Rear sector
+        else if (85.d0 < theta .and. theta <= 195.d0) then
+            weight = (theta - 85.d0) / 110.d0
+            drag = [right_drag, rear_drag]
+
+        ! Rear - Left sector
+        else if (195.d0 < theta .and. theta <= 310.d0) then
+            weight = (theta - 195.d0) / 115.d0
+            drag = [rear_drag, left_drag]
+        else
+            stop
+        endif
+
+        wind_drag = drag(1) * (1.d0 - weight) + drag(2) * weight
     
     end function powell_wind_drag
 
@@ -266,6 +331,30 @@ contains
 
     end function storm_location
 
+    real(kind=8) function storm_direction(t) result(theta)
+        
+        use amr_module, only: rinfinity
+        use holland_storm_module, only: holland_storm_direction
+        use constant_storm_module, only: constant_storm_direction
+
+        implicit none
+
+        ! Input
+        real(kind=8), intent(in) :: t
+
+        select case(storm_type)
+            case(0)
+                theta = rinfinity
+            case(1)
+                theta = holland_storm_direction(t,holland_storm)
+            case(2)
+                theta = constant_storm_direction(t,constant_storm)
+            case(3)
+                theta = rinfinity
+        end select
+
+    end function storm_direction
+
 
     subroutine set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,&
                                 t,aux)
@@ -309,7 +398,7 @@ contains
         ! We open this here so that the file flushes and writes to disk
         open(unit=track_unit,file="fort.track",action="write",position='append')
 
-        write(track_unit,"(3e26.16)") t,storm_location(t)
+        write(track_unit,"(4e26.16)") t,storm_location(t),storm_direction(t)
         
         close(track_unit)
 

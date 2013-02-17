@@ -3,10 +3,11 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag, ambient_pressure
     use storm_module, only: wind_index, pressure_index
+    use storm_module, only: storm_direction, storm_location
 
     use friction_module, only: friction_index
 
-    use geoclaw_module, only: g => grav, dry_tolerance
+    use geoclaw_module, only: g => grav, dry_tolerance, RAD2DEG, pi
     use geoclaw_module, only: coriolis_forcing, coriolis
     use geoclaw_module, only: friction_forcing, manning_coefficient
     use geoclaw_module, only: spherical_distance, coordinate_system
@@ -24,10 +25,11 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
 
     ! Locals
-    integer :: i, j, m
-    real(kind=8) :: h, hu, hv, fdt, gamma, dgamma, a(2,2)
-    real(kind=8) :: P_atmos_x, P_atmos_y, tau, wind_speed, theta
+    integer :: i, j
     real(kind=8) :: xm, xc, xp, ym, yc, yp, dx_meters, dy_meters
+    real(kind=8) :: h, hu, hv, u, v, hu0, hv0
+    real(kind=8) :: tau, wind_speed, theta, phi, psi, P_gradient(2), S(2), sloc(2)
+    real(kind=8) :: fdt, Ddt, a(2,2)
 
     ! Physics parameters
     real(kind=8), parameter :: rho = 1025.d0
@@ -44,11 +46,15 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                          "'  is larger than input cfl_max = ', d12.4," // &
                          "' in src2.')"
 
-    real(kind=8) :: P_gradient(2), S(2), Ddt, dtdx, dtdy, cfl, u, v, hu0, hv0
+    real(kind=8) :: dtdx, dtdy, cfl
 
     ! CFL check parameters
     dtdx = dt / dx
     dtdy = dt / dy
+
+    ! Get storm direction for this time
+    theta = storm_direction(t)
+    sloc = storm_location(t)
 
     ! Primary loops over grid
     do j=1,my
@@ -82,27 +88,43 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 S = 0.d0
 
                 ! Wind
-                theta = 0.d0
+                psi = atan2(yc - sloc(2), xc - sloc(1))
+                if (theta > psi) then
+                    phi = (2.d0 * pi - theta + psi) * RAD2DEG
+                else
+                    phi = (psi - theta) * RAD2DEG 
+                endif
                 wind_speed = sqrt(aux(wind_index,i,j)**2 + aux(wind_index+1,i,j)**2)
-!                 if (wind_speed > wind_tolerance) then
-                    tau = wind_drag(wind_speed,theta) * rho_air * wind_speed / rho
-                    S = S + tau * aux(wind_index:wind_index+1,i,j)
-!                 endif
+                tau = wind_drag(wind_speed, phi) * rho_air * wind_speed / rho
+                S = S + tau * aux(wind_index:wind_index+1,i,j)
 
                 ! Pressure
-!                 if (abs(aux(pressure_index,i,j) - ambient_pressure)      &
-!                                                     >= pressure_tolerance) then
-                    P_gradient(1) = (aux(pressure_index,i+1,j) &
+                P_gradient(1) = (aux(pressure_index,i+1,j) &
                                 - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
-                    P_gradient(2) = (aux(pressure_index,i,j+1) &
+                P_gradient(2) = (aux(pressure_index,i,j+1) &
                                 - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
-
-!                     if (any(abs(P_gradient) >= pressure_tolerance)) then
-                        ! Add pressure to source terms
-                        S = S - h * P_gradient / rho
-!                     endif
-!                 endif
+                S = S - h * P_gradient / rho
                 aux(pressure_index+1,i,j) = sqrt(S(1)**2 + S(2)**2)
+!                 aux(pressure_index+1,i,j) = wind_drag(wind_speed, phi)
+!                 if (20.d0 < phi .and. phi <= 150.d0) then
+!                     aux(pressure_index+2,i,j) = 1.d0
+!                 else if (150.d0 < phi .and. phi <= 240.d0) then
+!                     aux(pressure_index+2,i,j) = 2.d0
+!                 else
+!                     aux(pressure_index+2,i,j) = 3.d0
+!                 endif
+!                 if (310.d0 < phi .and. phi <= 360.d0) then
+!                     aux(pressure_index+2,i,j) = 1.d0
+!                 else if (0.d0 < phi .and. phi <= 85.d0) then
+!                     aux(pressure_index+2,i,j) = 2.d0
+!                 ! Right - Rear sector
+!                 else if (85.d0 < phi .and. phi <= 195.d0) then
+!                     aux(pressure_index+2,i,j) = 3.d0
+
+!                 ! Rear - Left sector
+!                 else if (195.d0 < phi .and. phi <= 310.d0) then
+!                     aux(pressure_index+2,i,j) = 4.d0
+!                 endif
 
                 ! Friction and Coriolis
                 Ddt = g * aux(friction_index,i,j)**2 / h**(7.d0 / 3.d0) &

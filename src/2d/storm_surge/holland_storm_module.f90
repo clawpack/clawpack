@@ -101,7 +101,7 @@ contains
         if (io_status /= 0) then
             print "(a,i2)", "Error opening storm data file. status = ", io_status
             stop 
-        endif
+        endif            
 
         ! Count number of data lines
         num_casts = 0
@@ -298,13 +298,31 @@ contains
         call get_holland_storm_data(t,storm,location, &
                                         junk,junk(1),junk(1),junk(1),junk(1))
 
-        if (DEBUG .and. .false.) then
-            print "('Storm Location = ',2d16.8)",location
-            print "('i,t = ',i2,d16.8)", storm_index(t,storm),t
-        end if
-
     end function holland_storm_location
 
+    ! ==========================================================================
+    !  holland_storm_direction
+    !   Angle off of due north that the storm is traveling
+    ! ==========================================================================
+    real(kind=8) function holland_storm_direction(t, storm) result(theta)
+
+        implicit none
+
+        ! Input
+        real(kind=8), intent(in) :: t
+        type(holland_storm_type), intent(in) :: storm
+
+        ! Locals
+        real(kind=8) :: junk(2), velocity(2)
+
+        ! Fetch velocity of storm which has direction encoded in it
+        call get_holland_storm_data(t, storm, junk, velocity, junk(1),  &
+                                                    junk(1), junk(1), junk(1))
+
+        ! Unit directional vector
+        theta = atan2(velocity(2),velocity(1))
+
+    end function holland_storm_direction
 
     ! ==========================================================================
     !  storm_index(t,storm)

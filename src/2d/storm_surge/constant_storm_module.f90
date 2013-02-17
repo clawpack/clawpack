@@ -95,6 +95,24 @@ contains
     end function constant_storm_location
 
     ! ==========================================================================
+    !  storm_direction(t,storm)
+    !    Interpolate location of hurricane in the current time interval
+    ! ==========================================================================
+    real(kind=8) function constant_storm_direction(t,storm) result(theta)
+
+        implicit none
+
+        ! Input
+        real(kind=8), intent(in) :: t
+        type(constant_storm_type), intent(in out) :: storm
+
+        ! Locals
+        real(kind=8) :: junk(2)
+        theta = atan2(storm%velocity(2),storm%velocity(1))
+
+    end function constant_storm_direction
+
+    ! ==========================================================================
     !  set_storm_fields()
     ! ==========================================================================
     subroutine set_constant_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,&

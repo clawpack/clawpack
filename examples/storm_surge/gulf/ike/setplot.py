@@ -51,7 +51,8 @@ def setplot(plotdata):
     landfall = (landfall_dt.days - 1.0) * 24.0 * 60**2 + landfall_dt.seconds
 
     # Set afteraxes function
-    surge_afteraxes = lambda cd: surge.plot.surge_afteraxes(cd,track,landfall)
+    surge_afteraxes = lambda cd: surge.plot.surge_afteraxes(cd, 
+                                        track, landfall, plot_direction=False)
 
     # Limits for plots
     full_xlimits = [amrdata.lower[0],amrdata.upper[0]]

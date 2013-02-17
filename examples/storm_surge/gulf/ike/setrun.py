@@ -502,7 +502,7 @@ def set_storm(rundata):
 
     # Source term controls - These are currently not respected
     data.wind_forcing = True
-    data.drag_law = 1 # Garret drag law
+    data.drag_law = 2
     data.pressure_forcing = True
     
     # Source term algorithm parameters
