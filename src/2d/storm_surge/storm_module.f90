@@ -188,15 +188,22 @@ contains
     !   real(kind=8) function *_wind_drag(wind_speed)
     ! ========================================================================
     !  Calculates the drag coefficient for wind given the given wind speed.
-    !  Based on the modeling from the paper by Weisberg and Zheng (2006).
     !  
     !  Input:
     !      wind_speed = Magnitude of the wind in the cell
-    !      theta = Angle with primary hurricane motion
+    !      theta = Angle with primary hurricane direciton
     !
     !  Output:
     !      wind_drag = Coefficient of drag
     ! ==========================================================================
+    !  Powell Wind Drag - Sector based wind drag coefficients due to primary
+    !    wave direction interaction with wind.  This implementation is based on
+    !    the parameterization used in ADCIRC.  For more information see
+    !
+    !    M.D. Powell (2006). “Final Report to the National Oceanic and 
+    !      Atmospheric Administration (NOAA) Joint Hurricane Testbed (JHT) 
+    !      Program.” 26 pp.
+    !
     real(kind=8) function powell_wind_drag(wind_speed, theta) result(wind_drag)
     
         implicit none
@@ -273,7 +280,11 @@ contains
     
     end function powell_wind_drag
 
-    ! This version ignores direction
+
+    ! ========================
+    !  Garret Based Wind Drag
+    ! ========================
+    !  This version is a simple limited version of the wind drag
     real(kind=8) pure function garret_wind_drag(wind_speed, theta) result(wind_drag)
     
         implicit none
@@ -282,27 +293,23 @@ contains
         real(kind=8), intent(in) :: wind_speed, theta
   
         wind_drag = min(2.d-3, (0.75d0 + 0.067d0 * wind_speed) * 1d-3)      
-!         if (wind_speed <= 11.d0) then
-!             wind_drag = 1.2d0
-!         else if ((wind_speed > 11.d0).and.(wind_speed <= 25.d0)) then
-!             wind_drag = 0.49d0 + 0.065d0 * wind_speed
-!         else
-!             wind_drag = 0.49 + 0.065d0 * 25.d0
-!         endif
-        
-!         wind_drag = wind_drag * 1.d-3
     
     end function garret_wind_drag
 
+
+    ! ==================================================================
+    !  No Wind Drag - Dummy function used to turn off wind drag forcing
+    ! ==================================================================
     real(kind=8) pure function no_wind_drag(wind_speed, theta) result(wind_drag)
         implicit none
         real(kind=8), intent(in) :: wind_speed, theta
         wind_drag = 0.d0
     end function no_wind_drag
 
+
+
     ! ==========================================================================
     ! Wrapper functions for all storm types
-
     function storm_location(t) result(location)
 
         use amr_module, only: rinfinity

@@ -47,7 +47,7 @@ class track_data(object):
     def get_track(self,frame):
         # If data was not load successfully return None
         if self._data is None or len(self._data.shape) < 2:
-            return None, None
+            return None, None, None
         # If it appears that our data is not long enough, try reloading file
         # print self._data.shape,frame
         if self._data.shape[0] < frame + 1:
@@ -58,7 +58,7 @@ class track_data(object):
             if self._data.shape[0] < frame + 1:
                 raise Exception("Could not find data for frame %s." % frame)
 
-        return self._data[frame,1:3]
+        return self._data[frame,1:]
 
 # ==========================================================================
 # Gauge functions
@@ -128,11 +128,13 @@ def days_figure_title(current_data, land_fall=0.0):
     title = current_data.plotaxes.title
     plt.title('%s at day %3i, hour %2.1f' % (title,days,hours))
 
-def surge_afteraxes(current_data, track, land_fall=0.0):
-    x,y = eye_location(current_data,track)
+def surge_afteraxes(current_data, track, land_fall=0.0, plot_direction=False):
+    x,y,theta = eye_location(current_data,track)
     if x is not None and y is not None:
         plt.hold(True)
         plt.plot(x,y,'rD',markersize=2)
+        if plot_direction:
+            plt.quiver(x, y, np.cos(theta), np.sin(theta))
         plt.hold(False)
     days_figure_title(current_data,land_fall)
 
