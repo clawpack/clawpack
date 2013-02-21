@@ -22,7 +22,6 @@ c
       logical topoaltered
 
       dimension auxorig(maux,-1:mx+mbc,-1:my+mbc)
-c      dimension auxorig(maxaux,-1:max1d+mbc,-1:max1d+mbc)
 
         t0=t  !# start of coming timestep
         tf=t+dt !# end of coming timestep
@@ -250,7 +249,8 @@ c       if (.false.) then
                      yjm=ylowtopo(m) + (jb-1.d0)*dytopo(m)
                      yjp = ylowtopo(m) + jb*dytopo(m)
 
-                if (yjm.lt.yhidtopo.and.yjp.gt.ylowdtopo) then
+!                if (yjm.lt.yhidtopo.and.yjp.gt.ylowdtopo) then !orig changed to match 4-x
+                if (yjm.le.yhidtopo.and.yjp.ge.ylowdtopo) then
                     yjmc=max(yjm,ylowdtopo)
                     yjpc=min(yjp,yhidtopo)
                     dyc = yjpc-yjmc
@@ -266,7 +266,6 @@ c                  #so need to divide by area
 c                  #physical area of cell depends on coordinate system
                    ztopoij=ztopoij/(dxc*dyc)
                    if (coordinate_system.eq.2) then
-                     deg2rad = pi/180.d0
                      capac_area = deg2rad*earth_radius**2*
      &               (sin(yjp*deg2rad)-sin(yjm*deg2rad))/dyc
                      ztopoij=ztopoij/capac_area

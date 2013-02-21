@@ -180,7 +180,12 @@ c  this is set during timestepping
 c
       do level = lbase+1, lfine   
          dtc = possk(level-1)
-         dtf = cfl/(spoh(level) + tiny(1.d0))
+C        Need this check in order to account for completely dry grids
+         if (abs(spoh(level)) < tiny(1.d0)) then
+           dtf = huge(1.d0)
+         else
+           dtf = cfl/(spoh(level))
+         endif
          if (dtf .gt. dtc) then
             kratio(level-1) = 1  ! cant have larger timestep than parent level
             possk(level)    = dtc  ! cant have larger timestep than parent level

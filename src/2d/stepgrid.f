@@ -35,17 +35,17 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
-      parameter (msize=max1d+4)
-      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
+c      parameter (msize=max1d+4)
+c      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
 
       dimension q(nvar,mitot,mjtot)
       dimension fp(nvar,mitot,mjtot),gp(nvar,mitot,mjtot)
       dimension fm(nvar,mitot,mjtot),gm(nvar,mitot,mjtot)
       dimension aux(maux,mitot,mjtot)
-      dimension work(mwork)
+c      dimension work(mwork)
 
-      logical    debug,  dump
-      data       debug/.false./,  dump/.false./
+      logical, parameter :: debug = .false.
+      logical, parameter :: dump = .false.
 c
 c     # set tcom = time.  This is in the common block comxyt that could
 c     # be included in the Riemann solver, for example, if t is explicitly
@@ -56,7 +56,7 @@ c     # needed there.
       level = node(nestlevel,mptr)
 
       if (dump) then
-         write(*,*)" dumping grid ",mptr
+         write(outunit,*)" at start of stepgrid: dumping grid ",mptr
          do i = 1, mitot
          do j = 1, mjtot
             write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar)
@@ -82,34 +82,34 @@ c
 c
 c     # fluxes initialized in step2
 c
-      mwork0 = (maxm+2*mbc)*(12*meqn + mwaves + meqn*mwaves + 2)
-c
-      if (mwork .lt. mwork0) then
-         write(outunit,*) 'CLAW2 ERROR... mwork must be increased to ',
-     &               mwork0
-         write(*      ,*) 'CLAW2 ERROR... mwork must be increased to ',
-     &               mwork0
-         stop
-      endif
+C       mwork0 = (maxm+2*mbc)*(12*meqn + mwaves + meqn*mwaves + 2)
+C c
+C       if (mwork .lt. mwork0) then
+C          write(outunit,*) 'CLAW2 ERROR... mwork must be increased to ',
+C      &               mwork0
+C          write(*      ,*) 'CLAW2 ERROR... mwork must be increased to ',
+C      &               mwork0
+C          stop
+C       endif
 c
 c     # partition work array into pieces needed for local storage in
 c     # step2 routine. Find starting index of each piece:
 c
-      i0faddm = 1
-      i0faddp = i0faddm + (maxm+2*mbc)*meqn
-      i0gaddm = i0faddp + (maxm+2*mbc)*meqn
-      i0gaddp = i0gaddm + 2*(maxm+2*mbc)*meqn
-      i0q1d   = i0gaddp + 2*(maxm+2*mbc)*meqn
-      i0dtdx1 = i0q1d + (maxm+2*mbc)*meqn
-      i0dtdy1 = i0dtdx1 + (maxm+2*mbc)
-      i0aux1 = i0dtdy1 + (maxm+2*mbc)
-      i0aux2 = i0aux1 + (maxm+2*mbc)*maux
-      i0aux3 = i0aux2 + (maxm+2*mbc)*maux
-c
-c
-      i0next = i0aux3 + (maxm+2*mbc)*maux    !# next free space
-      mused  = i0next - 1                    !# space already used
-      mwork1 = mwork - mused              !# remaining space (passed to step2)
+C       i0faddm = 1
+C       i0faddp = i0faddm + (maxm+2*mbc)*meqn
+C       i0gaddm = i0faddp + (maxm+2*mbc)*meqn
+C       i0gaddp = i0gaddm + 2*(maxm+2*mbc)*meqn
+C       i0q1d   = i0gaddp + 2*(maxm+2*mbc)*meqn
+C       i0dtdx1 = i0q1d + (maxm+2*mbc)*meqn
+C       i0dtdy1 = i0dtdx1 + (maxm+2*mbc)
+C       i0aux1 = i0dtdy1 + (maxm+2*mbc)
+C       i0aux2 = i0aux1 + (maxm+2*mbc)*maux
+C       i0aux3 = i0aux2 + (maxm+2*mbc)*maux
+C c
+C c
+C       i0next = i0aux3 + (maxm+2*mbc)*maux    !# next free space
+C       mused  = i0next - 1                    !# space already used
+C       mwork1 = mwork - mused              !# remaining space (passed to step2)
 
 c
 
@@ -117,6 +117,7 @@ c::::::::::::::::::::::::Fixed Grid Output:::::::::::::::::::::::::::::::::
       tc0=time !# start of computational step
       tcf=tc0+dt !# end of computational step
 
+!$OMP CRITICAL (FixedGrids)
 c     # see if any f-grids should be written out
       do ng=1,num_fixed_grids
         if (tc0 > fgrids(ng)%start_time .and. 
@@ -154,13 +155,15 @@ c               # test if arrival times should be output
 
         endif
       enddo
+!$OMP END CRITICAL (FixedGrids)
 c::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
        call b4step2(mx,my,mbc,mx,my,nvar,q,
      &             xlowmbc,ylowmbc,dx,dy,time,dt,maux,aux)
-
+      
 c::::::::::::::::::::::::FIXED GRID DATA before step:::::::::::::::::::::::
 c     # fill in values at fixed grid points effected at time tc0
+!$OMP CRITICAL (FixedGrids)
       do ng=1,num_fixed_grids
 
       if ( (fgrids(ng)%x_low < xlowmbc + mx*dx) .and.
@@ -204,8 +207,9 @@ c        # levelcheck > 0.
       endif
       enddo
       tcfmax=max(tcfmax,tcf)
-c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+!$OMP END CRITICAL (FixedGrids)
+c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 c
 c     # take one step on the conservation law:
@@ -213,23 +217,24 @@ c
       call step2(mbig,mx,my,nvar,maux,
      &           mbc,mx,my,
      &              q,aux,dx,dy,dt,cflgrid,
-     &              fm,fp,gm,gp,
-     &              work(i0faddm),work(i0faddp),
-     &              work(i0gaddm),work(i0gaddp),
-     &              work(i0q1d),work(i0dtdx1),work(i0dtdy1),
-     &              work(i0aux1),work(i0aux2),work(i0aux3),
-     &              work(i0next),mwork1,rpn2,rpt2)
+     &              fm,fp,gm,gp,rpn2,rpt2)
 c
 c            
         mptr_level = node(nestlevel,mptr)
+
         write(outunit,811) mptr, mptr_level, cflgrid
  811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
 c
+
 !$OMP  CRITICAL (cflm)
+
         cflmax = dmax1(cflmax,cflgrid)
         cfl_level = dmax1(cfl_level,cflgrid)
+
 !$OMP END CRITICAL (cflm)
+
 c
+!        write(outunit,*)" updating grid ", mptr
 c       # update q
         dtdx = dt/dx
         dtdy = dt/dy
@@ -248,23 +253,19 @@ c            # with capa array.
            q(m,i,j) = q(m,i,j)
      &           - (dtdx * (fm(m,i+1,j) - fp(m,i,j))
      &           +  dtdy * (gm(m,i,j+1) - gp(m,i,j))) / aux(mcapa,i,j)
+!           write(outunit,543) m,i,j,q(m,i,j),fm(m,i+1,j),fp(m,i,j),
+!     .        gm(m,i,j+1), gp(m,i,j)
+543       format(3i4,5e25.16)
+
          endif
 
  50      continue
 c
 c     # Copied here from b4step2 since need to do before saving to qc1d:
-      do i=1,mitot
-        do j=1,mjtot
-          do k=1,num_layers
-          if (q(3*(k-1)+1,i,j)/rho(k).lt.dry_tolerance(k)) then
-             q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j),0.d0)
-             do m=3*(k-1) + 2,3*(k-1) + 3
-                q(m,i,j)=0.d0
-                enddo
-             endif
-         enddo
-        enddo
-      enddo
+      forall(i=1:mitot, j=1:mjtot, q(1,i,j) < dry_tolerance)
+        q(1,i,j) = max(q(1,i,j),0.d0)
+        q(2:meqn,i,j) = 0.d0
+      end forall
 c
       if (method(5).eq.1) then
 c        # with source term:   use Godunov splitting
@@ -272,7 +273,7 @@ c        # with source term:   use Godunov splitting
      &             q,maux,aux,time,dt)
          endif
 
-
+!$OMP CRITICAL (FixedGrids)
 c     ::::::::::::::::::::::::Fixed Grid data afterstep:::::::::::::::::::::::
 c     # fill in values at fixed grid points effected at time tcf
       do ng=1,num_fixed_grids
@@ -331,6 +332,7 @@ c        # will be updated only at start of next level 1 step.
 
       endif
       enddo
+!$OMP END CRITICAL (FixedGrids)
 c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
@@ -374,9 +376,9 @@ c
             endif
 c
       if (dump) then
-         write(*,*)" at end of stepgrid: dumping grid ",mptr
-         do i = 1, mitot
-         do j = 1, mjtot
+         write(outunit,*)" at end of stepgrid: dumping grid ",mptr
+         do i = mbc+1, mitot-mbc
+         do j = mbc+1, mjtot-mbc
             write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar)
 c            write(*,545) i,j,(q(i,j,ivar),ivar=1,nvar)
          end do

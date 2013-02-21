@@ -89,7 +89,6 @@ c     !determine the middle entropy corrector wave------------------------
          if (hstarHLL.lt.min(hL,hR)/5.d0) rarecorrector=.false.
       endif
 
-      if (dabs(lambda(2)) .lt. 1.d-20) lambda(2) = 0.d0
       do mw=1,mwaves
          r(1,mw)=1.d0
          r(2,mw)=lambda(mw)
@@ -98,7 +97,6 @@ c     !determine the middle entropy corrector wave------------------------
       if (.not.rarecorrector) then
          lambda(2) = 0.5d0*(lambda(1)+lambda(3))
 c         lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
-         if (dabs(lambda(2)) .lt. 1.d-20) lambda(2) = 0.d0
          r(1,2)=0.d0
          r(2,2)=0.d0
          r(3,2)=1.d0
@@ -132,7 +130,6 @@ c     !determine a few quanitites needed for steady state wave if iterated
             huRstar=uRstar*hRstar
             lambda(2) = 0.5d0*(lambda(1)+lambda(3))
 c           lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
-            if (dabs(lambda(2)) .lt. 1.d-20) lambda(2) = 0.d0
             r(1,2)=0.d0
             r(2,2)=0.d0
             r(3,2)=1.d0
@@ -194,11 +191,13 @@ c        !Determine determinant of eigenvector matrix========
 c        !solve for beta(k) using Cramers Rule=================
          do k=1,3
             do mw=1,3
-               do m=1,3
-                  A(m,mw)=r(m,mw)
-                  A(m,k)=del(m)
-               enddo
+                  A(1,mw)=r(1,mw)
+                  A(2,mw)=r(2,mw)
+                  A(3,mw)=r(3,mw)
             enddo
+            A(1,k)=del(1)
+            A(2,k)=del(2)
+            A(3,k)=del(3)
             det1=A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2))
             det2=A(1,2)*(A(2,1)*A(3,3)-A(2,3)*A(3,1))
             det3=A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))

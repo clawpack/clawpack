@@ -13,44 +13,34 @@ CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
 # ----------------------------------
 
 CLAW_PKG = geoclaw                  # Clawpack package to use
-CLAW_EXE = xgeoclaw                 # Executable to create
-CLAW_setrun_file = setrun.py        # File containing function to make data
-CLAW_OUTDIR = _output               # Directory for output
-CLAW_setplot_file = setplot.py      # File containing function to set plots
-CLAW_PLOTDIR = _plots               # Directory for plots
+EXE = xgeoclaw                 # Executable to create
+SETRUN_FILE = setrun.py        # File containing function to make data
+OUTDIR = _output               # Directory for output
+SETPLOT_FILE = setplot.py      # File containing function to set plots
+PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
-FFLAGS ?=
+FFLAGS ?= -W -Wall -fbounds-check -ffpe-trap=zero,overflow -g -fopenmp
 MAKELEVEL ?= 0
-ifeq ($(MAKELEVEL),0)
-	# If you want to include NetCDF output add these flags
-	# Note that the NETCDF_INC should point to the location of the hearder files
-	# for NetCDF
-	# NETCDF_INC ?= /usr/include
-	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
-
-	# Threading flags
-	# FFLAGS += -D GRID_THREADING
-	# FFLAGS += -D MAX1D=200
-endif
 
 
 # ---------------------------------
 # List of sources for this program:
 # ---------------------------------
 
-AMRLIB = $(CLAW)/amrclaw/src/2d
-GEOLIB = $(CLAW)/geoclaw/src/2d
+AMRLIB = $(AMRCLAW)/src/2d
+GEOLIB = $(GEOCLAW)/src/2d
 
 MODULES = \
+ $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
+ $(AMRLIB)/regions_module.f90 \
+ $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
- $(GEOLIB)/gauges_module.f90 \
- $(GEOLIB)/regions_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
  $(GEOLIB)/refinement_module.f90
 
@@ -65,22 +55,24 @@ SOURCES = \
   $(GEOLIB)/rpn2.f \
   $(GEOLIB)/riemannsolvers.f \
   $(GEOLIB)/rpt2.f \
-  $(GEOLIB)/src2.f \
-  $(GEOLIB)/src1d.f \
-  $(GEOLIB)/step2.f \
+  $(GEOLIB)/src2.f90 \
+  $(GEOLIB)/src1d.f90 \
+  $(GEOLIB)/step2.f90 \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
-  $(GEOLIB)/filval.f \
-  $(GEOLIB)/filpatch.f \
+  $(GEOLIB)/filval.f90 \
+  $(GEOLIB)/filpatch.f90 \
+  $(AMRLIB)/prefilp.f90 \
+  $(AMRLIB)/trimbd.f \
+  $(AMRLIB)/bound.f \
+  $(AMRLIB)/intfil.f \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/amr2ez.f \
-  $(GEOLIB)/setaux.f \
-  $(GEOLIB)/setgauges.f \
-  $(GEOLIB)/b4step2.f90 \
-  $(GEOLIB)/flag2refine.f90  \
+  $(GEOLIB)/setaux.f90 \
+  $(GEOLIB)/flag2refine2.f90  \
   $(GEOLIB)/allowflag.f90  \
+  $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \
@@ -88,33 +80,31 @@ SOURCES = \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
-  $(AMRLIB)/prefilp.f \
+  $(GEOLIB)/advanc.f \
+  $(AMRLIB)/amr2.f90 \
   $(AMRLIB)/quick_sort1.f \
-  $(AMRLIB)/advanc.f \
   $(AMRLIB)/estdt.f \
-  $(AMRLIB)/bound.f \
-  $(AMRLIB)/check4nans.f \
-  $(AMRLIB)/spest.f  \
+  $(AMRLIB)/check4nans.f90 \
+  $(AMRLIB)/spest2.f  \
   $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \
   $(AMRLIB)/cleanup.f \
-  $(AMRLIB)/colate.f \
+  $(AMRLIB)/colate2.f \
   $(AMRLIB)/errest.f \
-  $(AMRLIB)/bufnst.f \
+  $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
-  $(AMRLIB)/flglvl.f \
+  $(AMRLIB)/flglvl2.f \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
-  $(AMRLIB)/grdfit.f \
-  $(AMRLIB)/intfil.f \
+  $(AMRLIB)/grdfit2.f \
   $(AMRLIB)/moment.f \
-  $(AMRLIB)/nestck.f \
+  $(AMRLIB)/nestck2.f \
   $(AMRLIB)/prepc.f \
   $(AMRLIB)/prepf.f \
-  $(AMRLIB)/projec.f \
+  $(AMRLIB)/projec2.f \
   $(AMRLIB)/signs.f \
   $(AMRLIB)/findcut.f \
   $(AMRLIB)/smartbis.f \
@@ -123,7 +113,6 @@ SOURCES = \
   $(AMRLIB)/regrid.f \
   $(AMRLIB)/setuse.f \
   $(AMRLIB)/stst1.f \
-  $(AMRLIB)/trimbd.f \
   $(AMRLIB)/nodget.f \
   $(AMRLIB)/basic.f \
   $(AMRLIB)/outval.f \
@@ -137,12 +126,24 @@ SOURCES = \
   $(AMRLIB)/fss.f \
   $(AMRLIB)/zeroin.f \
   $(AMRLIB)/setflags.f \
-  $(AMRLIB)/shiftset.f \
+  $(AMRLIB)/shiftset2.f \
   $(AMRLIB)/conck.f \
   $(AMRLIB)/domshrink.f \
   $(AMRLIB)/domprep.f \
   $(AMRLIB)/domup.f \
   $(AMRLIB)/domcopy.f \
+  $(AMRLIB)/setdomflags.f \
+  $(AMRLIB)/setIndices.f \
+  $(AMRLIB)/coarseGridFlagSet.f \
+  $(AMRLIB)/addflags.f \
+  $(AMRLIB)/baseCheck.f \
+  $(AMRLIB)/drivesort.f \
+  $(AMRLIB)/flagcheck.f \
+  $(AMRLIB)/domgrid.f \
+  $(AMRLIB)/setPhysBndryFlags.f \
+  $(AMRLIB)/griddomup.f \
+  $(AMRLIB)/griddomcopy.f \
+  $(AMRLIB)/griddomshrink.f \
   $(AMRLIB)/coarsen.f \
   $(AMRLIB)/auxcoarsen.f \
   $(AMRLIB)/intcopy.f \
@@ -157,8 +158,7 @@ SOURCES = \
   $(AMRLIB)/opendatafile.f \
   $(AMRLIB)/init_alloc.f90 \
   $(AMRLIB)/restrt_alloc.f90 \
-  $(AMRLIB)/resize_alloc.f90 \
-# $(AMRLIB)/resize_alloc_static.f90 \
+  $(AMRLIB)/resize_alloc.f90
 
 
 

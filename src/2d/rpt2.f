@@ -1,12 +1,12 @@
 c
 c
 c     =====================================================
-      subroutine rpt2(ixy,maxm,meqn,mwaves,mbc,mx,
+      subroutine rpt2(ixy,maxm,meqn,maux,mwaves,mbc,mx,
      &                  ql,qr,aux1,aux2,aux3,
      &                  ilr,asdq,bmasdq,bpasdq)
 c     =====================================================
-      use geoclaw_module, only: grav,dry_tolerance,coordinate_system
-      use geoclaw_module, only: earth_radius,pi
+      use geoclaw_module, only: g => grav, tol => dry_tolerance
+      use geoclaw_module, only: coordinate_system,earth_radius,deg2rad
 
       implicit none
 c
@@ -15,9 +15,7 @@ c     Jacobian.
 
 c-----------------------last modified 1/10/05----------------------
 
-      integer ixy,maxm,meqn,mwaves,mbc,mx,ilr
-      integer maux  ! should be passed in or put into a module
-      parameter (maux=3)
+      integer ixy,maxm,meqn,maux,mwaves,mbc,mx,ilr
 
       double precision  ql(meqn,1-mbc:maxm+mbc)
       double precision  qr(meqn,1-mbc:maxm+mbc)
@@ -31,7 +29,7 @@ c-----------------------last modified 1/10/05----------------------
       double precision  s(3)
       double precision  r(3,3)
       double precision  beta(3)
-      double precision  g,tol,abs_tol
+      double precision  abs_tol
       double precision  hl,hr,hul,hur,hvl,hvr,vl,vr,ul,ur,bl,br
       double precision  uhat,vhat,hhat,roe1,roe3,s1,s2,s3,s1l,s3r
       double precision  delf1,delf2,delf3,dxdcd,dxdcu
@@ -39,9 +37,7 @@ c-----------------------last modified 1/10/05----------------------
 
       integer i,m,mw,mu,mv
 
-      g=grav
-      tol=dry_tolerance(1)
-      abs_tol=dry_tolerance(1)
+      abs_tol=tol
 
       if (ixy.eq.1) then
         mu = 2
@@ -51,14 +47,13 @@ c-----------------------last modified 1/10/05----------------------
         mv = 2
       endif
 
-
       do i=2-mbc,mx+mbc
 
-         hl=qr(1,i-1)
-         hr=ql(1,i)
-         hul=qr(mu,i-1)
-         hur=ql(mu,i)
-         hvl=qr(mv,i-1)
+         hl=qr(1,i-1) 
+         hr=ql(1,i) 
+         hul=qr(mu,i-1) 
+         hur=ql(mu,i) 
+         hvl=qr(mv,i-1) 
          hvr=ql(mv,i)
 
 c===========determine velocity from momentum===========================
@@ -90,11 +85,11 @@ c===========determine velocity from momentum===========================
       dxdcp = 1.d0
       dxdcm = 1.d0
 
-       if (hl.le.dry_tolerance(1).and.hr.le.dry_tolerance(1)) go to 90
+      if (hl <= tol .and. hr <= tol) go to 90
 
 *      !check and see if cell that transverse waves are going in is high and dry
        if (ilr.eq.1) then
-            eta = qr(1,i-1) + aux2(1,i-1)
+            eta = qr(1,i-1)  + aux2(1,i-1)
             topo1 = aux1(1,i-1)
             topo3 = aux3(1,i-1)
 c            s1 = vl-sqrt(g*hl)
@@ -112,15 +107,15 @@ c            s2 = 0.5d0*(s1+s3)
 
       if (coordinate_system.eq.2) then
          if (ixy.eq.2) then
-            dxdcp=(earth_radius*pi/180.d0)
+             dxdcp=(earth_radius*deg2rad)
             dxdcm = dxdcp
          else
             if (ilr.eq.1) then
-               dxdcp = earth_radius*pi*cos(aux3(3,i-1))/180.d0
-               dxdcm = earth_radius*pi*cos(aux1(3,i-1))/180.d0
+               dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
+               dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
             else
-               dxdcp = earth_radius*pi*cos(aux3(3,i))/180.d0
-               dxdcm = earth_radius*pi*cos(aux1(3,i))/180.d0
+               dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
+               dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
             endif
          endif
       endif
@@ -173,10 +168,12 @@ c============================================================================
 90      continue
 c============= compute fluctuations==========================================
 
-            do  m=1,meqn
-               bmasdq(m,i)=0.0d0
-               bpasdq(m,i)=0.0d0
-            enddo
+               bmasdq(1,i)=0.0d0
+               bpasdq(1,i)=0.0d0
+               bmasdq(2,i)=0.0d0
+               bpasdq(2,i)=0.0d0
+               bmasdq(3,i)=0.0d0
+               bpasdq(3,i)=0.0d0
             do  mw=1,3
                if (s(mw).lt.0.d0) then
                  bmasdq(1,i) =bmasdq(1,i) + dxdcm*s(mw)*beta(mw)*r(1,mw)
@@ -193,5 +190,6 @@ c========================================================================
 c
 
 c
+
       return
       end

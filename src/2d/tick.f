@@ -1,18 +1,16 @@
 c
 c  -------------------------------------------------------------
 c
-      subroutine tick(nvar,iout,nstart,nstop,cut,vtime,time,ichkpt,
-     &                naux,nout,tout,tchk,t0,rest)
+      subroutine tick(nvar,cut,nstart,vtime,time,naux,start_time,rest)
 c
-      use  geoclaw_module
+      use geoclaw_module
       use amr_module
-      implicit double precision (a-h,o-z)
 
+      implicit double precision (a-h,o-z)
+c     include  "call.i"
 
       logical    vtime, dumpout, dumpchk, rest
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
-      dimension tout(nout)
-      dimension tchk(maxout)
 
 c
 c :::::::::::::::::::::::::::: TICK :::::::::::::::::::::::::::::
@@ -41,36 +39,32 @@ c          each step) to keep track of when that level should
 c          have its error estimated and finer levels should be regridded.
 c ::::::::::::::::::::::::::::::::::::;::::::::::::::::::::::::::
 c
-      integer verbosity_regrid     
-c     # Eventually add this to new input params?
-c     # For now use verbosity, or set to 0 to suppress printing regrid info:
-      verbosity_regrid = method(4) 
 
       ncycle         = nstart
       call setbestsrc()     ! need at very start of run, including restart
-      if ( iout .eq. 0) iout  = iinfinity
-      if (ichkpt .eq. 0) ichkpt = iinfinity
-      nextout = 1
-      if (nout .gt. 0) then
-         tfinal = tout(nout)
-c        if this is a restart, make sure output times start after restart time
-         if (nstart .gt. 0) then
-            do ii = 1, nout
-              if (tout(ii) .gt. time) then
-                nextout = ii
-                go to 2
-              endif
-            end do
+      if (iout .eq. 0) then
+c        # output_style 1 or 2
+         iout  = iinfinity
+         nextout = 0
+         if (nout .gt. 0) then
+            nextout = 1
+            if (nstart .gt. 0) then
+c              # restart: make sure output times start after restart time
+               do ii = 1, nout
+                 if (tout(ii) .gt. time) then
+                   nextout = ii
+                   go to 2
+                 endif
+               end do
   2         continue
+            endif
          endif
-      else
-         tfinal  = rinfinity
       endif
 
       nextchk = 1
-      if (nstart .gt. 0 .and. ichkpt.lt.0) then
+      if ((nstart .gt. 0) .and. (checkpt_style.eq.2)) then
 c        if this is a restart, make sure chkpt times start after restart time
-         do ii = 1, -ichkpt
+         do ii = 1, nchkpt
            if (tchk(ii) .gt. time) then
               nextchk = ii
               go to 3
@@ -80,6 +74,7 @@ c        if this is a restart, make sure chkpt times start after restart time
          endif
 
       tlevel(1)      = time
+
       do 5 i       = 2, mxnest
        tlevel(i) = tlevel(1)
  5     continue
@@ -88,30 +83,36 @@ c  ------ start of coarse grid integration loop. ------------------
 c
  20   if (ncycle .ge. nstop .or. time .ge. tfinal) goto 999
 
-      if (nextout  .le. nout) then
-         outtime       = tout(nextout)
+      if (nout .gt. 0) then
+          if (nextout  .le. nout) then
+             outtime       = tout(nextout)
+          else
+             outtime       = rinfinity
+          endif
       else
-         outtime       = rinfinity
+          outtime = tfinal
       endif
 
-      if (nextchk  .le. -ichkpt) then
+      if (nextchk  .le. nchkpt) then
          chktime       = tchk(nextchk)
       else
          chktime       = rinfinity
       endif
 
-c     if (time.lt.outtime .and. time + possk(1) .ge. outtime) then
+      dumpout = .false.  !# may be reset below
+
       if (time.lt.outtime .and. time+1.001*possk(1) .ge. outtime) then
-c     apr 2010 mjb: modified so allow slightly larger timestep to
-c     hit output time exactly, instead of taking minuscule timestep
-c     should still be stable since increase dt in only 3rd digit.
 c        ## adjust time step  to hit outtime exactly, and make output
+c        #  apr 2010 mjb: modified so allow slightly larger timestep to
+c        #  hit output time exactly, instead of taking minuscule timestep
+c        #  should still be stable since increase dt in only 3rd digit.
          oldposs = possk(1)
          possk(1) = outtime - time
 c        write(*,*)" old possk is ", possk(1)
          diffdt = oldposs - possk(1)  ! if positive new step is smaller
 
-          if (method(4).ge.2) then    ! verbosity test to
+
+         if (.false.) then  
             write(*,122) diffdt,outtime  ! notify of change
  122        format(" Adjusting timestep by ",e10.3,
      .             " to hit output time of ",e12.6)
@@ -121,15 +122,19 @@ c           write(*,*)" new possk is ", possk(1)
               write(*,123) pctIncrease
  123          format(" New step is ",e8.2," % larger.",
      .               "  Should still be stable")
-             endif
-       endif
-         do 12 i = 2, mxnest
- 12         possk(i) = possk(i-1) / kratio(i-1)
-         nextout = nextout + 1
-        dumpout = .true.
-      else
-        dumpout = .false.
+              endif
+            endif
+
+
+         do i = 2, mxnest
+            possk(i) = possk(i-1) / kratio(i-1)
+            enddo
+         if (nout .gt. 0) then
+            nextout = nextout + 1
+            dumpout = .true.
+            endif
       endif
+
 
       if (time.lt.chktime .and. time + possk(1) .ge. chktime) then
 c        ## adjust time step  to hit chktime exactly, and do checkpointing
@@ -142,12 +147,12 @@ c        ## adjust time step  to hit chktime exactly, and do checkpointing
         dumpchk = .false.
       endif
 
-c  take output stuff from here - put it back at end.
 c
-          level        = 1
-          ntogo(level) = 1
-          do 10 i = 1, maxlv
- 10          dtnew(i)  = rinfinity
+      level        = 1
+      ntogo(level) = 1
+      do i = 1, maxlv
+         dtnew(i)  = rinfinity
+      enddo
 c
 c     ------------- regridding  time?  ---------
 c
@@ -180,7 +185,7 @@ c level 'lbase' stays fixed.
 c
           if (rprint) write(outunit,101) lbase
 101       format(8h  level ,i5,32h  stays fixed during regridding )
-          call regrid(nvar,lbase,cut,naux,t0)
+          call regrid(nvar,lbase,cut,naux,start_time)
           call setbestsrc()     ! need at every grid change
 c         call conck(1,nvar,naux,time,rest)
 c         call outtre(lstart(lbase+1),.true.,nvar,naux)
@@ -261,9 +266,10 @@ c
 c                same level goes again. check for ok time step
  106             if ((possk(level)-dtnew(level))/dtnew(level)
      .                .gt. .05)  then
-                    write(6,*)" ***adjusting timestep for level ",level
-                    write(6,*)"   old ntogo dt ",ntogo(level),
-     .                         possk(level)
+
+                    print *," ***adjusting timestep for level"
+                    print *,"    old ntogo dt",ntogo(level),possk(level)
+
 c                   adjust time steps for this and finer levels
                     ntogo(level) = ntogo(level) + 1
                     possk(level) = (tlevel(level-1)-tlevel(level))/
@@ -272,7 +278,7 @@ c                   adjust time steps for this and finer levels
                        kratio(level-1) = ceiling(possk(level-1) /
      .                                           possk(level))
                     endif
-                 write(6,*)"   new ntogo dt ",ntogo(level),possk(level)
+                    print *,"   new ntogo dt ",ntogo(level),possk(level)
                     go to 106
                  endif
                  if (ntogo(level) .gt. 100) then
@@ -299,9 +305,10 @@ c
           ncycle  = ncycle + 1
           call conck(1,nvar,naux,time,rest)
 
-       if ((ichkpt.gt.0 .and. mod(ncycle,ichkpt).eq.0) 
-     &      .or. dumpchk) then
+       if ((checkpt_style.eq.3 .and. 
+     &      mod(ncycle,checkpt_interval).eq.0) .or. dumpchk) then
                 call check(ncycle,time,nvar,naux)
+                dumpchk = .true.
        endif
 
        if ((mod(ncycle,iout).eq.0) .or. dumpout) then
@@ -309,13 +316,12 @@ c
          if (printout) call outtre(mstart,.true.,nvar,naux)
        endif
 
-      if ( .not. vtime) go to 201   
-c
-c      ## adjust time steps if variable time step and/or variable refinement ratios in time
-c
+      if ( .not.vtime) goto 201
+
+        ! Adjust time steps if variable time step and/or variable
+        ! refinement ratios in time
         if (.not. varRefTime) then
-c
-c         find new dt for next cycle (passed back from integration routine).
+          ! find new dt for next cycle (passed back from integration routine).
            do 115 i = 2, lfine
              ii = lfine+1-i
              dtnew(ii) = min(dtnew(ii),dtnew(ii+1)*kratio(ii))
@@ -323,7 +329,6 @@ c         find new dt for next cycle (passed back from integration routine).
            possk(1) = dtnew(1)
            do 120 i = 2, mxnest
  120         possk(i) = possk(i-1) / kratio(i-1)
-
         else  ! since refinement ratio in time can change need to set new timesteps in different order
 c             ! use same alg. as when setting refinement when first make new fine grids
           possk(1) = dtnew(1)
@@ -336,7 +341,8 @@ c             ! use same alg. as when setting refinement when first make new fin
                possk(i)    = possk(i-1)/kratio(i-1)        ! set exact timestep on this level
            endif
  125    continue
-        
+
+
       endif
 
  201  go to 20
@@ -356,29 +362,23 @@ c         # warn the user that calculation finished prematurely
 c
 c  # final output (unless we just did it above)
 c
-      if (.not. dumpout) then
-         if (mod(ncycle,iout).ne.0) then
-           call valout(1,lfine,time,nvar,naux)
-           if (printout) call outtre(mstart,.true.,nvar,naux)
-         endif
+      if (nout > 0) then
+        if (((iout.lt.iinfinity) .and. (mod(ncycle,iout).ne.0))
+     &            .or. ((nout.gt.0) .and. (tout(nout).eq.tfinal) .and.
+     &                  (.not. dumpout))) then
+             call valout(1,lfine,time,nvar,naux)
+             if (printout) call outtre(mstart,.true.,nvar,naux)
+        endif
       endif
 
 c  # checkpoint everything for possible future restart
-c  # (unless we just did it based on ichkpt or dumpchk)
+c  # (unless we just did it based on dumpchk)
 c
-c  # don't checkpoint at all if user set ichkpt=0
 
-      if (ichkpt .gt. 0) then
-         if ((ncycle/ichkpt)*ichkpt .ne. ncycle) then
+      if ((checkpt_style .gt. 0) .and. (.not. dumpchk)) then
            call check(ncycle,time,nvar,naux)
          endif
-       endif
 
-      if (ichkpt .lt. 0) then
-         if (.not. dumpchk) then
-           call check(ncycle,time,nvar,naux)
-         endif
-       endif
-
+      write(6,*) "Done integrating to time ",time
       return
       end

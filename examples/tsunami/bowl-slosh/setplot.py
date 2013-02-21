@@ -36,7 +36,7 @@ def setplot(plotdata):
         # The cell will be plotted as dry if h < drytol.
         # The best value to use often depends on the application and can
         # be set here (measured in meters):
-        current_data.user.drytol = 1.e-3
+        current_data.user["drytol"] = 1.e-3
 
     plotdata.beforeframe = set_drytol
 
@@ -52,7 +52,7 @@ def setplot(plotdata):
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = geoplot.surface_or_depth
+    plotitem.plot_var = geoplot.surface
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.1
     plotitem.pcolor_cmax = 0.1
@@ -96,22 +96,20 @@ def setplot(plotdata):
     plotaxes.title = 'Cross section at y=0'
     def plot_topo_xsec(current_data):
         from pylab import plot, hold, cos,sin,where,legend,nan
-        x = current_data.x
-        y = current_data.y
         t = current_data.t
-        q = current_data.q
-        my2 = q.shape[2] / 2.
-        x = x[:,my2]
-        y = y[:,my2]
+
         hold(True)
-        #topo = q[:,my2,3] - q[:,my2,0]  # should equal B below
-        #plot(x, topo, 'g')
+        x = linspace(-2,2,201)
+        y = 0.
         B = h0*(x**2 + y**2)/a**2 - h0
         eta1 = sigma*h0/a**2 * (2.*x*cos(omega*t) + 2.*y*sin(omega*t) -sigma)
         etatrue = where(eta1>B, eta1, nan)
-        plot(x, etatrue, 'r')
-        legend(['computed','true'])
-        plot(x, B, 'g')
+        plot(x, etatrue, 'r', label="true solution", linewidth=2)
+        plot(x, B, 'g', label="bathymetry")
+        ## plot([0],[-1],'kx',label="Level 1")  # shouldn't show up in plots,
+        ## plot([0],[-1],'bo',label="Level 2")  # but will produced desired legend
+        plot([0],[-1],'bo',label="Computed")  ## need to fix plotstyle
+        legend()
         hold(False)
     plotaxes.afteraxes = plot_topo_xsec
 
@@ -119,15 +117,21 @@ def setplot(plotdata):
 
     def xsec(current_data):
         # Return x value and surface eta at this point, along y=0
+        from pylab import find,ravel
         x = current_data.x
+        y = current_data.y
+        dy = current_data.dy
         q = current_data.q
-        my2 = q.shape[2] / 2.
-        eta_slice = q[3,:,my2]
-        return x[:,my2], eta_slice
+
+        ij = find((y <= dy/2.) & (y > -dy/2.))
+        x_slice = ravel(x)[ij]
+        eta_slice = ravel(q[3,:,:])[ij]
+        return x_slice, eta_slice
 
     plotitem.map_2d_to_1d = xsec
-    plotitem.plotstyle = 'b-'
-    plotitem.amr_show = [0,1]  # only plot on level 2
+    plotitem.plotstyle = 'kx'     ## need to be able to set amr_plotstyle
+    plotitem.kwargs = {'markersize':3}
+    plotitem.amr_show = [1]  # plot on all levels
 
 
     #-----------------------------------------

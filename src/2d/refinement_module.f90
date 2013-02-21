@@ -9,21 +9,10 @@ module refinement_module
     ! ========================================================================
     !  Refinement Criteria
     ! ========================================================================
-    real(kind=8), allocatable :: wave_tolerance(:)
+    real(kind=8) :: wave_tolerance
     real(kind=8), allocatable :: speed_tolerance(:)
     real(kind=8) :: deep_depth
     integer :: max_level_deep
-    
-    ! ========================================================================
-    !  Refinement Regions
-    ! ========================================================================
-    type region_type
-        integer :: min_level,max_level
-        real(kind=8) :: x_low,y_low,x_hi,y_hi,t_low,t_hi
-    end type region_type
-    
-    integer :: num_regions
-    type(region_type), allocatable :: regions(:)
     
     ! ========================================================================
     !  Flowgrades - Not updated yet, use at your own risk
@@ -41,7 +30,7 @@ contains
     subroutine set_refinement(file_name)
         
         use amr_module, only: mxnest
-        use geoclaw_module, only: num_layers
+        use utility_module, only: get_value_count
         
         implicit none
         
@@ -51,6 +40,7 @@ contains
         ! Locals
         integer, parameter :: unit = 127
         integer :: i
+        character(len=128) :: line
 
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '--------------------------------------------'
@@ -64,23 +54,12 @@ contains
         endif
 
         ! Basic criteria
-        allocate(wave_tolerance(num_layers))
         read(unit,*) wave_tolerance
-        allocate(speed_tolerance(mxnest))
-        read(unit,*) (speed_tolerance(i),i=1,mxnest)
+        read(unit,'(a)') line
+        allocate(speed_tolerance(get_value_count(line)))
+        read(line,*) speed_tolerance
         read(unit,*) deep_depth
         read(unit,*) max_level_deep
-        read(unit,*)
-        
-        ! Refinement region data
-        read(unit,"(i2)") num_regions
-        allocate(regions(num_regions))
-        do i=1,num_regions
-            read(unit,*) regions(i)%min_level, regions(i)%max_level, &
-                         regions(i)%t_low, regions(i)%t_hi, &
-                         regions(i)%x_low, regions(i)%x_hi, &
-                         regions(i)%y_low, regions(i)%y_hi
-        enddo
         close(unit)
         
         ! Write out data to parameter file
@@ -89,14 +68,6 @@ contains
         write(GEO_PARM_UNIT,*) '   maxleveldeep:', max_level_deep
         write(GEO_PARM_UNIT,*) '   depthdeep:', deep_depth
         write(GEO_PARM_UNIT,*) ''
-        write(GEO_PARM_UNIT,*) '  num_regions = ',num_regions
-        write(GEO_PARM_UNIT,*) '  minlevel, maxlevel, tlow, thi, xlow, xhi, ylow, yhigh values:'
-        do i=1,num_regions
-            write(GEO_PARM_UNIT,*) regions(i)%min_level, regions(i)%max_level, &
-                                   regions(i)%t_low, regions(i)%t_hi, &
-                                   regions(i)%x_low, regions(i)%x_hi, &
-                                   regions(i)%y_low, regions(i)%y_hi
-        enddo
         
     end subroutine set_refinement
     

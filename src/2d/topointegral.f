@@ -99,8 +99,7 @@ c           # of interest in the array zz
      &                                         xim,xip,yjm,yjp,
      &                                         x1,x2,y1,y2,
      &                                         dxx,dyy,
-     &                                         z11,z12,z21,z22,
-     &                                         earth_radius,pi)
+     &                                         z11,z12,z21,z22)
                 else
                   write(*,*)  'TOPOINTEGRAL: coordinate_system error'
                   endif

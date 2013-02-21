@@ -1,5 +1,7 @@
 module qinit_module
 
+    use amr_module, only: rinfinity
+
     implicit none
     save
     
@@ -8,7 +10,7 @@ module qinit_module
     
     ! Work array
     real(kind=8), private, allocatable :: qinit(:)
-      
+
     ! Geometry
     real(kind=8) :: x_low_qinit
     real(kind=8) :: y_low_qinit
@@ -28,7 +30,7 @@ contains
 
     subroutine add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use geoclaw_module, only: num_layers,eta_init
+        use geoclaw_module, only: sea_level
     
         implicit none
     
@@ -45,7 +47,7 @@ contains
         ! Topography integral function
         real(kind=8) :: topointegral
         
-        if (qinit_type > 0 .and. num_layers == 1) then
+        if (qinit_type > 0) then
             do i=1-mbc,mx+mbc
                 x = xlower + (i-0.5d0)*dx
                 xim = x - 0.5d0*dx
@@ -73,7 +75,7 @@ contains
                         dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(2,i,j))
 
                         if (qinit_type < 4) then 
-                            if (aux(1,i,j) <= eta_init(1)) then
+                            if (aux(1,i,j) <= sea_level) then
                                 q(qinit_type,i,j) = q(qinit_type,i,j) + dq
                             endif
                         else if (qinit_type == 4) then
@@ -82,10 +84,6 @@ contains
                     endif
                 enddo
             enddo
-        else if (qinit_type > 0 .and. num_layers > 1) then
-            ! Layers > 1 is currently unsupported, partially due to the topography
-            ! integral that is required.
-            stop "ERROR:  qinit_type > 0 and num_layers > 1 is unsupported!"
         endif
         
     end subroutine add_perturbation
@@ -128,7 +126,7 @@ contains
         write(GEO_PARM_UNIT,*) '   min_level, max_level, qinit_fname:'
         write(GEO_PARM_UNIT,*)  min_level_qinit, max_level_qinit, qinit_fname
         
-        call read_qinit(qinit_fname)       
+        call read_qinit(qinit_fname)
     
     end subroutine set_qinit
 

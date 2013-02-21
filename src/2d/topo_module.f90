@@ -20,7 +20,7 @@ module topo_module
     double precision, allocatable :: topowork(:)
 
     ! Topography file data
-    integer :: topo_type
+    integer :: test_topography
     character(len=150), allocatable :: topofname(:)
     integer :: mtopofiles,mtoposize
     double precision, allocatable :: xlowtopo(:), ylowtopo(:), tlowtopo(:)
@@ -84,11 +84,10 @@ contains
         endif
         
         ! Read in topography specification type
-        read(iunit,"(i1)") topo_type
-        print *,topo_type
+        read(iunit,"(i1)") test_topography
         
         ! Primary topography type, read in topography files specified
-        if (topo_type == 0) then
+        if (test_topography == 0) then
             read(iunit,*) mtopofiles
 
             if (mtopofiles == 0) then
@@ -180,13 +179,13 @@ contains
             write(GEO_PARM_UNIT,*) ' '
 
         ! Simple jump discontinuity in bathymetry
-        else if (topo_type == 1) then
+        else if (test_topography == 1) then
             read(iunit,"(d16.8)") topo_location
             read(iunit,"(d16.8)") topo_left
             read(iunit,"(d16.8)") topo_right
             
         ! Idealized ocean shelf
-        else if (topo_type == 2 .or. topo_type == 3) then
+        else if (test_topography == 2 .or. test_topography == 3) then
             read(iunit,"(d16.8)") topo_x0
             read(iunit,"(d16.8)") topo_x1
             read(iunit,"(d16.8)") topo_x2
@@ -196,7 +195,7 @@ contains
             topo_shelf_slope = (topo_basin_depth - topo_shelf_depth) &
                                         / (topo_x0 - topo_x1)
         else
-            print *,"Error:  Unknown topography type ",topo_type
+            print *,"Error:  Unknown test topography type ",test_topography
             stop            
         endif
 
@@ -454,13 +453,13 @@ contains
         ! Arguments
         real(kind=8), intent(in) :: x,y
         
-        if (topo_type == 1) then
+        if (test_topography == 1) then
             if (x < topo_location) then
                 topography = topo_left
             else
                 topography = topo_right
             endif
-        else if (topo_type == 2) then
+        else if (test_topography == 2) then
             if (x < topo_x0) then
                 topography = topo_basin_depth
             else if (topo_x0 <= x .and. x < topo_x1) then

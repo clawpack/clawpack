@@ -1,8 +1,18 @@
 subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
+      
+    use storm_module, only: wind_forcing, pressure_forcing
+    use storm_module, only: rho_air, wind_drag, ambient_pressure
+    use storm_module, only: wind_index, pressure_index
+    use storm_module, only: storm_direction, storm_location
 
-    use multilayer_module, only: rho,eta,num_layers
-    use hurricane_module
-    use geoclaw_module
+    use friction_module, only: friction_index
+
+    use geoclaw_module, only: g => grav, dry_tolerance, RAD2DEG, pi
+    use geoclaw_module, only: coriolis_forcing, coriolis
+    use geoclaw_module, only: friction_forcing, manning_coefficient
+    use geoclaw_module, only: spherical_distance, coordinate_system
+
+    use amr_module, only: mcapa, cflv1
 
     implicit none
     
@@ -10,220 +20,254 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     integer, intent(in) :: maxmx,maxmy,meqn,mbc,mx,my,maux
     double precision, intent(in) :: xlower,ylower,dx,dy,t,dt
     
-    ! Ouput
+    ! Output
     double precision, intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
     double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    
+
     ! Locals
-    integer :: i,j
-    double precision :: yc
-    ! Friction
-    double precision :: h(2),g,coeff,tol,speed,D
-    ! Wind and pressure
-    double precision :: tau,wind_speed,P_atmos_x,P_atmos_y
-    ! Coriolis source term
-    ! angular velocity of earth = 2.d0*pi/(86400.d0) 
-!     double precision, parameter :: OMEGA = 7.2722052166430395d-05
-!     double precision, parameter :: OMEGA = 7.2722052166430395d-03 ! Incorrect value but used for testing
-    ! For beta-plane approximation, center of domain's latitude 
-    double precision :: fdt,theta,a11,a12,a21,a22,hu,hv
-    
-    integer :: mn,n
+    integer :: i, j
+    real(kind=8) :: xm, xc, xp, ym, yc, yp, dx_meters, dy_meters
+    real(kind=8) :: h, hu, hv, u, v, hu0, hv0
+    real(kind=8) :: tau, wind_speed, theta, phi, psi, P_gradient(2), S(2), sloc(2)
+    real(kind=8) :: fdt, Ddt, a(2,2)
 
-    ! Check for NANs in solution:
-!     call check4nans(maxmx,maxmy,meqn,mbc,mx,my,q,t,2)
+    ! Physics parameters
+    real(kind=8), parameter :: rho = 1025.d0
+    real(kind=8), parameter :: H_break = 2.d0
+    real(kind=8), parameter :: theta_f = 10.d0
+    real(kind=8), parameter :: gamma_f = 4.d0 / 3.d0
 
-    g=grav
-    coeff = coeffmanning
-    tol = 1.d-30  ! To prevent divide by zero in gamma
+    ! Algorithm parameters
+    ! Here to prevent a divide by zero in friction term
+    real(kind=8), parameter :: friction_tolerance = 1.0d-30
 
-    ! friction--------------------------------------------------------
-    if (coeffmanning > 0.d0 .and. friction_forcing > 0) then
-        ! Constant coefficient of friction
-        if (ifriction == 1) then
-            D = coeff
-            do i=1,mx
-                do j=1,my
-                    ! Check to see which layer we are doing this on
-                    if (num_layers > 1) then
-                        h(1) = q(1,i,j) / rho(1)
-                        h(2) = q(4,i,j) / rho(2)
-                    else
-                        h(1) = q(1,i,j)
-                        h(2) = 0.d0
-                    endif
-            
-                    ! Bottom layer wet, apply to bottom layer
-                    if (h(2) > tol) then
-                        ! Exactly integrate and modify bottom layer momentum
-                        q(5,i,j) = q(5,i,j) * exp(-D*dt)
-                        q(6,i,j) = q(6,i,j) * exp(-D*dt)
-                
-                    ! Only top layer wet, apply to top layer only
-                    else if (h(1) > tol) then
-                        ! Set bottom layer momentum to zero
-                        if (num_layers > 1) q(5:6,i,j) = 0.d0
-                        
-                        ! Exactly integrate and modify top layer momentum
-                        q(2,i,j) = q(2,i,j) * exp(-D*dt)
-                        q(3,i,j) = q(3,i,j) * exp(-D*dt)
-                
-                    ! Neither layer wet, set momentum to zero
-                    else
-                        q(2:3,i,j) = 0.d0
-                        if (num_layers > 1) q(5:6,i,j) = 0.d0
-                    endif
-                enddo
-            enddo
-        ! Manning-N friction
-        else if (ifriction == 2) then
-            do i=1,mx
-                do j=1,my
-                    ! Check to see which layer we are doing this on
-                    if (num_layers > 1) then
-                        h(1) = q(1,i,j) / rho(1)
-                        h(2) = q(4,i,j) / rho(2)
-                    else
-                        h(1) = q(1,i,j)
-                        h(2) = 0.d0
-                    endif
-            
-                    ! Bottom layer wet, apply to bottom layer
-                    if (h(2) > tol) then
-                        ! Extract speed of bottom layer
-                        speed = sqrt(q(5,i,j)**2 + q(6,i,j)**2) / q(4,i,j)
-                                    
-                        ! Calculate drag coefficient 
-                        D = coeff**2 * g * sum(h)**(-7/3) * speed
-                
-                        ! Exactly integrate and modify bottom layer momentum
-                        q(5,i,j) = q(5,i,j) * exp(-D*dt)
-                        q(6,i,j) = q(6,i,j) * exp(-D*dt)
-                
-                    ! Only top layer wet, apply to top layer only
-                    else if (h(1) > tol) then
-                        ! Set bottom layer momentum to zero
-                        if (num_layers > 1) q(5:6,i,j) = 0.d0
-                
-                        ! Extract speed of top layer
-                        speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2) / q(1,i,j)
-                
-                        ! Calculate drag coefficient
-                        D = coeff**2 * g * sum(h)**(-7/3) * speed
-                        
-                        ! Exactly integrate and modify top layer momentum
-                        q(2,i,j) = q(2,i,j) * exp(-D*dt)
-                        q(3,i,j) = q(3,i,j) * exp(-D*dt)
-                
-                    ! Neither layer wet, set momentum to zero
-                    else
-                        q(2:3,i,j) = 0.d0
-                        if (num_layers > 1) q(5:6,i,j) = 0.d0
-                    endif
-                enddo
-            enddo
-        endif
-    endif
-    ! ----------------------------------------------------------------
+    character(len=*), parameter :: CFL_FORMAT =   &
+                        "('*** WARNING *** Courant number  =', d12.4," // &
+                         "'  is larger than input cfl_max = ', d12.4," // &
+                         "' in src2.')"
 
-    ! coriolis--------------------------------------------------------
-    if (icoriolis > 0) then
-        do j=1,my
-            yc = ylower + (j-.5d0)*dy
-            fdt = coriolis(yc) * dt
-            do i=1,mx
-                !dq/dt = 2w*sin(latitude)*[0 1 ; -1 0] q = Aq
-                !e^Adt = [a11 a12; a21 a22] + I
-                a11 = 1.d0 - 0.5d0 * fdt**2 + fdt**4 / 24.d0
-                a12 = fdt - fdt**3 / 6.0d0
-                a21 = -fdt + fdt**3 / 6.0d0
-                a22 = a11
-                hu = q(2,i,j)
-                hv = q(3,i,j)
-                !q = e^Adt * q0
-                q(2,i,j) = hu * a11 + hv * a12
-                q(3,i,j) = hu * a21 + hv * a22
-                if (num_layers > 1) then
-                    hu = q(5,i,j)
-                    hv = q(6,i,j)
-                    q(5,i,j) = hu * a11 + hv * a12
-                    q(6,i,j) = hu * a21 + hv * a22
-                endif
-            enddo
-        enddo
-    endif
-    ! ----------------------------------------------------------------
+    real(kind=8) :: dtdx, dtdy, cfl
 
-    ! wind -----------------------------------------------------------
-    if (wind_forcing) then
-        ! Here we have to take into account geoclaw which we use for the 
-        ! single layer case.  It needs to divide by the water's density
-        if (num_layers > 1) then
-            do i=1,mx
-                do j=1,my
-                    if (q(1,i,j) / rho(1) > drytolerance) then
-                        wind_speed = sqrt(aux(4,i,j)**2 + aux(5,i,j)**2)
-                        if (wind_speed > wind_tolerance) then
-                            tau = wind_drag(wind_speed) * rho_air * wind_speed
-                            q(2,i,j) = q(2,i,j) + dt * tau * aux(4,i,j)
-                            q(3,i,j) = q(3,i,j) + dt * tau * aux(5,i,j)
-                        endif
-                    endif
-                enddo
-            enddo
-        else
-            do i=1,mx
-                do j=1,my
-    !                 if (abs(q(i,j,1)) > drytolerance) then
-                        wind_speed = sqrt(aux(4,i,j)**2 + aux(5,i,j)**2)
-                        tau = wind_drag(wind_speed) * rho_air * wind_speed
-                        q(2,i,j) = q(2,i,j) + dt * tau * aux(4,i,j) / rho(1)
-                        q(3,i,j) = q(3,i,j) + dt * tau * aux(5,i,j) / rho(1)
-    !                 endif
-                enddo
-            enddo
-        endif
-    endif
-    ! ----------------------------------------------------------------
+    ! CFL check parameters
+    dtdx = dt / dx
+    dtdy = dt / dy
 
-    ! atmosphere -----------------------------------------------------
-    if (pressure_forcing) then
+    ! Get storm direction for this time
+    theta = storm_direction(t)
+    sloc = storm_location(t)
+
+    ! Primary loops over grid
+    do j=1,my
+        ym = ylower + (j - 1.d0) * dy
+        yc = ylower + (j - 0.5d0) * dy
+        yp = ylower + j * dy
+        
+        fdt = coriolis(yc) * dt * 0.5d0
         do i=1,mx
-            do j=1,my                  
-                h = 0.d0  
-                if (num_layers > 1) then
-                    h(1) = q(1,i,j) / rho(1)
-                    h(2) = q(4,i,j) / rho(2)
+            xm = xlower + (i - 1.d0) * dx
+            xc = xlower + (i - 0.5d0) * dx
+            xp = xlower + i * dx
+
+            if (coordinate_system == 2) then
+                ! Convert distance in lat-long to meters
+                dx_meters = spherical_distance(xp,yc,xm,yc)
+                dy_meters = spherical_distance(xc,yp,xc,ym)
+            else
+                dx_meters = dx
+                dy_meters = dy
+            endif
+
+            ! State
+            h = q(1,i,j)
+            if (h < dry_tolerance) then
+                q(2,i,j) = 0.d0
+                q(3,i,j) = 0.d0
+            else
+                hu0 = q(2,i,j)
+                hv0 = q(3,i,j)
+                S = 0.d0
+
+                ! Wind
+                psi = atan2(yc - sloc(2), xc - sloc(1))
+                if (theta > psi) then
+                    phi = (2.d0 * pi - theta + psi) * RAD2DEG
                 else
-                    h(1) = q(1,i,j)
+                    phi = (psi - theta) * RAD2DEG 
                 endif
-                
-                ! Calculate gradient of Pressure
-                P_atmos_x = (aux(6,i+1,j) - aux(6,i-1,j)) / (2.d0*dx)
-                P_atmos_y = (aux(6,i,j+1) - aux(6,i,j-1)) / (2.d0*dy)
-                if (abs(P_atmos_x) < pressure_tolerance) then
-                    P_atmos_x = 0.d0
+                wind_speed = sqrt(aux(wind_index,i,j)**2 + aux(wind_index+1,i,j)**2)
+                tau = wind_drag(wind_speed, phi) * rho_air * wind_speed / rho
+                S = S + tau * aux(wind_index:wind_index+1,i,j)
+
+                ! Pressure
+                P_gradient(1) = (aux(pressure_index,i+1,j) &
+                                - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
+                P_gradient(2) = (aux(pressure_index,i,j+1) &
+                                - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
+                S = S - h * P_gradient / rho
+                aux(pressure_index+1,i,j) = sqrt(S(1)**2 + S(2)**2)
+!                 aux(pressure_index+1,i,j) = wind_drag(wind_speed, phi)
+!                 if (20.d0 < phi .and. phi <= 150.d0) then
+!                     aux(pressure_index+2,i,j) = 1.d0
+!                 else if (150.d0 < phi .and. phi <= 240.d0) then
+!                     aux(pressure_index+2,i,j) = 2.d0
+!                 else
+!                     aux(pressure_index+2,i,j) = 3.d0
+!                 endif
+!                 if (310.d0 < phi .and. phi <= 360.d0) then
+!                     aux(pressure_index+2,i,j) = 1.d0
+!                 else if (0.d0 < phi .and. phi <= 85.d0) then
+!                     aux(pressure_index+2,i,j) = 2.d0
+!                 ! Right - Rear sector
+!                 else if (85.d0 < phi .and. phi <= 195.d0) then
+!                     aux(pressure_index+2,i,j) = 3.d0
+
+!                 ! Rear - Left sector
+!                 else if (195.d0 < phi .and. phi <= 310.d0) then
+!                     aux(pressure_index+2,i,j) = 4.d0
+!                 endif
+
+                ! Friction and Coriolis
+                Ddt = g * aux(friction_index,i,j)**2 / h**(7.d0 / 3.d0) &
+                        * (1.d0 + (H_break / h)**theta_f)**(gamma_f / theta_f) &
+                        * sqrt(hu0**2 + hv0**2) * dt * 0.5d0
+
+                ! Matrix I + dt / 2 A
+                a(1,:) = [1.d0 - Ddt, fdt]
+                a(2,:) = [-fdt, 1.d0 - Ddt]
+                hu = a(1,1) * hu0 + a(1,2) * hv0 + dt * S(1)
+                hv = a(2,1) * hu0 + a(2,2) * hv0 + dt * S(2)
+
+                ! Matrix (I - dt A / 2)^-1
+                a(1,:) = [1.d0 + Ddt, -fdt]
+                a(2,:) = [fdt, 1.d0 + Ddt]
+                a = a / ((1.d0 + Ddt)**2 + fdt**2)
+
+                ! Update q
+                q(2,i,j) = hu * a(1,1) + hv * a(1,2)
+                q(3,i,j) = hu * a(2,1) + hv * a(2,2)
+
+                ! Check CFL estimate
+                if (mcapa > 0) then
+                    dtdx = dtdx / aux(mcapa,i,j)
+                    dtdy = dtdy / aux(mcapa,i,j)
                 endif
-                if (abs(P_atmos_y) < pressure_tolerance) then
-                    P_atmos_y = 0.d0
+                u = q(2,i,j) / q(1,i,j)
+                v = q(3,i,j) / q(1,i,j)
+                cfl = max(dtdx * (u - sqrt(g * h)), dtdx * (u + sqrt(g * h)), &
+                          dtdy * (v - sqrt(g * h)), dtdy * (v + sqrt(g * h)))
+                if (cfl > cflv1) then
+                    print CFL_FORMAT, cfl,cflv1
+                    print "('h,u,v(',i3,',',i3,') = ',4d12.4)", i,j,h,u,v
                 endif
-                
-                if (num_layers > 1) then
-                    if (h(1) > drytolerance) then
-                        q(2,i,j) = q(2,i,j) - dt * h(1) * P_atmos_x
-                        q(3,i,j) = q(3,i,j) - dt * h(1) * P_atmos_y
-                    else if (h(2) > drytolerance) then
-                        q(5,i,j) = q(5,i,j) - dt * h(2) * P_atmos_x
-                        q(6,i,j) = q(6,i,j) - dt * h(2) * P_atmos_y
-                    endif
-                else
-                    if (h(1) > drytolerance) then
-                        q(2,i,j) = q(2,i,j) - dt * h(1) * P_atmos_x / rho(1)
-                        q(3,i,j) = q(3,i,j) - dt * h(1) * P_atmos_y / rho(1)
-                    endif
-                endif
-            enddo
+
+                aux(pressure_index+2,i,j) = sqrt((q(2,i,j) - hu0 - dt*S(1))**2  &
+                                               + (q(3,i,j) - hv0 - dt*S(2))**2)
+            endif
         enddo
-    endif
-    ! ----------------------------------------------------------------
+    enddo
+
+!     ! wind -----------------------------------------------------------
+!     if (wind_forcing) then
+!         ! Force only the top layer of water, assumes top most layer is last
+!         ! to go dry
+!         do j=1,my
+!             do i=1,mx
+!                 if (q(1,i,j) > dry_tolerance) then
+!                     wind_speed = sqrt(aux(wind_index,i,j)**2 &
+!                                     + aux(wind_index+1,i,j)**2)
+!                     if (wind_speed > wind_tolerance) then
+!                         tau = wind_drag(wind_speed) * rho_air * wind_speed / rho
+!                         q(2,i,j) = q(2,i,j) + dt * tau * aux(wind_index,i,j)
+!                         q(3,i,j) = q(3,i,j) + dt * tau * aux(wind_index+1,i,j)
+!                     endif
+!                 endif
+!             enddo
+!         enddo
+!     endif
+!     ! ----------------------------------------------------------------
+
+!     ! Atmosphere Pressure --------------------------------------------
+!     if (pressure_forcing) then
+!         do j=1,my  
+!             ym = ylower + (j - 1.d0) * dy
+!             yc = ylower + (j - 0.5d0) * dy
+!             yp = ylower + j * dy
+!             do i=1,mx  
+!                 xm = xlower + (i - 1.d0) * dx
+!                 xc = xlower + (i - 0.5d0) * dx
+!                 xp = xlower + i * dx
+                
+!                 if (coordinate_system == 2) then
+!                     ! Convert distance in lat-long to meters
+!                     dx_meters = spherical_distance(xp,yc,xm,yc)
+!                     dy_meters = spherical_distance(xc,yp,xc,ym)
+!                 else
+!                     dx_meters = dx
+!                     dy_meters = dy
+!                 endif
+
+!                 ! Extract depths
+!                 h = q(1,i,j)
+
+!                 ! Calculate gradient of Pressure
+!                 if (abs(aux(pressure_index,i,j) - ambient_pressure)      &
+!                                                     >= pressure_tolerance) then
+!                     P_atmos_x = (aux(pressure_index,i+1,j) &
+!                                 - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
+!                     P_atmos_y = (aux(pressure_index,i,j+1) &
+!                                 - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
+
+!                     ! Modify momentum in each layer
+!                     if (h > dry_tolerance) then
+!                         q(2, i, j) = q(2, i, j) - dt * h * P_atmos_x / rho
+!                         q(3, i, j) = q(3, i, j) - dt * h * P_atmos_y / rho
+!                     end if
+!                 endif
+!             enddo
+!         enddo
+!     endif
+
+!     ! ----------------------------------------------------------------
+!     ! Friction source term - Use backward Euler to solve
+!     ! Hybrid friction formula with a spatially varying Manning's-N factor
+!     if (friction_forcing) then
+!         do j=1,my
+!             do i=1,mx
+!                 if (q(1,i,j) < friction_tolerance) then
+!                     q(2:3,i,j) = 0.d0
+!                 else
+!                     tau = g * aux(friction_index,i,j)**2 / q(1,i,j)**(7.d0 / 3.d0) &
+!                             * (1.d0 + (H_break / q(1,i,j))**theta_f)**(gamma_f / theta_f) &
+!                             * sqrt(q(2,i,j)**2 + q(3,i,j)**2)
+!                     q(2,i,j) = q(2,i,j) / (1.d0 + dt * tau)
+!                     q(3,i,j) = q(3,i,j) / (1.d0 + dt * tau)
+
+!                 endif
+!             enddo
+!         enddo
+!     endif
+!     ! End of friction source term
+
+!     ! Coriolis source term
+!     ! Use backward Euler to solve, q_t = A q -> q^n+1 = (I + dt * A)^-1 q^n
+!     if (coriolis_forcing) then
+!         do j=1,my
+!             yc = ylower + (j - 0.5d0) * dy
+!             fdt = coriolis(yc) * dt ! Calculate f dependent on coordinate system
+
+!             ! Calculate matrix components
+!             a(1,:) = [1.d0,  fdt]
+!             a(2,:) = [-fdt, 1.d0]
+!             a = a / (1.d0 + fdt**2)
+
+!             do i=1,mx
+!                 hu = q(2,i,j)
+!                 hv = q(3,i,j)
+!                 q(2,i,j) = hu * a(1,1) + hv * a(1,2)
+!                 q(3,i,j) = hu * a(2,1) + hv * a(2,2)
+!             enddo
+!         enddo
+!     endif
+!     ! End of coriolis source term
+
 end subroutine src2

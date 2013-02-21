@@ -156,8 +156,7 @@ contains
                             t,q,meqn,mxc,myc,mbc,dxc,dyc,xlowc,ylowc, &
                             maux,aux,maxcheck)
     
-        use geoclaw_module, only: dry_tolerance
-    
+        use geoclaw_module, only: dry_tolerance  
         implicit none
     
         ! Subroutine arguments
@@ -286,32 +285,32 @@ contains
                     total_depth = sum(h)
     
                     ! We are near shoreline
-                    if (depth_indicator < dry_tolerance(1) .and. &
-                        total_depth > 4.d0 * dry_tolerance(1)) then
+                    if (depth_indicator < dry_tolerance .and. &
+                        total_depth > 4.d0 * dry_tolerance) then
                         ! Check to see if each cell around fixed grid point is 
                         ! wet, if not re-balance
-                        if (h(1,1) < dry_tolerance(1)) then
+                        if (h(1,1) < dry_tolerance) then
                             eta(1,1) =  (h(1,2)*eta(1,2) &
                                        + h(2,1)*eta(2,1) &
                                        + h(2,2)*eta(2,2)) / total_depth
                         endif
-                        if (h(1,2) < dry_tolerance(1)) then
+                        if (h(1,2) < dry_tolerance) then
                             eta(1,2) =  (h(1,1)*eta(1,1) &
                                        + h(2,1)*eta(2,1) &
                                        + h(2,2)*eta(2,2)) / total_depth
                         endif
-                        if (h(2,1) < dry_tolerance(1)) then
+                        if (h(2,1) < dry_tolerance) then
                             eta(2,1) =  (h(1,1)*eta(1,1) &
                                        + h(1,2)*eta(1,2) &
                                        + h(2,2)*eta(2,2)) / total_depth
                         endif
-                        if (h(2,2) < dry_tolerance(1)) then
+                        if (h(2,2) < dry_tolerance) then
                             eta(2,2)=  (h(1,2)*eta(1,2) &
                                       + h(2,1)*eta(2,1) &
                                       + h(1,1)*eta(1,1)) / total_depth
                         endif            
                     endif
-                    if (total_depth <= 4.d0*dry_tolerance(1)) then
+                    if (total_depth <= 4.d0*dry_tolerance) then
                         eta(2,2) = nan()
                     endif
     

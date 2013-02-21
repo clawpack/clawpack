@@ -1,7 +1,8 @@
+
 subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     use qinit_module, only: qinit_type,add_perturbation
-    use geoclaw_module, only: num_layers,rho,eta_init
+    use geoclaw_module, only: sea_level
     
     implicit none
     
@@ -12,26 +13,29 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
     
     ! Locals
-    integer :: i,j,m,layer_index
-    real(kind=8) :: eta_below
+    integer :: i,j,m
     
-    ! Set flat state based on eta_init
+    ! Set flat state based on sea_level
     q = 0.d0
-    do i=1,mx
-        do j=1,my
-            ! Start with bottom layer and work up, set surface below for h
-            eta_below = aux(1,i,j)
-            do m=num_layers,1,-1
-                layer_index = 3*(m-1) + 1
-                q(layer_index,i,j) = max(0.d0,eta_init(m) - eta_below) * rho(m)
-                eta_below = eta_init(m)
-            enddo
-        enddo
-    enddo
+    forall(i=1:mx, j=1:my)
+        q(1,i,j) = max(0.d0, sea_level - aux(1,i,j))
+    end forall
     
     ! Add perturbation to initial conditions
     if (qinit_type > 0) then
         call add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
+    endif
+
+    if (.false.) then
+        open(23, file='fort.aux',status='unknown',form='formatted')
+        print *,'Writing out aux arrays'
+        print *,' '
+        do j=1,my
+            do i=1,mx
+                write(23,*) i,j,(q(m,i,j),m=1,meqn)
+            enddo
+        enddo
+        close(23)
     endif
     
 end subroutine qinit

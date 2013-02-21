@@ -11,12 +11,12 @@
 ! 
 !  If Richardson error estimates are used (if tol>0) then this routine
 !  is also called from errf1.
-! 
-!  TODO: Does allowflag work for t0 < 0.0? Maybe not for iqinit > 0
 !
 logical function allowflag(x,y,t,level)
 
+    use amr_module, only: t0
     use geoclaw_module
+    use regions_module
     use refinement_module
     use topo_module
     use dtopo_module
@@ -57,7 +57,6 @@ logical function allowflag(x,y,t,level)
             endif
         endif
     enddo
-
     do m=1,num_regions
         if (level < regions(m)%max_level) then 
             if (x > regions(m)%x_low .and. x <  regions(m)%x_hi.and. &
@@ -81,9 +80,8 @@ logical function allowflag(x,y,t,level)
             endif
         endif
     enddo
-
-    ! TODO: Correct the assumption that t0 = 0.0
-    if (t == 0.d0 .and. qinit_type > 0) then
+    
+    if (t == t0 .and. qinit_type > 0) then
         if (x > x_low_qinit .and. x < x_hi_qinit .and. &
             y > y_low_qinit .and. y < y_hi_qinit) then
 
