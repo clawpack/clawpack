@@ -202,7 +202,7 @@ def setrun(claw_pkg='geoclaw'):
     #   4 or 'vanleer'  ==> van Leer
     clawdata.limiter = ['mc', 'mc', 'mc']
 
-    clawdata.fwave = True    # True ==> use f-wave version of algorithms
+    clawdata.use_fwaves = True    # True ==> use f-wave version of algorithms
     
     # Source terms splitting:
     #   src_split == 0 or 'none'    ==> no source term (src routine never called)
@@ -329,7 +329,7 @@ def setrun(claw_pkg='geoclaw'):
         gaugeno = gaugeno+1
         x = r + .001  # shift a bit away from cell corners
         y = .001
-        rundata.gaugedata.add_gauge([gaugeno, x, y, 0., 1e10])
+        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
 
     # gauges along diagonal:
     gaugeno = 100
@@ -337,7 +337,7 @@ def setrun(claw_pkg='geoclaw'):
         gaugeno = gaugeno+1
         x = (r + .001) / np.sqrt(2.)
         y = (r + .001) / np.sqrt(2.)
-        rundata.gaugedata.add_gauge([gaugeno, x, y, 0., 1e10])
+        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
 
     return rundata
     # end of function setrun
@@ -369,7 +369,7 @@ def setgeo(rundata):
     geodata.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geodata.eta_init = 0.0
+    geodata.sea_level = 0.0
     geodata.dry_tolerance = 1.e-3
     geodata.wave_tolerance = 1.e-2
     geodata.deep_depth = 1e2
@@ -390,11 +390,11 @@ def setgeo(rundata):
     #   [topotype, minlevel,maxlevel,fname]
 
     # == setqinit.data values ==
-    geodata.qinit_type = 4
-    geodata.qinitfiles = []  
+    rundata.qinitdata.qinit_type = 4
+    rundata.qinitdata.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
-    geodata.qinitfiles.append([1, 2, 'hump.xyz'])
+    rundata.qinitdata.qinitfiles.append([1, 2, 'hump.xyz'])
 
     # == setfixedgrids.data values ==
     geodata.fixedgrids = []
@@ -402,11 +402,6 @@ def setgeo(rundata):
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
     geodata.fixedgrids.append([3,8,6,52.0,72.0,52.0,72.0,100,100,0,1])
-    
-    # == Multilayer ==
-    geodata.num_layers = 1
-    geodata.rho = 1025.0
-    geodata.richardson_tolerance = 0.95
 
     return rundata
     # end of function setgeo

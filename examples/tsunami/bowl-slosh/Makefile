@@ -21,20 +21,21 @@ PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FC ?= gfortran
-#FFLAGS ?=
-FFLAGS =  -g -fbounds-check -ffpe-trap=invalid,overflow,zero
+FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
-MAKELEVEL ?= 0
-ifeq ($(MAKELEVEL),0)
-	# If you want to include NetCDF output add these flags
-	# Note that the NETCDF_INC should point to the location of the hearder files
-	# for NetCDF
-	# NETCDF_INC ?= /usr/include
-	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
+#MAKELEVEL ?= 0
+#ifeq (${MAKELEVEL},0)
+#	# If you want to include NetCDF output add these flags
+#	# Note that the NETCDF_INC should point to the location of the hearder files
+#	# for NetCDF
+#	# NETCDF_INC ?= /usr/include
+#	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
+#
+#	# Threading flags
+#	FFLAGS += $(OMP_FLAG)
+#endif
 
-	# OpenMP Threading
-	FFLAGS += $(OMP_FLAG)
-endif
+# FFLAGS = -O3 -funroll-loops -finline-functions
 
 # ---------------------------------
 # List of sources for this program:
@@ -52,11 +53,11 @@ MODULES = \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
- $(GEOLIB)/fixedgrids_module.f90 \
- $(GEOLIB)/refinement_module.f90
+ $(GEOLIB)/refinement_module.f90 \
+ $(GEOLIB)/fixedgrids_module.f90
 
 SOURCES = \
-  qinit.f90 \
+  ./qinit.f90 \
   $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/cellgridintegrate.f \
@@ -68,19 +69,22 @@ SOURCES = \
   $(GEOLIB)/rpt2.f \
   $(GEOLIB)/src2.f90 \
   $(GEOLIB)/src1d.f90 \
-  $(GEOLIB)/step2.f \
+  $(GEOLIB)/step2.f90 \
   $(GEOLIB)/flux2fw.f \
+  $(GEOLIB)/qad.f \
   $(GEOLIB)/valout.f \
-  $(GEOLIB)/filval_new.f90 \
-  $(GEOLIB)/filpatch_new.f90 \
+  $(GEOLIB)/filval.f90 \
+  $(GEOLIB)/filpatch.f90 \
+  $(AMRLIB)/prefilp.f90 \
+  $(AMRLIB)/trimbd.f \
+  $(AMRLIB)/bound.f \
+  $(AMRLIB)/intfil.f \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/setaux.f \
-  $(GEOLIB)/flag2refine.f90  \
-  $(GEOLIB)/flag2refine2.f  \
-  $(GEOLIB)/b4step2.f90 \
-  $(GEOLIB)/qad.f \
+  $(GEOLIB)/setaux.f90 \
+  $(GEOLIB)/flag2refine2.f90  \
   $(GEOLIB)/allowflag.f90  \
+  $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \
@@ -90,36 +94,28 @@ SOURCES = \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
   $(AMRLIB)/amr2.f90 \
-  $(AMRLIB)/prefilp_new.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
-  $(AMRLIB)/bound_new.f90 \
-  $(AMRLIB)/check4nans.f \
-  $(AMRLIB)/spest.f  \
+  $(AMRLIB)/check4nans.f90 \
   $(AMRLIB)/spest2.f  \
-  $(AMRLIB)/init_iflags.f  \
+  $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
   $(AMRLIB)/birect.f \
   $(AMRLIB)/cleanup.f \
-  $(AMRLIB)/colate.f \
   $(AMRLIB)/colate2.f \
   $(AMRLIB)/errest.f \
-  $(AMRLIB)/bufnst.f \
   $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
-  $(AMRLIB)/flglvl.f \
+  $(AMRLIB)/flglvl2.f \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
-  $(AMRLIB)/grdfit.f \
-  $(AMRLIB)/intfil.f \
+  $(AMRLIB)/grdfit2.f \
   $(AMRLIB)/moment.f \
-  $(AMRLIB)/nestck.f \
   $(AMRLIB)/nestck2.f \
   $(AMRLIB)/prepc.f \
   $(AMRLIB)/prepf.f \
-  $(AMRLIB)/projec.f \
   $(AMRLIB)/projec2.f \
   $(AMRLIB)/signs.f \
   $(AMRLIB)/findcut.f \
@@ -129,7 +125,6 @@ SOURCES = \
   $(AMRLIB)/regrid.f \
   $(AMRLIB)/setuse.f \
   $(AMRLIB)/stst1.f \
-  $(AMRLIB)/trimbd_new.f90 \
   $(AMRLIB)/nodget.f \
   $(AMRLIB)/basic.f \
   $(AMRLIB)/outval.f \
@@ -143,7 +138,6 @@ SOURCES = \
   $(AMRLIB)/fss.f \
   $(AMRLIB)/zeroin.f \
   $(AMRLIB)/setflags.f \
-  $(AMRLIB)/shiftset.f \
   $(AMRLIB)/shiftset2.f \
   $(AMRLIB)/conck.f \
   $(AMRLIB)/domshrink.f \
