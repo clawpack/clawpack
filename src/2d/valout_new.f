@@ -44,6 +44,7 @@ c     open(unit=77,file='fort.b',status='unknown',access='stream')
 
 c     ### Python graphics output
 c
+
 c        ###  make the file names and open output files
          fname1 = 'fort.qxxxx'
          fname2 = 'fort.txxxx'
@@ -130,42 +131,6 @@ c                 # output in 1d format if ny=1:
                    h = alloc(iadd(1,i,j)) 
                    hu = alloc(iadd(2,i,j))
                    hv = alloc(iadd(3,i,j))
-<<<<<<< HEAD
-
-                   ! Calculate surfaces
-                   eta = h + alloc(iaddaux(1,i,j))
-                   if (abs(eta) < 1d-90) then
-                     eta = 0.d0
-                   end if
-
-                   write(matunit1,109) h,hu,hv,eta
-                enddo
-                write(matunit1,*) ' '
-             enddo
-  109        format(4e26.16)
-         endif
-
-
-         if (output_format == 3) then
-c            # binary output          
-c            i1 = iadd(1,1,1)
-c            i2 = iadd(nvar,mitot,mjtot)
-c            # Need to augment q with eta:
-             allocate(qeta(4*mitot*mjtot))
-             do j=1,mjtot
-                 do i=1,mitot
-                    do m=1,3
-                        qeta(iaddqeta(m,i,j)) = alloc(iadd(m,i,j))
-                    enddo
-                    eta = alloc(iadd(1,i,j)) + alloc(iaddaux(1,i,j))
-                    qeta(iaddqeta(4,i,j)) = eta
-                 enddo
-             enddo
-
-c            # NOTE: we are writing out ghost cell data also, unlike ascii
-             write(matunit4) qeta
-
-=======
 
                    ! Calculate surfaces
                    eta = h + alloc(iaddaux(1,i,j))
@@ -182,6 +147,7 @@ c            # binary output
 c            i1 = iadd(1,1,1)
 c            i2 = iadd(nvar,mitot,mjtot)
 c            # Need to augment q with eta:
+             write(6,*) '+++ allocating qeta ',4*mitot*mjtot
              allocate(qeta(4*mitot*mjtot))
              do j=1,mjtot
                  do i=1,mitot
@@ -196,7 +162,7 @@ c            # Need to augment q with eta:
 c            # NOTE: we are writing out ghost cell data also, unlike ascii
              write(matunit4) qeta
 
->>>>>>> moved valout_new.f to valout.f -- binary and ascii both seem to work
+             write(6,*) '+++ deallocating qeta '
              deallocate(qeta)
              endif
 

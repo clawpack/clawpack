@@ -31,8 +31,6 @@ FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -O2
 #FC ?= gfortran
 #FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
-# FFLAGS = -O3 -funroll-loops -finline-functions
-
 # ---------------------------------
 # List of sources for this program:
 # ---------------------------------
