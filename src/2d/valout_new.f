@@ -45,14 +45,6 @@ c     open(unit=77,file='fort.b',status='unknown',access='stream')
 c     ### Python graphics output
 c
 
-      if (output_format == 3) then
-          write(6,*) '*** Binary requested...'
-          write(6,*) '*** Use $CLAW/geoclaw/src/2d/valout_binary.f'
-          stop
-          endif
-
-      outaux = .false.    ! leave in for debugging
-
 c        ###  make the file names and open output files
          fname1 = 'fort.qxxxx'
          fname2 = 'fort.txxxx'
@@ -142,9 +134,6 @@ c                 # output in 1d format if ny=1:
 
                    ! Calculate surfaces
                    eta = h + alloc(iaddaux(1,i,j))
-                   if (abs(eta) < 1d-90) then
-                     eta = 0.d0
-                   end if
 
                    write(matunit1,109) h,hu,hv,eta
                 enddo
@@ -153,13 +142,12 @@ c                 # output in 1d format if ny=1:
   109        format(4e26.16)
          endif
 
-            ! Calculate surfaces
-
          if (output_format == 3) then
 c            # binary output          
 c            i1 = iadd(1,1,1)
 c            i2 = iadd(nvar,mitot,mjtot)
 c            # Need to augment q with eta:
+             write(6,*) '+++ allocating qeta ',4*mitot*mjtot
              allocate(qeta(4*mitot*mjtot))
              do j=1,mjtot
                  do i=1,mitot
@@ -174,6 +162,7 @@ c            # Need to augment q with eta:
 c            # NOTE: we are writing out ghost cell data also, unlike ascii
              write(matunit4) qeta
 
+             write(6,*) '+++ deallocating qeta '
              deallocate(qeta)
              endif
 
