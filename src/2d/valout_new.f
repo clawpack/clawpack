@@ -147,7 +147,6 @@ c            # binary output
 c            i1 = iadd(1,1,1)
 c            i2 = iadd(nvar,mitot,mjtot)
 c            # Need to augment q with eta:
-             write(6,*) '+++ allocating qeta ',4*mitot*mjtot
              allocate(qeta(4*mitot*mjtot))
              do j=1,mjtot
                  do i=1,mitot
@@ -162,7 +161,6 @@ c            # Need to augment q with eta:
 c            # NOTE: we are writing out ghost cell data also, unlike ascii
              write(matunit4) qeta
 
-             write(6,*) '+++ deallocating qeta '
              deallocate(qeta)
              endif
 
