@@ -23,6 +23,13 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
      .                                      naux*mitot*(j-1)
 c
+
+      if (output_format == 3) then
+          write(6,*) '*** Binary requested...'
+          write(6,*) '*** Use $CLAW/geoclaw/src/2d/valout_binary.f'
+          stop
+          endif
+
       outaux = .false.    ! leave in for debugging
 
 c     ASCII Output
