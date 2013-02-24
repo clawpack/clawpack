@@ -44,14 +44,26 @@ c     open(unit=77,file='fort.b',status='unknown',access='stream')
 
 c     ### Python graphics output
 c
-
-      if (output_format == 3) then
-          write(6,*) '*** Binary requested...'
-          write(6,*) '*** Use $CLAW/geoclaw/src/2d/valout_binary.f'
+      if (nvar /= 3) then
+          write(6,*) '*** Error: valout assumes nvar==3 for geoclaw'
           stop
           endif
 
-      outaux = .false.    ! leave in for debugging
+c     # how many aux components requested?
+      output_aux_num = 0
+	  do i=1,naux
+		 output_aux_num = output_aux_num + output_aux_components(i)
+		 enddo
+		
+c     # Currently outputs all aux components if any are requested!
+      outaux = ((output_aux_num > 0) .and. 
+     .         ((.not. output_aux_onlyonce) .or. (time==t0)))
+
+c     open(unit=77,file='fort.b',status='unknown',access='stream')
+
+
+c     ### Python graphics output
+c
 
 c        ###  make the file names and open output files
          fname1 = 'fort.qxxxx'
@@ -152,8 +164,6 @@ c                 # output in 1d format if ny=1:
              enddo
   109        format(4e26.16)
          endif
-
-            ! Calculate surfaces
 
          if (output_format == 3) then
 c            # binary output          
