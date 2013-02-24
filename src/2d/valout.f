@@ -50,7 +50,21 @@ c
           stop
           endif
 
-      outaux = .false.    ! leave in for debugging
+c     # how many aux components requested?
+      output_aux_num = 0
+	  do i=1,naux
+		 output_aux_num = output_aux_num + output_aux_components(i)
+		 enddo
+		
+c     # Currently outputs all aux components if any are requested!
+      outaux = ((output_aux_num > 0) .and. 
+     .         ((.not. output_aux_onlyonce) .or. (time==t0)))
+
+c     open(unit=77,file='fort.b',status='unknown',access='stream')
+
+
+c     ### Python graphics output
+c
 
 c        ###  make the file names and open output files
          fname1 = 'fort.qxxxx'
@@ -151,6 +165,7 @@ c                 # output in 1d format if ny=1:
              enddo
   109        format(4e26.16)
          endif
+
 
          if (output_format == 3) then
 c            # binary output          
