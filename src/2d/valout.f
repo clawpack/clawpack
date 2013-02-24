@@ -41,9 +41,9 @@ c     # Currently outputs all aux components if any are requested!
 
 c     open(unit=77,file='fort.b',status='unknown',access='stream')
 
-
 c     ### Python graphics output
 c
+
 c        ###  make the file names and open output files
          fname1 = 'fort.qxxxx'
          fname2 = 'fort.txxxx'
@@ -145,7 +145,6 @@ c                 # output in 1d format if ny=1:
   109        format(4e26.16)
          endif
 
-
          if (output_format == 3) then
 c            # binary output          
 c            i1 = iadd(1,1,1)
@@ -165,18 +164,6 @@ c            # Need to augment q with eta:
 c            # NOTE: we are writing out ghost cell data also, unlike ascii
              write(matunit4) qeta
 
-=======
-
-                   ! Calculate surfaces
-                   eta = h + alloc(iaddaux(1,i,j))
-
-                   write(matunit1,109) h,hu,hv,eta
-                enddo
-                write(matunit1,*) ' '
-             enddo
-  109        format(4e26.16)
-         endif
-
          if (output_format == 3) then
 c            # binary output          
 c            i1 = iadd(1,1,1)
@@ -195,8 +182,6 @@ c            # Need to augment q with eta:
 
 c            # NOTE: we are writing out ghost cell data also, unlike ascii
              write(matunit4) qeta
-
->>>>>>> moved valout_new.f to valout.f -- binary and ascii both seem to work
              deallocate(qeta)
              endif
 
