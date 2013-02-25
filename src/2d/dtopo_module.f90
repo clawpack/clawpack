@@ -14,6 +14,7 @@
 ! ============================================================================
 module dtopo_module
 
+    use amr_module, only: tstart_thisrun
     implicit none
 
     ! Work array
@@ -31,7 +32,6 @@ module dtopo_module
     double precision dz
     logical, allocatable :: topoaltered(:)
     
-    double precision, private :: dtopo_t_start
 
 contains
     ! ========================================================================
@@ -139,12 +139,12 @@ contains
         ! the topo arrays are altered here to match the final topo + dtopo.
         ! ====================================================================
         do i=1,num_dtopo
-            if (dtopo_t_start <= tfdtopo(i)) then
+            if (tstart_thisrun <= tfdtopo(i)) then
                 topoaltered(i) = .false.
-            elseif (dtopo_t_start > tfdtopo(i)) then
+            elseif (tstart_thisrun > tfdtopo(i)) then
                 topoaltered(i) = .true.
-                write(GEO_PARM_UNIT,*) '  Altering topo arrays at t=', dtopo_t_start
-                print *, 'SETDTOPO Resetting topo arrays at t=',dtopo_t_start
+                write(GEO_PARM_UNIT,*) '  Altering topo arrays at t=', tstart_thisrun
+                print *, 'SETDTOPO Resetting topo arrays at t=',tstart_thisrun
                 do m=1,mtopofiles
                     if ((xlowtopo(m) <= xhidtopo(i)).and. &
                             (xhitopo(m) >= xlowdtopo(i)).and. &
