@@ -115,7 +115,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 3
+    clawdata.output_style = 1
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -130,15 +130,15 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 2
+        clawdata.total_steps = 3
         clawdata.output_t0 = True
         
 
     clawdata.output_format == 'ascii'      # 'ascii' or 'netcdf' 
 
-    clawdata.output_q_components = 'all'   # could be list such as [True,True]
-    clawdata.output_aux_components = 'none'  # could be list
-    clawdata.output_aux_onlyonce = True    # output aux arrays only at t0
+    clawdata.output_q_components = 'all'   # need all
+    clawdata.output_aux_components = 'none'  # eta=h+B is in q
+    clawdata.output_aux_onlyonce = False    # output aux arrays each frame
 
 
 
@@ -244,7 +244,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 1
+    clawdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
     clawdata.refinement_ratios_x = [2,6]
