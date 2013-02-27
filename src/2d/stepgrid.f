@@ -33,7 +33,6 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       external rpn2,rpt2
 
-      common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
 c      parameter (msize=max1d+4)
 c      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
@@ -47,11 +46,6 @@ c      dimension work(mwork)
       logical, parameter :: debug = .false.
       logical, parameter :: dump = .false.
 c
-c     # set tcom = time.  This is in the common block comxyt that could
-c     # be included in the Riemann solver, for example, if t is explicitly
-c     # needed there.
-
-      tcom = time
       
       level = node(nestlevel,mptr)
 

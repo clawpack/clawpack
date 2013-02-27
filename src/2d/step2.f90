@@ -68,18 +68,11 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my, &
     
     ! Common block storage
     integer :: icom,jcom
-    real(kind=8) :: dtcom,dxcom,dycom,tcom
-    common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
     ! Parameters
     ! Relimit fluxes to maintain positivity
     logical, parameter :: relimit = .false.
 
-    ! Store mesh parameters in common block
-    dxcom = dx
-    dycom = dy
-    dtcom = dt
-    
     cflgrid = 0.d0
     dtdx = dt/dx
     dtdy = dt/dy
