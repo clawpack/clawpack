@@ -14,31 +14,20 @@ CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
 CLAW_PKG = geoclaw                  # Clawpack package to use
 EXE = xgeoclaw                 # Executable to create
 SETRUN_FILE = setrun.py        # File containing function to make data
-OUTDIR = _output               # Directory for output
+OUTDIR = .   #_output               # Directory for output
 SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-# FC = ifort
-#FFLAGS = -g -check all -traceback -fpe0 -ftrapuv -fp-model precise
-#FFLAGS =  -C -CB -CU -fpe1 -ftrapuv -g 
-# FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise
-#FFLAGS =   -O2 -fbounds-check
+#FC = gfortran
+#FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp  -O2
 
-FC ?= gfortran
-FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero -g
+FC = ifort
+FFLAGS = -O2 -openmp  -C -CB -CU -check all -traceback -fpe0 -ftrapuv -fp-model precise
+#FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise -openmp
 
-#MAKELEVEL ?= 0
-#ifeq (${MAKELEVEL},0)
-#	# If you want to include NetCDF output add these flags
-#	# Note that the NETCDF_INC should point to the location of the hearder files
-#	# for NetCDF
-#	# NETCDF_INC ?= /usr/include
-#	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
-#
-#	# Threading flags
-#	FFLAGS += $(OMP_FLAG)
-#endif
+#FC ?= gfortran
+#FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
 
 # FFLAGS = -O3 -funroll-loops -finline-functions
 
@@ -111,7 +100,11 @@ SOURCES = \
   $(AMRLIB)/cleanup.f \
   $(AMRLIB)/colate2.f \
   $(AMRLIB)/errest.f \
+  $(AMRLIB)/prepregstep.f \
+  $(AMRLIB)/prepbigstep.f \
   $(AMRLIB)/bufnst2.f \
+  $(AMRLIB)/flagger.f \
+  $(AMRLIB)/flagregions.f \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl2.f \
