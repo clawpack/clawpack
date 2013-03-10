@@ -62,7 +62,6 @@ c      dimension  bpadq(meqn,1-mbc:maxm + mbc)
 
 
       logical relimit
-      common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
 c
 
@@ -70,12 +69,6 @@ c     # to relimit fluxes to maintain positivity
       relimit=.false.
 c     # for relimiting to keep values very near zero positive.
 
-c
-c     # store mesh parameters that may be needed in Riemann solver but not
-c     # passed in...
-      dxcom = dx
-      dycom = dy
-      dtcom = dt
 c
 c
 c     # partition work array into pieces needed for local storage in
@@ -135,7 +128,7 @@ c
 c        # Store the value of j along this slice in the common block
 c        # comxyt in case it is needed in the Riemann solver (for
 c        # variable coefficient problems)
-         jcom = j
+c         jcom = j
 c
 c        # compute modifications fadd and gadd to fluxes along this slice:
          call flux2(1,maxm,meqn,maux,mbc,mx,
@@ -191,7 +184,7 @@ c
 c        # Store the value of i along this slice in the common block
 c        # comxyt in case it is needed in the Riemann solver (for
 c        # variable coefficient problems)
-         icom = i
+c        icom = i
 c
 c        # compute modifications fadd and gadd to fluxes along this slice:
          call flux2(2,maxm,meqn,maux,mbc,my,
