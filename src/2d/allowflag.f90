@@ -46,6 +46,11 @@ logical function allowflag(x,y,t,level)
 !       go to 900  !# no need to check anything else
 !       endif
 
+    ! Allow flagging everywhere if using test bathymetry
+    if (test_topography > 1) then
+        allowflag = .true.
+        return
+    endif
     do m=1,mtopofiles
         if (level < maxleveltopo(m)) then
             if (x > xlowtopo(m) .and. x < xhitopo(m) .and. &
