@@ -271,7 +271,7 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.colorbar_shrink = shrink
         plotitem.colorbar_label = "Surface Height (m)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,0,0,0,0]
     elif plot_type == 'contour':            
         plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
         plotitem.plot_var = geoplot.surface
@@ -301,7 +301,7 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.colorbar_shrink = shrink
         plotitem.colorbar_label = "Current (m/s)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1,1,0,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,0,0,0,0]
     elif plot_type == 'quiver':
         plotitem = plotaxes.new_plotitem(plot_type='2d_quiver')
         plotitem.quiver_var_x = water_u
