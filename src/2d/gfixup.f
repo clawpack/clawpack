@@ -4,6 +4,7 @@ c
       subroutine gfixup(lbase, lfnew, nvar, naux)
 c
       use geoclaw_module
+      use refinement_module, only: varRefTime
       use amr_module
       implicit double precision (a-h,o-z)
 
