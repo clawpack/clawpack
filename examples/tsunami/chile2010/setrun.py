@@ -340,52 +340,54 @@ def setgeo(rundata):
     """
 
     try:
-        geodata = rundata.geodata
+        geo_data = rundata.geo_data
     except:
-        print "*** Error, this rundata has no geodata attribute"
-        raise AttributeError("Missing geodata attribute")
-
-    geodata.variable_dt_refinement_ratios = True
+        print "*** Error, this rundata has no geo_data attribute"
+        raise AttributeError("Missing geo_data attribute")
        
     # == Physics ==
-    geodata.gravity = 9.81
-    geodata.coordinate_system = 2
-    geodata.earth_radius = 6367.5e3
+    geo_data.gravity = 9.81
+    geo_data.coordinate_system = 2
+    geo_data.earth_radius = 6367.5e3
 
     # == Forcing Options
-    geodata.coriolis_forcing = False
+    geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geodata.sea_level = 0.0
-    geodata.dry_tolerance = 1.e-3
-    geodata.wave_tolerance = 1.e-1
-    geodata.deep_depth = 1e2
-    geodata.max_level_deep = 3
-    geodata.friction_forcing = True
-    geodata.manning_coefficient =.025
-    geodata.friction_depth = 1e6
+    geo_data.sea_level = 0.0
+    geo_data.dry_tolerance = 1.e-3
+    geo_data.friction_forcing = True
+    geo_data.manning_coefficient =.025
+    geo_data.friction_depth = 1e6
+
+    # Refinement settings
+    refinement_data = rundata.refinement_data
+    refinement_data.variable_dt_refinement_ratios = True
+    refinement_data.wave_tolerance = 1.e-1
+    refinement_data.deep_depth = 1e2
+    refinement_data.max_level_deep = 3
 
     # == settopo.data values ==
-    geodata.topofiles = []
+    topo_data = rundata.topo_data
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
-    geodata.topofiles.append([2, 1, 3, 0., 1.e10, 'etopo10min120W60W60S0S.asc'])
+    topo_data.topofiles.append([2, 1, 3, 0., 1.e10, 'etopo10min120W60W60S0S.asc'])
 
     # == setdtopo.data values ==
-    geodata.dtopofiles = []
+    dtopo_data = rundata.dtopo_data
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
-    geodata.dtopofiles.append([1,3,3,'usgs100227.tt1'])
+    dtopo_data.dtopofiles.append([1,3,3,'usgs100227.tt1'])
 
 
     # == setqinit.data values ==
-    rundata.qinitdata.qinit_type = 0
-    rundata.qinitdata.qinitfiles = []
+    rundata.qinit_data.qinit_type = 0
+    rundata.qinit_data.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
 
     # == setfixedgrids.data values ==
-    geodata.fixedgrids = []
+    fixed_grids = rundata.fixed_grid_data
     # for fixed grids append lines of the form
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
