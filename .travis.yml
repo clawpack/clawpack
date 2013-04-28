@@ -2,8 +2,8 @@ language: python
 python:
   - 2.7
 before_install:
-  # NumPy should be already installed by Travis CI:
-  #- pip install --use-mirrors numpy
+  # Print NumPy version that is already installed by Travis CI:
+  - python -c "import numpy; print numpy.__version__"
   - pip install --use-mirrors matplotlib
 before_script:
   - sudo apt-get update -qq
