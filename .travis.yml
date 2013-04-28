@@ -1,11 +1,14 @@
 language: python
 python:
-  - "2.7"
-# command to install dependencies
-install: 
-    - "pip install --use-mirrors numpy"
-    - "pip install --use-mirrors clawpack"
-# command to run tests
-script: 
-    - cd clawpack/pyclaw
-    - nosetests
+  - 2.7
+before_install:
+  # NumPy should be already installed by Travis CI:
+  #- pip install --use-mirrors numpy
+  - pip install --use-mirrors matplotlib
+before_script:
+  - python setup.py install
+script:
+  - cd clawpack/pyclaw
+  - nosetests
+notifications:
+  email: false
