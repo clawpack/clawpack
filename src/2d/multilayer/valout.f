@@ -116,7 +116,11 @@ c                 # output in 1d format if ny=1:
             eta(num_layers) = h(num_layers) + alloc(iaddaux(1,i,j))
             do k=num_layers-1,1,-1
               eta(k) = h(k) + eta(k+1)
+              if (abs(eta(k)) < 1d-90) then
+                eta(k) = 0.d0
+              endif
             enddo
+
 
             write(matunit1,109) (h(k),hu(k),hv(k),k=1,num_layers),
      &                          (eta(k),k=1,num_layers)

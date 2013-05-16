@@ -114,6 +114,9 @@ c                 # output in 1d format if ny=1:
             hu = alloc(iadd(2,i,j))
             hv = alloc(iadd(3,i,j))
             eta = h + alloc(iaddaux(1,i,j))
+            if (abs(eta) < 1d-90) then
+              eta = 0.d0
+            end if
 
             ! Storm fields and location
             storm_field(1) = alloc(iaddaux(friction_index,i,j))
