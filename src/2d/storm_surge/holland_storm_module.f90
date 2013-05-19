@@ -123,7 +123,7 @@ contains
                 ! on other data in the file.  It is only used in the field 
                 ! ramping function so it might not be an issue
                 read(data_file,fmt=JMA_FORMAT,iostat=io_status) year, month, day, &
-                        hour, lat, long, Pc, max_wind, max_wind_radius
+                        hour, lat, lon, central_pressure, max_wind_speed, max_wind_radius
             else
                 print *,"ERROR - Unrecognized storm data file format."
                 stop
@@ -154,12 +154,12 @@ contains
         i = 0
         do while (i < num_casts)
             if (file_format == "NOAA") then
-                read(data_file,fmt=file_format) year,month,day,hour,cast_type, &
+                read(data_file,fmt=NOAA_FORMAT) year,month,day,hour,cast_type, &
                     forecast,lat,direction(2),lon,direction(1),max_wind_speed, &
                     central_pressure,RRP,max_wind_radius
             else if (file_format == "JAM") then
                 read(data_file,fmt=JMA_FORMAT,iostat=io_status) year, month, day, &
-                        hour, lat, long, Pc, max_wind, max_wind_radius
+                        hour, lat, lon, central_pressure, max_wind_speed, max_wind_radius
             else
                 print *,"ERROR - Unrecognized storm data file format."
                 stop
