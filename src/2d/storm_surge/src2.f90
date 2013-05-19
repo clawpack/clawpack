@@ -172,7 +172,9 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
         ! Force only the top layer of water, assumes top most layer is last
         ! to go dry
         do j=1,my
+            yc = ylower + (j - 0.5d0) * dy
             do i=1,mx
+                xc = xlower + (i - 0.5d0) * dx
                 if (q(1,i,j) > dry_tolerance) then
                     psi = atan2(yc - sloc(2), xc - sloc(1))
                     if (theta > psi) then
