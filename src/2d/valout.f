@@ -105,6 +105,9 @@ c                 # output in 1d format if ny=1:
 
             ! Calculate surfaces
             eta = h + alloc(iaddaux(1,i,j))
+            if (abs(eta) < 1d-90) then
+              eta = 0.d0
+            end if
 
             write(matunit1,109) h,hu,hv,eta
             
