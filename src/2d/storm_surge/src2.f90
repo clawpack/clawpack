@@ -260,15 +260,22 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
     ! Coriolis source term
     ! Use backward Euler to solve, q_t = A q -> q^n+1 = (I + dt * A)^-1 q^n
+    ! or use first 4 terms of matrix exponential
     if (coriolis_forcing) then
         do j=1,my
             yc = ylower + (j - 0.5d0) * dy
             fdt = coriolis(yc) * dt ! Calculate f dependent on coordinate system
 
-            ! Calculate matrix components
-            a(1,:) = [1.d0,  fdt]
-            a(2,:) = [-fdt, 1.d0]
-            a = a / (1.d0 + fdt**2)
+            ! Calculate matrix components - backward Euler
+            !a(1,:) = [1.d0,  fdt]
+            !a(2,:) = [-fdt, 1.d0]
+            !a = a / (1.d0 + fdt**2)
+
+            ! Matrix exponential
+            a(1,1) = 1.d0 - 0.5d0 * fdt**2 + fdt**4 / 24.d0
+            a(1,2) =  fdt - fdt**3 / 6.d0
+            a(2,1) = -fdt + fdt**3 / 6.d0
+            a(2,2) = a(1,1)
 
             do i=1,mx
                 hu = q(2,i,j)
