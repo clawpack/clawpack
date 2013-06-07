@@ -54,6 +54,10 @@ module storm_module
     ! WARNING:  If these do not agree with the storm data objects things will break!
     real(kind=8) :: rho_air, ambient_pressure
 
+    ! Wind drag maximum limit
+!     real(kind=8), parameter :: WIND_DRAG_LIMIT = 2.d-3
+    real(kind=8), parameter :: WIND_DRAG_LIMIT = 0.0035d0
+
 contains
     ! ========================================================================
     !   subroutine set_storm(data_file)
@@ -277,6 +281,9 @@ contains
         endif
 
         wind_drag = drag(1) * (1.d0 - weight) + drag(2) * weight
+
+        ! Apply wind drag limit
+        wind_drag = min(WIND_DRAG_LIMIT, wind_drag)
     
     end function powell_wind_drag
 
@@ -292,7 +299,7 @@ contains
         ! Input
         real(kind=8), intent(in) :: wind_speed, theta
   
-        wind_drag = min(2.d-3, (0.75d0 + 0.067d0 * wind_speed) * 1d-3)      
+        wind_drag = min(WIND_DRAG_LIMIT, (0.75d0 + 0.067d0 * wind_speed) * 1d-3)      
     
     end function garret_wind_drag
 
