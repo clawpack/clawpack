@@ -8,7 +8,7 @@ import clawpack.clawutil.clawdata
 
 class GeoClawData(clawpack.clawutil.clawdata.ClawData):
     r"""
-    Object that will be written out to the various GeoClaw data files.
+    Object containing the basic .
 
     Note that this data object will write out multiple files.
     """
@@ -28,6 +28,9 @@ class GeoClawData(clawpack.clawutil.clawdata.ClawData):
         self.add_attribute('dry_tolerance',1e-3)
         self.add_attribute('friction_depth',1.0e6)
         self.add_attribute('sea_level',0.0)
+
+        # Refinement behavior
+        self.add_attribute('variable_dt_refinement_ratios', False)
 
 
 
@@ -57,6 +60,35 @@ class GeoClawData(clawpack.clawutil.clawdata.ClawData):
 
 
 
+class RefinementData(clawpack.clawutil.clawdata.ClawData):
+
+    def __init__(self):
+
+        super(RefinementData,self).__init__()
+
+        # Refinement controls
+        self.add_attribute('dry_tolerance',1.0e-3)
+        self.add_attribute('wave_tolerance',1.0e-1)
+        self.add_attribute('speed_tolerance',[1.0e12]*6)
+        self.add_attribute('deep_depth',1.0e2)
+        self.add_attribute('max_level_deep',3)
+
+
+    def write(self, data_source="setrun.py"):
+        
+        # Refinement controls
+        self.open_data_file('refinement.data',data_source)
+        self.data_write('wave_tolerance')
+        if not isinstance(self.speed_tolerance,list):
+            self.speed_tolerance = [self.speed_tolerance]
+        self.data_write('speed_tolerance')
+        self.data_write('deep_depth')
+        self.data_write('max_level_deep')
+        self.data_write()
+        self.data_write('variable_dt_refinement_ratios')
+
+
+
 class TopographyData(clawpack.clawutil.clawdata.ClawData):
 
     def __init__(self):
@@ -67,11 +99,13 @@ class TopographyData(clawpack.clawutil.clawdata.ClawData):
         self.add_attribute('test_topography',0)
         self.add_attribute('topofiles',[])
         
+        # Jump discontinuity
         self.add_attribute('topo_location',-50e3)
         self.add_attribute('topo_left',-4000.0)
         self.add_attribute('topo_right',-200.0)
         self.add_attribute('topo_angle',0.0)
         
+        # Simple oceanic shelf
         self.add_attribute('x0',350e3)
         self.add_attribute('x1',450e3)
         self.add_attribute('x2',480e3)
