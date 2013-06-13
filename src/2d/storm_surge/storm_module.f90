@@ -55,8 +55,7 @@ module storm_module
     real(kind=8) :: rho_air, ambient_pressure
 
     ! Wind drag maximum limit
-!     real(kind=8), parameter :: WIND_DRAG_LIMIT = 2.d-3
-    real(kind=8), parameter :: WIND_DRAG_LIMIT = 0.0035d0
+    real(kind=8), parameter :: WIND_DRAG_LIMIT = 2.d-3
 
 contains
     ! ========================================================================
