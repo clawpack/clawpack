@@ -281,8 +281,8 @@ contains
 
         wind_drag = drag(1) * (1.d0 - weight) + drag(2) * weight
 
-        ! Apply wind drag limit
-        wind_drag = min(WIND_DRAG_LIMIT, wind_drag)
+        ! Apply wind drag limit - May want to do this...
+        ! wind_drag = min(WIND_DRAG_LIMIT, wind_drag)
     
     end function powell_wind_drag
 
