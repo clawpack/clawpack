@@ -17,7 +17,8 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
     use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
     use amr_module, only: yperdom, spheredom, xupper, yupper
 
-    use geoclaw_module, only: dry_tolerance, sea_level, varRefTime
+    use geoclaw_module, only: dry_tolerance, sea_level
+    use refinement_module, only: varRefTime
 
     implicit none
 
