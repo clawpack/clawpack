@@ -44,7 +44,6 @@ c-----------------------------------------------------------------------
 
       logical rare1,rare2,rarecorrector,rarecorrectortest,sonic
 
-
       !determine del vectors
       delh = hR-hL
       delhu = huR-huL
@@ -55,10 +54,14 @@ c-----------------------------------------------------------------------
       call riemanntype(hL,hR,uL,uR,hm,s1m,s2m,rare1,rare2,
      &                                          1,drytol,g)
 
+
       lambda(1)= min(sE1,s2m) !Modified Einfeldt speed
       lambda(3)= max(sE2,s1m) !Modified Eindfeldt speed
       sE1=lambda(1)
       sE2=lambda(3)
+      lambda(2) = 0.d0  ! ### Fix to avoid uninitialized value in loop on mw -- Correct?? ###
+
+      
       hstarHLL = max((huL-huR+sE2*hR-sE1*hL)/(sE2-sE1),0.d0) ! middle state in an HLL solve
 
 c     !determine the middle entropy corrector wave------------------------
@@ -89,6 +92,7 @@ c     !determine the middle entropy corrector wave------------------------
          if (hstarHLL.lt.min(hL,hR)/5.d0) rarecorrector=.false.
       endif
 
+c     ## Is this correct 2-wave when rarecorrector == .true. ??
       do mw=1,mwaves
          r(1,mw)=1.d0
          r(2,mw)=lambda(mw)
@@ -102,6 +106,7 @@ c         lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
          r(3,2)=1.d0
       endif
 c     !---------------------------------------------------
+
 
 c     !determine the steady state wave -------------------
       criticaltol = 1.d-6

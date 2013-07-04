@@ -232,7 +232,7 @@ c     debug statement:
 c     write(*,*)" from advanc: level ",level," dtlevnew ",dtlevnew
 
       call system_clock(clock_finish,clock_rate)
-C       tvoll(level) = tvoll(level) + clock_finish - clock_start
+      tvoll(level) = tvoll(level) + clock_finish - clock_start
 
 c new way to reclaim for safety with dynamic memory and openmp
       do j = 1, maxthreads

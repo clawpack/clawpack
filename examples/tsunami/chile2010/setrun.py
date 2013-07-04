@@ -32,6 +32,7 @@ def setrun(claw_pkg='geoclaw'):
     num_dim = 2
     rundata = clawdata.ClawRunData(claw_pkg, num_dim)
 
+
     #------------------------------------------------------------------
     # Problem-specific parameters to be written to setprob.data:
     #------------------------------------------------------------------
@@ -72,8 +73,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 30
-    clawdata.num_cells[1] = 30
+    clawdata.num_cells[0] = 60
+    clawdata.num_cells[1] = 60
 
     # ---------------
     # Size of system:
@@ -105,7 +106,7 @@ def setrun(claw_pkg='geoclaw'):
     # the OUTDIR indicated in Makefile.
 
     clawdata.restart = False               # True to restart from prior results
-    clawdata.restart_file = 'fort.chk00006'  # File to use for restart data
+    clawdata.restart_file = 'fort.chk00036'  # File to use for restart data
 
     # -------------
     # Output times:
@@ -115,12 +116,13 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 3
+    clawdata.output_style = 1
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
         clawdata.num_output_times = 18
-        clawdata.tfinal = 32400.0
+        #clawdata.tfinal = 32400.0
+        clawdata.tfinal = 5400.0 
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -130,15 +132,15 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 2
+        clawdata.total_steps = 3
         clawdata.output_t0 = True
         
 
     clawdata.output_format == 'ascii'      # 'ascii' or 'netcdf' 
 
-    clawdata.output_q_components = 'all'   # could be list such as [True,True]
-    clawdata.output_aux_components = 'none'  # could be list
-    clawdata.output_aux_onlyonce = True    # output aux arrays only at t0
+    clawdata.output_q_components = 'all'   # need all
+    clawdata.output_aux_components = 'none'  # eta=h+B is in q
+    clawdata.output_aux_onlyonce = False    # output aux arrays each frame
 
 
 
@@ -237,6 +239,11 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.bc_lower[1] = 'extrap'
     clawdata.bc_upper[1] = 'extrap'
 
+
+    # --------------
+    # Checkpointing:
+    # --------------
+
     # Specify when checkpoint files should be created that can be
     # used to restart a computation.
 
@@ -259,6 +266,13 @@ def setrun(claw_pkg='geoclaw'):
         # and at the final time.
         clawdata.checkpt_interval = 5
 
+    # ---------------
+    # Gauges:
+    # ---------------
+    rundata.gaugedata.gauges = []
+    # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
+    rundata.gaugedata.gauges.append([32412, -86.392, -17.975, 0., 1.e10])
+
 
     # ---------------
     # AMR parameters:
@@ -266,7 +280,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 1
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
     amrdata.refinement_ratios_x = [2,6]
@@ -300,6 +314,15 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.verbosity_regrid = 0  
 
 
+    # ---------------
+    # Regions:
+    # ---------------
+    rundata.regiondata.regions = []
+    # to specify regions of refinement append lines of the form
+    #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
+    rundata.regiondata.regions.append([3, 3, 0., 10000., -85,-72,-38,-25])
+    rundata.regiondata.regions.append([3, 3, 8000., 26000., -90,-80,-30,-15])
+
     #  ----- For developers ----- 
     # Toggle debugging print statements:
     amrdata.dprint = False      # print domain flags
@@ -310,21 +333,9 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.pprint = False      # proj. of tagged points
     amrdata.rprint = False      # print regridding summary
     amrdata.sprint = False      # space/memory output
-    amrdata.tprint = True       # time step reporting each level
+    amrdata.tprint = False      # time step reporting each level
     amrdata.uprint = False      # update/upbnd reporting
     
-    # More AMR parameters can be set -- see the defaults in pyclaw/data.py
-
-    # == setregions.data values ==
-    rundata.regiondata.regions = []
-    # to specify regions of refinement append lines of the form
-    #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    rundata.regiondata.regions.append([3, 3, 0., 10000., -85,-72,-38,-25])
-    rundata.regiondata.regions.append([3, 3, 8000., 26000., -90,-80,-30,-15])
-
-    # == setgauges.data values ==
-    # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    rundata.gaugedata.gauges.append([32412, -86.392, -17.975, 0., 1.e10])
 
     return rundata
     # end of function setrun

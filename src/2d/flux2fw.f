@@ -106,7 +106,6 @@ c
       dimension  fwave(meqn, mwaves, 1-mbc:maxm+mbc)
 c
       logical limit, relimit
-      common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
       relimit = .false.
 c
@@ -143,12 +142,16 @@ c   # Set fadd for the donor-cell upwind method (Godunov)
       if (ixy.eq.1) mu=2
       if (ixy.eq.2) mu=3
       do 40 i=1-mbc+1,mx+mbc-1
-          if (coordinate_system.eq.2) then
-     	      if (ixy.eq.1) dxdc=earth_radius*deg2rad
-	          if (ixy.eq.2) dxdc=earth_radius*cos(aux2(3,i))*deg2rad
-	        else
-	          dxdc=1.d0
-	        endif
+         if (coordinate_system.eq.2) then
+              if (ixy.eq.1) then
+                   dxdc=earth_radius*deg2rad
+              else  
+                  dxdc=earth_radius*cos(aux2(3,i))*deg2rad
+!                  if (ixy.eq.2) dxdc=earth_radius*cos(aux2(3,i))*deg2rad  !why test again
+              endif
+         else
+            dxdc=1.d0
+         endif
 
           do m=1,meqn
             faddp(m,i) = faddp(m,i) - apdq(m,i)
