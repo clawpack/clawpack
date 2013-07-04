@@ -13,6 +13,7 @@ module refinement_module
     real(kind=8), allocatable :: speed_tolerance(:)
     real(kind=8) :: deep_depth
     integer :: max_level_deep
+    logical :: varRefTime = .FALSE. ! Choose dt refinement automatically
     
     ! ========================================================================
     !  Flowgrades - Not updated yet, use at your own risk
@@ -60,6 +61,8 @@ contains
         read(line,*) speed_tolerance
         read(unit,*) deep_depth
         read(unit,*) max_level_deep
+        read(unit,*)
+        read(unit,*) varRefTime
         close(unit)
         
         ! Write out data to parameter file
@@ -67,6 +70,7 @@ contains
         write(GEO_PARM_UNIT,*) '   speed_tolerance:',speed_tolerance
         write(GEO_PARM_UNIT,*) '   maxleveldeep:', max_level_deep
         write(GEO_PARM_UNIT,*) '   depthdeep:', deep_depth
+        write(GEO_PARM_UNIT,*) '   Variable dt Refinement Ratios:',varRefTime
         write(GEO_PARM_UNIT,*) ''
         
     end subroutine set_refinement

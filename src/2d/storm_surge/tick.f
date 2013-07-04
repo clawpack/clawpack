@@ -4,6 +4,7 @@ c
       subroutine tick(nvar,cut,nstart,vtime,time,naux,start_time,rest)
 c
       use geoclaw_module
+      use refinement_module, only: varRefTime
       use amr_module
       use storm_module, only: landfall
       use utility_module,only: convert2days

@@ -20,20 +20,12 @@ SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran
-FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
+FC = gfortran
+FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp  -O2
 
-#MAKELEVEL ?= 0
-#ifeq (${MAKELEVEL},0)
-#	# If you want to include NetCDF output add these flags
-#	# Note that the NETCDF_INC should point to the location of the hearder files
-#	# for NetCDF
-#	# NETCDF_INC ?= /usr/include
-#	# FFLAGS += -I$(NETCDF_INC) -lnetcdf -lnetcdff
-#
-#	# Threading flags
-#	FFLAGS += $(OMP_FLAG)
-#endif
+#FC = ifort
+#FFLAGS = -O2 -openmp  -C -CB -CU -check all -traceback -fpe0 -ftrapuv -fp-model precise
+#FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise -openmp
 
 # FFLAGS = -O3 -funroll-loops -finline-functions
 
@@ -84,6 +76,7 @@ SOURCES = \
   $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine2.f90  \
   $(GEOLIB)/allowflag.f90  \
+  $(AMRLIB)/flagregions2.f90  \
   $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
@@ -105,7 +98,11 @@ SOURCES = \
   $(AMRLIB)/cleanup.f \
   $(AMRLIB)/colate2.f \
   $(AMRLIB)/errest.f \
+  $(AMRLIB)/prepregstep.f \
+  $(AMRLIB)/prepbigstep.f \
   $(AMRLIB)/bufnst2.f \
+  $(AMRLIB)/flagger.f \
+  $(AMRLIB)/flagregions.f \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl2.f \
@@ -172,15 +169,13 @@ SOURCES = \
   $(AMRLIB)/restrt_alloc.f90 \
   $(AMRLIB)/resize_alloc.f90
 
-
-
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
 
+# Construct the topography data
+.PHONY: topo
 topo: .data
 	python maketopo.py
 
-
 ### DO NOT remove this line - make depends on it ###
-

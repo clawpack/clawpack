@@ -40,7 +40,6 @@ module geoclaw_module
     
     ! Method parameters    
     real(kind=8) :: dry_tolerance
-    logical :: varRefTime = .FALSE. ! Choose dt refinement automatically
 
 contains
 
@@ -95,7 +94,6 @@ contains
         endif
         read(unit,*)
         read(unit,*) dry_tolerance
-        read(unit,*) varRefTime
         
         close(unit)
 
@@ -125,7 +123,6 @@ contains
         write(GEO_PARM_UNIT,*) '   friction_depth:',friction_depth
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
-        write(GEO_PARM_UNIT,*) '   Variable dt Refinement Ratios:',varRefTime
 
     end subroutine set_geo
 
