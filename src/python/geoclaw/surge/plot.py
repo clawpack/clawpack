@@ -262,9 +262,14 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_pcolor')
         plotitem.plot_var = geoplot.surface_or_depth
         # plotitem.plot_var = geoplot.surface
-        plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+        
         # plotitem.pcolor_cmap = geoplot.tsunami_colormap
         if bounds is not None:
+            if bounds[0] == 0.0:
+                plotitem.pcolor_cmap = plt.get_cmap('OrRd')
+            else:
+                plotitem.pcolor_cmap = \
+                              colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
@@ -323,21 +328,22 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
         
-def add_friction(plotaxes,bounds=None,plot_type='pcolor'):
+def add_friction(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem = plotaxes.new_plotitem(name='friction',plot_type='2d_pcolor')
         plotitem.plot_var = friction_field
         plotitem.pcolor_cmap = plt.get_cmap('YlOrRd')
+        plotitem.colorbar_shrink = shrink
         if bounds is not None:
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
-        plotitem.colorbar_shrink = 0.5
-        plotitem.colorbar_label = "Manning's-N Coefficients"
+        plotitem.colorbar_shrink = shrink
+        plotitem.colorbar_label = "Manning's-$n$ Coefficient"
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
 
-def add_wind(plotaxes,bounds=None,plot_type='pcolor'):
+def add_wind(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = wind_speed
@@ -346,7 +352,7 @@ def add_wind(plotaxes,bounds=None,plot_type='pcolor'):
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
-        plotitem.colorbar_shrink = 0.5
+        plotitem.colorbar_shrink = shrink
         plotitem.colorbar_label = "Wind Speed (m/s)"
         # plotitem.amr_imshow_show = [1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
@@ -365,10 +371,11 @@ def add_wind(plotaxes,bounds=None,plot_type='pcolor'):
         plotitem.amr_quiver_key_show = [True,False,False]
         plotitem.amr_quiver_key_units = 'm/s'
         
-def add_pressure(plotaxes,bounds=None,plot_type='pcolor'):
+def add_pressure(plotaxes, bounds=None, plot_type='pcolor', shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         plotitem.plot_var = pressure
+        plotitem.colorbar_shrink = shrink
         plotitem.pcolor_cmap = plt.get_cmap('PuBu')
         if bounds is not None:
             plotitem.pcolor_cmin = bounds[0]
