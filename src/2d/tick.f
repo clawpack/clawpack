@@ -10,7 +10,7 @@ c
       implicit double precision (a-h,o-z)
 c     include  "call.i"
 
-      logical    vtime, dumpout, dumpchk, rest, dump_final
+      logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
 
 c
@@ -79,6 +79,7 @@ c        if this is a restart, make sure chkpt times start after restart time
       do 5 i       = 2, mxnest
        tlevel(i) = tlevel(1)
  5     continue
+
 c
 c  ------ start of coarse grid integration loop. ------------------
 c
