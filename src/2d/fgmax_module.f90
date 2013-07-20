@@ -1,4 +1,4 @@
-module fixedgrid_module
+module fgmax_module
 
     save
 
@@ -72,12 +72,12 @@ module fixedgrid_module
     integer, parameter :: FG_UNIT = 45
 
     ! number of max vals to monitor
-    ! these are specified in fixedgrid_values
+    ! these are specified in fgmax_values
     integer, parameter :: FG_NUM_VAL = 4
     ! number of aux vals to monitor
     integer, parameter :: FG_NUM_AUX = 1
 
-    ! number of fixed grids in use (set by fixedgrid_read):
+    ! number of fixed grids in use (set by fgmax_read):
     integer :: FG_num_fgrids
 
     ! turn on debugging output to fort.61:
@@ -91,4 +91,4 @@ module fixedgrid_module
     integer, parameter :: FG_arrival_level = 6
 
 
-end module fixedgrid_module
+end module fgmax_module

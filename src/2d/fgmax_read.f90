@@ -1,5 +1,5 @@
 
-subroutine fixedgrid_read()
+subroutine fgmax_read()
 
     ! Read in data file describing any fixed grids.
     ! The file is assumed to have the form:
@@ -19,7 +19,7 @@ subroutine fixedgrid_read()
     ! x(npts), y(npts)  # last grid point
     ! <repeat for additional grids from fgridno line>
 
-    use fixedgrid_module
+    use fgmax_module
     ! Note: should use mxnest in place of FG_AMR_MAX_LEVELS from above module
 
     implicit none
@@ -42,7 +42,7 @@ subroutine fixedgrid_read()
     if (FG_num_fgrids > FG_MAXNUM_FGRIDS) then
         write(6,601) FG_num_fgrids
  601    format('*** Too many fixed grids specified: FG_num_fgrids = i3',/, &
-               '*** Increase FG_MAXNUM_FGRIDS in fixedgrid_module.f90')
+               '*** Increase FG_MAXNUM_FGRIDS in fgmax_module.f90')
         stop
         endif
 
@@ -95,4 +95,4 @@ subroutine fixedgrid_read()
     close(FG_UNIT)
 
 
-end subroutine fixedgrid_read
+end subroutine fgmax_read

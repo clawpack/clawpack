@@ -366,7 +366,7 @@ program amr2
     call set_gauges('gauges.data')
 
     ! New fixed grid routines to keep track of max over computation:
-    call fixedgrid_read()
+    call fgmax_read()
 
     ! Look for capacity function via auxtypes:
     mcapa = 0
@@ -571,7 +571,7 @@ program amr2
 
     ! Done with computation, cleanup:
     ! Print out the new style fixed grid valmax and aux files:
-      call fixedgrid_finalize()
+    call fgmax_finalize()
 
 
     call system_clock(clock_finish,clock_rate)

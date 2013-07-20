@@ -1,17 +1,17 @@
 
 
-subroutine fixedgrid_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
+subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
            xlower,ylower,level,time,time_afterstep)
 
     ! Do the new fixed grid stuff on all fgrids, updating 
     ! based on the patch passed in.
 
-    use fixedgrid_module
+    use fgmax_module
 
     implicit none
     integer, intent(in) :: mx,my,meqn,mbc,maux,level
-    real(kind=8), intent(in) :: q(1-mbc:mx+mbc, 1-mbc:my+mbc, meqn)
-    real(kind=8), intent(in) :: aux(1-mbc:mx+mbc, 1-mbc:my+mbc, maux)
+    real(kind=8), intent(in) :: q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc)
+    real(kind=8), intent(in) :: aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc)
     real(kind=8), intent(in) :: dx,dy,xlower,ylower,time,time_afterstep
 
     real(kind=8), allocatable, dimension(:,:) :: fg_values
@@ -33,7 +33,7 @@ subroutine fixedgrid_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
 
         if (FG_DEBUG) then
             write(61,61) ifg,level,time
- 61         format('---------- In fixedgrid_frompatch ----------',/, &
+ 61         format('---------- In fgmax_frompatch ----------',/, &
                'ifg = ',i2,' level = ',i1,' time = ',d16.6)
             if (time_afterstep <= minval(fg%t_last_updated)+fg%dt_for_max) then
                 write(61,68) time, minval(fg%t_last_updated)
@@ -58,7 +58,7 @@ subroutine fixedgrid_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
             allocate(fg_values(FG_NUM_VAL, 1:fg%npts))
         
             ! Interpolate from q on patch to desired values fg_values on fgrid.
-            call fixedgrid_interpolate(mx,my,meqn,mbc,maux,q,aux, &
+            call fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux, &
                  dx,dy,xlower,ylower,ifg,level,fg_values,mask_fgrid,fg%npts)
         
             do k=1,fg%npts
@@ -94,4 +94,4 @@ subroutine fixedgrid_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
             endif
         enddo
 
-end subroutine fixedgrid_frompatch
+end subroutine fgmax_frompatch

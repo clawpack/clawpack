@@ -1,9 +1,9 @@
 
-subroutine fixedgrid_finalize()
+subroutine fgmax_finalize()
 
     ! Print out the maxval and aux arrays and de-allocate storage.
 
-    use fixedgrid_module
+    use fgmax_module
     ! Note: should use mxnest in place of FG_AMR_MAX_LEVELS from above module
 
     implicit none
@@ -57,4 +57,4 @@ subroutine fixedgrid_finalize()
         write(6,*) 'Fixed grid debugging written to fort.61'   
         endif
 
-end subroutine fixedgrid_finalize
+end subroutine fgmax_finalize

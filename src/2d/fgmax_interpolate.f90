@@ -1,5 +1,5 @@
 
-subroutine fixedgrid_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
+subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
            xlower,ylower,ifg,level,fg_values,mask_fgrid,fg_npts)
 
     ! Given a grid patch, return fg_values containing values interpolated
@@ -7,12 +7,12 @@ subroutine fixedgrid_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     ! If there are aux arrays, also set fg%aux at any points where it has
     ! not yet been set on this level.
 
-    use fixedgrid_module
+    use fgmax_module
 
     implicit none
     integer, intent(in) :: mx,my,meqn,mbc,maux,ifg,level,fg_npts
-    real(kind=8), intent(in) :: q(1-mbc:mx+mbc, 1-mbc:my+mbc, meqn)
-    real(kind=8), intent(in) :: aux(1-mbc:mx+mbc, 1-mbc:my+mbc, maux)
+    real(kind=8), intent(in) :: q(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc)
+    real(kind=8), intent(in) :: aux(maux, 1-mbc:mx+mbc, 1-mbc:my+mbc)
     real(kind=8), intent(in) :: dx,dy,xlower,ylower
     !real(kind=8), dimension(:,:), allocatable, intent(inout) :: fg_values
     !logical, dimension(:), allocatable, intent(inout) :: mask_fgrid
@@ -33,7 +33,7 @@ subroutine fixedgrid_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     debug = FG_DEBUG
     if (debug) then
         write(61,*) '========================================'
-        write(61,*) 'In fixedgrid_interpolate, Level = ',level
+        write(61,*) 'In fgmax_interpolate, Level = ',level
         endif
 
     fg => FG_fgrids(ifg)
@@ -119,7 +119,7 @@ subroutine fixedgrid_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     ! Set the array values to be the values that we want to update:
     ! Note that values will be set properly only where mask == .true.
     values = FG_NOTSET
-    call fixedgrid_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
+    call fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                    xlower,ylower,mask_patch,values)
     if (debug) then
         do i=1-mbc,mx+mbc
@@ -199,22 +199,22 @@ subroutine fixedgrid_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
             ! Compute coefficients needed for bilinear interpolation at all 
             ! patch points in the intersection with the fgrid bounding box:
             forall (i=1-mbc:mx+mbc, j=1-mbc:my+mbc, mask_patch(i,j))
-                a(i,j) = (aux(i+1,j,ma) - aux(i,j,ma)) / dx
-                b(i,j) = (aux(i,j+1,ma) - aux(i,j,ma)) / dy
-                c(i,j) = (aux(i+1,j+1,ma) + aux(i,j,ma) &
-                          - (aux(i+1,j,ma) + aux(i,j+1,ma))) / (dx*dy)
+                a(i,j) = (aux(ma,i+1,j) - aux(ma,i,j)) / dx
+                b(i,j) = (aux(ma,i,j+1) - aux(ma,i,j)) / dy
+                c(i,j) = (aux(ma,i+1,j+1) + aux(ma,i,j) &
+                          - (aux(ma,i+1,j) + aux(ma,i,j+1))) / (dx*dy)
                 end forall
     
             do k=1,fg%npts 
                 !print *, '+++ loop on k, aux = ', fg%aux(level,ma,k)
                 !print *, '+++ diff = ', fg%aux(level,ma,k) - FG_NOTSET
                 if (mask_fgrid(k) .and. (fg%aux(level,ma,k) == FG_NOTSET)) then
-                    fg%aux(level,ma,k) = aux(ik(k),jk(k),ma) &
+                    fg%aux(level,ma,k) = aux(ma,ik(k),jk(k)) &
                            + a(ik(k),jk(k))*dxk(k) &
                            + b(ik(k),jk(k))*dyk(k) &
                            + c(ik(k),jk(k))*dxk(k)*dyk(k)
                     !print *, '+++ set aux to ', fg%aux(level,ma,k)
-    !               write(6,64) ma,aux(ik(k),jk(k),ma),a(ik(k),jk(k)), &
+    !               write(6,64) ma,aux(ma,ik(k),jk(k)),a(ik(k),jk(k)), &
     !                  b(ik(k),jk(k)),c(ik(k),jk(k))
     !64             format('ma,aux,a,b,c: ',i2,4d16.6)
                     endif
@@ -230,4 +230,4 @@ subroutine fixedgrid_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
 
     deallocate(a,b,c,dxk,dyk,ik,jk,mask_patch)
 
-end subroutine fixedgrid_interpolate
+end subroutine fgmax_interpolate

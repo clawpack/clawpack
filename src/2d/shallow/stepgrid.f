@@ -208,7 +208,7 @@ c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 c     New fixed grid stuff: Update fixed grid info from this patch...
 
-      call fixedgrid_frompatch(mx,my,nvar,mbc,maux,q,aux,
+      call fgmax_frompatch(mx,my,nvar,mbc,maux,q,aux,
      &     dx,dy,xlowmbc,ylowmbc,level,time,time+dt)
 c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 c
