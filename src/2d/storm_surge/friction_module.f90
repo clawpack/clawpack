@@ -138,7 +138,7 @@ contains
 
         if (.not.variable_friction) then
             ! No variable friction
-            aux(friction_index,i,j) = manning_coefficient
+            aux(friction_index,:,:) = manning_coefficient
         else
             ! Set region based coefficients
             do m=1, num_friction_regions

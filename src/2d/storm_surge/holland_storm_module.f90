@@ -4,7 +4,7 @@
 ! Module contains routines for constructing a wind and pressure field based on
 ! the Holland hurricane module.  
 ! 
-! Many of these routines have been adapted from PADCIRC version 45.12 03/17/2006
+! Many of these routines are based loosely on PADCIRC version 45.12 03/17/2006
 ! ==============================================================================
 module holland_storm_module
 
@@ -56,7 +56,7 @@ module holland_storm_module
 contains
 
     ! Setup routine for the holland model
-    subroutine set_holland_storm(storm_data_path,storm,log_unit)
+    subroutine set_holland_storm(storm_data_path, storm, log_unit)
 
         use geoclaw_module, only: deg2rad, spherical_distance, coordinate_system
         use amr_module, only: t0, rinfinity
@@ -79,9 +79,16 @@ contains
         character(len=4) :: cast_type
         character(len=1) :: direction(2)
 
+        ! Note that the JAM file format has not been tested yet and will later
+        ! be added as an option.
+        character(len=4), parameter :: file_format = "NOAA"
+
         ! File format string
-        character(len=*), parameter :: file_format = "(8x,i4,i2,i2,i2,6x,a4,"//&
+        character(len=*), parameter :: JMA_FORMAT = "(i2,i2,i2,i2,8x,i3,1x,"//&
+                            "i4,1x,i4,5x,i3)"
+        character(len=*), parameter :: NOAA_FORMAT = "(8x,i4,i2,i2,i2,6x,a4,"//&
                             "2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,47x,i3,2x,i3)"
+
 
         ! Storm type only works on lat-long coordinate systems
         if (coordinate_system /= 2) then
@@ -107,9 +114,20 @@ contains
         num_casts = 0
         last_time = -rinfinity
         do
-            read(data_file,fmt=file_format,iostat=io_status) year,month,day, &
+            if (file_format == "NOAA") then
+                read(data_file,fmt=NOAA_FORMAT,iostat=io_status) year,month,day, &
                     hour,cast_type,forecast,lat,direction(2),lon,direction(1), &
                     max_wind_speed,central_pressure,RRP,max_wind_radius
+            else if (file_format == "JAM") then
+                ! JAM may be missing RRP parameter, may need to set this based
+                ! on other data in the file.  It is only used in the field 
+                ! ramping function so it might not be an issue
+                read(data_file,fmt=JMA_FORMAT,iostat=io_status) year, month, day, &
+                        hour, lat, lon, central_pressure, max_wind_speed, max_wind_radius
+            else
+                print *,"ERROR - Unrecognized storm data file format."
+                stop
+            endif
 
             ! Exit loop if we ran into an error or we reached the end of the file
             if (io_status /= 0) exit
@@ -135,9 +153,18 @@ contains
         ! Now re-read the file's contents
         i = 0
         do while (i < num_casts)
-            read(data_file,fmt=file_format) year,month,day,hour,cast_type, &
+            if (file_format == "NOAA") then
+                read(data_file,fmt=NOAA_FORMAT) year,month,day,hour,cast_type, &
                     forecast,lat,direction(2),lon,direction(1),max_wind_speed, &
                     central_pressure,RRP,max_wind_radius
+            else if (file_format == "JAM") then
+                read(data_file,fmt=JMA_FORMAT,iostat=io_status) year, month, day, &
+                        hour, lat, lon, central_pressure, max_wind_speed, max_wind_radius
+            else
+                print *,"ERROR - Unrecognized storm data file format."
+                stop
+            endif
+
 
             ! Skip counting this line if time is repeated
             forecast_time = date_to_seconds(year,month,day,hour,0,0.d0)

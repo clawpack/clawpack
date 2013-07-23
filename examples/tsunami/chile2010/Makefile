@@ -21,17 +21,12 @@ PLOTDIR = _plots               # Directory for plots
 RESTART = False
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC = gfortran
-FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -O2
+FC ?= gfortran
+FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -O2
 
 #FC = ifort
 #FFLAGS = -O2 -openmp  -C -CB -CU -check all -traceback -fpe0 -ftrapuv -fp-model precise
 #FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise -openmp
-
-#FC ?= gfortran
-#FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -g
-
-# FFLAGS = -O3 -funroll-loops -finline-functions
 
 # ---------------------------------
 # List of sources for this program:

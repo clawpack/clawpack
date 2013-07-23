@@ -31,10 +31,10 @@ c
 
 c     # how many aux components requested?
       output_aux_num = 0
-	  do i=1,naux
-		 output_aux_num = output_aux_num + output_aux_components(i)
-		 enddo
-		
+      do i=1,naux
+         output_aux_num = output_aux_num + output_aux_components(i)
+         enddo
+        
 c     # Currently outputs all aux components if any are requested!
       outaux = ((output_aux_num > 0) .and. 
      .         ((.not. output_aux_onlyonce) .or. (time==t0)))
@@ -192,7 +192,7 @@ c        # output aux array to fort.aXXXX
               mjtot   = ny + 2*nghost
 
 
-		  if (output_format == 1) then
+          if (output_format == 1) then
              open(unit=matunit3,file=fname3,status='unknown',
      .            form='formatted')
               if (ny.gt.1) then
@@ -222,8 +222,8 @@ c                 # output in 1d format if ny=1:
                 enddo
                 write(matunit3,*) ' '
              enddo
-			endif
-			
+            endif
+            
          if (output_format == 3) then
 c            # binary output          
              open(unit=matunit3,file=fname3,status='unknown',

@@ -252,27 +252,6 @@ def setrun(claw_pkg='geoclaw'):
         # and at the final time.
         clawdata.checkpt_interval = 5
 
-    # == setgauges.data values ==
-    # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    # rundata.gaugedata.add_gauge()
-
-    # gauges along x-axis:
-    gaugeno = 0
-    for r in np.linspace(86., 93., 9):
-        gaugeno = gaugeno+1
-        x = r + .001  # shift a bit away from cell corners
-        y = .001
-        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
-
-    # gauges along diagonal:
-    gaugeno = 100
-    for r in np.linspace(86., 93., 9):
-        gaugeno = gaugeno+1
-        x = (r + .001) / np.sqrt(2.)
-        y = (r + .001) / np.sqrt(2.)
-        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
-
-
     # ---------------
     # AMR parameters:
     # ---------------
@@ -313,18 +292,6 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.verbosity_regrid = 0  
 
 
-    # == setregions.data values ==
-    regions = rundata.regiondata.regions
-    # to specify regions of refinement append lines of the form
-    #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    regions.append([1, 1, 0., 1.e10, -100.,100., -100.,100.])
-    regions.append([1, 2, 0., 1.e10,    0.,100.,    0.,100.])
-    regions.append([2, 3, 3., 1.e10,   52., 72.,   52., 72.])
-    regions.append([2, 3, 3., 1.e10,   75., 95.,   -10.,  10.])
-    regions.append([2, 4, 3.4, 1.e10,   57., 68.,   57., 68.])
-    regions.append([2, 4, 3.4, 1.e10,   83., 92.,   -4.,  4.])
-
-
     #  ----- For developers ----- 
     # Toggle debugging print statements:
     amrdata.dprint = False      # print domain flags
@@ -337,6 +304,39 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.sprint = False      # space/memory output
     amrdata.tprint = False      # time step reporting each level
     amrdata.uprint = False      # update/upbnd reporting
+    
+    # More AMR parameters can be set -- see the defaults in pyclaw/data.py
+
+    # == setregions.data values ==
+    regions = rundata.regiondata.regions
+    # to specify regions of refinement append lines of the form
+    #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
+    regions.append([1, 1, 0., 1.e10, -100.,100., -100.,100.])
+    regions.append([1, 2, 0., 1.e10,    0.,100.,    0.,100.])
+    regions.append([2, 3, 3., 1.e10,   52., 72.,   52., 72.])
+    regions.append([2, 3, 3., 1.e10,   75., 95.,   -10.,  10.])
+    regions.append([2, 4, 3.4, 1.e10,   57., 68.,   57., 68.])
+    regions.append([2, 4, 3.4, 1.e10,   83., 92.,   -4.,  4.])
+
+    # == setgauges.data values ==
+    # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
+    # rundata.gaugedata.add_gauge()
+
+    # gauges along x-axis:
+    gaugeno = 0
+    for r in np.linspace(86., 93., 9):
+        gaugeno = gaugeno+1
+        x = r + .001  # shift a bit away from cell corners
+        y = .001
+        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
+
+    # gauges along diagonal:
+    gaugeno = 100
+    for r in np.linspace(86., 93., 9):
+        gaugeno = gaugeno+1
+        x = (r + .001) / np.sqrt(2.)
+        y = (r + .001) / np.sqrt(2.)
+        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
     
 
     return rundata
