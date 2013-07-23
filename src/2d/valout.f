@@ -31,15 +31,16 @@ c
 
 c     # how many aux components requested?
       output_aux_num = 0
-	  do i=1,naux
-		 output_aux_num = output_aux_num + output_aux_components(i)
-		 enddo
-		
+      do i=1,naux
+         output_aux_num = output_aux_num + output_aux_components(i)
+         enddo
+        
 c     # Currently outputs all aux components if any are requested!
       outaux = ((output_aux_num > 0) .and. 
      .         ((.not. output_aux_onlyonce) .or. (time==t0)))
 
 c     open(unit=77,file='fort.b',status='unknown',access='stream')
+
 
 c     ### Python graphics output
 c
@@ -134,34 +135,6 @@ c                 # output in 1d format if ny=1:
                    ! Calculate surfaces
                    eta = h + alloc(iaddaux(1,i,j))
                    if (abs(eta) < 1d-90) then
-                     eta = 0.d0
-                   end if
-
-                   write(matunit1,109) h,hu,hv,eta
-                enddo
-                write(matunit1,*) ' '
-             enddo
-  109        format(4e26.16)
-         endif
-
-         if (output_format == 3) then
-c            # binary output          
-c            i1 = iadd(1,1,1)
-c            i2 = iadd(nvar,mitot,mjtot)
-c            # Need to augment q with eta:
-             allocate(qeta(4*mitot*mjtot))
-             do j=1,mjtot
-                 do i=1,mitot
-                    do m=1,3
-                        qeta(iaddqeta(m,i,j)) = alloc(iadd(m,i,j))
-                    enddo
-                    eta = alloc(iadd(1,i,j)) + alloc(iaddaux(1,i,j))
-                    qeta(iaddqeta(4,i,j)) = eta
-                 enddo
-             enddo
-
-c            # NOTE: we are writing out ghost cell data also, unlike ascii
-             write(matunit4) qeta
                       eta = 0.d0
                    end if
 
@@ -219,7 +192,7 @@ c        # output aux array to fort.aXXXX
               mjtot   = ny + 2*nghost
 
 
-		  if (output_format == 1) then
+          if (output_format == 1) then
              open(unit=matunit3,file=fname3,status='unknown',
      .            form='formatted')
               if (ny.gt.1) then
@@ -249,8 +222,8 @@ c                 # output in 1d format if ny=1:
                 enddo
                 write(matunit3,*) ' '
              enddo
-			endif
-			
+            endif
+            
          if (output_format == 3) then
 c            # binary output          
              open(unit=matunit3,file=fname3,status='unknown',
