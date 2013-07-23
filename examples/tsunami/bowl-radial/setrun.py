@@ -77,7 +77,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 5
+    clawdata.num_aux = 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 0
@@ -164,7 +164,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    clawdata.cfl_desired = 0.75
+    clawdata.cfl_desired = 0.9
     clawdata.cfl_max = 1.0
 
     # Maximum number of time steps to allow between output times:
@@ -252,7 +252,6 @@ def setrun(claw_pkg='geoclaw'):
         # and at the final time.
         clawdata.checkpt_interval = 5
 
-
     # ---------------
     # AMR parameters:
     # ---------------
@@ -338,6 +337,7 @@ def setrun(claw_pkg='geoclaw'):
         x = (r + .001) / np.sqrt(2.)
         y = (r + .001) / np.sqrt(2.)
         rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
+    
 
     return rundata
     # end of function setrun

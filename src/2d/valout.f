@@ -130,7 +130,6 @@ c                 # output in 1d format if ny=1:
                    h = alloc(iadd(1,i,j)) 
                    hu = alloc(iadd(2,i,j))
                    hv = alloc(iadd(3,i,j))
-<<<<<<< HEAD
 
                    ! Calculate surfaces
                    eta = h + alloc(iaddaux(1,i,j))
@@ -163,6 +162,15 @@ c            # Need to augment q with eta:
 
 c            # NOTE: we are writing out ghost cell data also, unlike ascii
              write(matunit4) qeta
+                      eta = 0.d0
+                   end if
+
+                   write(matunit1,109) h,hu,hv,eta
+                enddo
+                write(matunit1,*) ' '
+             enddo
+  109        format(4e26.16)
+         endif
 
          if (output_format == 3) then
 c            # binary output          
@@ -182,6 +190,7 @@ c            # Need to augment q with eta:
 
 c            # NOTE: we are writing out ghost cell data also, unlike ascii
              write(matunit4) qeta
+
              deallocate(qeta)
              endif
 

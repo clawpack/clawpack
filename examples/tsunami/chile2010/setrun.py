@@ -32,6 +32,7 @@ def setrun(claw_pkg='geoclaw'):
     num_dim = 2
     rundata = clawdata.ClawRunData(claw_pkg, num_dim)
 
+
     #------------------------------------------------------------------
     # Problem-specific parameters to be written to setprob.data:
     #------------------------------------------------------------------
@@ -260,13 +261,40 @@ def setrun(claw_pkg='geoclaw'):
         clawdata.checkpt_interval = 5
 
 
+    # --------------
+    # Checkpointing:
+    # --------------
+
+    # Specify when checkpoint files should be created that can be
+    # used to restart a computation.
+
+    clawdata.checkpt_style = 0
+
+    if clawdata.checkpt_style == 0:
+        # Do not checkpoint at all
+        pass
+
+    elif clawdata.checkpt_style == 1:
+        # Checkpoint only at tfinal.
+        pass
+
+    elif clawdata.checkpt_style == 2:
+        # Specify a list of checkpoint times.  
+        clawdata.checkpt_times = [0.1,0.15]
+
+    elif clawdata.checkpt_style == 3:
+        # Checkpoint every checkpt_interval timesteps (on Level 1)
+        # and at the final time.
+        clawdata.checkpt_interval = 5
+
+
     # ---------------
     # AMR parameters:
     # ---------------
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    clawdata.amr_levels_max = 3
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
     amrdata.refinement_ratios_x = [2,6]
@@ -299,7 +327,6 @@ def setrun(claw_pkg='geoclaw'):
     # print info about each regridding up to this level:
     amrdata.verbosity_regrid = 0  
 
-
     #  ----- For developers ----- 
     # Toggle debugging print statements:
     amrdata.dprint = False      # print domain flags
@@ -315,16 +342,22 @@ def setrun(claw_pkg='geoclaw'):
     
     # More AMR parameters can be set -- see the defaults in pyclaw/data.py
 
-    # == setregions.data values ==
+    # ---------------
+    # Regions:
+    # ---------------
     rundata.regiondata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
     rundata.regiondata.regions.append([3, 3, 0., 10000., -85,-72,-38,-25])
     rundata.regiondata.regions.append([3, 3, 8000., 26000., -90,-80,-30,-15])
 
-    # == setgauges.data values ==
+    # ---------------
+    # Gauges:
+    # ---------------
+    rundata.gaugedata.gauges = []
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
     rundata.gaugedata.gauges.append([32412, -86.392, -17.975, 0., 1.e10])
+    
 
     return rundata
     # end of function setrun
