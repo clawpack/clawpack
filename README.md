@@ -29,13 +29,14 @@ Although the Clawpack packages have been set up as independent repositories, occ
 ## Creating a read-only development version of Clawpack
 
 ```
-git clone git://github.com:username/clawpack.git
+git clone git://github.com:clawpack/clawpack.git
 cd clawpack
 python setup.py git-dev
 # optionally, for installation of Python components
 pip install -e .
 ```
 
+This downloads all of the clawpack modules as subrepositories checked out at specific commits (as opposed to the tip of a branch).  
 
 ## Contributing to Clawpack!
 
@@ -51,7 +52,7 @@ Optionally, you may also create a top-level clawpack branch and submit a pull re
 
 ## Creating a development version of Clawpack for modification on GitHub/submitting pull requests
 
-First, head to http://github.com/clawpack and fork all repositories that you will be working with.  You will probably need to fork all of the following:
+First, head to http://github.com/clawpack and fork the repositories that you will be working with.  You will probably need to fork one or more of the following:
 
 * amrclaw
 * clawpack
@@ -61,23 +62,18 @@ First, head to http://github.com/clawpack and fork all repositories that you wil
 * riemann
 * visclaw
 
-Then, create a clone of the top-level clawpack repository by replacing `username` with your GitHub username in the command below.
+Then, for each submodule you'd like to modify, add your own repository as a remote.  Here's an example for publishing changes to geoclaw (replace `username` below with your own username).
 
 ```
-git clone git@github.com:username/clawpack.git
-cd clawpack
-python setup.py git-dev
-# optionally, for installation of Python components
-pip install -e .
-```
-
-This downloads all of the clawpack modules as subrepositories checked out at specific commits (as opposed to the tip of a branch).  The head for each subrepository is detached, so you will need to check out a branch to save changes.  
-
-```
-cd pyclaw
-git checkout -b my_feature
-# you may want to merge from upstream here
-git checkout -b new_change
+cd geoclaw
+git remote add username git@github.com:username
+# you may want to start from upstream
+git checkout -b new_feature origin/master
+# make some changes
+git commit
+# push your changes to your GitHub repository
+git push username 
+# open pull request on GitHub
 ```
 
 ## Working with a Maintenance Version of Clawpack
