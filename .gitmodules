@@ -10,3 +10,11 @@
 [submodule "riemann"]
 	path = riemann
 	url = ../riemann
+[submodule "amrclaw"]
+	path = amrclaw
+	url = ../amrclaw
+[submodule "geoclaw"]
+	path = geoclaw
+	url = ../geoclaw
+
+	   
