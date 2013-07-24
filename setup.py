@@ -1,7 +1,18 @@
 """Clawpack: Python-based Clawpack installer
+
+This installer provides:
+
+* automated clawpack subpackage developer environment setup 
+* installation of Python modules from clawpack subpackages 
+  in the clawpack.package namespace
+
+Please send an email to claw-dev@googlegroups.com for any general questions
+or raise installation-related issues and pull requests to our GitHub repository:
+
+http://github.com/clawpack/clawpack
 """
 
-# much of the functionality of this file was taken from the scipy setup.py script.
+# some of the functionality of this file is reused from the SciPy setup.py script.
 
 DOCLINES = __doc__.split("\n")
 
@@ -11,12 +22,36 @@ import warnings
 import subprocess
 import shutil
 import re
+import time
 
-if sys.version_info[0] < 3:
-    import __builtin__ as builtins
-else:
-    import builtins
+join = os.path.join
+SUBPACKAGES = {
+    'amrclaw': {
+        'python_src_dir': [('amrclaw', join('src', 'python'))]
+    },
+    'clawutil': {
+        'python_src_dir': [('clawutil', join('src', 'python'))]
+    },                
+    'geoclaw': {
+        'python_src_dir': [('geoclaw', join('src', 'python'))]
+    },
+    'pyclaw': {
+        'python_src_dir': [('pyclaw', 'src'),
+                           ('petclaw', 'src')]
+    },
+    'riemann': {
+        'python_src_dir': [('riemann', join('src', 'python'))],
+        'fortran_src_dir': join('src')
+    },
+    'visclaw': {
+        'python_src_dir': [('visclaw', join('src', 'python'))]
+    },            
+}
 
+#########################
+### BEGIN BOILERPLATE ### 
+#########################
+    
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
 Intended Audience :: Science/Research
@@ -30,7 +65,7 @@ Operating System :: POSIX
 Operating System :: Unix
 Operating System :: MacOS
 
-"""
+"""  
 
 MAJOR               = 0
 MINOR               = 1
@@ -66,13 +101,20 @@ def git_version():
 
     return GIT_REVISION
 
-
-# BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
-# update it when the contents of directories change.
-if os.path.exists('MANIFEST'):
-    os.remove('MANIFEST')
-
 def write_version_py(filename=version_file_path):
+
+    old_path = os.getcwd()
+    local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    src_path = local_path
+
+    os.chdir(local_path)
+    sys.path.insert(0, local_path)
+    sys.path.insert(0, os.path.join(local_path, 'clawpack'))  # to retrieve version
+
+    old_path = os.getcwd()
+    os.chdir(src_path)
+    sys.path.insert(0, src_path)
+
     cnt = """
 # THIS FILE IS GENERATED FROM CLAWPACK SETUP.PY
 short_version = '%(version)s'
@@ -85,8 +127,9 @@ if not release:
     version = full_version
 """
     # Adding the git rev number needs to be done inside
-    # write_version_py(), otherwise the import of scipy.version messes
+    # write_version_py(), otherwise the import of clawpack.version messes
     # up the build under Python 3.
+
     FULLVERSION = VERSION
     if os.path.exists('.git'):
         GIT_REVISION = git_version()
@@ -99,15 +142,40 @@ if not release:
     if not ISRELEASED:
         FULLVERSION += '.dev-' + GIT_REVISION[:7]
 
-    a = open(filename, 'w')
-    try:
+    with open(filename, 'w') as a:
         a.write(cnt % {'version': VERSION,
                        'full_version' : FULLVERSION,
                        'git_revision' : GIT_REVISION,
                        'isrelease': str(ISRELEASED)})
-    finally:
-        a.close()    
 
+    del sys.path[0]
+    os.chdir(old_path)
+
+#########################
+###  END BOILERPLATE  ### 
+#########################
+    
+def symlink(src, target):
+    """ symlinks src to target if target does not already exist
+
+    Both paths may be relative (they are parsed through os.path.abspath)
+    """
+    src = os.path.abspath(src)
+    target = os.path.abspath(target)
+
+    if not os.path.exists(src):
+        raise IOError("trying to symlink %s: which does not exist" % (src))
+    
+    if not os.path.exists(target):
+        os.symlink(os.path.abspath(src), target)
+
+def unsymlink(target):
+    """ unsymlinks target if it exists
+    """
+
+    if os.path.exists(target):
+        os.unlink(target)
+    
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
 
@@ -122,24 +190,69 @@ def configuration(parent_package='',top_path=None):
     return config
 
 
-def setup_package():
-    import sys
-    # Rewrite the version file everytime
+def dev_setup(subpackages):
+    """clawpack developer environment setup 
+    
+user has a .git subdirectory, assume they want us to set up submodules for them.
 
-    old_path = os.getcwd()
-    local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    src_path = local_path
+For each package in subpackages:
+if the package directory does not exist or is empty, calls: 
+    git submodule init <package> 
+    git submodule update <package> 
 
-    os.chdir(local_path)
-    sys.path.insert(0, local_path)
-    sys.path.insert(0, os.path.join(local_path, 'clawpack'))  # to retrieve version
+with timeouts for update, which may be over a fickle remote connection
 
-    old_path = os.getcwd()
-    os.chdir(src_path)
-    sys.path.insert(0, src_path)
+After each package is checked out, build symbolic links to ./clawpack/package
+which allows for a consistent clawpack.package namespace.
+"""
+    if not os.path.exists('.git'):
+        raise Exception("Developer setup requested but top-level clawpack" + \
+                        " is not a git repository")
 
+    for package, package_dict in subpackages.items():
+        if not os.path.exists(package) or not (os.listdir(package)):
+            subprocess.check_call(['git', 'submodule', 'init', package])
+
+            fails = 0
+            while fails < 20 and subprocess.call(['git', 'submodule', 'update', 
+                                                  package]):
+                fails = fails+1
+                print "having difficulties updating submodules," + \
+                  "waiting 5s and trying again [fail %d/20]" % fails
+                time.sleep(5)
+
+        for subpackage, src_dir in package_dict['python_src_dir']:
+            symlink(os.path.join(package, src_dir, subpackage),
+                    os.path.join('clawpack', subpackage))
+        if 'fortran_src_dir' in package_dict:
+            symlink(os.path.join(package, package_dict['fortran_src_dir']), 
+                    os.path.join('clawpack', package, 'src'))
+                
+        print "Git development environment initialized for:", package
+
+def setup_package(setup_dict, subpackages):
+    from numpy.distutils.core import setup
+
+    # Rewrite the version file every time we install
     write_version_py()
 
+    # we may end up mucking with symbolic path links for the install 
+    # to support a consistent clawpack.package namespace
+    # the finally clause here undoes a potentially dangerous 
+    # recursive symbolic link that is needed for the numpy.distutils
+    # machinery to properly understand some Fortran source paths
+    try:
+        if os.path.exists('.git'):
+            dev_setup(subpackages)
+        setup(configuration=configuration,
+              **setup_dict)
+    finally:
+        for package, package_dict in subpackages.items(): 
+            if 'fortran_src_dir' in package_dict:
+                unsymlink(os.path.join('clawpack', package, 'src'))
+
+
+if __name__ == '__main__':
     setup_dict = dict(
         name = 'clawpack',
         maintainer = "Clawpack Developers",
@@ -153,70 +266,24 @@ def setup_package():
         platforms = ["Linux", "Solaris", "Mac OS-X", "Unix"],
         )
 
-    try:
-        if 'egg_info' in sys.argv:
-            # only egg information for downloading requirements
-            from setuptools import setup
-            setuptools_dict = dict(
-                install_requires = ['numpy >= 1.6',
-                                    'matplotlib >= 1.0.1',
-                                    ],                            
-                extras_require = {'petclaw': ['petsc4py >= 1.2'],
-                                  'euler'  : ['scipy >= 0.10.0']},
-                )
-            setup_dict.update(setuptools_dict)
-            setup(**setup_dict)
-            return
-
-        if os.path.exists('.git'):
-            if not os.path.exists('pyclaw/.git') or not os.path.exists('riemann/.git') \
-            or not os.path.exists('visclaw/.git') or not os.path.exists('clawutil/.git'):
-               from numpy.distutils.exec_command import exec_command
-               exec_command(['git', 'submodule', 'init'])
-               fails = 0
-               while fails < 20 and exec_command(['git', 'submodule', 'update'])[1]:
-                   fails = fails+1
-                   import time
-                   print "having difficulties updating submodules, waiting 5s and trying again [fail %d/20]" % fails
-                   time.sleep(5)
-            # *always* need these
-            # now build symbolic links to repositories
-            if not os.path.exists('clawpack/clawutil'):
-                os.symlink(os.path.abspath('clawutil/src/python/clawutil'),
-                           'clawpack/clawutil')
-            if not os.path.exists('clawpack/riemann'):
-                os.symlink(os.path.abspath('riemann/src/python/riemann'),
-                           'clawpack/riemann')
-                # need this one to build Fortran sources naturally
-            if not os.path.exists('clawpack/riemann/src'):
-                os.symlink(os.path.abspath('riemann/src'),
-                           'clawpack/riemann/src')
-            if not os.path.exists('clawpack/visclaw'):
-                os.symlink(os.path.abspath('visclaw/src/python/visclaw'),
-                           'clawpack/visclaw')
-            if not os.path.exists('clawpack/pyclaw'):
-                os.symlink(os.path.abspath('pyclaw/src/pyclaw'),
-                           'clawpack/pyclaw')
-            if not os.path.exists('clawpack/petclaw'):
-                os.symlink(os.path.abspath('pyclaw/src/petclaw'),
-                           'clawpack/petclaw')
-            if not os.path.exists('clawpack/peanoclaw'):
-                os.symlink(os.path.abspath('pyclaw/src/peanoclaw'),
-                           'clawpack/peanoclaw')
-
-            from numpy.distutils.core import setup
-            setup(configuration=configuration,
-                  **setup_dict)
-
-    except Exception as err:
-        print err
-        raise err
-    finally:
-        if os.path.exists('clawpack/riemann/src'):
-                os.unlink('clawpack/riemann/src')
-        del sys.path[0]
-        os.chdir(old_path)
-    return
-
-if __name__ == '__main__':
-    setup_package() 
+    # python setup.py git-dev sets up subpackages
+    if 'git-dev' in sys.argv:
+        # not a real install
+        dev_setup(SUBPACKAGES)
+    # egg_info requests only provide install requirements
+    # this is how "pip install clawpack" installs numpy correctly.
+    elif 'egg_info' in sys.argv:
+        # not a real install
+        from setuptools import setup
+        setuptools_dict = dict(
+            install_requires = ['numpy >= 1.6',
+                                'matplotlib >= 1.0.1',
+                                ],                            
+            extras_require = {'petclaw': ['petsc4py >= 1.2'],
+                              'euler'  : ['scipy >= 0.10.0']},
+            )
+        setup_dict.update(setuptools_dict)
+        setup(**setup_dict)
+    else:
+        # okay, real install
+        setup_package(setup_dict, SUBPACKAGES) 

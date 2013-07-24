@@ -5,12 +5,14 @@ clawpack/petclaw
 clawpack/pyclaw
 clawpack/riemann
 clawpack/visclaw
+clawpack/amrclaw
+clawpack/geoclaw
 clawpack/version.py
 
-# ignore silly log files
+# ignore build directory
+build
 
+# ignore silly .pyc, log, and egg files
+*.pyc
 *.log
-
-# ignore silly egg files
-
 *.egg-info
