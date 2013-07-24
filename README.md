@@ -38,9 +38,17 @@ pip install -e .
 
 ## Creating a development version of Clawpack for modification on GitHub/submitting pull requests
 
-First, head to http://clawpack.github.com and fork all repositories that you will be working with.  This step isn't mandatory, but if you're not very confident with git, it's highly recommended :)
+First, head to http://github.com/clawpack and fork all repositories that you will be working with.  You will probably need to fork all of the following:
 
-Replace `username` with your GitHub username below.
+* amrclaw
+* clawpack
+* clawutil
+* geoclaw
+* pyclaw
+* riemann
+* visclaw
+
+Then, create a clone of the top-level clawpack repository by replace `username` with your GitHub username in the command below.
 
 ```
 git clone git@github.com:username/clawpack.git
