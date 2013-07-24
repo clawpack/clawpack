@@ -14,14 +14,10 @@ c
       integer listgrids(numgrids(level))
       integer clock_start, clock_finish, clock_rate
 
-
 c     maxgr is maximum number of grids  many things are
 c     dimensioned at, so this is overall. only 1d array
 c     though so should suffice. problem is
 c     not being able to dimension at maxthreads
-
-      integer locfp_save(maxgr)
-      integer locgp_save(maxgr)
 
 
 c
@@ -44,15 +40,14 @@ c get start time for more detailed timing by level
 c     maxthreads initialized to 1 above in case no openmp
 !$    maxthreads = omp_get_max_threads()
 
+c We want to do this regardless of the threading type
 !$OMP PARALLEL DO PRIVATE(j,locnew, locaux, mptr,nx,ny,mitot
 !$OMP&                    ,mjtot,time),
 !$OMP&            SHARED(level,nvar,naux,alloc,intrat,delt,
 !$OMP&                   nghost,node,rnode,numgrids,listgrids),
 !$OMP&            SCHEDULE (dynamic,1)
-ccccccc!$OMP&            DEFAULT(none),
+!$OMP&            DEFAULT(none),
       do  j = 1, numgrids(level)
-c          mget is n^2 alg.
-c          mptr   = mget(j,level)
           mptr = listgrids(j)
           nx     = node(ndihi,mptr) - node(ndilo,mptr) + 1
           ny     = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
@@ -82,63 +77,96 @@ c      call fgrid_advance(time,delt)
       dtlevnew = rinfinity
       cfl_level = 0.d0    !# to keep track of max cfl seen on each level
 c 
-c each grid needs to get extra storage for integration serially (for now at least) in case
-c dynamic memory moves the alloc array during expansion.  so get it once and for all for
-c biggest chunk it may need. That uses max1d on a side, which for parallel apps.
-c is generally much smaller than serial, though this could be a waste.
-c remember that max1d includes ghost cells
-c
-c if necessary can have each thread use max of grids it owns, but then
-c cant use dynamic grid assignments.
-c
-c next loop will get enough storage, it wont be dimensioned as called for
-c grids smaller than max1d on a side.
-      do j = 1, maxthreads
         
-        locfp_save(j) = igetsp(2*max1d*max1d*nvar)
-        locgp_save(j) = igetsp(2*max1d*max1d*nvar)
 
-      end do
-
-!$OMP PARALLEL DO PRIVATE(j,locold, locnew, mptr,nx,ny,mitot,mjtot)  
-!$OMP&            PRIVATE(locfp, locfm, locgp,locgm,ntot,xlow,ylow)
-!$OMP&            PRIVATE(locaux,lenbc,locsvf,locsvq,locx1d,i)
-!$OMP&            PRIVATE(dtnew,time,mythread)
-!$OMP&            SHARED(rvol,rvoll,level,nvar,mxnest,alloc,intrat,delt)
+!$OMP PARALLEL DO PRIVATE(j,mptr,nx,ny,mitot,mjtot)  
+!$OMP&            PRIVATE(mythread,dtnew)
+!$OMP&            SHARED(rvol,rvoll,level,nvar,mxnest,alloc,intrat)
 !$OMP&            SHARED(nghost,intratx,intraty,hx,hy,naux,listsp)
 !$OMP&            SHARED(node,rnode,dtlevnew,numgrids,listgrids)
-!$OMP&            SHARED(locfp_save,locgp_save)
 !$OMP&            SCHEDULE (DYNAMIC,1)
 !$OMP&            DEFAULT(none)
       do  j = 1, numgrids(level)
-c          mptr   = mget(j,level)
           mptr = listgrids(j)
-          locold = node(store2, mptr)
-          locnew = node(store1, mptr)
           nx     = node(ndihi,mptr) - node(ndilo,mptr) + 1
           ny     = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
-          time   = rnode(timemult,mptr)
-c
           mitot  = nx + 2*nghost
           mjtot  = ny + 2*nghost
-
-c         ::: get scratch storage for fluxes and slopes
-!--          locfp = igetsp(mitot*mjtot*nvar)
-!--          locfm = igetsp(mitot*mjtot*nvar)
-!--          locgp = igetsp(mitot*mjtot*nvar)
-!--          locgm = igetsp(mitot*mjtot*nvar)
 c
-c next way so dont call igetsp so much, less parallel bottleneck in critical section
-!--           locfp = igetsp(2*mitot*mjtot*nvar)
-!--           locfm = locfp + mitot*mjtot*nvar
-!--           locgp = igetsp(2*mitot*mjtot*nvar)
-!--           locgm = locgp + mitot*mjtot*nvar
-c next way for dynamic memory enlargement safety
+          call par_advanc(mptr,mitot,mjtot,nvar,naux,dtnew)
+!$OMP CRITICAL (newdt)
+          dtlevnew = dmin1(dtlevnew,dtnew)
+!$OMP END CRITICAL (newdt)    
+
+      end do
+!$OMP END PARALLEL DO
+c
+      call system_clock(clock_finish,clock_rate)
+      tvoll(level) = tvoll(level) + clock_finish - clock_start
+
+c
+      return
+      end
+c
+c -------------------------------------------------------------
+c
+       subroutine prepgrids(listgrids,num, level)
+
+       use amr_module
+       implicit double precision (a-h,o-z)
+       integer listgrids(num)
+
+       mptr = lstart(level)
+       do j = 1, num
+          listgrids(j) = mptr
+          mptr = node(levelptr, mptr)
+       end do
+
+      if (mptr .ne. 0) then
+         write(*,*)" Error in routine setting up grid array "
+         stop
+      endif
+
+      return
+      end
+
+c
+c --------------------------------------------------------------
+c
+      subroutine par_advanc (mptr,mitot,mjtot,nvar,naux,dtnew)
+c
+      use amr_module
+      implicit double precision (a-h,o-z)
+
+
+      integer omp_get_thread_num, omp_get_max_threads
+      integer mythread/0/, maxthreads/1/
+
+      double precision fp(nvar,mitot,mjtot),fm(nvar,mitot,mjtot)
+      double precision gp(nvar,mitot,mjtot),gm(nvar,mitot,mjtot)
+
+
+c
+c  :::::::::::::: PAR_ADVANC :::::::::::::::::::::::::::::::::::::::::::
+c  integrate this grid. grids are done in parallel.
+c  extra subr. used to allow for stack based allocation of
+c  flux arrays. They are only needed temporarily. If used alloc
+c  array for them it has too long a lendim, makes too big
+c  a checkpoint file, and is a big critical section.
+c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+c
+      level = node(nestlevel,mptr)
+      hx    = hxposs(level)
+      hy    = hyposs(level)
+      delt  =  possk(level)
+      nx    = node(ndihi,mptr) - node(ndilo,mptr) + 1
+      ny    = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
+      time  = rnode(timemult,mptr)
+
 !$         mythread = omp_get_thread_num()
-           locfp = locfp_save(mythread+1)
-           locfm = locfp + mitot*mjtot*nvar
-           locgp = locgp_save(mythread+1)
-           locgm = locgp + mitot*mjtot*nvar
+
+      locold = node(store2, mptr)
+      locnew = node(store1, mptr)
 
 c
 c  copy old soln. values into  next time step's soln. values
@@ -190,77 +218,27 @@ c    should change the way  dumpguage does io - right now is critical section
      .                    nvar,mitot,mjtot,naux,mptr)
 
 c
-      call stepgrid(alloc(locnew),alloc(locfm),alloc(locfp),
-     1            alloc(locgm),alloc(locgp),
+      call stepgrid(alloc(locnew),fm,fp,gm,gp,
      2            mitot,mjtot,nghost,
      3            delt,dtnew,hx,hy,nvar,
      4            xlow,ylow,time,mptr,naux,alloc(locaux))
 
       if (node(cfluxptr,mptr) .ne. 0)
-     1   call fluxsv(mptr,alloc(locfm),alloc(locfp),
-     2               alloc(locgm),alloc(locgp),
+     2   call fluxsv(mptr,fm,fp,gm,gp,
      3               alloc(node(cfluxptr,mptr)),mitot,mjtot,
      4               nvar,listsp(level),delt,hx,hy)
       if (node(ffluxptr,mptr) .ne. 0) then
          lenbc = 2*(nx/intratx(level-1)+ny/intraty(level-1))
          locsvf = node(ffluxptr,mptr)
-         call fluxad(alloc(locfm),alloc(locfp),
-     1               alloc(locgm),alloc(locgp),
+         call fluxad(fm,fp,gm,gp,
      2               alloc(locsvf),mptr,mitot,mjtot,nvar,
      4               lenbc,intratx(level-1),intraty(level-1),
      5               nghost,delt,hx,hy)
       endif
 c
-!--          call reclam(locfp, mitot*mjtot*nvar)
-!--          call reclam(locfm, mitot*mjtot*nvar)
-!--          call reclam(locgp, mitot*mjtot*nvar)
-!--          call reclam(locgm, mitot*mjtot*nvar)
-c         next way to reclaim was to minimize calls to
-c         reclam, due to critical section and openmp
-!--          call reclam(locfp, 2*mitot*mjtot*nvar)
-!--          call reclam(locgp, 2*mitot*mjtot*nvar)
-
-!$OMP CRITICAL (newdt)
-          dtlevnew = dmin1(dtlevnew,dtnew)
-!$OMP END CRITICAL (newdt)    
-c
+         write(outunit,969) mythread,delt, dtnew
+ 969     format(" thread ",i4," updated by ",e15.7, " new dt ",e15.7)
           rnode(timemult,mptr)  = rnode(timemult,mptr)+delt
-      end do
-!$OMP END PARALLEL DO
 c
-c     debug statement:
-c     write(*,*)" from advanc: level ",level," dtlevnew ",dtlevnew
-
-      call system_clock(clock_finish,clock_rate)
-      tvoll(level) = tvoll(level) + clock_finish - clock_start
-
-c new way to reclaim for safety with dynamic memory and openmp
-      do j = 1, maxthreads
-        call reclam(locfp_save(j),2*max1d*max1d*nvar)
-        call reclam(locgp_save(j),2*max1d*max1d*nvar)
-      end do      
-c
-      return
-      end
-c
-c -------------------------------------------------------------
-c
-       subroutine prepgrids(listgrids,num, level)
-
-       use amr_module
-       implicit double precision (a-h,o-z)
-       integer listgrids(num)
-
-       mptr = lstart(level)
-       do j = 1, num
-          listgrids(j) = mptr
-          mptr = node(levelptr, mptr)
-       end do
-
-      if (mptr .ne. 0) then
-         write(*,*)" Error in routine setting up grid array "
-         stop
-      endif
-
       return
       end

@@ -160,9 +160,9 @@ c        even if initial timestep was good could be too small
 c        try automatically resetting 
 c        RANDY: do you like this option
 c
-!        possk(1) = cfl/(spoh(1) + tiny(1.d0)) !orig code
-         possk(1) = cfl/(spoh(1) ) ! changed to match 4-x
-         write(*,*)"  automatically setting initial dt to ",possk(1)
+c        possk(1) = cfl/(spoh(1) + tiny(1.d0)) !orig code
+c        possk(1) = cfl/(spoh(1) ) ! changed to match 4-x
+         write(*,*)"  (automatically) setting initial dt to ",possk(1)
 
 c
 c  set new time step and refinement ratios in time
