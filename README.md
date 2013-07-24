@@ -113,5 +113,5 @@ git push
 ```
 
 More reading about submodules.
-[Submodules in the Git Community Book](http://book.git-scm.com/5_submodules.html)
-[Submodules in the Pro Git book](http://progit.org/book/ch6-6.html)
+* [Submodules in the Git Community Book](http://book.git-scm.com/5_submodules.html)
+* [Submodules in the Pro Git book](http://progit.org/book/ch6-6.html)
