@@ -36,6 +36,19 @@ python setup.py git-dev
 pip install -e .
 ```
 
+
+## Contributing to Clawpack!
+
+If you'd like to contribute to Clawpack, you do not need to worry about the submodules.  Just checkout a branch in the package you are updating and push your changes as a pull request.  Just be sure to post your pull requests at the same time (and refer to the other pull requests) when submitting coordinated changes.
+
+### Steps for contributors
+* make local changes in one or more packages
+* test your changes, if they're not testable, please add a test!
+* commit and publish (push) your changes
+* submit pull requests for each package you've modified
+
+Optionally, you may also create a top-level clawpack branch and submit a pull request showing how your changes work together.  This is especially recommended if you are unable to create working tests otherwise.  Remember that you need to push commits in your submodules to GitHub before you can open a pull request that refers to those commits.
+
 ## Creating a development version of Clawpack for modification on GitHub/submitting pull requests
 
 First, head to http://github.com/clawpack and fork all repositories that you will be working with.  You will probably need to fork all of the following:
@@ -48,7 +61,7 @@ First, head to http://github.com/clawpack and fork all repositories that you wil
 * riemann
 * visclaw
 
-Then, create a clone of the top-level clawpack repository by replace `username` with your GitHub username in the command below.
+Then, create a clone of the top-level clawpack repository by replacing `username` with your GitHub username in the command below.
 
 ```
 git clone git@github.com:username/clawpack.git
@@ -66,19 +79,6 @@ git checkout -b my_feature
 # you may want to merge from upstream here
 git checkout -b new_change
 ```
-
-## Contributing to Clawpack!
-
-If you'd like to contribute to Clawpack, you do not need to worry about the submodules.  Just checkout a branch in the package you are updating and push your changes as a pull request.  Just be sure to post your pull requests at the same time (and refer to the other pull requests) when submitting coordinated changes.
-
-### Steps for contributors
-* make local changes in one or more packages
-* test your changes, if they're not testable, please add a test!
-* commit and publish (push) your changes
-* submit pull requests for each package you've modified
-
-Optionally, you may also create a top-level clawpack branch and submit a pull request showing how your changes work together.  This is especially recommended if you are unable to create working tests otherwise.  Remember that you need to push commits in your submodules to GitHub before you can open a pull request that refers to those commits.
-
 
 ## Working with a Maintenance Version of Clawpack
 
