@@ -25,6 +25,23 @@ import re
 import time
 
 join = os.path.join
+
+# Specify top-level subpackages in SUBPACKAGES.  SUBPACKAGES is a
+# dictionary specifying which packages you would like installed.  By
+# default, the installer will download all of these packages for you.
+# You can disable packages by deleting from the dictionary, but you
+# will probably need at least pyclaw, visclaw, clawutil, and riemann.
+
+# ADVICE TO DEVELOPERS:
+# The 'python_src_dir' dictionary specifies the symlink directory
+# structure provided to enable the clawpack.xxx namespace.
+# For example, the pyclaw Python package lives in pyclaw/src/pyclaw.
+# It is made available in clawpack/pyclaw by creating a symlink
+# specified by 'src' (the package name is implicit at the beginning
+# and end).  Getting the pyclaw/apps directory requires a small feat
+# of gymnastics, see the code in dev_setup() if you would like to
+# refactor this.
+
 SUBPACKAGES = {
     'amrclaw': {
         'python_src_dir': [('amrclaw', join('src', 'python'))]
@@ -37,7 +54,8 @@ SUBPACKAGES = {
     },
     'pyclaw': {
         'python_src_dir': [('pyclaw', 'src'),
-                           ('petclaw', 'src')]
+                           ('petclaw', 'src'),
+                           (join('pyclaw','apps'), '..')]
     },
     'riemann': {
         'python_src_dir': [('riemann', join('src', 'python'))],
