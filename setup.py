@@ -231,6 +231,11 @@ which allows for a consistent clawpack.package namespace.
                   "waiting 5s and trying again [fail %d/20]" % fails
                 time.sleep(5)
 
+        print "Git development environment initialized for:", package
+
+
+def make_symlinks(subpackages):
+    for package, package_dict in subpackages.items():
         for subpackage, src_dir in package_dict['python_src_dir']:
             symlink(os.path.join(package, src_dir, subpackage),
                     os.path.join('clawpack', subpackage))
@@ -238,7 +243,6 @@ which allows for a consistent clawpack.package namespace.
             symlink(os.path.join(package, package_dict['fortran_src_dir']), 
                     os.path.join('clawpack', package, 'src'))
                 
-        print "Git development environment initialized for:", package
 
 def setup_package(setup_dict, subpackages):
     from numpy.distutils.core import setup
@@ -254,6 +258,7 @@ def setup_package(setup_dict, subpackages):
     try:
         if os.path.exists('.git'):
             dev_setup(subpackages)
+        make_symlinks(subpackages)
         setup(configuration=configuration,
               **setup_dict)
     finally:
