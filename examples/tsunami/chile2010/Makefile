@@ -1,7 +1,7 @@
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
-CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
+CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 
 # See the above file for details and a list of make options, or type
 #   make .help
@@ -32,8 +32,8 @@ FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -O2
 # List of sources for this program:
 # ---------------------------------
 
-AMRLIB = $(AMRCLAW)/src/2d
-GEOLIB = $(GEOCLAW)/src/2d
+AMRLIB = $(CLAW)/amrclaw/src/2d
+GEOLIB = $(CLAW)/geoclaw/src/2d
 
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
@@ -55,9 +55,9 @@ SOURCES = \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(GEOLIB)/rpn2.f \
-  $(GEOLIB)/riemannsolvers.f \
-  $(GEOLIB)/rpt2.f \
+  $(CLAW)/riemann/src/rpn2_geoclaw.f \
+  $(CLAW)/riemann/src/rpt2_geoclaw.f \
+  $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
   $(GEOLIB)/src2.f90 \
   $(GEOLIB)/src1d.f90 \
   $(GEOLIB)/step2.f90 \
