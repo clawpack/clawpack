@@ -29,7 +29,7 @@ Although the Clawpack packages have been set up as independent repositories, occ
 ## Creating a read-only development version of Clawpack
 
 ```
-git clone git://github.com:clawpack/clawpack.git
+git clone git://github.com/clawpack/clawpack.git
 cd clawpack
 python setup.py git-dev
 # optionally, for installation of Python components
