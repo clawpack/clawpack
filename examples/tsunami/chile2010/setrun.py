@@ -164,8 +164,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Initial time step for variable dt.
     # If dt_variable==0 then dt=dt_initial for all steps:
-    #clawdata.dt_initial = 0.016
-    clawdata.dt_initial = 372.65674
+    clawdata.dt_initial = 2.
 
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1e+99
