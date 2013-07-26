@@ -85,11 +85,11 @@ Operating System :: MacOS
 
 """  
 
-MAJOR               = 0
-MINOR               = 1
+MAJOR               = 5
+MINOR               = 0
 MICRO               = 0
-ISRELEASED          = False
-VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+TYPE                = 'rc-alpha'
+VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
 
 package_path       = os.path.join(os.path.dirname(__file__),'clawpack')
 
@@ -139,10 +139,6 @@ short_version = '%(version)s'
 version = '%(version)s'
 full_version = '%(full_version)s'
 git_revision = '%(git_revision)s'
-release = %(isrelease)s
-
-if not release:
-    version = full_version
 """
     # Adding the git rev number needs to be done inside
     # write_version_py(), otherwise the import of clawpack.version messes
@@ -157,14 +153,10 @@ if not release:
     else:
         GIT_REVISION = "Unknown"
 
-    if not ISRELEASED:
-        FULLVERSION += '.dev-' + GIT_REVISION[:7]
-
     with open(filename, 'w') as a:
         a.write(cnt % {'version': VERSION,
                        'full_version' : FULLVERSION,
-                       'git_revision' : GIT_REVISION,
-                       'isrelease': str(ISRELEASED)})
+                       'git_revision' : GIT_REVISION})
 
     del sys.path[0]
     os.chdir(old_path)
