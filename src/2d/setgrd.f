@@ -156,13 +156,11 @@ c
               write(*,*) " dtc ", dtc," gives cfl = ",dtc*spoh(1)
          endif
 c
-c        even if initial timestep was good could be too small
-c        try automatically resetting 
-c        RANDY: do you like this option
 c
-c        possk(1) = cfl/(spoh(1) + tiny(1.d0)) !orig code
-c        possk(1) = cfl/(spoh(1) ) ! changed to match 4-x
-         write(*,*)"  (automatically) setting initial dt to ",possk(1)
+c        # use smaller of specified dt_initial and estimate from get_max_speed
+c        # (changed from 4.6 code where dt_initial was ignored)
+         possk(1) = min(possk(1), cfl/(spoh(1) + tiny(1.d0)))  
+         write(*,*)"  Setting initial dt to ",possk(1)
 
 c
 c  set new time step and refinement ratios in time
