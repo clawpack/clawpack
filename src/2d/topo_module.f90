@@ -446,7 +446,7 @@ contains
 
     end subroutine read_topo_header
 
-    real(kind=8) pure function analytic_topography(x,y) result(topography)
+    real(kind=8) pure function test_topo(x,y) result(topography)
     
         implicit none
         
@@ -471,7 +471,7 @@ contains
             endif
         endif
         
-    end function analytic_topography
+    end function test_topo
     
     
 
