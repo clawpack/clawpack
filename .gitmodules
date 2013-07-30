@@ -16,5 +16,6 @@
 [submodule "geoclaw"]
 	path = geoclaw
 	url = ../geoclaw
-
-	   
+[submodule "classic"]
+	path = classic
+	url = ../classic

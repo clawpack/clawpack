@@ -51,6 +51,9 @@ SUBPACKAGES = {
     },                
     'geoclaw': {
         'python_src_dir': [('geoclaw', join('src', 'python'))]
+    },                
+    'classic': {
+        'python_src_dir': [('classic', join('src', 'python'))]
     },
     'pyclaw': {
         'python_src_dir': [('pyclaw', 'src'),
