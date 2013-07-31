@@ -21,19 +21,16 @@ PLOTDIR = _plots               # Directory for plots
 RESTART = False
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC ?= gfortran
-FFLAGS ?=   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp -O2
 
-#FC = ifort
-#FFLAGS = -O2 -openmp  -C -CB -CU -check all -traceback -fpe0 -ftrapuv -fp-model precise
-#FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise -openmp
+# Compiler flags can be specified here or set as an environment variable
+FFLAGS ?=
 
 # ---------------------------------
 # List of sources for this program:
 # ---------------------------------
 
 AMRLIB = $(CLAW)/amrclaw/src/2d
-GEOLIB = $(CLAW)/geoclaw/src/2d
+GEOLIB = $(CLAW)/geoclaw/src/2d/shallow
 
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
