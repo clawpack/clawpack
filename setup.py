@@ -38,7 +38,7 @@ join = os.path.join
 # For example, the pyclaw Python package lives in pyclaw/src/pyclaw.
 # It is made available in clawpack/pyclaw by creating a symlink
 # specified by 'src' (the package name is implicit at the beginning
-# and end).  Getting the pyclaw/apps directory requires a small feat
+# and end).  Getting the pyclaw/examples directory requires a small feat
 # of gymnastics, see the code in dev_setup() if you would like to
 # refactor this.
 
@@ -58,7 +58,7 @@ SUBPACKAGES = {
     'pyclaw': {
         'python_src_dir': [('pyclaw', 'src'),
                            ('petclaw', 'src'),
-                           (join('pyclaw','apps'), '..')]
+                           (join('pyclaw','examples'), '..')]
     },
     'riemann': {
         'python_src_dir': [('riemann', join('src', 'python'))],
