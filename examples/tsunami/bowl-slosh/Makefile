@@ -2,7 +2,7 @@
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
-CLAWMAKE = $(CLAWUTIL)/src/Makefile.common
+CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 
 # See the above file for details and a list of make options, or type
 #   make .help
@@ -20,21 +20,17 @@ SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FC = gfortran
-FFLAGS =   -fbounds-check -ffpe-trap=invalid,overflow,zero  -fopenmp  -O2
 
-#FC = ifort
-#FFLAGS = -O2 -openmp  -C -CB -CU -check all -traceback -fpe0 -ftrapuv -fp-model precise
-#FFLAGS =  -C -CB -CU -fpe1 -ftrapuv  -O2 -fp-model precise -openmp
+# Compiler flags can be specified here or set as an environment variable
+FFLAGS ?=
 
-# FFLAGS = -O3 -funroll-loops -finline-functions
 
 # ---------------------------------
 # List of sources for this program:
 # ---------------------------------
 
-AMRLIB = $(AMRCLAW)/src/2d
-GEOLIB = $(GEOCLAW)/src/2d
+AMRLIB = $(CLAW)/amrclaw/src/2d
+GEOLIB = $(CLAW)/geoclaw/src/2d/shallow
 
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
