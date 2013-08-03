@@ -25,12 +25,12 @@ def setrun(claw_pkg='geoclaw'):
 
     """
 
-    from clawpack.clawutil import clawdata
+    from clawpack.clawutil import data
 
     assert claw_pkg.lower() == 'geoclaw',  "Expected claw_pkg = 'geoclaw'"
 
     num_dim = 2
-    rundata = clawdata.ClawRunData(claw_pkg, num_dim)
+    rundata = data.ClawRunData(claw_pkg, num_dim)
 
 
     #------------------------------------------------------------------
