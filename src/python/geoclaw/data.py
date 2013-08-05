@@ -4,9 +4,9 @@
 
 import os
 
-import clawpack.clawutil.clawdata
+import clawpack.clawutil.data
 
-class GeoClawData(clawpack.clawutil.clawdata.ClawData):
+class GeoClawData(clawpack.clawutil.data.ClawData):
     r"""
     Object containing the basic .
 
@@ -60,7 +60,7 @@ class GeoClawData(clawpack.clawutil.clawdata.ClawData):
 
 
 
-class RefinementData(clawpack.clawutil.clawdata.ClawData):
+class RefinementData(clawpack.clawutil.data.ClawData):
 
     def __init__(self):
 
@@ -89,7 +89,7 @@ class RefinementData(clawpack.clawutil.clawdata.ClawData):
 
 
 
-class TopographyData(clawpack.clawutil.clawdata.ClawData):
+class TopographyData(clawpack.clawutil.data.ClawData):
 
     def __init__(self):
 
@@ -145,7 +145,7 @@ class TopographyData(clawpack.clawutil.clawdata.ClawData):
                                         " implemented." % self.test_topography)
 
 
-class RefinementData(clawpack.clawutil.clawdata.ClawData):
+class RefinementData(clawpack.clawutil.data.ClawData):
 
     def __init__(self):
 
@@ -175,7 +175,7 @@ class RefinementData(clawpack.clawutil.clawdata.ClawData):
 
 
 
-class FixedGridData(clawpack.clawutil.clawdata.ClawData):
+class FixedGridData(clawpack.clawutil.data.ClawData):
 
     def __init__(self):
 
@@ -196,7 +196,7 @@ class FixedGridData(clawpack.clawutil.clawdata.ClawData):
         self.close_data_file()
 
 
-class DTopoData(clawpack.clawutil.clawdata.ClawData):
+class DTopoData(clawpack.clawutil.data.ClawData):
 
     def __init__(self):
 
@@ -224,7 +224,7 @@ class DTopoData(clawpack.clawutil.clawdata.ClawData):
 
 
 
-class QinitData(clawpack.clawutil.clawdata.ClawData):
+class QinitData(clawpack.clawutil.data.ClawData):
 
     def __init__(self):
 
