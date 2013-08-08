@@ -288,6 +288,7 @@ if __name__ == '__main__':
     if 'git-dev' in sys.argv:
         # not a real install
         dev_setup(SUBPACKAGES)
+        make_symlinks(SUBPACKAGES)
     # egg_info requests only provide install requirements
     # this is how "pip install clawpack" installs numpy correctly.
     elif 'egg_info' in sys.argv:
