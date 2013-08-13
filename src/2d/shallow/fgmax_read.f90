@@ -23,14 +23,14 @@ subroutine fgmax_read()
     ! Note: should use mxnest in place of FG_AMR_MAX_LEVELS from above module
 
     implicit none
-    character(30) :: fname = 'setfixedgrids2.data'
+    character(30) :: fname = 'fgmax.data'
     integer :: k,ifg
     type(fgrid), pointer :: fg
     logical :: foundFile
 
     inquire(file=trim(fname),exist=foundFile)
     if (.not. foundFile) then
-      write(*,*) 'No fixedgrid file in new style '
+      write(*,*) 'No fgmax.data file in new style '
       write(*,*) 'Looking for: ',trim(fname)
       FG_num_fgrids = 0
       return
