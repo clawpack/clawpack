@@ -3,7 +3,7 @@
 Module to setup storm surge parameters
 """ 
 
-import clawpack.clawutil.clawdata as clawdata
+import clawpack.clawutil.data as clawdata
 
 # Simple hurricane data format
 class SurgeData(clawdata.ClawData):
