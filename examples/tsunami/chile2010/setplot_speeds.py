@@ -12,6 +12,12 @@ import matplotlib.pyplot as plt
 
 from clawpack.geoclaw import topotools
 
+# try:
+#     from setplotfg import setplotfg
+# except:
+#     print "Did not find setplotfg.py"
+#     setplotfg = None
+
 #--------------------------
 def setplot(plotdata):
 #--------------------------
@@ -38,6 +44,38 @@ def setplot(plotdata):
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=True)
     
+    # ========================================================================
+    #  Water helper functions
+    # ========================================================================
+    def b(cd):
+        return cd.q[3,:,:] - cd.q[0,:,:]
+        
+    def extract_eta(h,eta,DRY_TOL=10**-3):
+        index = np.nonzero((np.abs(h) < DRY_TOL) + (h == np.nan))
+        eta[index[0],index[1]] = np.nan
+        return eta
+    
+    def extract_velocity(h,hu,DRY_TOL=10**-8):
+        u = np.zeros(hu.shape)
+        index = np.nonzero((np.abs(h) > DRY_TOL) * (h != np.nan))
+        u[index[0],index[1]] = hu[index[0],index[1]] / h[index[0],index[1]]
+        return u
+    
+    def eta(cd):
+        return extract_eta(cd.q[0,:,:],cd.q[3,:,:])
+        
+    def water_u(cd):
+        return extract_velocity(cd.q[0,:,:],cd.q[1,:,:])
+        
+    def water_v(cd):
+        return extract_velocity(cd.q[0,:,:],cd.q[2,:,:])
+        
+    def water_speed(current_data):
+        u = water_u(current_data)
+        v = water_v(current_data)
+            
+        return np.sqrt(u**2+v**2)
+
 
     #-----------------------------------------
     # Figure for surface
@@ -61,11 +99,11 @@ def setplot(plotdata):
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    #plotitem.plot_var = geoplot.surface
+    # plotitem.plot_var = geoplot.surface
     plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    plotitem.pcolor_cmin = -0.2
-    plotitem.pcolor_cmax = 0.2
+    plotitem.pcolor_cmin = -0.2e0
+    plotitem.pcolor_cmax = 0.2e0
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 1
@@ -92,6 +130,48 @@ def setplot(plotdata):
     plotitem.amr_contour_show = [1,0,0]  
     plotitem.celledges_show = 0
     plotitem.patchedges_show = 0
+
+    #-----------------------------------------
+    # Figure for velocities
+    #-----------------------------------------
+    plotfigure = plotdata.new_plotfigure(name='Speeds', figno=1)
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes('speeds')
+    plotaxes.title = 'Speeds'
+    plotaxes.scaled = True
+
+    def fixup(current_data):
+        import pylab
+        addgauges(current_data)
+        t = current_data.t
+        t = t / 3600.  # hours
+        pylab.title('Speeds at %4.2f hours' % t, fontsize=20)
+        pylab.xticks(fontsize=15)
+        pylab.yticks(fontsize=15)
+    plotaxes.afteraxes = fixup
+
+    # Speed
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = water_speed
+    plotitem.pcolor_cmap = plt.get_cmap('PuBu')
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 0.01
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 1
+
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    plotitem.amr_celledges_show = [1,1,0]
+    plotitem.patchedges_show = 1
+    plotaxes.xlimits = [-120,-60]
+    plotaxes.ylimits = [-60,0]
 
 
     #-----------------------------------------
@@ -123,8 +203,8 @@ def setplot(plotdata):
         topo = eta - h
         return topo
         
-    plotitem.plot_var = gaugetopo
-    plotitem.plotstyle = 'g-'
+    # plotitem.plot_var = gaugetopo
+    # plotitem.plotstyle = 'g-'
 
     def add_zeroline(current_data):
         from pylab import plot, legend, xticks, floor
@@ -135,7 +215,6 @@ def setplot(plotdata):
         xticks([3600*i for i in range(n)])
 
     plotaxes.afteraxes = add_zeroline
-
 
 
     #-----------------------------------------
