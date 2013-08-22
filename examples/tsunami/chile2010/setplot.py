@@ -11,7 +11,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from clawpack.geoclaw import topotools
-from clawpack.clawutil import clawdata
 
 # try:
 #     from setplotfg import setplotfg
