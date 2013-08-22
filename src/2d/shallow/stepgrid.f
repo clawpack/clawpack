@@ -152,7 +152,7 @@ c               # test if arrival times should be output
 !$OMP END CRITICAL (FixedGrids)
 c::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-       call b4step2(mx,my,mbc,mx,my,nvar,q,
+       call b4step2(mbc,mx,my,nvar,q,
      &             xlowmbc,ylowmbc,dx,dy,time,dt,maux,aux)
       
 c::::::::::::::::::::::::FIXED GRID DATA before step:::::::::::::::::::::::
@@ -208,7 +208,7 @@ c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 c
 c     # take one step on the conservation law:
 c
-      call step2(mbig,mx,my,nvar,maux,
+      call step2(mbig,nvar,maux,
      &           mbc,mx,my,
      &              q,aux,dx,dy,dt,cflgrid,
      &              fm,fp,gm,gp,rpn2,rpt2)
@@ -263,7 +263,7 @@ c     # Copied here from b4step2 since need to do before saving to qc1d:
 c
       if (method(5).eq.1) then
 c        # with source term:   use Godunov splitting
-         call src2(mx,my,nvar,mbc,mx,my,xlowmbc,ylowmbc,dx,dy,
+         call src2(nvar,mbc,mx,my,xlowmbc,ylowmbc,dx,dy,
      &             q,maux,aux,time,dt)
          endif
 

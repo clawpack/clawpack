@@ -13,7 +13,7 @@ module qinit_module
     
 contains
 
-    subroutine add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
+    subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
         use geoclaw_module, only: num_layers,eta_init,rho,pi
         use geoclaw_module, only: g => grav
@@ -21,10 +21,10 @@ contains
         implicit none
     
         ! Subroutine arguments
-        integer, intent(in) :: maxmx,maxmy,meqn,mbc,mx,my,maux
+        integer, intent(in) :: meqn,mbc,mx,my,maux
         real(kind=8), intent(in) :: xlower,ylower,dx,dy
-        real(kind=8), intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-        real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+        real(kind=8), intent(inout) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+        real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
         
         ! Locals
         integer :: i,j

@@ -1,4 +1,4 @@
-subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
+subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
       
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag, ambient_pressure
@@ -17,12 +17,12 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     implicit none
     
     ! Input parameters
-    integer, intent(in) :: maxmx,maxmy,meqn,mbc,mx,my,maux
+    integer, intent(in) :: meqn,mbc,mx,my,maux
     double precision, intent(in) :: xlower,ylower,dx,dy,t,dt
     
     ! Output
-    double precision, intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    double precision, intent(inout) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+    double precision, intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
     ! Locals
     integer :: i, j

@@ -1,4 +1,4 @@
-subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
+subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
       
     use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
     use geoclaw_module, only: friction_index, friction_forcing, friction_depth
@@ -7,12 +7,12 @@ subroutine src2(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     implicit none
     
     ! Input parameters
-    integer, intent(in) :: maxmx,maxmy,meqn,mbc,mx,my,maux
+    integer, intent(in) :: meqn,mbc,mx,my,maux
     double precision, intent(in) :: xlower,ylower,dx,dy,t,dt
     
     ! Output
-    double precision, intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    double precision, intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    double precision, intent(inout) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+    double precision, intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
     ! Locals
     integer :: i, j, m, bottom_index, bottom_layer, layer_index

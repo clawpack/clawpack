@@ -1,5 +1,5 @@
 c     ============================================
-      subroutine movetopo(maxmx,maxmy,mbc,mx,my,
+      subroutine movetopo(mbc,mx,my,
      &     xlow,ylow,dx,dy,t,dt,maux,aux,dtopo,
      &     xlowdtopo,ylowdtopo,xhidtopo,yhidtopo,t0dtopo,tfdtopo,
      &     dxdtopo,dydtopo,dtdtopo,mxdtopo,mydtopo,mtdtopo,mdtopo,
@@ -16,7 +16,7 @@ c
       use amr_module
       
       implicit double precision (a-h,o-z)
-      dimension aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+      dimension aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
       dimension dtopo(mxdtopo,mydtopo,mtdtopo)
 
       logical topoaltered
@@ -76,10 +76,8 @@ c       write(26,*) 'MOVETOPO: setting dtopo at time = ',t
 
 
 c     # recreate original topography:
-      call setaux(mx,my,mbc,mx,my,xlow,ylow,dx,dy,
+      call setaux(mbc,mx,my,xlow,ylow,dx,dy,
      &                  maux,auxorig)
-c      call setaux(max1d,max1d,mbc,mx,my,xlow,ylow,dx,dy,
-c     &                  maxaux,auxorig)
 
 c=======loop through the computational grid row by row====================
         do j=1-mbc,my+mbc
