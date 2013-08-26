@@ -369,7 +369,7 @@ contains
     end function storm_direction
 
 
-    subroutine set_storm_fields(maxmx,maxmy,maux,mbc,mx,my,xlower,ylower,dx,dy,&
+    subroutine set_storm_fields(maux,mbc,mx,my,xlower,ylower,dx,dy,&
                                 t,aux)
 
         use holland_storm_module, only: set_holland_storm_fields
@@ -379,23 +379,23 @@ contains
         implicit none
 
         ! Input arguments
-        integer, intent(in) :: maxmx, maxmy, maux, mbc, mx, my
+        integer, intent(in) :: maux, mbc, mx, my
         real(kind=8), intent(in) :: xlower, ylower, dx, dy, t
-        real(kind=8), intent(in out) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+        real(kind=8), intent(in out) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
         select case(storm_type)
             case(0)
                 continue
             case(1)
-                call set_holland_storm_fields(maxmx,maxmy,maux,mbc,mx,my, &
+                call set_holland_storm_fields(maux,mbc,mx,my, &
                                     xlower,ylower,dx,dy,t,aux, wind_index, &
                                     pressure_index, holland_storm)
             case(2)
-                call set_constant_storm_fields(maxmx,maxmy,maux,mbc,mx,my, &
+                call set_constant_storm_fields(maux,mbc,mx,my, &
                                     xlower,ylower,dx,dy,t,aux, wind_index, &
                                     pressure_index, constant_storm)
             case(3)
-                call set_stommel_storm_fields(maxmx,maxmy,maux,mbc,mx,my, &
+                call set_stommel_storm_fields(maux,mbc,mx,my, &
                                     xlower,ylower,dx,dy,t,aux, wind_index, &
                                     pressure_index, stommel_storm)
         end select

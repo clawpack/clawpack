@@ -1,14 +1,14 @@
-subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
+subroutine qinit(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     use qinit_module, only: qinit_type, add_perturbation
     
     implicit none
     
     ! Subroutine arguments
-    integer, intent(in) :: maxmx,maxmy,meqn,mbc,mx,my,maux
+    integer, intent(in) :: meqn,mbc,mx,my,maux
     real(kind=8), intent(in) :: xlower,ylower,dx,dy
-    real(kind=8), intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    real(kind=8), intent(inout) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
     
     ! Locals
     integer :: i,j,m
@@ -29,7 +29,7 @@ subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     ! Add perturbation to initial conditions
     if (qinit_type > 0) then
-        call add_perturbation(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
+        call add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     endif
     
 end subroutine qinit

@@ -1,15 +1,15 @@
 ! qinit routine for parabolic bowl problem, only single layer
-subroutine qinit(maxmx,maxmy,meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
+subroutine qinit(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
 
     use geoclaw_module, only: grav
 
     implicit none
 
     ! Subroutine arguments
-    integer, intent(in) :: maxmx,maxmy,meqn,mbc,mx,my,maux
+    integer, intent(in) :: meqn,mbc,mx,my,maux
     real(kind=8), intent(in) :: xlower,ylower,dx,dy
-    real(kind=8), intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    real(kind=8), intent(inout) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
     ! Parameters for problem
     real(kind=8), parameter :: a = 1.d0

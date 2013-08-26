@@ -1,7 +1,7 @@
 c
 c
 c     ==========================================================
-      subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my,
+      subroutine step2(maxm,meqn,maux,mbc,mx,my,
      &                 qold,aux,dx,dy,dt,cflgrid,
      &                 fm,fp,gm,gp,rpn2,rpt2)
 c     ==========================================================
@@ -35,17 +35,17 @@ c
 
       external rpn2, rpt2
 
-      dimension qold(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-      dimension   fm(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-      dimension   fp(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-      dimension   gm(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-      dimension   gp(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
+      dimension qold(meqn,1-mbc:mx+mbc, 1-mbc:my+mbc)
+      dimension   fm(meqn,1-mbc:mx+mbc, 1-mbc:my+mbc)
+      dimension   fp(meqn,1-mbc:mx+mbc, 1-mbc:my+mbc)
+      dimension   gm(meqn,1-mbc:mx+mbc, 1-mbc:my+mbc)
+      dimension   gp(meqn,1-mbc:mx+mbc, 1-mbc:my+mbc)
       dimension  q1d(meqn,1-mbc:maxm+mbc)
       dimension faddm(meqn,1-mbc:maxm+mbc)
       dimension faddp(meqn,1-mbc:maxm+mbc)
       dimension gaddm(meqn,1-mbc:maxm+mbc, 2)
       dimension gaddp(meqn,1-mbc:maxm+mbc, 2)
-      dimension aux(maux,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
+      dimension aux(maux,1-mbc:mx+mbc, 1-mbc:my+mbc)
       dimension aux1(maux,1-mbc:maxm+mbc)
       dimension aux2(maux,1-mbc:maxm+mbc)
       dimension aux3(maux,1-mbc:maxm+mbc)

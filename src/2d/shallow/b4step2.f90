@@ -1,5 +1,5 @@
 ! ============================================
-subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
+subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
 ! ============================================
 ! 
 ! # called before each call to step
@@ -20,17 +20,17 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     implicit none
     
     ! Subroutine arguments
-    integer, intent(in) :: maxmx,maxmy,mbc,mx,my,meqn,maux
+    integer, intent(in) :: mbc,mx,my,meqn,maux
     real(kind=8), intent(in) :: xlower, ylower, dx, dy, t, dt
-    real(kind=8), intent(inout) :: q(meqn,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
-    real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    real(kind=8), intent(inout) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
     ! Local storage
     integer :: index,i,j,k
     real(kind=8) :: h,u,v
 
     ! Check for NaNs in the solution
-    call check4nans(maxmx,maxmy,meqn,mbc,mx,my,q,t,1)
+    call check4nans(meqn,mbc,mx,my,q,t,1)
 
     ! check for h < 0 and reset to zero
     ! check for h < drytolerance
@@ -44,7 +44,7 @@ subroutine b4step2(maxmx,maxmy,mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,au
     ! write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
 
     do i=1,num_dtopo
-        call movetopo(maxmx,maxmy,mbc,mx,my,                                  &
+        call movetopo(mbc,mx,my,                                  &
                       xlower,ylower,dx,dy,t,dt,maux,aux,                      &
                       dtopowork(i0dtopo(i):i0dtopo(i)+mdtopo(i)-1),           &
                       xlowdtopo(i),ylowdtopo(i),xhidtopo(i),yhidtopo(i),      &

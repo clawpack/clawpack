@@ -1,4 +1,4 @@
-subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
+subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !     ============================================
 !
 !     # set auxiliary arrays
@@ -23,9 +23,9 @@ subroutine setaux(maxmx,maxmy,mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     implicit none
     
     ! Arguments
-    integer, intent(in) :: maxmx,maxmy,mbc,mx,my,maux
+    integer, intent(in) :: mbc,mx,my,maux
     real(kind=8), intent(in) :: xlow,ylow,dx,dy
-    real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+    real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
     
     ! Locals
     integer :: i,j,m

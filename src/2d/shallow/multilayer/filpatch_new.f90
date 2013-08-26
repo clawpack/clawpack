@@ -161,8 +161,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         ! instead in intfil using possibly already available bathy data from the
         ! grids
         if (num_aux > 0) then
-            call setaux(mx_coarse - 2*nghost,my_coarse - 2*nghost,nghost, &
-                        mx_coarse - 2*nghost,my_coarse - 2*nghost, &
+            call setaux(nghost, mx_coarse - 2*nghost,my_coarse - 2*nghost, &
                         coarse_rect(1) + nghost * dx_coarse,coarse_rect(3) + nghost * dy_coarse, &
                         dx_coarse,dy_coarse,num_aux,auxcrse)
         endif

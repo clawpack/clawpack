@@ -76,7 +76,7 @@ contains
         implicit none
 
         ! Time of the wind field requested
-        integer, intent(in) :: maxmx,maxmy,maux,mbc,mx,my
+        integer, intent(in) :: maux,mbc,mx,my
         real(kind=8), intent(in) :: xlower,ylower,dx,dy,t
 
         ! Storm description, need in out here since we may update the storm
@@ -85,7 +85,7 @@ contains
 
         ! Array storing wind and presure field
         integer, intent(in) :: wind_index, pressure_index
-        real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc,1-mbc:maxmy+mbc)
+        real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
         ! Locals
         integer :: j

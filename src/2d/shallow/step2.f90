@@ -1,4 +1,4 @@
-subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my, &
+subroutine step2(maxm,meqn,maux,mbc,mx,my, &
                  qold,aux,dx,dy,dt,cflgrid, &
                  fm,fp,gm,gp,rpn2,rpt2)
 !     ==========================================================
@@ -30,15 +30,15 @@ subroutine step2(maxm,maxmx,maxmy,meqn,maux,mbc,mx,my, &
     external rpn2, rpt2
     
     ! Arguments
-    integer, intent(in) :: maxm,maxmx,maxmy,meqn,maux,mbc,mx,my
+    integer, intent(in) :: maxm,meqn,maux,mbc,mx,my
     real(kind=8), intent(in) :: dx,dy,dt
     real(kind=8), intent(inout) :: cflgrid
-    real(kind=8), intent(inout) :: qold(meqn, 1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-    real(kind=8), intent(inout) :: aux(maux,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-    real(kind=8), intent(inout) :: fm(meqn, 1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-    real(kind=8), intent(inout) :: fp(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-    real(kind=8), intent(inout) :: gm(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
-    real(kind=8), intent(inout) :: gp(meqn,1-mbc:maxmx+mbc, 1-mbc:maxmy+mbc)
+    real(kind=8), intent(inout) :: qold(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc, 1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: fm(meqn, 1-mbc:mx+mbc, 1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: fp(meqn,1-mbc:mx+mbc, 1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: gm(meqn,1-mbc:mx+mbc, 1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: gp(meqn,1-mbc:mx+mbc, 1-mbc:my+mbc)
 
     ! Local storage for flux accumulation
     real(kind=8) :: faddm(meqn,1-mbc:maxm+mbc)
