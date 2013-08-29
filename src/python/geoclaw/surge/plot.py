@@ -293,6 +293,19 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
 
+    elif plot_type == 'contourf':
+        plotitem = plotaxes.new_plotitem(plot_type='2d_contourf')
+        plotitem.amr_contourf_show = [1,1,1,1,1,1,1]
+        plotitem.contour_colors = 'k'
+        plotitem.contourf_cmap = \
+                            colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+        if bounds is not None:
+            plotitem.contourf_cmin = bounds[0]
+            plotitem.contourf_cmax = bounds[1]
+        plotitem.add_colorbar = True
+        plotitem.colorbar_shrink = shrink
+        plotitem.colorbar_label = "Surface Height (m)"
+
 def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(name='speed',plot_type='2d_pcolor')
