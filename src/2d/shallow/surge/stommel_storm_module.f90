@@ -66,7 +66,7 @@ contains
     ! ==========================================================================
     !  set_stommel_storm_fields()
     ! ==========================================================================
-    subroutine set_stommel_storm_fields(maxmx, maxmy, maux, mbc, mx, my, &
+    subroutine set_stommel_storm_fields(maux, mbc, mx, my, &
                                         xlower, ylower, dx, dy, t,aux, &
                                         wind_index, pressure_index, storm)
 
