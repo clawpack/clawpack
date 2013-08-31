@@ -277,34 +277,35 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.colorbar_label = "Surface Height (m)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,0,0,0,0]
-    elif plot_type == 'contour':            
-        plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+
+    elif plot_type == 'contour' or plot_type == 'contourf':
+        if plot_type == 'contour':        
+            plotitem = plotaxes.new_plotitem(name='surface', plot_type='2d_contour')
+            if bounds is None:
+                plotitem.contour_levels = [-2.5,-1.5,-0.5,0.5,1.5,2.5]
+        else:
+            plotitem = plotaxes.new_plotitem(name='surface', plot_type='2d_contourf')
+            plotitem.colorbar_label = "Surface Height (m)"
+            plotitem.add_colorbar = True
+            plotitem.colorbar_shrink = shrink
+            plotitem.contour_cmap = \
+                            colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+            if bounds is not None:
+                plotitem.contour_nlevels = 11
+                plotitem.contour_min = bounds[0]
+                plotitem.contour_max = bounds[1]
         plotitem.plot_var = geoplot.surface
-        if bounds is None:
-            plotitem.contour_levels = [-2.5,-1.5,-0.5,0.5,1.5,2.5]
         # plotitem.contour_nlevels = 21
         # plotitem.contour_min = -2.0
         # plotitem.contour_max = 2.0
         # plotitem.kwargs = {''}
-        plotitem.amr_contour_show = [1,1,1]
+        plotitem.amr_contour_show = [1,1,1,1,1,1,1]
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,0,0,0]
         plotitem.amr_contour_colors = 'k'
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
 
-    elif plot_type == 'contourf':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_contourf')
-        plotitem.amr_contourf_show = [1,1,1,1,1,1,1]
-        plotitem.contour_colors = 'k'
-        plotitem.contourf_cmap = \
-                            colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
-        if bounds is not None:
-            plotitem.contourf_cmin = bounds[0]
-            plotitem.contourf_cmax = bounds[1]
-        plotitem.add_colorbar = True
-        plotitem.colorbar_shrink = shrink
-        plotitem.colorbar_label = "Surface Height (m)"
 
 def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
@@ -328,19 +329,33 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.amr_show_key = [True,True,False]
         plotitem.key_units = 'm/s'
         
-    elif plot_type == 'contour':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+    elif plot_type == 'contour' or plot_type == 'contourf':
+        if plot_type == 'contour':
+            plotitem = plotaxes.new_plotitem(name='speed', plot_type='2d_contour')
+            if bounds is None:
+                plotitem.contour_levels = [0.5,1.5,3,4.5,6.0]
+            plotitem.kwargs = {'linewidths':1}
+        else:
+            plotitem = plotaxes.new_plotitem(name='speed', plot_type='2d_contourf')
+            plotitem.colorbar_label = "Current (m/s)"
+            plotitem.add_colorbar = True
+            plotitem.colorbar_shrink = shrink
+            plotitem.contour_cmap = plt.get_cmap('PuBu')
+            if bounds is not None:
+                plotitem.contour_nlevels = 11
+                plotitem.contour_min = bounds[0]
+                plotitem.contour_max = bounds[1]
+        
         plotitem.plot_var = water_speed
-        plotitem.kwargs = {'linewidths':1}
         # plotitem.contour_levels = [1.0,2.0,3.0,4.0,5.0,6.0]
-        plotitem.contour_levels = [0.5,1.5,3,4.5,6.0]
-        plotitem.amr_contour_show = [1,1,1]
+        plotitem.amr_contour_show = [1,1,1,1,1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
         plotitem.amr_contour_colors = 'k'
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-        
+
+
 def add_friction(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(name='friction',plot_type='2d_pcolor')
