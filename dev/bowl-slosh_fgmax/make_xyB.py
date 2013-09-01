@@ -8,7 +8,7 @@ def make_xyB_from_fgmax(outdir='_output'):
     if not os.path.isdir(outdir):
         raise Exception("Missing directory: %s" % dirname)
         
-    fname = outdir + '/fgmax.data'
+    fname = outdir + '/fgmax_grid.txt'
     
     try:
         fid = open(fname)

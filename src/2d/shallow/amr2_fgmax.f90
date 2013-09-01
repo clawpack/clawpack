@@ -89,6 +89,7 @@ program amr2
 
     use regions_module, only: set_regions
     use gauges_module, only: set_gauges, num_gauges
+    use fgmax_module, only: set_fgmax, FG_num_fgrids
 
     implicit none
 
@@ -99,6 +100,7 @@ program amr2
     integer :: omp_get_max_threads, maxthreads
     real(kind=8) :: time, ratmet, cut, dtinit, dtv2
     logical :: vtime, rest, output_t0    
+    integer :: num_fgmax
 
     ! Timing variables
     integer :: clock_start, clock_finish, clock_rate
@@ -366,7 +368,7 @@ program amr2
     call set_gauges('gauges.data')
 
     ! New fixed grid routines to keep track of max over computation:
-    call fgmax_read()
+    call set_fgmax('fgmax.data')
 
     ! Look for capacity function via auxtypes:
     mcapa = 0
@@ -570,8 +572,9 @@ program amr2
     ! --------------------------------------------------------
 
     ! Done with computation, cleanup:
-    ! Print out the new style fixed grid valmax and aux files:
-    call fgmax_finalize()
+
+    ! Print out the fgmax files
+    if (FG_num_fgrids > 0) call fgmax_finalize()
 
 
     call system_clock(clock_finish,clock_rate)

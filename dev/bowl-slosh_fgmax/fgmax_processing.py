@@ -61,14 +61,15 @@ def make_h_eta(dirname, todo_list=todo_all, clines_t=None):
         os.mkdir(plotdir)
 
 
-    fname = outdir + '/fgmax.data'
+    #fname = outdir + '/fgmax_grid.txt'
+    fname = 'fgmax_grid.txt'
     try:
         fid = open(fname)
     except:
         raise Exception("cannot open %s" % fname)
 
     # skip some lines:
-    for i in range(4):
+    for i in range(3):
         line = fid.readline()
 
     line = fid.readline().split()

@@ -80,5 +80,47 @@ module fgmax_module
     ! (should be in type def and read in for each grid!)
     integer, parameter :: FG_arrival_level = 6
 
+contains
+
+    subroutine set_fgmax(fname)
+
+        use amr_module, only: parmunit
+
+        implicit none
+        
+        ! Subroutine arguments
+        character(len=*), intent(in) :: fname
+        
+        ! Local storage
+        integer, parameter :: unit = 7
+        integer :: ifg
+        character*80 :: fname_fg
+        integer :: num_fgmax
+
+        write(parmunit,*) ' '
+        write(parmunit,*) '--------------------------------------------'
+        write(parmunit,*) 'SETFGMAX:'
+        write(parmunit,*) '-----------'
+
+        ! Open data file
+        call opendatafile(unit,fname)
+
+        ! Read in data
+        read(unit,'(i2)') num_fgmax ! name used in setrun.py
+        FG_num_fgrids = num_fgmax   ! module variable name
+
+        if (FG_num_fgrids > FG_MAXNUM_FGRIDS) then
+           write(6,601) FG_num_fgrids
+ 601       format('*** Too many fixed grids specified: FG_num_fgrids = i3',/, &
+               '*** Increase FG_MAXNUM_FGRIDS in fgmax_module.f90')
+           stop
+           endif
+
+        do ifg=1,FG_num_fgrids
+            read(unit,*) fname_fg
+            call fgmax_read(fname_fg, ifg)
+            enddo
+    
+        end subroutine set_fgmax
 
 end module fgmax_module

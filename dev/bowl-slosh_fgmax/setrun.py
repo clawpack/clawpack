@@ -376,11 +376,17 @@ def setgeo(rundata):
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
 
-    # == setfixedgrids.data values ==
-    fixedgrids = rundata.fixed_grid_data
+    # == fixedgrids.data values ==
+    fixedgrids = rundata.fixed_grid_data.fixedgrids
     # for fixed grids append lines of the form
     # [t1,t2,noutput,x1,x2,y1,y2,xpoints,ypoints,\
     #  ioutarrivaltimes,ioutsurfacemax]
+    #fixedgrids.append([0,1,2,0,1,0,1,3,3,0,0])
+
+    # == fgmax.data values ==
+    fgmax_files = rundata.fgmax_data.fgmax_files
+    # for fixed grids append to this list names of any fgmax input files
+    #fgmax_files.append('fgmax_grid.txt')
 
     return rundata
     # end of function setgeo

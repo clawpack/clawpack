@@ -195,6 +195,29 @@ class FixedGridData(clawpack.clawutil.data.ClawData):
             self._out_file.write(11*"%g  " % tuple(fixedgrid) +"\n")
         self.close_data_file()
 
+class FGmaxData(clawpack.clawutil.data.ClawData):
+
+    def __init__(self):
+
+        super(FGmaxData,self).__init__()
+        
+        # File name for fgmax points and parameters:
+        self.add_attribute('fgmax_files',[])
+
+
+    def write(self,data_source='setrun.py'):
+        self.open_data_file('fgmax.data',data_source)
+        num_fgmax = len(self.fgmax_files)
+        self.data_write(value=num_fgmax,alt_name='num_fgmax')
+        self.data_write()
+        for fgmax_file in self.fgmax_files:
+            fname = os.path.abspath(fgmax_file)
+            if not os.path.isfile(fname):
+                raise IOError("fgmax input file not found: %s" % fgmax_file)
+            self.data_write(value=fname, alt_name='fgmax_file')
+        self.close_data_file()
+
+
 
 class DTopoData(clawpack.clawutil.data.ClawData):
 

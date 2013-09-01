@@ -1,5 +1,5 @@
 """
-Create fgmax.data input file 
+Create fgmax_grid.txt input file 
 """
 
 from numpy import linspace
@@ -32,7 +32,7 @@ def make_fgmax_grid():
     y = linspace(ylower, yupper, my)
     npts = mx*my
 
-    fname = 'fgmax.data'
+    fname = 'fgmax_grid.txt'
     fid = open(fname,'w')
     fid.write("%s               # num_fgrids\n" % num_fgrids)
     fid.write("%g  %g             # tstart_max, tend_max\n" \
