@@ -9,9 +9,6 @@ subroutine fgmax_read()
     ! tstart_max,tend_max # start and end time for monitoring this fgrid.
     ! dt_for_max  # desired maximum time between updating max values.
     ! min_level_for_max # minimum level to use for monitoring max.
-    ! tstart_output,tend_output # start and end time for output on this fgrid.
-    ! dt_for_max  # desired maximum time between output.
-    ! min_level_mor_output # minimum level to output results
     ! 
     ! npts        # number of grid points
     ! x(1), y(1)  # first grid point
@@ -52,14 +49,6 @@ subroutine fgmax_read()
         read(FG_UNIT,*) fg%tstart_max, fg%tend_max
         read(FG_UNIT,*) fg%dt_for_max
         read(FG_UNIT,*) fg%min_level_for_max
-        read(FG_UNIT,*) fg%tstart_output, fg%tend_output
-        read(FG_UNIT,*) fg%dt_for_output
-        read(FG_UNIT,*) fg%min_level_for_output
-        !read(FG_UNIT,*) fg%num_output
-        !if (fg%num_output > 0) then
-        !    allocate(fg%t_output(1:fg%num_output))
-        !    read(FG_UNIT,*) fg%t_output(1:fg%num_output)
-        !    endif
         read(FG_UNIT,*) fg%npts
         allocate(fg%x(1:fg%npts), fg%y(1:fg%npts))
         do k=1,fg%npts

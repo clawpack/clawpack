@@ -51,7 +51,7 @@ subroutine fgmax_finalize()
             close(FG_UNIT)
             enddo
 
-        ! deallocate(fg%valuemax,fg%levelmax,fg%aux,fg%x,fg%y,fg%t_output)
+        ! deallocate(fg%valuemax,fg%levelmax,fg%aux,fg%x,fg%y)
         enddo
     if (FG_DEBUG) then
         write(6,*) 'Fixed grid debugging written to fort.61'   

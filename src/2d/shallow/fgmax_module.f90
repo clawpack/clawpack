@@ -40,16 +40,6 @@ module fgmax_module
         integer :: min_level_for_max
 
 
-        ! time range for output:
-        real(kind=8) :: tstart_output, tend_output
-        ! Desired maximum delta t between updating valuemax:
-        real(kind=8) :: dt_for_output
-        ! Mininum level to create output files
-        integer :: min_level_for_output
-
-        !integer :: num_output
-        !real(kind=8), allocatable, dimension(:) :: t_output
-
 
         ! Coordinates of corners of bounding box.
         ! This will be useful when generalizing to fgrids not aligned with x-y.
