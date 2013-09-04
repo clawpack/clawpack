@@ -361,12 +361,14 @@ def setgeo(rundata):
 
     # == settopo.data values ==
     topo_data = rundata.topo_data
+    topo_data.topofiles = []
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
     topo_data.topofiles.append([2, 1, 10, 0., 1.e10, 'bowl.topotype2'])
 
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
+    dtopo_data.dtopofiles = []
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
 
@@ -386,7 +388,7 @@ def setgeo(rundata):
     # == fgmax.data values ==
     fgmax_files = rundata.fgmax_data.fgmax_files
     # for fixed grids append to this list names of any fgmax input files
-    #fgmax_files.append('fgmax_grid.txt')
+    fgmax_files.append('fgmax_grid.txt')
 
     return rundata
     # end of function setgeo

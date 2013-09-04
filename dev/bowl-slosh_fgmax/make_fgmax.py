@@ -34,7 +34,6 @@ def make_fgmax_grid():
 
     fname = 'fgmax_grid.txt'
     fid = open(fname,'w')
-    fid.write("%s               # num_fgrids\n" % num_fgrids)
     fid.write("%g  %g             # tstart_max, tend_max\n" \
                % (tstart_max, tend_max))
     fid.write("%g                 # dt_for_max\n" % dt_for_max)
