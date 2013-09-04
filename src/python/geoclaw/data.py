@@ -236,7 +236,8 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.data_write(value=mdtopofiles,alt_name='mdtopofiles')
         self.data_write()
         for tfile in self.dtopofiles:
-            fname = "'%s'" % os.path.abspath(tfile[-1])
+            fname = os.path.abspath(tfile[-1])
+            import pdb; pdb.set_trace()
             if not os.path.isfile(fname):
                 raise IOError("*** dtopo input file not found: %s" % tfile[-1])
             self._out_file.write("\n%s \n" % fname)
