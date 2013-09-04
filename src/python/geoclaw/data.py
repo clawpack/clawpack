@@ -214,7 +214,7 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
             fname = os.path.abspath(fgmax_file)
             if not os.path.isfile(fname):
                 raise IOError("***fgmax input file not found: %s" % fgmax_file)
-            self.data_write(value=fname, alt_name='fgmax_file')
+            self._out_file.write("\n'%s' \n" % fname)
         self.close_data_file()
 
 
@@ -237,10 +237,9 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.data_write()
         for tfile in self.dtopofiles:
             fname = os.path.abspath(tfile[-1])
-            import pdb; pdb.set_trace()
             if not os.path.isfile(fname):
                 raise IOError("*** dtopo input file not found: %s" % tfile[-1])
-            self._out_file.write("\n%s \n" % fname)
+            self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.close_data_file()
 
