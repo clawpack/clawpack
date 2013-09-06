@@ -10,6 +10,7 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     ! Only the elements for which mask_patch(i,j) == .true. need be set.
 
     use fgmax_module
+    use geoclaw_module, only: sea_level, dry_tolerance
 
     implicit none
     integer, intent(in) :: mx,my,meqn,mbc,maux
@@ -22,7 +23,8 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
 
     real(kind=8) :: h,s,hs,hss,s_dry_tol
 
-    s_dry_tol = 1.d-2
+    !s_dry_tol = 1.d-2
+    s_dry_tol = dry_tolerance
 
 
     if (FG_NUM_VAL .ne. 4) then
@@ -43,7 +45,13 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                   endif
                 hs = h*s
                 hss = h*hs
-                values(1,i,j) = h
+                !values(1,i,j) = h
+                ! change to eta tilde...
+                if (h > dry_tolerance) then
+                    values(1,i,j) = h + aux(1,i,j)
+                  else
+                    values(1,i,j) = sea_level
+                  endif
                 values(2,i,j) = s
                 values(3,i,j) = hs
                 values(4,i,j) = hss

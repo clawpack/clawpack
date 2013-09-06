@@ -7,6 +7,7 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     ! based on the patch passed in.
 
     use fgmax_module
+    use geoclaw_module, only: sea_level
 
     implicit none
     integer, intent(in) :: mx,my,meqn,mbc,maux,level
@@ -82,8 +83,10 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                     endif
 
                 ! keep track of arrival time when h > FG_HARRIVAL:
+                ! changed to version where values(1,k) is eta tilde:
                 if (level == FG_arrival_level) then
-                    if ((fg_values(1,k) > FG_HARRIVAL) .and. &
+                    !if ((fg_values(1,k) > FG_HARRIVAL) .and. &
+                    if ((fg_values(1,k) > sea_level + 1e-2) .and. &
                         (fg%arrival_time(k) == FG_NOTSET)) then
                             fg%arrival_time(k) = time
                         endif

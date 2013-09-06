@@ -78,7 +78,7 @@ module fgmax_module
 
     ! level to monitor arrival times 
     ! (should be in type def and read in for each grid!)
-    integer, parameter :: FG_arrival_level = 6
+    integer, parameter :: FG_arrival_level = 2
 
 contains
 

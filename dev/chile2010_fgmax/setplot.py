@@ -115,7 +115,7 @@ def setplot(plotdata):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [1,1,0]
+    plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 1
     plotaxes.xlimits = [-120,-60]
     plotaxes.ylimits = [-60,0]
@@ -135,6 +135,7 @@ def setplot(plotdata):
     # Figure for velocities
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Speeds', figno=1)
+    plotfigure.show = False
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('speeds')

@@ -16,7 +16,7 @@ def make_plots():
     plotdir = '_plots'
     fgmax_input_file = 'fgmax_grid.txt'
     clines_zeta = None  # can set to desired contours of zeta 
-    clines_zeta = linspace(0,1,11)
+    clines_zeta = list(linspace(0.01,0.31,7)) + [0.5,1.,1.5]
     clines_t = None  # can set to desired contours of arrival time or zeta time
     clines_topo = linspace(0,200,11)
 
@@ -59,7 +59,7 @@ def make_plots():
 
     x = reshape(d[:,0],(mx,my),order='F')
     y = reshape(d[:,1],(mx,my),order='F')
-    h = reshape(d[:,3],(mx,my),order='F')
+    eta_tilde = reshape(d[:,3],(mx,my),order='F')
 
     # AMR level used for each zeta value:
     level = reshape(d[:,2].astype('int'),(mx,my),order='F')
@@ -79,12 +79,13 @@ def make_plots():
     for i in range(levelmax):
         B = where(level==i+1, topo[i], B)
 
+    h = where(eta_tilde > B, eta_tilde - B, 0.)
 
     # maximum surface elevation:
-    eta = h + B
+    #eta = h + B
 
     # zeta = max h on land or max eta offshore:
-    zeta = where(B>0, h, eta)
+    zeta = where(B>0, h, eta_tilde)
 
     tzeta = reshape(d[:,7],(mx,my),order='F')  # Time maximum h recorded
 
@@ -93,7 +94,7 @@ def make_plots():
     if plot_zeta:
 
         # Plot h or eta along with contours of topo:
-        figure(1)
+        figure(101)
         clf()
         zeta = ma.masked_where(zeta==0.,zeta)
         if clines_zeta is None:
@@ -123,7 +124,7 @@ def make_plots():
     if plot_zeta_times:
 
         # Plot time max h recorded:
-        figure(2)
+        figure(102)
         clf()
         times = reshape(d[:,7],(mx,my),order='F')
         times = ma.masked_where(times < -1e50, times)      
@@ -157,7 +158,7 @@ def make_plots():
     if plot_arrival_times:
 
         # Plot time max h recorded:
-        figure(10)
+        figure(103)
         clf()
         atimes = reshape(d[:,11],(mx,my),order='F')
         atimes = ma.masked_where(atimes < -1e50, atimes)  

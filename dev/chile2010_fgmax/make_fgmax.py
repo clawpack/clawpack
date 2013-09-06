@@ -11,7 +11,7 @@ def make_fgmax_grid():
     xupper = -70
     ylower = -50
     yupper = -10
-    dx = 0.5
+    dx = 0.2
     dy = dx
     mx = int(round((xupper-xlower)/dx)) + 1  
     my = int(round((yupper-ylower)/dy)) + 1  
