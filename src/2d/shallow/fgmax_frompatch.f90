@@ -20,6 +20,8 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     type(fgrid), pointer :: fg
     integer :: ifg,k,mv
 
+    !print *, '+++ FG_DEBUG = ', FG_DEBUG
+
     if (FG_num_fgrids == 0) then
         return
         endif 
@@ -61,6 +63,12 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
             ! Interpolate from q on patch to desired values fg_values on fgrid.
             call fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux, &
                  dx,dy,xlower,ylower,ifg,level,fg_values,mask_fgrid,fg%npts)
+
+            if (FG_DEBUG) then
+                write(61,*) '+++ updating level: ',level
+                write(61,*) '+++ in fgmax_frompatch, count = ', count(mask_fgrid)
+                endif
+
         
             do k=1,fg%npts
                 ! fg_values is set only at points k where the fgrid intersects the
@@ -71,7 +79,7 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                     fg%t_last_updated(k) = time
                     do mv=1,FG_NUM_VAL
                         !print *,'+++ updating fg%valuemax(mv,k),fg_values(mv,k):',&
-                        !       fg%valuemax(mv,k),fg_values(mv,k)
+                        !      fg%valuemax(mv,k),fg_values(mv,k)
                         if ((level > fg%levelmax(k)) .or. &
                               (fg_values(mv,k) > fg%valuemax(mv,k))) then
                             fg%valuemax(mv,k) = fg_values(mv,k)
@@ -82,11 +90,11 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                     fg%levelmax(k) = level
                     endif
 
-                ! keep track of arrival time when h > FG_HARRIVAL:
-                ! changed to version where values(1,k) is eta tilde:
-                if (level == FG_arrival_level) then
-                    !if ((fg_values(1,k) > FG_HARRIVAL) .and. &
-                    if ((fg_values(1,k) > sea_level + 1e-2) .and. &
+                ! keep track of arrival time...
+                ! Note that values(1,k) = eta tilde = h+B if h>0 else sea_level:
+                ! This might not be correct when there is subsidence or uplift?
+                if (mask_fgrid(k) .and.(level >= fg%min_level_for_arrival)) then
+                    if ((fg_values(1,k) > sea_level + fg%arrival_tol) .and. &
                         (fg%arrival_time(k) == FG_NOTSET)) then
                             fg%arrival_time(k) = time
                         endif

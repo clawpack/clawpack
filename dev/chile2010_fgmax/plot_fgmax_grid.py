@@ -15,10 +15,13 @@ def make_plots():
     outdir = '_output'
     plotdir = '_plots'
     fgmax_input_file = 'fgmax_grid.txt'
-    clines_zeta = None  # can set to desired contours of zeta 
-    clines_zeta = list(linspace(0.01,0.31,7)) + [0.5,1.,1.5]
-    clines_t = None  # can set to desired contours of arrival time or zeta time
-    clines_topo = linspace(0,200,11)
+    #clines_zeta = None  # can set to desired contours of zeta 
+    clines_zeta = [0.01] + list(linspace(0.05,0.3,6)) + [0.5,1.0,10.0]
+    #clines_t = None  # can set to desired contours of arrival time or zeta time
+    clines_t = linspace(0,8,17)  # hours
+    clines_t_label = clines_t[::2]  # which ones to label 
+    clines_t_colors = [.5,.5,.5]
+    clines_topo = [0]
 
     plot_zeta = True
     plot_zeta_times = True
@@ -42,7 +45,7 @@ def make_plots():
         raise Exception("cannot open %s" % fgmax_input_file)
 
     # skip some lines:
-    for i in range(3):
+    for i in range(5):
         line = fid.readline()
 
     line = fid.readline().split()
@@ -59,6 +62,7 @@ def make_plots():
 
     x = reshape(d[:,0],(mx,my),order='F')
     y = reshape(d[:,1],(mx,my),order='F')
+    y0 = 0.5*(y.min() + y.max())   # mid-latitude for scaling plots
     eta_tilde = reshape(d[:,3],(mx,my),order='F')
 
     # AMR level used for each zeta value:
@@ -88,8 +92,14 @@ def make_plots():
     zeta = where(B>0, h, eta_tilde)
 
     tzeta = reshape(d[:,7],(mx,my),order='F')  # Time maximum h recorded
+    tzeta = ma.masked_where(tzeta < -1e50, tzeta)      
+    tzeta = ma.masked_where(zeta == 0., tzeta) / 3600.  # hours 
 
     inundated = logical_and((B>0), (h>0))
+
+    atimes = reshape(d[:,11],(mx,my),order='F')
+    atimes = ma.masked_where(atimes < -1e50, atimes)  
+    atimes = ma.masked_where(zeta == 0., atimes) / 3600.  # hours 
 
     if plot_zeta:
 
@@ -110,13 +120,23 @@ def make_plots():
 
 
         # Contours of topo:
-        contour(x,y,B,clines_topo,colors='k')
+        contour(x,y,B,clines_topo,colors='g',linestyles='-')
+
+        if plot_arrival_times:
+            # Contours of arrival time
+            cs = contour(x,y,atimes,clines_t,colors=clines_t_colors)
+            clabel(cs,clines_t_label)
+
+
         ticklabel_format(format='plain',useOffset=False)
         xticks(rotation=20)
-        #axis(extent)
-        #gca().set_aspect(1./cos(y0*pi/180.))
+        gca().set_aspect(1./cos(y0*pi/180.))
+
         title("Zeta Maximum",fontsize=20)
-        fname = plotdir + '/h_eta.png' 
+        if plot_arrival_times:
+            title("Zeta Maximum and arrival times",fontsize=15)
+        
+        fname = plotdir + '/zeta.png' 
         savefig(fname)
         print "Created ",fname
 
@@ -126,28 +146,23 @@ def make_plots():
         # Plot time max h recorded:
         figure(102)
         clf()
-        times = reshape(d[:,7],(mx,my),order='F')
-        times = ma.masked_where(times < -1e50, times)      
+
         if clines_t is None:
-            clines_t = linspace(times.min(), times.max(), 10)
+            clines_t = linspace(tzeta.min(), tzeta.max(), 10)
             
-        times = where(zeta == 0., -9999., times) # negative plots as white
-        times = where(B>0, times, -9999.)                  #negative plots as white
-        #times = ma.masked_where(zeta == 0., times) / 3600.  # hours 
-        #times = ma.masked_where(zeta == 0., times) / 60.  # minutes 
 
         colors = discrete_cmap_times(clines_t)
-        contourf(x,y,times,clines_t,colors=colors)
+        contourf(x,y,tzeta,clines_t,colors=colors)
         cbar = colorbar()
         cbar.set_ticks(clines_t)
-        cbar.set_label('seconds',fontsize=15)
+        cbar.set_label('hours',fontsize=15)
 
         # Contours of topo:
-        contour(x,y,B,clines_topo,colors='k')
+        contour(x,y,B,clines_topo,colors='k',linestyles='-')
 
         ticklabel_format(format='plain',useOffset=False)
         xticks(rotation=20)
-        #gca().set_aspect(1./cos(y0*pi/180.))
+        gca().set_aspect(1./cos(y0*pi/180.))
         title('Time of max zeta', fontsize=20)
         
         fname = plotdir + '/zetatimes.png' 
@@ -160,23 +175,20 @@ def make_plots():
         # Plot time max h recorded:
         figure(103)
         clf()
-        atimes = reshape(d[:,11],(mx,my),order='F')
-        atimes = ma.masked_where(atimes < -1e50, atimes)  
-        #atimes = where(B>0, atimes, -9999.)  #negative plots as white
         if clines_t is None:
             clines_t = linspace(atimes.min(), atimes.max(), 10)
         colors = discrete_cmap_times(clines_t)
         contourf(x,y,atimes,clines_t,colors=colors)
         cbar = colorbar()
         cbar.set_ticks(clines_t)
-        cbar.set_label('seconds',fontsize=15)
+        cbar.set_label('hours',fontsize=15)
 
         # Contours of topo:
-        contour(x,y,B,clines_topo,colors='k')
+        contour(x,y,B,clines_topo,colors='k',linestyles='-')
         #
         ticklabel_format(format='plain',useOffset=False)
         xticks(rotation=20)
-        #gca().set_aspect(1./cos(y0*pi/180.))
+        gca().set_aspect(1./cos(y0*pi/180.))
         title('Arrival time', fontsize=20)
         fname = plotdir + '/arrival_times.png' 
         savefig(fname)

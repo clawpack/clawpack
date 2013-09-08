@@ -39,6 +39,12 @@ module fgmax_module
         ! Coarser levels will be ignored to save computation time.
         integer :: min_level_for_max
 
+        ! Tolerance for flagging point for arrival of tsunami.
+        ! Flag in fgmax_frompatch if eta tilde > sea_level + arrival_tol
+        real(kind=8) :: arrival_tol
+        ! Mininum level to check when checking for arrival
+        ! Coarser levels will be ignored to avoid premature arrivals
+        integer :: min_level_for_arrival
 
 
         ! Coordinates of corners of bounding box.
@@ -73,12 +79,6 @@ module fgmax_module
     ! turn on debugging output to fort.61:
     logical, parameter :: FG_DEBUG = .false.
 
-    ! depth to use in checking first arrival time:
-    real(kind=8), parameter :: FG_HARRIVAL = 0.02d0
-
-    ! level to monitor arrival times 
-    ! (should be in type def and read in for each grid!)
-    integer, parameter :: FG_arrival_level = 2
 
 contains
 

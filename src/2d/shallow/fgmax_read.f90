@@ -42,6 +42,8 @@ subroutine fgmax_read(fname,ifg)
     read(FG_UNIT,*) fg%tstart_max, fg%tend_max
     read(FG_UNIT,*) fg%dt_for_max
     read(FG_UNIT,*) fg%min_level_for_max
+    read(FG_UNIT,*) fg%min_level_for_arrival
+    read(FG_UNIT,*) fg%arrival_tol
     read(FG_UNIT,*) fg%npts
     allocate(fg%x(1:fg%npts), fg%y(1:fg%npts))
     do k=1,fg%npts

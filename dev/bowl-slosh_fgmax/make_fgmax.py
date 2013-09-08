@@ -25,7 +25,9 @@ def make_fgmax_grid():
     tstart_max =   0.      # when to start monitoring max values
     tend_max = 1.e10       # when to stop monitoring max values
     dt_for_max = 0.01      # target time increment between updating max values
-    minlevel_for_max = 1   # which levels to monitor max on
+    minlevel_for_max = 2   # which levels to monitor max on
+    minlevel_for_arrival = 2   # which levels to monitor arrival of tsunami
+    arrival_tol = 1.e-2        # tolerance for flagging arrival
 
 
     x = linspace(xlower, xupper, mx)
@@ -38,6 +40,8 @@ def make_fgmax_grid():
                % (tstart_max, tend_max))
     fid.write("%g                 # dt_for_max\n" % dt_for_max)
     fid.write("%i                 # minlevel_for_max\n" % minlevel_for_max)
+    fid.write("%i                 # minlevel_for_arrival\n" % minlevel_for_arrival)
+    fid.write("%g                 # arrival_tol\n" % arrival_tol)
 
     fid.write("%g  %g  %g                  # npts, mx, my \n" % (npts,mx,my))
 
