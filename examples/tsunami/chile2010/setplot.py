@@ -12,6 +12,11 @@ import matplotlib.pyplot as plt
 
 from clawpack.geoclaw import topotools
 
+try:
+    TG32412 = np.loadtxt('32412_notide.txt')
+except:
+    print "*** Could not load TG file(s)"
+
 #--------------------------
 def setplot(plotdata):
 #--------------------------
@@ -97,7 +102,7 @@ def setplot(plotdata):
     #-----------------------------------------
     # Figures for gauges
     #-----------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='Surface & topo', figno=300, \
+    plotfigure = plotdata.new_plotfigure(name='Surface at gauges', figno=300, \
                     type='each_gauge')
     plotfigure.clf_each_gauge = True
 
@@ -127,12 +132,19 @@ def setplot(plotdata):
     plotitem.plotstyle = 'g-'
 
     def add_zeroline(current_data):
-        from pylab import plot, legend, xticks, floor
-        t = current_data.t
-        #legend(('surface','topography'),loc='lower left')
+        from pylab import plot, legend, xticks, floor, axis, xlabel
+        t = current_data.t 
+        gaugeno = current_data.gaugeno
+
+        if gaugeno == 32412:
+            plot(TG32412[:,0], TG32412[:,1], 'r')
+            legend(['GeoClaw','Obs'],'lower right')
+            axis((0,t.max(),-0.3,0.3))
+
         plot(t, 0*t, 'k')
         n = int(floor(t.max()/3600.) + 2)
-        xticks([3600*i for i in range(n)])
+        xticks([3600*i for i in range(n)], ['%i' % i for i in range(n)])
+        xlabel('time (hours)')
 
     plotaxes.afteraxes = add_zeroline
 

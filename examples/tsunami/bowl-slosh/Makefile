@@ -42,7 +42,8 @@ MODULES = \
  $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
- $(GEOLIB)/fixedgrids_module.f90
+ $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/fgmax_module.f90
 
 SOURCES = \
   ./qinit.f90 \
@@ -82,7 +83,12 @@ SOURCES = \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
-  $(AMRLIB)/amr2.f90 \
+  $(GEOLIB)/amr2_fgmax.f90 \
+  $(GEOLIB)/fgmax_read.f90 \
+  $(GEOLIB)/fgmax_frompatch.f90 \
+  $(GEOLIB)/fgmax_interpolate.f90 \
+  $(GEOLIB)/fgmax_values.f90 \
+  $(GEOLIB)/fgmax_finalize.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/check4nans.f90 \
