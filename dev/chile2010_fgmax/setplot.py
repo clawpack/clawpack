@@ -217,6 +217,17 @@ def setplot(plotdata):
 
     plotaxes.afteraxes = add_zeroline
 
+    # ---------------------------------------------------
+    # fgmax plot of max elevation and arrival times:
+    # ---------------------------------------------------
+
+    otherfig = plotdata.new_otherfigure('Amplitude / Arrivals')
+    otherfig.fname = 'zeta.png'
+    def make_fgmax_plot(plotdata):
+        import plot_fgmax_grid
+        plot_fgmax_grid.make_plots(plotdata.outdir,plotdata.plotdir)
+    otherfig.makefig = make_fgmax_plot
+
 
     #-----------------------------------------
     
@@ -225,7 +236,7 @@ def setplot(plotdata):
 
     plotdata.printfigs = True                # print figures
     plotdata.print_format = 'png'            # file format
-    plotdata.print_framenos = 'all'          # list of frames to print
+    plotdata.print_framenos = [0]            # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
     plotdata.print_fignos = 'all'            # list of figures to print
     plotdata.html = True                     # create html files of plots?
