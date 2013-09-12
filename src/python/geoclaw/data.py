@@ -87,6 +87,7 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         self.data_write()
         self.data_write('variable_dt_refinement_ratios')
 
+        self.close_data_file()
 
 
 class TopographyData(clawpack.clawutil.data.ClawData):
@@ -143,6 +144,8 @@ class TopographyData(clawpack.clawutil.data.ClawData):
         else:
             raise NotImplementedError("Test topography type %s has not been"
                                         " implemented." % self.test_topography)
+
+        self.close_data_file()
 
 
 class RefinementData(clawpack.clawutil.data.ClawData):
@@ -217,7 +220,7 @@ class DTopoData(clawpack.clawutil.data.ClawData):
                 fname = "'%s'" % os.path.abspath(tfile[-1])
             except:
                 # print "*** Error: file not found: ",tfile[-1]
-                raise IOError("file not found")
+                raise IOError("File %s not found" % tfile[-1])
             self._out_file.write("\n%s \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.close_data_file()
