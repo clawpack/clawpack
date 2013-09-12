@@ -13,7 +13,7 @@ def make_plots():
 
     # Some things that might need to change...
     outdir = '_output'
-    plotdir = '_plots'
+    plotdir = '.'   # '_plots'
     fgmax_input_file = 'fgmax_grid.txt'
     #clines_zeta = None  # can set to desired contours of zeta 
     clines_zeta = linspace(-0.03, 0.08,12)
