@@ -9,6 +9,8 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
     use geoclaw_module, only: friction_forcing, friction_depth
     use geoclaw_module, only: omega, coordinate_system, manning_coefficient
+    use geoclaw_module, only: manning_coefficient_onshore, friction_shore_level
+                              
 
     implicit none
 
@@ -20,7 +22,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     ! Local storage
     integer :: i
     logical :: found
-    real(kind=8) :: h, hu, hv, gamma, dgamma, y, fdt, a(2,2)
+    real(kind=8) :: h, hu, hv, gamma, dgamma, y, fdt, a(2,2), coeff
 
     ! Algorithm parameters
     ! Parameter controls when to zero out the momentum at a depth in the
@@ -45,9 +47,13 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
             
             ! Apply friction source term only if in shallower water
             if (h <= friction_depth) then
+                if (aux1d(1,i) .gt. friction_shore_level) then
+                    coeff = manning_coefficient_onshore
+                else
+                    coeff = manning_coefficient
+                endif
                 ! Calculate source term
-                gamma = sqrt(hu**2 + hv**2) * (g * manning_coefficient**2) &
-                                            / h**(7.d0/3.d0)
+                gamma = sqrt(hu**2 + hv**2) * (g * coeff**2) / h**(7.d0/3.d0)
                 dgamma = 1.d0 + dt * gamma
                 q1d(2, i) = q1d(2, i) / dgamma
                 q1d(3, i) = q1d(3, i) / dgamma

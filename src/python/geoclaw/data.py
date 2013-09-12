@@ -23,6 +23,8 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         self.add_attribute('theta_0',45.0)
         self.add_attribute('friction_forcing',True)
         self.add_attribute('manning_coefficient',0.025)
+        self.add_attribute('manning_coefficient_onshore',None)
+        self.add_attribute('friction_shore_level',0.)
 
         # GeoClaw algorithm parameters
         self.add_attribute('dry_tolerance',1e-3)
@@ -52,6 +54,13 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         if self.friction_forcing:
             self.data_write('manning_coefficient')
             self.data_write('friction_depth')
+
+            # Second Manning coefficient for use onshore. 
+            # If not set, use same value everywhere:
+            if self.manning_coefficient_onshore is None:
+                self.manning_coefficient_onshore = self.manning_coefficient
+            self.data_write('manning_coefficient_onshore')
+            self.data_write('friction_shore_level')
         self.data_write()
 
         self.data_write('dry_tolerance',1e-3)

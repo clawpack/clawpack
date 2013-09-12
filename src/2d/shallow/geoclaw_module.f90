@@ -37,6 +37,8 @@ module geoclaw_module
     logical :: friction_forcing ! Friction forcing will be applied
     real(kind=8) :: manning_coefficient
     real(kind=8) :: friction_depth
+    real(kind=8) :: manning_coefficient_onshore
+    real(kind=8) :: friction_shore_level
     
     ! Method parameters    
     real(kind=8) :: dry_tolerance
@@ -88,6 +90,8 @@ contains
         if (friction_forcing) then
             read(unit,*) manning_coefficient
             read(unit,*) friction_depth
+            read(unit,*) manning_coefficient_onshore
+            read(unit,*) friction_shore_level
         else
             manning_coefficient = 0.d0
             friction_depth = rinfinity
