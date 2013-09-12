@@ -257,7 +257,8 @@ class PlotProfile(object):
 # ========================================================================
 #  Plot items
 # ========================================================================
-def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
+def add_surface_elevation(plotaxes, plot_type='pcolor', bounds=None, 
+                                    contours=None, shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':            
         plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_pcolor')
         plotitem.plot_var = geoplot.surface_or_depth
@@ -288,12 +289,18 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
             plotitem.colorbar_label = "Surface Height (m)"
             plotitem.add_colorbar = True
             plotitem.colorbar_shrink = shrink
-            plotitem.contour_cmap = \
-                            colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
             if bounds is not None:
                 plotitem.contour_nlevels = 11
                 plotitem.contour_min = bounds[0]
                 plotitem.contour_max = bounds[1]
+            elif contours is not None:
+                if any((value < 0 for value in contours)):
+                    plotitem.contour_cmap = \
+                            colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+                else:
+                    plotitem.contour_cmap = plt.get_cmap('OrRd')
+                plotitem.contour_levels = contours
+
         plotitem.plot_var = geoplot.surface
         # plotitem.contour_nlevels = 21
         # plotitem.contour_min = -2.0
@@ -307,7 +314,8 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
 
 
-def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
+def add_speed(plotaxes, plot_type='pcolor', bounds=None,  contours=None,  
+                        shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(name='speed',plot_type='2d_pcolor')
         plotitem.plot_var = water_speed
@@ -345,6 +353,8 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
                 plotitem.contour_nlevels = 11
                 plotitem.contour_min = bounds[0]
                 plotitem.contour_max = bounds[1]
+            elif contours is not None:
+                plotitem.contour_levels = contours
         
         plotitem.plot_var = water_speed
         # plotitem.contour_levels = [1.0,2.0,3.0,4.0,5.0,6.0]
