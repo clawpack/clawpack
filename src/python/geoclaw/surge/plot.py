@@ -20,10 +20,11 @@ import matplotlib.colors as colors
 
 from clawpack.visclaw import colormaps, geoplot, gaugetools
 
-# Location of storm fields
-friction_field = 4
-wind_field = 5
-pressure_field = 7
+# Location of storm fields in aux array output
+bathy_index = 0
+friction_field = 3
+wind_field = 4
+pressure_field = 6
 
 class figure_counter(object):
 
@@ -139,13 +140,13 @@ def surge_afteraxes(current_data, track, land_fall=0.0, plot_direction=False):
     days_figure_title(current_data,land_fall)
 
 def friction(cd):
-    return cd.q[friction_field,:,:]
+    return cd.aux[friction_field,:,:]
     
 def storm_wind(current_data):
     if current_data.level == 1:
         t = current_data.t
-        u = current_data.q[wind_field,:,:]
-        v = current_data.q[wind_field+1,:,:]
+        u = current_data.aux[wind_field,:,:]
+        v = current_data.aux[wind_field+1,:,:]
         plt.hold(True)
         Q = plt.quiver(current_data.x[::3,::3],current_data.y[::3,::3],
                     u[::3,::3],v[::3,::3])
@@ -154,21 +155,21 @@ def storm_wind(current_data):
         plt.hold(False)
 
 def wind_x(cd):
-    return cd.q[wind_field,:,:]
+    return cd.aux[wind_field,:,:]
 def wind_y(cd):
-    return cd.q[wind_field+1,:,:]
+    return cd.aux[wind_field+1,:,:]
 def wind_speed(cd):
     return np.sqrt(wind_x(cd)**2 + wind_y(cd)**2)
 
 def pressure(cd):
     # The division by 100.0 is to convert from Pa to millibars
-    return cd.q[pressure_field,:,:] / 100.0
+    return cd.aux[pressure_field,:,:] / 100.0
 
 def pressure_gradient_x(cd):
-    return cd.q[pressure_field+1,:,:]
+    return cd.aux[pressure_field+1,:,:]
 
 def pressure_gradient_y(cd):
-    return cd.q[pressure_field+2,:,:]
+    return cd.aux[pressure_field+2,:,:]
     
 def wind_contours(current_data):
     plt.hold(True)
@@ -184,7 +185,8 @@ def wind_contours(current_data):
 #  Water helper functions
 # ========================================================================
 def b(cd):
-    return cd.q[3,:,:] - cd.q[0,:,:]
+    # return cd.q[3,:,:] - cd.q[0,:,:]
+    return cd.aux[bathy_index,:,:]
     
 def extract_eta(h,eta,DRY_TOL=10**-3):
     index = np.nonzero((np.abs(h) < DRY_TOL) + (h == np.nan))
@@ -257,7 +259,8 @@ class PlotProfile(object):
 # ========================================================================
 #  Plot items
 # ========================================================================
-def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
+def add_surface_elevation(plotaxes, plot_type='pcolor', bounds=None, 
+                                    contours=None, shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':            
         plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_pcolor')
         plotitem.plot_var = geoplot.surface_or_depth
@@ -277,23 +280,54 @@ def add_surface_elevation(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.colorbar_label = "Surface Height (m)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,0,0,0,0]
-    elif plot_type == 'contour':            
-        plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-        plotitem.plot_var = geoplot.surface
+
+    elif plot_type == 'contour':
+        plotitem = plotaxes.new_plotitem(name='surface', plot_type='2d_contour')
         if bounds is None:
             plotitem.contour_levels = [-2.5,-1.5,-0.5,0.5,1.5,2.5]
+
+        plotitem.plot_var = geoplot.surface
         # plotitem.contour_nlevels = 21
         # plotitem.contour_min = -2.0
         # plotitem.contour_max = 2.0
         # plotitem.kwargs = {''}
-        plotitem.amr_contour_show = [1,1,1]
+        plotitem.amr_contour_show = [1,1,1,1,1,1,1]
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,0,0,0]
         plotitem.amr_contour_colors = 'k'
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
 
-def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
+    elif plot_type == 'contourf':
+        plotitem = plotaxes.new_plotitem(name='surface', plot_type='2d_contourf')
+        plotitem.plot_var = geoplot.surface
+        if bounds is not None:
+            contours = numpy.linspace(bounds[0],bounds[1],11)
+            plotitem.contour_levels = contours
+            plotitem.fill_cmin = bounds[0]
+            plotitem.fill_cmax = bounds[1]
+        elif contours is not None:
+            plotitem.contour_levels = contours
+            plotitem.fill_cmin = min(contours)
+            plotitem.fill_cmax = max(contours)
+
+        plotitem.add_colorbar = True
+        plotitem.fill_cmap = geoplot.tsunami_colormap
+        plotitem.colorbar_shrink = shrink
+        plotitem.colorbar_label = "Surface Height (m)"
+        plotitem.fill_cmap = plt.get_cmap('OrRd')
+        if any((value < 0 for value in plotitem.contour_levels)):
+            plotitem.fill_cmap = \
+                            colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+
+        plotitem.amr_contour_show = [1,1,1,1,1,1,1]
+        plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,0,0,0]
+        plotitem.amr_contour_colors = 'k'
+
+
+def add_speed(plotaxes, plot_type='pcolor', bounds=None,  contours=None,  
+                        shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(name='speed',plot_type='2d_pcolor')
         plotitem.plot_var = water_speed
@@ -316,22 +350,55 @@ def add_speed(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.key_units = 'm/s'
         
     elif plot_type == 'contour':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-        plotitem.plot_var = water_speed
+        plotitem = plotaxes.new_plotitem(name='speed', plot_type='2d_contour')
+        if bounds is None:
+            plotitem.contour_levels = [0.5,1.5,3,4.5,6.0]
         plotitem.kwargs = {'linewidths':1}
+        
+        plotitem.plot_var = water_speed
         # plotitem.contour_levels = [1.0,2.0,3.0,4.0,5.0,6.0]
-        plotitem.contour_levels = [0.5,1.5,3,4.5,6.0]
-        plotitem.amr_contour_show = [1,1,1]
+        plotitem.amr_contour_show = [1,1,1,1,1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
         plotitem.amr_contour_colors = 'k'
         # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
         # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+
+    elif plot_type == 'contourf':
+
+        plotitem = plotaxes.new_plotitem(name='speed', plot_type='2d_contourf')
+
+        plotitem.add_colorbar = True
+        plotitem.colorbar_label = "Current (m/s)"
+        plotitem.colorbar_shrink = shrink
+        plotitem.fill_cmap = plt.get_cmap('PuBu')
+        if bounds is not None:
+            plotitem.contour_levels = numpy.linspace(bounds[0],bounds[1],11)
+            plotitem.fill_cmin = bounds[0]
+            plotitem.fill_cmap = bounds[1]
+        elif contours is not None:
+            plotitem.contour_levels = contours
+            plotitem.fill_cmin = min(contours)
+            plotitem.fill_cmax = max(contours)
+
+        # Modify the 'extends' plot attribute as we don't want this to extend
+        # below 0
+        plotitem.kwargs['extend'] = 'max'
         
+        plotitem.plot_var = water_speed
+        # plotitem.contour_levels = [1.0,2.0,3.0,4.0,5.0,6.0]
+        plotitem.amr_contour_show = [1,1,1,1,1,1,1]
+        plotitem.amr_celledges_show = [0,0,0]
+        plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
+        plotitem.amr_contour_colors = 'k'
+        # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
+        # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+
+
 def add_friction(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(name='friction',plot_type='2d_pcolor')
-        plotitem.plot_var = friction_field
+        plotitem.plot_var = friction
         plotitem.pcolor_cmap = plt.get_cmap('YlOrRd')
         plotitem.colorbar_shrink = shrink
         if bounds is not None:
