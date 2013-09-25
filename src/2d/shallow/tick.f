@@ -1,7 +1,8 @@
 c
 c  -------------------------------------------------------------
 c
-      subroutine tick(nvar,cut,nstart,vtime,time,naux,start_time,rest)
+      subroutine tick(nvar,cut,nstart,vtime,time,naux,start_time,
+     &                rest,dt_max)
 c
       use geoclaw_module
       use refinement_module, only: varRefTime
@@ -333,6 +334,7 @@ c
  120         possk(i) = possk(i-1) / kratio(i-1)
         else  ! since refinement ratio in time can change need to set new timesteps in different order
 c             ! use same alg. as when setting refinement when first make new fine grids
+          dtnew(1) = min(dtnew(1),dt_max)
           possk(1) = dtnew(1)
           do 125 i = 2, lfine
              if (dtnew(i)  .gt. possk(i-1)) then

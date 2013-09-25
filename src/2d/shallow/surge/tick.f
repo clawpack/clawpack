@@ -1,7 +1,8 @@
 c
 c  -------------------------------------------------------------
 c
-      subroutine tick(nvar,cut,nstart,vtime,time,naux,start_time,rest)
+      subroutine tick(nvar,cut,nstart,vtime,time,naux,start_time,
+     &                rest,dt_max)
 c
       use geoclaw_module
       use refinement_module, only: varRefTime
@@ -9,11 +10,12 @@ c
       use storm_module, only: landfall, output_storm_location
       use utility_module,only: convert2days
 
-
       implicit double precision (a-h,o-z)
+c     include  "call.i"
 
-      logical    vtime, dumpout, dumpchk, rest
+      logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
+
 
 c
 c :::::::::::::::::::::::::::: TICK :::::::::::::::::::::::::::::
@@ -344,6 +346,7 @@ c
  120         possk(i) = possk(i-1) / kratio(i-1)
         else  ! since refinement ratio in time can change need to set new timesteps in different order
 c             ! use same alg. as when setting refinement when first make new fine grids
+          dtnew(1) = min(dtnew(1),dt_max)
           possk(1) = dtnew(1)
           do 125 i = 2, lfine
              if (dtnew(i)  .gt. possk(i-1)) then
@@ -377,14 +380,17 @@ c         # warn the user that calculation finished prematurely
 c
 c  # final output (unless we just did it above)
 c
-      if (nout > 0) then
-        if (((iout.lt.iinfinity) .and. (mod(ncycle,iout).ne.0))
-     &            .or. ((nout.gt.0) .and. (tout(nout).eq.tfinal) .and.
-     &                  (.not. dumpout))) then
-             call valout(1,lfine,time,nvar,naux)
+      dump_final = ((iout.lt.iinfinity) .and. (mod(ncycle,iout).ne.0))
+      if (.not. dumpout) then
+          if (nout > 0) then
+              dump_final = (tout(nout).eq.tfinal)
+              endif
+          endif
+      
+      if (dump_final) then
+           call valout(1,lfine,time,nvar,naux)
              call output_storm_location(time)
-             if (printout) call outtre(mstart,.true.,nvar,naux)
-        endif
+           if (printout) call outtre(mstart,.true.,nvar,naux)
       endif
 
 c  # checkpoint everything for possible future restart
