@@ -96,6 +96,7 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         self.data_write()
         self.data_write('variable_dt_refinement_ratios')
 
+        self.close_data_file()
 
 
 class TopographyData(clawpack.clawutil.data.ClawData):
@@ -152,6 +153,8 @@ class TopographyData(clawpack.clawutil.data.ClawData):
         else:
             raise NotImplementedError("Test topography type %s has not been"
                                         " implemented." % self.test_topography)
+
+        self.close_data_file()
 
 
 class RefinementData(clawpack.clawutil.data.ClawData):
