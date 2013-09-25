@@ -17,7 +17,7 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
       logical outaux
       integer output_aux_num 
       real(kind=8) :: h, hu, hv, eta
-      real(kind=8), allocatable :: qeta(:)
+      real(kind=8), allocatable :: qeta(:), temp_aux(:)
 
       iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
@@ -35,7 +35,6 @@ c     # how many aux components requested?
          output_aux_num = output_aux_num + output_aux_components(i)
          enddo
         
-c     # Currently outputs all aux components if any are requested!
       outaux = ((output_aux_num > 0) .and. 
      .         ((.not. output_aux_onlyonce) .or. (time==t0)))
 
@@ -180,6 +179,7 @@ c       -------------------
 
         if (outaux) then
 c        # output aux array to fort.aXXXX
+          allocate(temp_aux(output_aux_num))
 
          level = lst
  165     if (level .gt. lfine) go to 190
@@ -213,12 +213,14 @@ c                 # output in 1d format if ny=1:
 
              do j = nghost+1, mjtot-nghost
                 do i = nghost+1, mitot-nghost
-                   do ivar=1,naux
-                      if (abs(alloc(iaddaux(ivar,i,j))) .lt. 1d-90) 
-     &                   alloc(iaddaux(ivar,i,j)) = 0.d0
+                   do n=1,output_aux_num
+                      temp_aux(n) = 
+     &                     alloc(iaddaux(output_aux_components(n),i,j))
+                      if (abs(temp_aux(n)) .lt. 1d-90) 
+     &                   temp_aux(n) = 0.d0
                    enddo
-                   write(matunit3,109) (alloc(iaddaux(ivar,i,j)), 
-     &                              ivar=1,naux)
+                   write(matunit3,109) (temp_aux(n), 
+     &                              n=1,output_aux_num)
                 enddo
                 write(matunit3,*) ' '
              enddo
