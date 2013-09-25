@@ -98,7 +98,7 @@ program amr2
     integer :: ndim, nvar, naux, mcapa1, mindim, dimensional_split
     integer :: nstart, nsteps, nv1, nx, ny, lentotsave, num_gauge_SAVE
     integer :: omp_get_max_threads, maxthreads
-    real(kind=8) :: time, ratmet, cut, dtinit, dtv2
+    real(kind=8) :: time, ratmet, cut, dtinit, dt_max
     logical :: vtime, rest, output_t0    
     integer :: num_fgmax
 
@@ -203,7 +203,7 @@ program amr2
     !  Algorithm parameters
 
     read(inunit,*) possk(1)   ! dt_initial
-    read(inunit,*) dtv2       ! dt_max
+    read(inunit,*) dt_max     ! largest allowable dt
     read(inunit,*) cflv1      ! cfl_max
     read(inunit,*) cfl        ! clf_desired
     read(inunit,*) nv1        ! steps_max
@@ -568,7 +568,7 @@ program amr2
     ! --------------------------------------------------------
     !  Tick is the main routine which drives the computation:
     ! --------------------------------------------------------
-    call tick(nvar,cut,nstart,vtime,time,naux,t0,rest)
+    call tick(nvar,cut,nstart,vtime,time,naux,t0,rest,dt_max)
     ! --------------------------------------------------------
 
     ! Done with computation, cleanup:
