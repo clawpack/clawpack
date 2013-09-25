@@ -22,9 +22,8 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         self.add_attribute('coriolis_forcing',True)
         self.add_attribute('theta_0',45.0)
         self.add_attribute('friction_forcing',True)
-        self.add_attribute('manning_coefficient',0.025)
-        self.add_attribute('manning_coefficient_onshore',None)
-        self.add_attribute('friction_shore_level',0.)
+        self.add_attribute('manning_coefficient',[0.025])
+        self.add_attribute('manning_break',[])
 
         # GeoClaw algorithm parameters
         self.add_attribute('dry_tolerance',1e-3)
@@ -52,15 +51,16 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
             self.data_write('theta_0')
         self.data_write('friction_forcing')
         if self.friction_forcing:
+            if type(self.manning_coefficient) in [int,float]:
+                self.manning_coefficient = [self.manning_coefficient]
+            num_manning = len(self.manning_coefficient)
+            if len(self.manning_break) != num_manning - 1:
+                raise IOError("***manning_break array has wrong length")
+            self.data_write(value=num_manning,alt_name='num_manning')
             self.data_write('manning_coefficient')
+            self.data_write('manning_break')
             self.data_write('friction_depth')
 
-            # Second Manning coefficient for use onshore. 
-            # If not set, use same value everywhere:
-            if self.manning_coefficient_onshore is None:
-                self.manning_coefficient_onshore = self.manning_coefficient
-            self.data_write('manning_coefficient_onshore')
-            self.data_write('friction_shore_level')
         self.data_write()
 
         self.data_write('dry_tolerance',1e-3)

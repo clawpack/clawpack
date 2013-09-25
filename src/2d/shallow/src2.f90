@@ -3,7 +3,7 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use geoclaw_module, only: g => grav, coriolis_forcing, coriolis
     use geoclaw_module, only: friction_forcing, friction_depth
     use geoclaw_module, only: manning_coefficient
-    use geoclaw_module, only: manning_coefficient_onshore, friction_shore_level
+    use geoclaw_module, only: manning_break, num_manning
 
     implicit none
     
@@ -16,7 +16,7 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     double precision, intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
     ! Locals
-    integer :: i, j
+    integer :: i, j, nman
     real(kind=8) :: h, hu, hv, gamma, dgamma, y, fdt, a(2,2), coeff
 
     ! Algorithm parameters
@@ -34,11 +34,11 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 else
                     ! Apply friction source term only if in shallower water
                     if (q(1,i,j) <= friction_depth) then
-                        if (aux(1,i,j) .gt. friction_shore_level) then
-                            coeff = manning_coefficient_onshore
-                        else
-                            coeff = manning_coefficient
-                        endif
+                        do nman = num_manning, 1, -1
+                            if (aux(1,i,j) .lt. manning_break(nman)) then
+                                coeff = manning_coefficient(nman)
+                            endif
+                        enddo
                         ! Calculate source term
                         gamma = sqrt(q(2,i,j)**2 + q(3,i,j)**2) * g     &   
                               * coeff**2 / (q(1,i,j)**(7.d0/3.d0))
