@@ -72,7 +72,8 @@ def make_plots():
     print "Reading %s ..." % fname
     daux = loadtxt(fname)
     topo = []
-    for i in range(2,9):
+    nlevels = daux.shape[1]
+    for i in range(2,nlevels):
         topoi = reshape(daux[:,i],(mx,my),order='F')
         topoi = ma.masked_where(topoi < -1e50, topoi)
         topo.append(topoi)
@@ -90,13 +91,13 @@ def make_plots():
     # zeta = max h on land or max eta offshore:
     zeta = where(B>0, h, eta_tilde)
 
-    tzeta = reshape(d[:,7],(mx,my),order='F')  # Time maximum h recorded
+    tzeta = reshape(d[:,4],(mx,my),order='F')  # Time maximum h recorded
     tzeta = ma.masked_where(tzeta < -1e50, tzeta)      
     tzeta = ma.masked_where(zeta == 0., tzeta)
 
     inundated = logical_and((B>0), (h>0))
 
-    atimes = reshape(d[:,11],(mx,my),order='F')
+    atimes = reshape(d[:,5],(mx,my),order='F')
     atimes = ma.masked_where(atimes < -1e50, atimes)  
     atimes = ma.masked_where(zeta == 0., atimes)
 

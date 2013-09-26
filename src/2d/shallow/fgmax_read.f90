@@ -17,7 +17,7 @@ subroutine fgmax_read(fname,ifg)
     ! <repeat for additional grids from fgridno line>
 
     use fgmax_module
-    ! Note: should use mxnest in place of FG_AMR_MAX_LEVELS from above module
+    use amr_module, only: mxnest
 
     implicit none
     character(80), intent(in) :: fname
@@ -53,17 +53,18 @@ subroutine fgmax_read(fname,ifg)
     ! allocate and initialize arrays
     allocate(fg%valuemax(1:FG_NUM_VAL, 1:fg%npts))
     allocate(fg%levelmax(1:fg%npts))
-    allocate(fg%aux(1:FG_AMR_MAX_LEVELS, 1:FG_NUM_AUX, 1:fg%npts))
+    allocate(fg%aux(1:mxnest, 1:FG_NUM_AUX, 1:fg%npts))
+    allocate(fg%auxdone(1:mxnest))
     allocate(fg%tmax(1:FG_NUM_VAL, 1:fg%npts))
     allocate(fg%t_last_updated(1:fg%npts))
     allocate(fg%arrival_time(1:fg%npts))
     fg%valuemax = FG_NOTSET
     fg%levelmax = 0
     fg%aux = FG_NOTSET
+    fg%auxdone = .false.
     fg%tmax = FG_NOTSET
     fg%t_last_updated = FG_NOTSET
     fg%arrival_time = FG_NOTSET
-    !print *, '+++ fg%aux in read: ',fg%aux
 
     ! Set corners of bounding box.
     fg%x1bb = minval(fg%x)
@@ -71,9 +72,7 @@ subroutine fgmax_read(fname,ifg)
     fg%y1bb = minval(fg%y)
     fg%y2bb = maxval(fg%y)
 
-    print *, '++++ bounding box in read:'
     print *, fg%x1bb,fg%x2bb,fg%y1bb,fg%y2bb
-    !stop
 
     close(FG_UNIT)
 

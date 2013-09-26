@@ -3,7 +3,7 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                    xlower,ylower,mask_patch,values)
 
     ! Given a grid q (and aux if needed), set the elements of 
-    !   values(mv,i,j)  for mv=1:FG_NUM_MAXVALS
+    !   values(mv,i,j)  for mv=1:FG_NUM_VAL
     ! to the desired values that will be output and/or monitored on
     ! the fixed grid(s).
     !
@@ -19,44 +19,22 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     real(kind=8), intent(in) :: dx,dy,xlower,ylower
     logical, intent(in) :: mask_patch(1-mbc:mx+mbc, 1-mbc:my+mbc)
     real(kind=8), intent(inout) :: values(FG_NUM_VAL, 1-mbc:mx+mbc, 1-mbc:my+mbc)
-    integer :: i,j
 
-    real(kind=8) :: h,s,hs,hss,s_dry_tol
+    ! This version sets only 1 value to monitor, the value eta_tilde
+    ! defined to be h+B where wet and sea_level where dry
 
-    !s_dry_tol = 1.d-2
-    s_dry_tol = dry_tolerance
-
-
-    if (FG_NUM_VAL .ne. 4) then
-        write(6,*) '*** Error FG_NUM_VAL in fgmax_module.f90 is ',FG_NUM_VAL
-        write(6,*) '*** Does not agree with number of values set in fgmax_values.f90'
+    if (FG_NUM_VAL .ne. 1) then
+        write(6,*) '*** Error FG_NUM_VAL in fgmax_module is ',FG_NUM_VAL
+        write(6,*) '*** Does not agree with number expected in fgmax_values: 1'
         stop
         endif 
 
-    do i=1-mbc,mx+mbc
-        do j=1-mbc,my+mbc
-            if (mask_patch(i,j)) then
-                h = q(1,i,j)  ! depth
-                hs = sqrt(q(2,i,j)**2 + q(3,i,j)**2) 
-                if (h > s_dry_tol) then
-                    s = hs / h
-                  else
-                    s = 0.d0
-                  endif
-                hs = h*s
-                hss = h*hs
-                !values(1,i,j) = h
-                ! change to eta tilde...
-                if (h > dry_tolerance) then
-                    values(1,i,j) = h + aux(1,i,j)
-                  else
-                    values(1,i,j) = sea_level
-                  endif
-                values(2,i,j) = s
-                values(3,i,j) = hs
-                values(4,i,j) = hss
-                endif
-            enddo
-        enddo
+    where (mask_patch .and. (q(1,:,:) >= dry_tolerance))
+        values(1,:,:) = q(1,:,:) + aux(1,:,:)
+    endwhere
+
+    where (mask_patch .and. (q(1,:,:) < dry_tolerance))
+        values(1,:,:) = sea_level
+    endwhere
 
 end subroutine fgmax_values

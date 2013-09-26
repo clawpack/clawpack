@@ -71,7 +71,8 @@ def make_plots():
     print "Reading %s ..." % fname
     daux = loadtxt(fname)
     topo = []
-    for i in range(2,9):
+    nlevels = daux.shape[1]
+    for i in range(2,nlevels):
         topoi = daux[:,i]
         topoi = ma.masked_where(topoi < -1e50, topoi)
         topo.append(topoi)
@@ -87,13 +88,13 @@ def make_plots():
     # zeta = max h on land or max eta offshore:
     zeta = where(B>0, h, eta_tilde)
 
-    tzeta = d[:,7]  # Time maximum h recorded
+    tzeta = d[:,4]  # Time maximum h recorded
     tzeta = ma.masked_where(tzeta < -1e50, tzeta)      
     tzeta = ma.masked_where(zeta == 0., tzeta) / 3600.  # hours 
 
     inundated = logical_and((B>0), (h>0))
 
-    atimes = d[:,11]
+    atimes = d[:,5]
     atimes = ma.masked_where(atimes < -1e50, atimes)  
     atimes = ma.masked_where(zeta == 0., atimes) / 3600.  # hours 
 

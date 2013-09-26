@@ -4,7 +4,7 @@ subroutine fgmax_finalize()
     ! Print out the maxval and aux arrays and de-allocate storage.
 
     use fgmax_module
-    ! Note: should use mxnest in place of FG_AMR_MAX_LEVELS from above module
+    use amr_module, only: mxnest
 
     implicit none
     character(30) :: fname
@@ -44,7 +44,7 @@ subroutine fgmax_finalize()
 
             do k=1,fg%npts
                 write(FG_UNIT,112) fg%x(k),fg%y(k), &
-                      (fg%aux(level,ma,k), level=1,FG_AMR_MAX_LEVELS)
+                      (fg%aux(level,ma,k), level=1,mxnest)
  112            format(2e17.8,20e17.8)
                 enddo
 

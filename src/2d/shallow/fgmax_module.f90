@@ -1,9 +1,9 @@
 module fgmax_module
 
+    use amr_module, only: mxnest
+    implicit none
     save
 
-    ! need to fix this!  Should be mxnest from the computation...
-    integer, parameter :: FG_AMR_MAX_LEVELS = 7
 
     type fgrid
 
@@ -52,7 +52,7 @@ module fgmax_module
         real(kind=8) :: x1bb,x2bb,y1bb,y2bb
 
         ! keep track of whether all aux arrays have been computed on a given level:
-        logical :: auxdone(1:FG_AMR_MAX_LEVELS) = .false.
+        logical, allocatable, dimension(:) :: auxdone
 
     end type
 
@@ -69,7 +69,7 @@ module fgmax_module
 
     ! number of max vals to monitor
     ! these are specified in fgmax_values
-    integer, parameter :: FG_NUM_VAL = 4
+    integer, parameter :: FG_NUM_VAL = 1
     ! number of aux vals to monitor
     integer, parameter :: FG_NUM_AUX = 1
 
