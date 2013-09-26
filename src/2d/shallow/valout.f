@@ -30,10 +30,7 @@ c
           endif
 
 c     # how many aux components requested?
-      output_aux_num = 0
-      do i=1,naux
-         output_aux_num = output_aux_num + output_aux_components(i)
-         enddo
+      output_aux_num = size(output_aux_components)
         
       outaux = ((output_aux_num > 0) .and. 
      .         ((.not. output_aux_onlyonce) .or. (time==t0)))
@@ -264,7 +261,8 @@ c         # and we want to use 1d plotting routines
 c     # NOTE: we need to print out nghost too in order to strip
 c     #       ghost cells from q when reading in pyclaw.io.binary
 c     # Print meqn = nvar+1 because eta added.
-      write(matunit2,1000) time,nvar+1,ngrids,naux,ndim,nghost
+      write(matunit2,1000) time, nvar+1, ngrids, output_aux_num, ndim,
+     &                     nghost
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

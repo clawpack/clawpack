@@ -22,9 +22,9 @@ from clawpack.visclaw import colormaps, geoplot, gaugetools
 
 # Location of storm fields in aux array output
 bathy_index = 0
-friction_field = 3
-wind_field = 4
-pressure_field = 6
+friction_field = 1
+wind_field = 2
+pressure_field = 4
 
 class figure_counter(object):
 
