@@ -57,7 +57,9 @@ class track_data(object):
 
             # Check to make sure that this fixed the problem
             if self._data.shape[0] < frame + 1:
-                raise Exception("Could not find data for frame %s." % frame)
+                print " *** WARNING *** Could not find track data for frame %s." % frame
+                return None, None, None
+                # raise Exception("Could not find data for frame %s." % frame)
 
         return self._data[frame,1:]
 

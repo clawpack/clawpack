@@ -7,7 +7,7 @@ c
       use geoclaw_module
       use refinement_module, only: varRefTime
       use amr_module
-      use storm_module, only: landfall, output_storm_location
+      use storm_module, only: landfall
       use utility_module,only: convert2days
 
       implicit double precision (a-h,o-z)
@@ -327,7 +327,6 @@ c
 
        if ((mod(ncycle,iout).eq.0) .or. dumpout) then
          call valout(1,lfine,time,nvar,naux)
-         call output_storm_location(time)
          if (printout) call outtre(mstart,.true.,nvar,naux)
        endif
 
@@ -389,7 +388,6 @@ c
       
       if (dump_final) then
            call valout(1,lfine,time,nvar,naux)
-             call output_storm_location(time)
            if (printout) call outtre(mstart,.true.,nvar,naux)
       endif
 
