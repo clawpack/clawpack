@@ -35,7 +35,8 @@ module geoclaw_module
     logical :: coriolis_forcing ! True then coriolis terms included in src
     real(kind=8) :: theta_0 ! Used if using the beta-plane approximation
     logical :: friction_forcing ! Friction forcing will be applied
-    real(kind=8) :: manning_coefficient
+    real(kind=8), dimension(:),allocatable :: manning_coefficient, manning_break
+    integer :: num_manning
     real(kind=8) :: friction_depth
     
     ! Method parameters    
@@ -86,10 +87,14 @@ contains
         endif
         read(unit,*) friction_forcing
         if (friction_forcing) then
-            read(unit,*) manning_coefficient
+            read(unit,*) num_manning
+            allocate(manning_coefficient(num_manning))
+            allocate(manning_break(num_manning))
+            manning_break(num_manning) = rinfinity
+            read(unit,*) manning_coefficient(:)
+            read(unit,*) manning_break(1:num_manning-1)
             read(unit,*) friction_depth
         else
-            manning_coefficient = 0.d0
             friction_depth = rinfinity
         endif
         read(unit,*)

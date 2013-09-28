@@ -9,11 +9,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !        aux(2,i,j) = area ratio (capacity function -- set mcapa = 2)
 !        aux(3,i,j) = length ratio for edge
 !     
-!     aux(4,i,j) = seems to allow for variable friction
-!     ripped out 5:4+num_layers   for multi-layer  - only one layer code for
-!     tsunamis
 !
-
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: sea_level

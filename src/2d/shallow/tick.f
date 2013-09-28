@@ -270,7 +270,9 @@ c                same level goes again. check for ok time step
  106             if ((possk(level)-dtnew(level))/dtnew(level)
      .                .gt. .05)  then
 
-                    print *," ***adjusting timestep for level"
+                    write(6,601) level, time
+ 601                format(" ***adjusting timestep for level ", i3,
+     &                     " at t = ",d16.6)
                     print *,"    old ntogo dt",ntogo(level),possk(level)
 
 c                   adjust time steps for this and finer levels
@@ -281,13 +283,14 @@ c                   adjust time steps for this and finer levels
                        kratio(level-1) = ceiling(possk(level-1) /
      .                                           possk(level))
                     endif
-                    print *,"   new ntogo dt ",ntogo(level),possk(level)
+                    print *,"    new ntogo dt ",ntogo(level),
+     &                      possk(level)
                     go to 106
                  endif
                  if (ntogo(level) .gt. 100) then
                      write(6,*) "**** Too many dt reductions ****"
                      write(6,*) "**** Stopping calculation   ****"
-                     write(6,*) "Writing checkpoint file ..."
+                     write(6,*) "Writing checkpoint file at t = ",time
                      call check(ncycle,time,nvar,naux)
                      stop
                  endif

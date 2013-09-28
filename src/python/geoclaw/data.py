@@ -22,7 +22,8 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         self.add_attribute('coriolis_forcing',True)
         self.add_attribute('theta_0',45.0)
         self.add_attribute('friction_forcing',True)
-        self.add_attribute('manning_coefficient',0.025)
+        self.add_attribute('manning_coefficient',[0.025])
+        self.add_attribute('manning_break',[])
 
         # GeoClaw algorithm parameters
         self.add_attribute('dry_tolerance',1e-3)
@@ -50,8 +51,16 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
             self.data_write('theta_0')
         self.data_write('friction_forcing')
         if self.friction_forcing:
+            if type(self.manning_coefficient) in [int,float]:
+                self.manning_coefficient = [self.manning_coefficient]
+            num_manning = len(self.manning_coefficient)
+            if len(self.manning_break) != num_manning - 1:
+                raise IOError("***manning_break array has wrong length")
+            self.data_write(value=num_manning,alt_name='num_manning')
             self.data_write('manning_coefficient')
+            self.data_write('manning_break')
             self.data_write('friction_depth')
+
         self.data_write()
 
         self.data_write('dry_tolerance',1e-3)
@@ -198,6 +207,29 @@ class FixedGridData(clawpack.clawutil.data.ClawData):
             self._out_file.write(11*"%g  " % tuple(fixedgrid) +"\n")
         self.close_data_file()
 
+class FGmaxData(clawpack.clawutil.data.ClawData):
+
+    def __init__(self):
+
+        super(FGmaxData,self).__init__()
+        
+        # File name for fgmax points and parameters:
+        self.add_attribute('fgmax_files',[])
+
+
+    def write(self,data_source='setrun.py'):
+        self.open_data_file('fgmax.data',data_source)
+        num_fgmax = len(self.fgmax_files)
+        self.data_write(value=num_fgmax,alt_name='num_fgmax')
+        self.data_write()
+        for fgmax_file in self.fgmax_files:
+            fname = os.path.abspath(fgmax_file)
+            if not os.path.isfile(fname):
+                raise IOError("***fgmax input file not found: %s" % fgmax_file)
+            self._out_file.write("\n'%s' \n" % fname)
+        self.close_data_file()
+
+
 
 class DTopoData(clawpack.clawutil.data.ClawData):
 
@@ -216,12 +248,10 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.data_write(value=mdtopofiles,alt_name='mdtopofiles')
         self.data_write()
         for tfile in self.dtopofiles:
-            try:
-                fname = "'%s'" % os.path.abspath(tfile[-1])
-            except:
-                # print "*** Error: file not found: ",tfile[-1]
-                raise IOError("File %s not found" % tfile[-1])
-            self._out_file.write("\n%s \n" % fname)
+            fname = os.path.abspath(tfile[-1])
+            if not os.path.isfile(fname):
+                raise IOError("*** dtopo input file not found: %s" % tfile[-1])
+            self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.close_data_file()
 
