@@ -12,5 +12,7 @@ before_script:
 script:
   - cd pyclaw
   - nosetests
+  - cd ../amrclaw/tests
+  - make tests
 notifications:
   email: false
