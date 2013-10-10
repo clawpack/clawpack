@@ -8,7 +8,7 @@ before_install:
   - sudo apt-get install -qq gfortran liblapack-pic
   - pip install --use-mirrors matplotlib
 before_script:
-  - python setup.py install
+  - python setup.py git-dev
 script:
   - export CLAW=`pwd`
   - cd $CLAW/pyclaw
