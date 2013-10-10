@@ -11,6 +11,7 @@ before_script:
   - python setup.py git-dev
 script:
   - export CLAW=`pwd`
+  - export PYTHONPATH=`pwd`:$PYTHONPATH
   - cd $CLAW/pyclaw
   - nosetests
   - cd $CLAW/amrclaw/tests
