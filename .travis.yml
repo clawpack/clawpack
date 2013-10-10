@@ -8,9 +8,13 @@ before_install:
   - sudo apt-get install -qq gfortran liblapack-pic
   - pip install --use-mirrors matplotlib
 before_script:
-  - python setup.py install
+  - python setup.py git-dev
 script:
-  - cd pyclaw
+  - export CLAW=`pwd`
+  - export PYTHONPATH=`pwd`:$PYTHONPATH
+  - cd $CLAW/pyclaw
   - nosetests
+  - cd $CLAW/amrclaw/tests
+  - nosetests */
 notifications:
   email: false
