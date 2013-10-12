@@ -69,7 +69,8 @@ class track_data(object):
 def gauge_locations(current_data,gaugenos='all'):
     plt.hold(True)
     gaugetools.plot_gauge_locations(current_data.plotdata, \
-         gaugenos=gaugenos, format_string='kx', add_labels=True)
+                                    gaugenos=gaugenos, format_string='kx', 
+                                    add_labels=True, xoffset=0.02, yoffset=0.02)
     plt.hold(False)
 
 def gaugetopo(current_data):
@@ -87,7 +88,7 @@ def gauge_afteraxes(current_data):
     plt.xlabel('t (days)')
     plt.ylabel('m')
     locs,labels = plt.xticks()
-    labels = np.trunc(locs/(3600.0 * 24))
+    labels = [r"$%s$" % str(np.trunc(value/(3600.0 * 24))) for value in locs]
     # locs = np.linspace(-12.0,40,52)
     # labels = range(-12,41)
     plt.xticks(locs,labels)
