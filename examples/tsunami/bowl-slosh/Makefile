@@ -177,7 +177,6 @@ include $(CLAWMAKE)
 
 # Construct the topography data
 .PHONY: topo
-topo: .data
+topo:
 	python maketopo.py
 
-### DO NOT remove this line - make depends on it ###
