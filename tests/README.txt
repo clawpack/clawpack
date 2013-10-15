@@ -4,6 +4,11 @@ To run all tests:
     python run_tests.py
 or: 
     make tests
+which does the same thing.  This runs nosetests but also saves all output to
+a file in case you want to check it.
+
+To just run nosetests in all subdirectories:
+    nosetests */
 
 To clean up afterwards, removing all executables, output, and test results:
     make clobber
