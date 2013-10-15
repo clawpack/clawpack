@@ -12,14 +12,14 @@ before_install:
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - python setup.py git-dev
-  - rm -rf amrclaw
-  - ln -s ../ amrclaw
+  - rm -rf geoclaw
+  - ln -s ../ geoclaw
   
 install:
   - export PYTHONPATH=${PWD}:$PYTHONPATH
   - export CLAW=${PWD}
   - export FC=gfortran
-  - cd amrclaw
+  - cd geoclaw
   
 before_script:
   # Print CPU info for debugging purposes:
@@ -31,7 +31,7 @@ before_script:
   - echo "FC="$FC
   
 script:
-  - cd $CLAW/amrclaw/tests
+  - cd $CLAW/geoclaw/tests
   - nosetests */
   
 notifications:
