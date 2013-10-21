@@ -7,13 +7,25 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq gfortran liblapack-pic
   - pip install --use-mirrors matplotlib
-before_script:
+  
+install:
   - python setup.py install
+  
+before_script:
+  - cat /proc/cpuinfo
+  - gfortran -v
+  
 script:
-  - export CLAW=`pwd`
+  - export CLAW=${pwd}
   - cd $CLAW/pyclaw
   - nosetests
-  - cd $CLAW/amrclaw/tests
-  - nosetests */
+  - export FC=gfortran
+  - cd $CLAW/classic
+  - nosetests
+  - cd $CLAW/amrclaw
+  - nosetests
+  - cd $CLAW/geoclaw
+  - nosetests
+  
 notifications:
   email: false
