@@ -1,0 +1,38 @@
+language: python
+python:
+  - 2.7
+env:
+  - BUILD_TYPE="Release"
+  
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install gfortran
+  # Print NumPy version that is already installed by Travis CI:
+  - python -c "import numpy; print numpy.__version__"
+  - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
+  - cd clawpack
+  - python setup.py git-dev
+  - rm -rf geoclaw
+  - ln -s ../ geoclaw
+  
+install:
+  - export PYTHONPATH=${PWD}:$PYTHONPATH
+  - export CLAW=${PWD}
+  - export FC=gfortran
+  - cd geoclaw
+  
+before_script:
+  # Print CPU info for debugging purposes:
+  - cat /proc/cpuinfo
+  - gfortran -v
+  - /usr/bin/f95 -v
+  - echo "PYTHONPATH="$PYTHONPATH
+  - echo "CLAW="$CLAW
+  - echo "FC="$FC
+  
+script:
+  - cd $CLAW/geoclaw/tests
+  - nosetests */
+  
+notifications:
+  email: false

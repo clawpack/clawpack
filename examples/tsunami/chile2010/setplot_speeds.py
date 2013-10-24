@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 
 from clawpack.geoclaw import topotools
 
-# try:
-#     from setplotfg import setplotfg
-# except:
-#     print "Did not find setplotfg.py"
-#     setplotfg = None
+try:
+    TG32412 = np.loadtxt('32412_notide.txt')
+except:
+    print "*** Could not load DART data file"
+
 
 #--------------------------
 def setplot(plotdata):
@@ -99,11 +99,11 @@ def setplot(plotdata):
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # plotitem.plot_var = geoplot.surface
+    #plotitem.plot_var = geoplot.surface
     plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    plotitem.pcolor_cmin = -0.2e0
-    plotitem.pcolor_cmax = 0.2e0
+    plotitem.pcolor_cmin = -0.2
+    plotitem.pcolor_cmax = 0.2
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 1
@@ -177,7 +177,7 @@ def setplot(plotdata):
     #-----------------------------------------
     # Figures for gauges
     #-----------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='Surface & topo', figno=300, \
+    plotfigure = plotdata.new_plotfigure(name='Surface at gauges', figno=300, \
                     type='each_gauge')
     plotfigure.clf_each_gauge = True
 
@@ -207,14 +207,24 @@ def setplot(plotdata):
     # plotitem.plotstyle = 'g-'
 
     def add_zeroline(current_data):
-        from pylab import plot, legend, xticks, floor
-        t = current_data.t
-        #legend(('surface','topography'),loc='lower left')
+        from pylab import plot, legend, xticks, floor, axis, xlabel
+        t = current_data.t 
+        gaugeno = current_data.gaugeno
+
+        if gaugeno == 32412:
+            try:
+                plot(TG32412[:,0], TG32412[:,1], 'r')
+                legend(['GeoClaw','Obs'],'lower right')
+            except: pass
+            axis((0,t.max(),-0.3,0.3))
+
         plot(t, 0*t, 'k')
         n = int(floor(t.max()/3600.) + 2)
-        xticks([3600*i for i in range(n)])
+        xticks([3600*i for i in range(n)], ['%i' % i for i in range(n)])
+        xlabel('time (hours)')
 
     plotaxes.afteraxes = add_zeroline
+
 
 
     #-----------------------------------------

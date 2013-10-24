@@ -7,6 +7,10 @@ Sloshing water in a parabolic bowl
 Waves in a parabolic bowl with a flat surface sloshing around.
 An exact analytic solution is known in which the surface stays flat.
 
+To create the topo file before running the code::
+
+    make topo
+
 In this code, :math:`x` and :math:`y` are in meters (coordinate_system=1 
 in `setrun.py`).
 

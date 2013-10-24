@@ -15,7 +15,7 @@ from clawpack.geoclaw import topotools
 try:
     TG32412 = np.loadtxt('32412_notide.txt')
 except:
-    print "*** Could not load TG file(s)"
+    print "*** Could not load DART data file"
 
 #--------------------------
 def setplot(plotdata):
@@ -137,8 +137,10 @@ def setplot(plotdata):
         gaugeno = current_data.gaugeno
 
         if gaugeno == 32412:
-            plot(TG32412[:,0], TG32412[:,1], 'r')
-            legend(['GeoClaw','Obs'],'lower right')
+            try:
+                plot(TG32412[:,0], TG32412[:,1], 'r')
+                legend(['GeoClaw','Obs'],'lower right')
+            except: pass
             axis((0,t.max(),-0.3,0.3))
 
         plot(t, 0*t, 'k')
