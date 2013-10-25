@@ -46,7 +46,7 @@ c We want to do this regardless of the threading type
 !$OMP&            SHARED(level,nvar,naux,alloc,intrat,delt,
 !$OMP&                   nghost,node,rnode,numgrids,listgrids),
 !$OMP&            SCHEDULE (dynamic,1)
-!$OMP&            DEFAULT(none),
+!$OMP&            DEFAULT(none)
       do  j = 1, numgrids(level)
           mptr = listgrids(j)
           nx     = node(ndihi,mptr) - node(ndilo,mptr) + 1
