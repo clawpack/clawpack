@@ -247,7 +247,7 @@ def make_symlinks(subpackages):
                     os.path.join('clawpack', package, 'src'))
                 
 
-def setup_package(setup_dict, subpackages):
+def setup_package(setup_dict, subpackages, symlink_only=False):
     from numpy.distutils.core import setup
 
     # Rewrite the version file every time we install
@@ -262,8 +262,9 @@ def setup_package(setup_dict, subpackages):
         if os.path.exists('.git'):
             dev_setup(subpackages)
         make_symlinks(subpackages)
-        setup(configuration=configuration,
-              **setup_dict)
+        if not symlink_only:
+            setup(configuration=configuration,
+                  **setup_dict)
     finally:
         for package, package_dict in subpackages.items(): 
             if 'fortran_src_dir' in package_dict:
@@ -305,4 +306,7 @@ if __name__ == '__main__':
         setup(**setup_dict)
     else:
         # okay, real install
-        setup_package(setup_dict, SUBPACKAGES) 
+        if 'symlink-only' in sys.argv:
+            setup_package(setup_dict, SUBPACKAGES, symlink_only=True) 
+        else:
+            setup_package(setup_dict, SUBPACKAGES) 
