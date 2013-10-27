@@ -34,7 +34,7 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     endwhere
 
     where (mask_patch .and. (q(1,:,:) < dry_tolerance))
-        values(1,:,:) = sea_level
+        values(1,:,:) = -1.d-90   !# to indicate dry region
     endwhere
 
 end subroutine fgmax_values
