@@ -4,11 +4,12 @@ subroutine fgmax_read(fname,ifg)
     ! Read in data file describing any fixed grids.
     ! The file is assumed to have the form:
     ! 
-    ! FG_num_fgrids  # number of fixed grids
-    ! 1           # fgridno: number of first fixed grid.  
-    ! tstart_max,tend_max # start and end time for monitoring this fgrid.
-    ! dt_for_max  # desired maximum time between updating max values.
-    ! min_level_for_max # minimum level to use for monitoring max.
+    ! tstart_max  # start time for monitoring this fgrid.
+    ! tend_max    # end time for monitoring this fgrid.
+    ! dt_for_max  # desired maximum time increment between updating max values.
+    ! min_level_for_max     # minimum level to use for monitoring max.
+    ! min_level_for_arrival # minimum level to use for monitoring arrival time.
+    ! arrival_tol           # tolerance for identifying arrival.
     ! 
     ! npts        # number of grid points
     ! x(1), y(1)  # first grid point
@@ -35,11 +36,10 @@ subroutine fgmax_read(fname,ifg)
       endif
 
     open(unit=FG_UNIT,file=trim(fname),status='old')
-    !read(FG_UNIT,*) FG_num_fgrids
-    !print *, 'FG_num_fgrids = ',FG_num_fgrids
 
     fg => FG_fgrids(ifg)   ! point to next element of array of fgrids
-    read(FG_UNIT,*) fg%tstart_max, fg%tend_max
+    read(FG_UNIT,*) fg%tstart_max
+    read(FG_UNIT,*) fg%tend_max
     read(FG_UNIT,*) fg%dt_for_max
     read(FG_UNIT,*) fg%min_level_for_max
     read(FG_UNIT,*) fg%min_level_for_arrival
