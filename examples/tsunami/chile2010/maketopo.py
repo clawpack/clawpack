@@ -33,34 +33,6 @@ def makedtopo():
         okada.builddynamicdeffile(dtopo_cfg, dtopo_cfg, dtopo_fname)
 
 
-
-def makeqinit():
-    """
-    Create qinit data file
-    """
-    nxpoints=100
-    nypoints=100
-    xlower=-84.e0
-    xupper=-80.e0
-    ylower=-49.e0
-    yupper=-45.e0
-    outfile= "hump.xyz"
-    topotools.topo1writer(outfile,qinit,xlower,xupper,ylower,yupper,nxpoints,nypoints)
-
-
-def qinit(x,y):
-    """
-    Gaussian hump:
-    """
-    from numpy import where,exp
-    x0 = -82.0
-    y0 = -47.0
-    d = topotools.gcdist(x,y,x0,y0)  # great circle distance on earth
-    ze = -d**2/2.e9
-    z = where(ze>-100., 20.e0*exp(ze), 0.)
-    return z
-
 if __name__=='__main__':
     gettopo()
-    #makeqinit()
     makedtopo()
