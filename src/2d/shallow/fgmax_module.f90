@@ -31,20 +31,19 @@ module fgmax_module
 
         ! time range to monitor:
         real(kind=8) :: tstart_max, tend_max
+
         ! Desired maximum delta t between updating valuemax:
         ! Will only update at start of time step if end of timestep is
         ! to far beyond last update time
-        real(kind=8) :: dt_for_max
-        ! Mininum level to check when updating valuemax:
-        ! Coarser levels will be ignored to save computation time.
-        integer :: min_level_for_max
+        real(kind=8) :: dt_check
+
+        ! Mininum level to check when updating valuemax or arrival times:
+        ! Coarser levels will be ignored to avoid bad data from coarse grids
+        integer :: min_level_check
 
         ! Tolerance for flagging point for arrival of tsunami.
         ! Flag in fgmax_frompatch if eta tilde > sea_level + arrival_tol
         real(kind=8) :: arrival_tol
-        ! Mininum level to check when checking for arrival
-        ! Coarser levels will be ignored to avoid premature arrivals
-        integer :: min_level_for_arrival
 
 
         ! Coordinates of corners of bounding box.

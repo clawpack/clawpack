@@ -6,9 +6,8 @@ subroutine fgmax_read(fname,ifg)
     ! 
     ! tstart_max  # start time for monitoring this fgrid.
     ! tend_max    # end time for monitoring this fgrid.
-    ! dt_for_max  # desired maximum time increment between updating max values.
-    ! min_level_for_max     # minimum level to use for monitoring max.
-    ! min_level_for_arrival # minimum level to use for monitoring arrival time.
+    ! dt_check    # desired maximum time increment between updating max values.
+    ! min_level_check # minimum level to check for monitoring values/arrivals
     ! arrival_tol           # tolerance for identifying arrival.
     ! 
     ! npts        # number of grid points
@@ -40,9 +39,8 @@ subroutine fgmax_read(fname,ifg)
     fg => FG_fgrids(ifg)   ! point to next element of array of fgrids
     read(FG_UNIT,*) fg%tstart_max
     read(FG_UNIT,*) fg%tend_max
-    read(FG_UNIT,*) fg%dt_for_max
-    read(FG_UNIT,*) fg%min_level_for_max
-    read(FG_UNIT,*) fg%min_level_for_arrival
+    read(FG_UNIT,*) fg%dt_check  
+    read(FG_UNIT,*) fg%min_level_check
     read(FG_UNIT,*) fg%arrival_tol
     read(FG_UNIT,*) fg%npts
     allocate(fg%x(1:fg%npts), fg%y(1:fg%npts))
