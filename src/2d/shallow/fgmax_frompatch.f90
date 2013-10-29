@@ -38,7 +38,7 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
             write(61,61) ifg,level,time
  61         format('---------- In fgmax_frompatch ----------',/, &
                'ifg = ',i2,' level = ',i1,' time = ',d16.6)
-            if (time_afterstep <= minval(fg%t_last_updated)+fg%dt_for_max) then
+            if (time_afterstep <= minval(fg%t_last_updated)+fg%dt_check) then
                 write(61,68) time, minval(fg%t_last_updated)
      68         format('++++ Skipping update at t = ', e20.11,' min t_last = ',&
                        e20.11)
@@ -50,9 +50,9 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
             endif
 
         if ((time >= fg%tstart_max) .and. (time <= fg%tend_max) .and. &
-                (level >= fg%min_level_for_max) .and. &
+                (level >= fg%min_level_check) .and. &
                 (level >= minval(fg%levelmax)) .and. &
-                (time_afterstep > minval(fg%t_last_updated)+fg%dt_for_max)) &
+                (time_afterstep > minval(fg%t_last_updated)+fg%dt_check)) &
                 then
             ! Otherwise this level won't update any fg%valuemax elements.
             !write(61,*) '+++ Setting fg_values'
@@ -93,7 +93,7 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                 ! keep track of arrival time...
                 ! Note that values(1,k) = eta tilde = h+B if h>0 else sea_level:
                 ! This might not be correct when there is subsidence or uplift?
-                if (mask_fgrid(k) .and.(level >= fg%min_level_for_arrival)) then
+                if (mask_fgrid(k) .and.(level >= fg%min_level_check)) then
                     if ((fg_values(1,k) > sea_level + fg%arrival_tol) .and. &
                         (fg%arrival_time(k) == FG_NOTSET)) then
                             fg%arrival_time(k) = time
