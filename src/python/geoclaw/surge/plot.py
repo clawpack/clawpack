@@ -20,11 +20,17 @@ import matplotlib.colors as colors
 
 from clawpack.visclaw import colormaps, geoplot, gaugetools
 
-# Location of storm fields in aux array output
+# Default location of storm fields in aux array output
+# Note that selective output can move these around, when importing the module
+# make sure to change these values before plotting to use
 bathy_index = 0
-friction_field = 1
-wind_field = 2
-pressure_field = 4
+friction_field = 3
+wind_field = 4
+pressure_field = 6
+# bathy_index = 0
+# friction_field = 1
+# wind_field = 2
+# pressure_field = 4
 
 class figure_counter(object):
 
