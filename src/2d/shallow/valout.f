@@ -182,7 +182,7 @@ c       -------------------
 c        # output aux array to fort.aXXXX
 
          level = lst
- 165     if (level .gt. lfine) go to 190
+ 165     if (level .gt. lend) go to 190
             mptr = lstart(level)
  170        if (mptr .eq. 0) go to 180
               nx      = node(ndihi,mptr) - node(ndilo,mptr) + 1

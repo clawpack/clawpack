@@ -20,11 +20,17 @@ import matplotlib.colors as colors
 
 from clawpack.visclaw import colormaps, geoplot, gaugetools
 
-# Location of storm fields in aux array output
+# Default location of storm fields in aux array output
+# Note that selective output can move these around, when importing the module
+# make sure to change these values before plotting to use
 bathy_index = 0
 friction_field = 3
 wind_field = 4
 pressure_field = 6
+# bathy_index = 0
+# friction_field = 1
+# wind_field = 2
+# pressure_field = 4
 
 class figure_counter(object):
 
@@ -57,7 +63,9 @@ class track_data(object):
 
             # Check to make sure that this fixed the problem
             if self._data.shape[0] < frame + 1:
-                raise Exception("Could not find data for frame %s." % frame)
+                print " *** WARNING *** Could not find track data for frame %s." % frame
+                return None, None, None
+                # raise Exception("Could not find data for frame %s." % frame)
 
         return self._data[frame,1:]
 
@@ -67,7 +75,8 @@ class track_data(object):
 def gauge_locations(current_data,gaugenos='all'):
     plt.hold(True)
     gaugetools.plot_gauge_locations(current_data.plotdata, \
-         gaugenos=gaugenos, format_string='kx', add_labels=True)
+                                    gaugenos=gaugenos, format_string='kx', 
+                                    add_labels=True, xoffset=0.02, yoffset=0.02)
     plt.hold(False)
 
 def gaugetopo(current_data):
@@ -85,7 +94,7 @@ def gauge_afteraxes(current_data):
     plt.xlabel('t (days)')
     plt.ylabel('m')
     locs,labels = plt.xticks()
-    labels = np.trunc(locs/(3600.0 * 24))
+    labels = [r"$%s$" % str(np.trunc(value/(3600.0 * 24))) for value in locs]
     # locs = np.linspace(-12.0,40,52)
     # labels = range(-12,41)
     plt.xticks(locs,labels)
@@ -145,8 +154,8 @@ def friction(cd):
 def storm_wind(current_data):
     if current_data.level == 1:
         t = current_data.t
-        u = current_data.aux[wind_field,:,:]
-        v = current_data.aux[wind_field+1,:,:]
+        u = wind_x(cd)
+        v = wind_y(cd)
         plt.hold(True)
         Q = plt.quiver(current_data.x[::3,::3],current_data.y[::3,::3],
                     u[::3,::3],v[::3,::3])
@@ -185,7 +194,6 @@ def wind_contours(current_data):
 #  Water helper functions
 # ========================================================================
 def b(cd):
-    # return cd.q[3,:,:] - cd.q[0,:,:]
     return cd.aux[bathy_index,:,:]
     
 def extract_eta(h,eta,DRY_TOL=10**-3):
@@ -264,9 +272,7 @@ def add_surface_elevation(plotaxes, plot_type='pcolor', bounds=None,
     if plot_type == 'pcolor' or plot_type == 'imshow':            
         plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_pcolor')
         plotitem.plot_var = geoplot.surface_or_depth
-        # plotitem.plot_var = geoplot.surface
-        
-        # plotitem.pcolor_cmap = geoplot.tsunami_colormap
+
         if bounds is not None:
             if bounds[0] == 0.0:
                 plotitem.pcolor_cmap = plt.get_cmap('OrRd')
@@ -341,6 +347,7 @@ def add_speed(plotaxes, plot_type='pcolor', bounds=None,  contours=None,
         plotitem.colorbar_label = "Current (m/s)"
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,0,0,0,0]
+
     elif plot_type == 'quiver':
         plotitem = plotaxes.new_plotitem(plot_type='2d_quiver')
         plotitem.quiver_var_x = water_u
@@ -356,13 +363,10 @@ def add_speed(plotaxes, plot_type='pcolor', bounds=None,  contours=None,
         plotitem.kwargs = {'linewidths':1}
         
         plotitem.plot_var = water_speed
-        # plotitem.contour_levels = [1.0,2.0,3.0,4.0,5.0,6.0]
         plotitem.amr_contour_show = [1,1,1,1,1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
         plotitem.amr_contour_colors = 'k'
-        # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
-        # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
 
     elif plot_type == 'contourf':
 
@@ -386,13 +390,10 @@ def add_speed(plotaxes, plot_type='pcolor', bounds=None,  contours=None,
         plotitem.kwargs['extend'] = 'max'
         
         plotitem.plot_var = water_speed
-        # plotitem.contour_levels = [1.0,2.0,3.0,4.0,5.0,6.0]
         plotitem.amr_contour_show = [1,1,1,1,1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
         plotitem.amr_contour_colors = 'k'
-        # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
-        # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
 
 
 def add_friction(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
@@ -421,7 +422,6 @@ def add_wind(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         plotitem.add_colorbar = True
         plotitem.colorbar_shrink = shrink
         plotitem.colorbar_label = "Wind Speed (m/s)"
-        # plotitem.amr_imshow_show = [1,1,1]
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
     elif plot_type == 'contour':
@@ -448,7 +448,7 @@ def add_pressure(plotaxes, bounds=None, plot_type='pcolor', shrink=1.0):
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = True
-        plotitem.colorbar_shrink = 0.5
+        plotitem.colorbar_shrink = shrink
         plotitem.colorbar_label = "Pressure (mbar)"
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]

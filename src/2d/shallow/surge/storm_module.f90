@@ -207,7 +207,8 @@ contains
     !      Atmospheric Administration (NOAA) Joint Hurricane Testbed (JHT) 
     !      Program.” 26 pp.
     !
-    real(kind=8) function powell_wind_drag(wind_speed, theta) result(wind_drag)
+    real(kind=8) pure function powell_wind_drag(wind_speed, theta)      &
+                                         result(wind_drag)
     
         implicit none
         
@@ -275,8 +276,6 @@ contains
         else if (195.d0 < theta .and. theta <= 310.d0) then
             weight = (theta - 195.d0) / 115.d0
             drag = [rear_drag, left_drag]
-        else
-            stop
         endif
 
         wind_drag = drag(1) * (1.d0 - weight) + drag(2) * weight
