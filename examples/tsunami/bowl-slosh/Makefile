@@ -176,7 +176,9 @@ SOURCES = \
 include $(CLAWMAKE)
 
 # Construct the topography data
-.PHONY: topo
+.PHONY: topo all
 topo:
 	python maketopo.py
+
+all: topo .plots
 
