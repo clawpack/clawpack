@@ -11,7 +11,7 @@ before_install:
   - python -c "import numpy; print numpy.__version__"
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
-  - python setup.py git-dev
+  - python setup.py symlink-only
   - rm -rf geoclaw
   - ln -s ../ geoclaw
   
