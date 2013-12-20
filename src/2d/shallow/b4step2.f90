@@ -1,24 +1,23 @@
 ! ============================================
 subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
 ! ============================================
-! 
+!
 ! # called before each call to step
 ! # use to set time-dependent aux arrays or perform other tasks.
-! 
+!
 ! This particular routine sets negative values of q(1,i,j) to zero,
 ! as well as the corresponding q(m,i,j) for m=1,meqn.
 ! This is for problems where q(1,i,j) is a depth.
 ! This should occur only because of rounding error.
-! 
+!
 ! Also calls movetopo if topography might be moving.
 
     use geoclaw_module, only: dry_tolerance
     use geoclaw_module, only: g => grav
     use topo_module
-    use dtopo_module
-    
+
     implicit none
-    
+
     ! Subroutine arguments
     integer, intent(in) :: mbc,mx,my,meqn,maux
     real(kind=8), intent(in) :: xlower, ylower, dx, dy, t, dt

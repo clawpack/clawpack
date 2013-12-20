@@ -1,6 +1,6 @@
 ! ============================================================================
-!  Program:     /Users/mandli/src/claw44/branches/ktm-geoclaw-mod/2dxy/lib
-!  File:        dtopo_mod
+!  Program:     dtopo_module
+!  File:        dtopo_mod.f90
 !  Created:     2010-04-22
 !  Author:      Kyle Mandli
 ! ============================================================================
@@ -20,6 +20,10 @@ module dtopo_module
     ! Work array
     double precision, allocatable :: dtopowork(:)
 
+    ! Work array for initial topography (only arrays where topo evolves)
+    double precision, allocatable :: topowork0(:)
+
+
     ! File data parameters
     character*150, allocatable :: dtopofname(:)
     double precision, allocatable :: xlowdtopo(:),ylowdtopo(:),xhidtopo(:)
@@ -28,12 +32,57 @@ module dtopo_module
     integer, allocatable :: mxdtopo(:),mydtopo(:),mtdtopo(:),mdtopo(:)
     integer, allocatable :: minleveldtopo(:),maxleveldtopo(:),dtopotype(:)
     integer, allocatable :: i0dtopo(:)
+
     integer :: num_dtopo
     double precision dz
+    ! Initial topography
+    integer, allocatable :: i0topo0(:)
+    integer, allocatable :: topo0ID(:)
     logical, allocatable :: topoaltered(:)
-    
+    integer :: mtopo0size
+
 
 contains
+
+    ! ========================================================================
+    ! set_topo0()
+    !
+    !  set-up topo0 array
+    ! ========================================================================
+
+     subroutine set_topo0()
+
+         use geoclaw_module
+         use topo_module
+
+         implicit none
+         !locals
+         integer :: i,j
+         double precision :: xlo,xhi,ylo,yhi,xdlo,xdhi,ydlo,ydhi
+         logical intersection(mtopofiles)
+
+         if (num_dtopo==0) then
+            return
+         endif
+
+         allocate(i0topo0(mtopofiles+num_dtopo))
+         allocate(topo0ID(mtopofiles))
+
+         do i = 1,mtopofiles
+            mtopo0size = 0
+            intersection(i) = .false.
+            do j = 1,num_dtopo
+               !check for intersection
+               if ((xlowtopo(i)<=xhidtopo(j)).and.(xhitopo(i)>=xlowdtopo(j)) &
+                       &.and.(ylowtopo(i)<=yhidtopo(j)).and.(yhitopo(i)>=ylowdtopo(j))) then
+                  intersection(i) = .true.
+                  mtopo0size = mtopo0size + mtopo(i)
+                  exit
+               endif
+            enddo
+         enddo
+
+      end subroutine
     ! ========================================================================
     !  set_dtopo(fname)
     ! ========================================================================
