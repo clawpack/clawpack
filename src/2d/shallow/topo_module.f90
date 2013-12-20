@@ -38,6 +38,7 @@ module topo_module
     integer, allocatable :: minleveltopo(:), maxleveltopo(:), itopotype(:)
     integer, allocatable :: topoID(:),topo0save(:)
     logical, allocatable :: topoaltered(:)
+    logical :: topo_finalized
 
     ! Moving topography support
     integer :: imovetopo
@@ -47,7 +48,7 @@ module topo_module
     real(kind=8), private :: topo_x0,topo_x1,topo_x2,topo_basin_depth
     real(kind=8), private :: topo_shelf_depth,topo_shelf_slope,topo_beach_slope
 
-    ! former dtopo module variables
+    ! dtopo variables
     ! Work array
     double precision, allocatable :: dtopowork(:)
 
@@ -60,9 +61,12 @@ module topo_module
     double precision, allocatable :: xlowdtopo(:),ylowdtopo(:),xhidtopo(:)
     double precision, allocatable :: yhidtopo(:),t0dtopo(:),tfdtopo(:)
     double precision, allocatable :: dxdtopo(:),dydtopo(:),dtdtopo(:)
+    double precision, allocatable :: tdtopo1(:),tdtopo2(:),taudtopo(:)
+
     integer, allocatable :: mxdtopo(:),mydtopo(:),mtdtopo(:),mdtopo(:)
     integer, allocatable :: minleveldtopo(:),maxleveldtopo(:),dtopotype(:)
-    integer, allocatable :: i0dtopo(:)
+    integer, allocatable :: i0dtopo(:),mdtopoorder(:),kdtopo1(:),kdtopo2(:)
+    integer, allocatable :: index0_dtopowork1(:),index0_dtopowork2(:)
 
     integer :: num_dtopo
     double precision dz
@@ -246,7 +250,9 @@ contains
             enddo
 
             !create topo0work array for finest arrays covering dtopo
+            topo_finalized = .true.
             if (num_dtopo>0) then
+               topo_finalized = .false.
                i0topo0(1) = 1
                mtopo0size = dot_product(mtopo,topo0save)
                allocate(topo0work(mtopo0size))
@@ -332,10 +338,10 @@ contains
                      jtopo1 = int(floor((yhitopo(id)-y)/dytopo(id))) + 1
                      jtopo2 = int(ceiling((yhitopo(id)-y)/dytopo(id))) + 1
                      !indices for work array
-                     ijll = i0topo(id) + jtopo2*mxtopo(id) + itopo1
-                     ijlr = i0topo(id) + jtopo2*mxtopo(id) + itopo2
-                     ijul = i0topo(id) + jtopo1*mxtopo(id) + itopo1
-                     ijur = i0topo(id) + jtopo1*mxtopo(id) + itopo2
+                     ijll = i0topo(id) + (jtopo2-1)*mxtopo(id) + itopo1 -1
+                     ijlr = i0topo(id) + (jtopo2-1)*mxtopo(id) + itopo2 -1
+                     ijul = i0topo(id) + (jtopo1-1)*mxtopo(id) + itopo1 -1
+                     ijur = i0topo(id) + (jtopo1-1)*mxtopo(id) + itopo2 -1
                      !find x,y,z values for bilinear
                      !z may be from only 1 or 2 nodes for aligned grids
                      !bilinear should still evaluate correctly
@@ -665,9 +671,11 @@ contains
 
         ! Locals
         integer, parameter :: iunit = 79
+        integer :: itopo,finer_than,rank
+        double precision :: area_i,area_j
         real(kind=8) :: xcell, xim, xip, ycell, yjm, yjp, ztopoij
         real(kind=8) :: capac_area
-        integer :: i,m,ib,jb,ij,ijdtopo,jbr
+        integer :: i,j,m,ib,jb,ij,ijdtopo,jbr
 
         ! Function
         real(kind=8) :: topointegral
@@ -697,7 +705,10 @@ contains
         allocate(xhidtopo(num_dtopo),yhidtopo(num_dtopo),tfdtopo(num_dtopo))
         allocate(dtopotype(num_dtopo),i0dtopo(num_dtopo))
         allocate(dxdtopo(num_dtopo),dydtopo(num_dtopo),dtdtopo(num_dtopo))
-        allocate(topoaltered(num_dtopo))
+        allocate(topoaltered(num_dtopo),mdtopoorder(num_dtopo))
+        allocate(kdtopo1(num_dtopo),kdtopo2(num_dtopo))
+        allocate(index0_dtopowork1(num_dtopo),index0_dtopowork2(num_dtopo))
+        allocate(tdtopo1(num_dtopo),tdtopo2(num_dtopo),taudtopo(num_dtopo))
 
         do i=1,num_dtopo
             read(iunit,*) dtopofname(i)
@@ -722,6 +733,29 @@ contains
                 i0dtopo(i) = i0dtopo(i-1) + mdtopo(i-1)
             enddo
         endif
+
+            ! dtopo order..for updating topo from finest dtopo model
+            ! The finest topography will be given priority in any region
+            ! mtopoorder(rank) = i means that i'th topography file has rank rank,
+            ! where the file with rank=1 is the finest and considered first.
+            do i=1,num_dtopo
+                finer_than = 0
+                do j=1,num_dtopo
+                    if (j /= i) then
+                        area_i=dxdtopo(i)*dydtopo(i)
+                        area_j=dxdtopo(j)*dydtopo(j)
+                        if (area_i < area_j) finer_than = finer_than + 1
+                        ! if two files have the same resolution, order is
+                        ! arbitrarily chosen
+                        if ((area_i == area_j).and.(j < i)) then
+                            finer_than = finer_than + 1
+                        endif
+                    endif
+                enddo
+                ! ifinerthan tells how many other files, file i is finer than
+                rank = num_dtopo - finer_than
+                mdtopoorder(rank) = i
+            enddo
 
         ! Allocate and read dtopo files
         allocate(dtopowork(sum(mdtopo)))

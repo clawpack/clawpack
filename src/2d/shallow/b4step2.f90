@@ -39,17 +39,15 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
         q(2:3,i,j) = 0.d0
     end forall
 
-    ! Move the topography if needed
-    ! write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
+    ! update topography if needed
 
-    do i=1,num_dtopo
-        call movetopo(mbc,mx,my,                                  &
-                      xlower,ylower,dx,dy,t,dt,maux,aux,                      &
-                      dtopowork(i0dtopo(i):i0dtopo(i)+mdtopo(i)-1),           &
-                      xlowdtopo(i),ylowdtopo(i),xhidtopo(i),yhidtopo(i),      &
-                      t0dtopo(i),tfdtopo(i),dxdtopo(i),dydtopo(i),dtdtopo(i), &
-                      mxdtopo(i),mydtopo(i),mtdtopo(i),mdtopo(i),             &
-                      minleveldtopo(i),maxleveldtopo(i),topoaltered(i))
-    enddo
+   if (num_dtopo>0.and.topo_finalized.eqv..false.) then
+      if ((minval(topotime)<maxval(tfdtopo)).and.(t>=minval(t0dtopo))) then
+         call topo_update(t,dt)
+         call setaux(mbc,mx,my,xlower,ylower,dx,dy,maux,aux)
+      endif
+   endif
+
+
 
 end subroutine b4step2
