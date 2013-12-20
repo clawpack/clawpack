@@ -128,6 +128,7 @@ contains
                 write(GEO_PARM_UNIT,*) '          will set B(x,y) = 0 in setaux'
                 return
             endif
+
             mtopofiles = mtopofiles + num_dtopo
             write(GEO_PARM_UNIT,*) '   mtopofiles = ',mtopofiles-num_dtopo
 
@@ -170,18 +171,19 @@ contains
                itopotype(i) = dtopotype(j)
                mxtopo(i) = mxdtopo(j)
                mytopo(i) = mydtopo(j)
-               xlowtopo = xlowdtopo(j)
-               ylowtopo = ylowdtopo(j)
-               xhitopo = xhidtopo(j)
-               yhitopo = yhidtopo(j)
-               dxtopo = dxdtopo(j)
-               dytopo = dydtopo(j)
-               minleveltopo = minleveldtopo(j)
-               maxleveltopo = maxleveldtopo(j)
-               tlowtopo = t0dtopo(j)
-               thitopo = tfdtopo(j)
+               xlowtopo(i) = xlowdtopo(j)
+               ylowtopo(i) = ylowdtopo(j)
+               xhitopo(i) = xhidtopo(j)
+               yhitopo(i) = yhidtopo(j)
+               dxtopo(i) = dxdtopo(j)
+               dytopo(i) = dydtopo(j)
+               minleveltopo(i) = minleveldtopo(j)
+               maxleveltopo(i) = maxleveldtopo(j)
+               tlowtopo(i) = t0dtopo(j)
+               thitopo(i) = tfdtopo(j)
                mtopo(i) = mxtopo(i)*mytopo(i)
                topoID(i) = i
+               topotime(i) = -huge(1.0)
             enddo
 
             ! Indexing into work array
@@ -233,7 +235,7 @@ contains
                 (mtopoorder(rank),rank=1,mtopofiles)
             write(GEO_PARM_UNIT,*) ' '
 
-            !set topo array for dtopo generated topo
+            !set values in topo array for dtopo generated topo
             do i = mtopofiles - num_dtopo + 1, mtopofiles
                call set_topo_for_dtopo(mxtopo(i),mytopo(i),dxtopo(i),dytopo(i), &
                     xlowtopo(i),ylowtopo(i),xhitopo(i),yhitopo(i), &
