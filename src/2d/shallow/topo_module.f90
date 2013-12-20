@@ -35,8 +35,9 @@ module topo_module
     integer, allocatable ::  mxtopo(:), mytopo(:)
 
     integer, allocatable :: i0topo(:), mtopo(:), mtopoorder(:)
-    integer, allocatable ::  minleveltopo(:), maxleveltopo(:), itopotype(:)
-    integer, allocatable ::  topoID(:)
+    integer, allocatable :: minleveltopo(:), maxleveltopo(:), itopotype(:)
+    integer, allocatable :: topoID(:),topo0save(:)
+    logical, allocatable :: topoaltered(:)
 
     ! Moving topography support
     integer :: imovetopo
@@ -51,7 +52,7 @@ module topo_module
     double precision, allocatable :: dtopowork(:)
 
     ! Work array for initial topography (only arrays where topo evolves)
-    double precision, allocatable :: topowork0(:)
+    double precision, allocatable :: topo0work(:)
 
 
     ! File data parameters
@@ -66,10 +67,9 @@ module topo_module
     integer :: num_dtopo
     double precision dz
     ! Initial topography
-    integer, allocatable :: i0topo0(:)
-    integer, allocatable :: topo0ID(:)
-    logical, allocatable :: topoaltered(:)
-    integer :: mtopo0size
+    integer, allocatable :: i0topo0(:),topo0ID(:)
+
+    integer :: mtopo0size,mtopo0files
 
 contains
 
@@ -140,8 +140,10 @@ contains
             allocate(topofname(mtopofiles),itopotype(mtopofiles))
             allocate(minleveltopo(mtopofiles),maxleveltopo(mtopofiles))
             allocate(i0topo(mtopofiles),mtopo(mtopofiles),mtopoorder(mtopofiles))
-            allocate(topoID(mtopofiles),topotime(mtopofiles))
+            allocate(topoID(mtopofiles),topotime(mtopofiles),topo0save(mtopofiles))
+            allocate(i0topo0(mtopofiles))
 
+            topo0save(:)= 0
             do i=1,mtopofiles - num_dtopo
                 read(iunit,*) topofname(i)
                 read(iunit,*) itopotype(i),minleveltopo(i), maxleveltopo(i), &
@@ -184,6 +186,7 @@ contains
                mtopo(i) = mxtopo(i)*mytopo(i)
                topoID(i) = i
                topotime(i) = -huge(1.0)
+               topo0save(i) = 1
             enddo
 
             ! Indexing into work array
@@ -241,6 +244,23 @@ contains
                     xlowtopo(i),ylowtopo(i),xhitopo(i),yhitopo(i), &
                     topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
             enddo
+
+            !create topo0work array for finest arrays covering dtopo
+            if (num_dtopo>0) then
+               i0topo0(1) = 1
+               mtopo0size = dot_product(mtopo,topo0save)
+               allocate(topo0work(mtopo0size))
+               do i = 2,mtopofiles
+                  i0topo0(i)= i0topo0(i-1) + mtopo(i-1)*topo0save(i-1)
+               enddo
+
+               do i = 1,mtopofiles
+                  if (topo0save(i)>0) then
+                     topo0work(i0topo0(i):i0topo0(i)+mtopo(i)-1) = &
+                        topowork(i0topo(i):i0topo(i)+mtopo(i)-1)
+                  endif
+               enddo
+            endif
 
 
         !---------------tests for analytic bathymetry-------------------
@@ -302,6 +322,8 @@ contains
                      !no intersection
                      cycle
                   else !lies in this topofile
+                     !save this topo
+                     topo0save(id) = 1
                      !find indices for bilinear
                      !arrays are in form of DEM...high y values first
                      !note for xy points lying on nodes all indices will be equal
@@ -336,6 +358,7 @@ contains
         enddo
 
     end subroutine set_topo_for_dtopo
+
 
     ! ========================================================================
     !  read_topo(mx,my,dx,dy,xlow,xhi,ylow,yhi,itopo,fname,topo_type)
@@ -610,44 +633,7 @@ contains
 
     end function test_topo
 
-    ! ========================================================================
-    ! set_topo0()
-    !
-    !  set-up topo0 array
-    ! ========================================================================
 
-     subroutine set_topo0()
-
-         use geoclaw_module
-
-         implicit none
-         !locals
-         integer :: i,j
-
-         logical intersection(mtopofiles)
-
-         if (num_dtopo==0) then
-            return
-         endif
-
-         allocate(i0topo0(mtopofiles+num_dtopo))
-         allocate(topo0ID(mtopofiles))
-
-         do i = 1,mtopofiles
-            mtopo0size = 0
-            intersection(i) = .false.
-            do j = 1,num_dtopo
-               !check for intersection
-               if ((xlowtopo(i)<=xhidtopo(j)).and.(xhitopo(i)>=xlowdtopo(j)) &
-                       &.and.(ylowtopo(i)<=yhidtopo(j)).and.(yhitopo(i)>=ylowdtopo(j))) then
-                  intersection(i) = .true.
-                  mtopo0size = mtopo0size + mtopo(i)
-                  exit
-               endif
-            enddo
-         enddo
-
-      end subroutine
     ! ========================================================================
     !  set_dtopo(fname)
     ! ========================================================================
