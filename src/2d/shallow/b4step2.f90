@@ -14,7 +14,8 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
 
     use geoclaw_module, only: dry_tolerance
     use geoclaw_module, only: g => grav
-    use topo_module
+    use topo_module, only: num_dtopo,topotime
+    use topo_module, only: tfdtopo,t0dtopo,topo_finalized
 
     implicit none
 
@@ -40,14 +41,12 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
     end forall
 
     ! update topography if needed
-
-   if (num_dtopo>0.and.topo_finalized.eqv..false.) then
+   if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
       if ((minval(topotime)<maxval(tfdtopo)).and.(t>=minval(t0dtopo))) then
          call topo_update(t,dt)
-         call setaux(mbc,mx,my,xlower,ylower,dx,dy,maux,aux)
       endif
    endif
-
+   call setaux(mbc,mx,my,xlower,ylower,dx,dy,maux,aux)
 
 
 end subroutine b4step2

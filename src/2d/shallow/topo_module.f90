@@ -69,7 +69,7 @@ module topo_module
     integer, allocatable :: index0_dtopowork1(:),index0_dtopowork2(:)
 
     integer :: num_dtopo
-    double precision dz
+    !double precision dz
     ! Initial topography
     integer, allocatable :: i0topo0(:),topo0ID(:)
 
@@ -763,69 +763,6 @@ contains
         do i=1,num_dtopo
             call read_dtopo(mxdtopo(i),mydtopo(i),mtdtopo(i),dtopotype(i), &
                 dtopofname(i),dtopowork(i0dtopo(i):i0dtopo(i)+mdtopo(i)-1))
-        enddo
-
-        ! ==============Fix topography for a restart==========================
-        ! topoaltered is ordinarily initialized as .false.
-        ! this variable indicates when topo arrays have been altered
-        ! based on a dtopo model.  For restarts after the end of motion,
-        ! the topo arrays are altered here to match the final topo + dtopo.
-        ! ====================================================================
-        do i=1,num_dtopo
-            if (tstart_thisrun <= tfdtopo(i)) then
-                topoaltered(i) = .false.
-            elseif (tstart_thisrun > tfdtopo(i)) then
-                topoaltered(i) = .true.
-                write(GEO_PARM_UNIT,*) '  Altering topo arrays at t=', tstart_thisrun
-                print *, 'SETDTOPO Resetting topo arrays at t=',tstart_thisrun
-                do m=1,mtopofiles
-                    if ((xlowtopo(m) <= xhidtopo(i)).and. &
-                            (xhitopo(m) >= xlowdtopo(i)).and. &
-                            (ylowtopo(m) <= yhidtopo(i)).and. &
-                            (yhitopo(m) >= ylowdtopo(i))) then
-                        do ib=1,mxtopo(m)
-                            xcell=xlowtopo(m) + (ib-0.5d0)*dxtopo(m)
-                            xim=xlowtopo(m) + (ib-1.d0)*dxtopo(m)
-                            xip=xlowtopo(m) + ib*dxtopo(m)
-
-                            if ((xim >= xlowdtopo(i)).and. &
-                                    (xip <= xhidtopo(i))) then
-                                do jb=1,mytopo(m)
-                                    ycell=ylowtopo(m) + (jb-.5d0)*dytopo(m)
-                                    yjm=ylowtopo(m) + (jb-1.d0)*dytopo(m)
-                                    yjp=ylowtopo(m) + jb*dytopo(m)
-
-                                    if ((yjm >= ylowdtopo(i)).and. &
-                                            (yjp <= yhidtopo(i))) then
-                                        ztopoij = 0.d0
-                                        ijdtopo = i0dtopo(i)+(mtdtopo(i)-1) &
-                                            *mxdtopo(i)*mydtopo(i)
-
-                                        ztopoij= topointegral(xim,xcell,xip, &
-                                            yjm,ycell,yjp,xlowdtopo(i), &
-                                            ylowdtopo(i),dxdtopo(i), &
-                                            dydtopo(i),mxdtopo(i), &
-                                            mydtopo(i),dtopowork(ijdtopo),1)
-
-                                        ztopoij=ztopoij/((yjp-yjm)*(xip-xim))
-                                        if (coordinate_system == 2) then
-                                            capac_area = deg2rad*earth_radius**2 &
-                                                * (sin(yjp*deg2rad) &
-                                                - sin(yjm*deg2rad))/(yjp-yjm)
-                                            ztopoij = ztopoij / capac_area
-                                        endif
-
-                                        jbr=mytopo(m)-jb+1
-                                        ij=i0topo(m) + (jbr-1)*mxtopo(m)+ib-1
-                                        topowork(ij)=topowork(ij)+ztopoij
-
-                                    endif
-                                enddo
-                            endif
-                        enddo
-                    endif
-                enddo
-            endif
         enddo
 
     end subroutine read_dtopo_settings
