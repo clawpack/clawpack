@@ -57,12 +57,15 @@ c        !check for intersection of grid cell and this topofile
      &       xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
          if (indicator.eq.1) then !cell overlaps grid
             if (area.eq.cellarea) then !cell is entirely in grid
+               ! (should we check if they agree to some tolerance??)
 c              !integrate surface and get out of here
                 topoint = topoint + topointegral(
      &              xmlo,xmc,xmhi,ymlo,ymc,
      &              ymhi,xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid),
      &              dytopo(mfid),mxtopo(mfid),mytopo(mfid),
      &              topo(i0),im)
+                write(44,442) xim,xip,yjm,yjp,topoint,m
+ 442            format(4e14.4,' topointegral: ',e16.6,' m = ',i2)
                return
             else
                go to 222
@@ -71,120 +74,21 @@ c              !integrate surface and get out of here
       enddo
 
  222  continue
-
-c     ! grid cell integral must come from more than one topofile
-      do m = mtopofiles,1,-1
-c        ! look for topo files overlapping this grid cell.
-c        ! By decending mtopoorder from mtopoorder(mtopofiles) to
-c        ! mtopoorder(1) we are decending from the coarsest to the finest topofile.
-c        ! by the end of the nested loops, the integral of this topofile
-c        ! will be taken over regions not covered by finer topofiles
-c        ! nested loops only account for a maximum of 4 intersecting topo files
-c        ! if 5 topofiles intersect, then an error is sent.
-
-         mfid = mtopoorder(m)
-
-c        ! note that mfid indicates the topofile number or id for the "m'th" coarsest topofile
-         ! within this do loop, we are always integrating mfid
-c        ! the nested do loops find intersections with other topofiles
-c        ! to determin the areas, but for integration of mfid only!
-
-c        !check for intersection of grid cell and this topofile
-         call intersection(indicator,area,xmlo,xmc,xmhi,
-     &       ymlo,ymc,ymhi,xim,xip,yjm,yjp,
-     &       xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
-
-         if (indicator.eq.1) then
-c           ! cell overlaps the file
-            i0=i0topo(mfid)
-c           ! integrate surface over intersection of grid and cell
-            topoint = topoint + topointegral(
+                m = 2
+                mfid = mtopoorder(m)
+                i0 = i0topo(mfid)
+                topoint = topoint + topointegral(
      &              xmlo,xmc,xmhi,ymlo,ymc,
      &              ymhi,xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid),
      &              dytopo(mfid),mxtopo(mfid),mytopo(mfid),
      &              topo(i0),im)
+                write(44,443) xim,xip,yjm,yjp,topoint,m
+ 443            format(4e14.4,' topointegral* ',e16.6,' m = ',i2)
 
-c           ! loop through grids finer than this one and subtract any
-c           ! integrals over intersections
-            do mm = m-1,1,-1
-               mfidint = mtopoorder(mm)
-c              ! check for 2nd intersection
-               call intersection(indicator,area,xmmlo,xmmc,xmmhi,
-     &                 ymmlo,ymmc,ymmhi,xmlo,xmhi,ymlo,ymhi,
-     &                 xlowtopo(mfidint),xhitopo(mfidint),
-     &                 ylowtopo(mfidint),yhitopo(mfidint))
-
-               if (indicator.eq.1) then
-c                 ! get rid of coarser integral
-                  topoint = topoint - topointegral(
-     &              xmmlo,xmmc,xmmhi,ymmlo,ymmc,
-     &              ymmhi,xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid),
-     &              dytopo(mfid),mxtopo(mfid),mytopo(mfid),
-     &              topo(i0),im)
-c                  -----------------------------------------------------
-c                 ------------------------------------------------------------
-c                 ! loop through grids finer than this one and add back any
-c                 ! integrals over intersections that will later get subtracted again
-                  do mmm = mm-1,1,-1
-                     mfidint = mtopoorder(mmm)
-c                    ! check for 3rd intersection
-                   call intersection(indicator,area,xmmmlo,xmmmc,xmmmhi,
-     &                 ymmmlo,ymmmc,ymmmhi,xmmlo,xmmhi,ymmlo,ymmhi,
-     &                 xlowtopo(mfidint),xhitopo(mfidint),
-     &                 ylowtopo(mfidint),yhitopo(mfidint))
-
-                     if (indicator.eq.1) then
-c                       ! add back
-                        topoint = topoint + topointegral(
-     &                  xmmmlo,xmmmc,xmmmhi,ymmmlo,ymmmc,ymmmhi,
-     &                  xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid),
-     &                  dytopo(mfid),mxtopo(mfid),mytopo(mfid),
-     &                                             topo(i0),im)
-
-                        do m4 = mmm-1,1,-1
-                           mfidint = mtopoorder(m4)
-c                          ! check for 4th intersection
-                           call intersection(indicator,area,xm4lo,
-     &                        xm4c,xm4hi,ym4lo,ym4c,ym4hi,xmmmlo,
-     &                        xmmmhi,ymmmlo,ymmmhi,
-     &                        xlowtopo(mfidint),xhitopo(mfidint),
-     &                        ylowtopo(mfidint),yhitopo(mfidint))
-
-                           if (indicator.eq.1) then
-c                          ! add back
-                              topoint = topoint - topointegral(
-     &                        xm4lo,xm4c,xm4hi,ym4lo,ym4c,ym4hi,
-     &                        xlowtopo(mfid),ylowtopo(mfid),
-     &                        dxtopo(mfid),dytopo(mfid),mxtopo(mfid),
-     &                        mytopo(mfid),topo(i0),im)
-
-                                 do m5 = m4-1,1,-1
-                                    mfidint = mtopoorder(m5)
-c                                   ! check for 5th intersection
-                                    call intersection(indicator,area,
-     &                                 xm5lo,xm5c,xm5hi,ym5lo,ym5c,
-     &                                 ym5hi,xm4lo,xm4hi,ym4lo,
-     &                                 ym4hi,xlowtopo(mfidint),
-     &                                 xhitopo(mfidint),
-     &                                 ylowtopo(mfidint),
-     &                                 yhitopo(mfidint))
-
-                                    if (indicator.eq.1) then
-                                       write(*,*) 'CELLGRIDINTEGRATE:'
-            write(*,*) 'ERROR: 5 NESTED TOPOGRIDS. MAXIMUM OF 4 ALLOWED'
-                                    endif
-                                 enddo
-                           endif
-                        enddo
-                     endif
-                  enddo
-
-               endif
-            enddo
-c           ------------------------------------------------------------
-         endif
-
-      enddo
+      write(44,*) 'calling rectintegral with ',xim,xip,yjm,yjp
+      call rectintegral(xim,xip,yjm,yjp,1,topoint)
+      write(44,441) xim,xip,yjm,yjp,topoint
+ 441  format(4e14.4,' rectintegral: ',e16.6)
 
       return
       end
