@@ -73,7 +73,8 @@ c              !integrate surface and get out of here
 
  222  continue
 
-      call rectintegral(xim,xip,yjm,yjp,1,topoint)
+      ! this grid cell intersects only topo grid m and perhaps coarser:
+      call rectintegral(xim,xip,yjm,yjp,m,topoint)
 
       return
       end
