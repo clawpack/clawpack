@@ -64,8 +64,6 @@ c              !integrate surface and get out of here
      &              ymhi,xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid),
      &              dytopo(mfid),mxtopo(mfid),mytopo(mfid),
      &              topo(i0),im)
-                write(44,442) xim,xip,yjm,yjp,topoint,m
- 442            format(4e14.4,' topointegral: ',e16.6,' m = ',i2)
                return
             else
                go to 222
@@ -74,21 +72,8 @@ c              !integrate surface and get out of here
       enddo
 
  222  continue
-                m = 2
-                mfid = mtopoorder(m)
-                i0 = i0topo(mfid)
-                topoint = topoint + topointegral(
-     &              xmlo,xmc,xmhi,ymlo,ymc,
-     &              ymhi,xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid),
-     &              dytopo(mfid),mxtopo(mfid),mytopo(mfid),
-     &              topo(i0),im)
-                write(44,443) xim,xip,yjm,yjp,topoint,m
- 443            format(4e14.4,' topointegral* ',e16.6,' m = ',i2)
 
-      write(44,*) 'calling rectintegral with ',xim,xip,yjm,yjp
       call rectintegral(xim,xip,yjm,yjp,1,topoint)
-      write(44,441) xim,xip,yjm,yjp,topoint
- 441  format(4e14.4,' rectintegral: ',e16.6)
 
       return
       end
