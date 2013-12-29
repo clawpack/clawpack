@@ -59,6 +59,7 @@ contains
     subroutine read_topo_settings(file_name)
 
         use geoclaw_module
+        use amr_module, only: xlower,xupper,ylower,yupper
 
         implicit none
 
@@ -69,6 +70,7 @@ contains
         integer, parameter :: iunit = 7
         integer :: i,j,itopo,finer_than,rank
         double precision :: area_i,area_j,x_junk,y_junk
+        double precision :: area, area_domain
 
         ! Open and begin parameter file output
         write(GEO_PARM_UNIT,*) ' '
@@ -177,6 +179,16 @@ contains
                 '  finest to coarsest: ', &
                 (mtopoorder(rank),rank=1,mtopofiles)
             write(GEO_PARM_UNIT,*) ' '
+
+            ! Check that topo arrays cover full domain:
+            call topoarea(xlower,xupper,ylower,yupper,1,area)
+            area_domain = (yupper-ylower)*(xupper-xlower)
+            if (abs(area - area_domain) > 1e-12*area_domain) then
+                write(6,*) '**** topo arrays do not cover domain'
+                write(6,*) '**** area of overlap = ', area
+                write(6,*) '**** area of domain  = ', area_domain
+                stop
+                endif
 
         ! Simple jump discontinuity in bathymetry
         else if (test_topography == 1) then
@@ -473,6 +485,83 @@ contains
         
     end function test_topo
     
+
+recursive subroutine topoarea(x1,x2,y1,y2,m,area)
+
+    ! Compute the area of overlap of topo with the rectangle (x1,x2) x (y1,y2)
+    ! using topo arrays indexed mtopoorder(mtopofiles) through mtopoorder(m) 
+    ! (coarse to fine).
+
+    ! The main call to this subroutine has corners of a physical domain for
+    ! the rectangle and m = 1 in order to compute the area of overlap of
+    ! domain by all topo arrays.  Used to check inputs and insure topo
+    ! covers domain.
+
+    ! The recursive strategy is to first compute the area using only topo 
+    ! arrays mtopoorder(mtopofiles) to mtopoorder(m+1), 
+    ! and then apply corrections due to adding topo array mtopoorder(m).
+     
+    ! Corrections are needed if the new topo array intersects the grid cell.
+    ! Let the intersection be (x1m,x2m) x (y1m,y2m).
+    ! Two corrections are needed, first to subtract out the area over
+    ! the rectangle (x1m,x2m) x (y1m,y2m) computed using
+    ! topo arrays mtopoorder(mtopofiles) to mtopoorder(m+1),
+    ! and then adding in the area over this same region using 
+    ! topo array mtopoorder(m).
+
+    ! Based on the recursive routine rectintegral that integrates
+    ! topo over grid cells using a similar strategy.
+
+    implicit none
+
+    ! arguments
+    real (kind=8), intent(in) :: x1,x2,y1,y2
+    integer, intent(in) :: m
+    real (kind=8), intent(out) :: area
+
+    ! local
+    real(kind=8) :: xmlo,xmc,xmhi,ymlo,ymc,ymhi,x1m,xmm,x2m, &
+        y1m,ymm,y2m, area1,area2,area_m
+    integer :: mfid, indicator, i0
+    real(kind=8), external :: topointegral  
+
+
+    mfid = mtopoorder(m)
+    i0=i0topo(mfid)
+
+    if (m == mtopofiles) then
+         ! innermost step of recursion reaches this point.
+         ! only using coarsest topo grid -- compute directly...
+         call intersection(indicator,area,xmlo,xmc,xmhi, &
+             ymlo,ymc,ymhi, x1,x2,y1,y2, &
+             xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
+
+    else
+        ! recursive call to compute area using one fewer topo grids:
+        call topoarea(x1,x2,y1,y2,m+1,area1)
+
+        ! region of intersection of cell with new topo grid:
+        call intersection(indicator,area_m,x1m,xmm,x2m, &
+             y1m,ymm,y2m, x1,x2,y1,y2, &
+             xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
+
+        
+        if (area_m > 0) then
+        
+            ! correction to subtract out from previous set of topo grids:
+            call topoarea(x1m,x2m,y1m,y2m,m+1,area2)
+    
+            ! adjust integral due to corrections for new topo grid:
+            area = area1 - area2 + area_m
+        else
+            area = area1
+        endif
+    endif
+
+end subroutine topoarea
+
+    
+
     
 
 end module topo_module
