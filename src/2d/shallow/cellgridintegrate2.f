@@ -71,6 +71,12 @@ c              !integrate surface and get out of here
          endif
       enddo
 
+      write(6,601) xim,xip,yjm,yjp
+ 601  format('*** Error, grid cell does not overlap any topo grid',/,
+     &     '  xim = ',e24.14,'  xip = ',e24.14,      
+     &   /,'  yjm = ',e24.14,'  yjp = ',e24.14)
+      stop
+
  222  continue
 
       ! this grid cell intersects only topo grid m and perhaps coarser:
