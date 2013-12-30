@@ -13,7 +13,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: sea_level
-    use amr_module, only: mcapa
+    use amr_module, only: mcapa, xupper, yupper, xlower, ylower
+
     use topo_module
 
     implicit none
@@ -66,6 +67,10 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 aux(2,i,j) = deg2rad * earth_radius**2 * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
                 aux(3,i,j) = ym * deg2rad
             endif
+            
+            ! skip ghost cells if outside physical domain:
+            if ((ym>=yupper) .or. (yp<=ylower) .or. &
+                (xm>=xupper) .or. (xp<=xlower)) cycle
 
             ! Use input topography files if available
             if (mtopofiles > 0 .and. test_topography == 0) then

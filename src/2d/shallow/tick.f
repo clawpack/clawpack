@@ -290,6 +290,9 @@ c                   adjust time steps for this and finer levels
                  if (ntogo(level) .gt. 100) then
                      write(6,*) "**** Too many dt reductions ****"
                      write(6,*) "**** Stopping calculation   ****"
+                     write(6,*) "**** ntogo = ",ntogo(level)
+                     write(6,1006) intratx(level-1),intraty(level-1),
+     &                             kratio(level-1),level
                      write(6,*) "Writing checkpoint file at t = ",time
                      call check(ncycle,time,nvar,naux)
                      stop
