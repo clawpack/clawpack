@@ -144,8 +144,8 @@ def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
     """
  
     fout=open(outfile, 'w')
-    dx = (xupper-xlower)/(nxpoints-1)
-    dy = (yupper-ylower)/(nypoints-1)
+    dx = float(xupper-xlower)/(nxpoints-1)
+    dy = float(yupper-ylower)/(nypoints-1)
 
     x = np.linspace(xlower,xupper,nxpoints)
     y = np.linspace(ylower,yupper,nypoints)
@@ -190,8 +190,8 @@ def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
 
  
     # note: for topotype2, dx=dy=cellsize
-    dx = (xupper-xlower)/(nxpoints-1)
-    dy = (yupper-ylower)/(nypoints-1)
+    dx = float(xupper-xlower)/(nxpoints-1)
+    dy = float(yupper-ylower)/(nypoints-1)
     if abs(dx-dy) > 1.e-8:
         print "*** Error in topo2writer, need dx=dy"
         print "    dx = %s, dy = %s" % (dx,dy)
