@@ -58,7 +58,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     integer :: fine_cell_count(fill_indices(2)-fill_indices(1)+2, fill_indices(4)-fill_indices(3)+2)
 
     ! Aux masking copy storage
-    integer(kind=1) :: aux_copy_mask(mitot, mjtot)
+    integer(kind=1) :: aux_copy_mask(mx, my)
 
     ! Stack storage
     !  use stack-based scratch arrays instead of alloc, since dont really

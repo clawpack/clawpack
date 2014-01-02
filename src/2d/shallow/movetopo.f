@@ -20,7 +20,7 @@ c
       dimension dtopo(mxdtopo,mydtopo,mtdtopo)
     
 c     Aux masking copy storage
-      integer(kind=1) :: aux_copy_mask(mitot, mjtot)
+      integer(kind=1) :: aux_copy_mask(1-mbc:mx+mbc, 1-mbc:my+mbc)
 
       logical topoaltered
 
