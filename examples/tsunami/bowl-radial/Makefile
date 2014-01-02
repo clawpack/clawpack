@@ -180,5 +180,8 @@ include $(CLAWMAKE)
 topo:
 	python maketopo.py
 
-all: topo .plots
+all: 
+	$(MAKE) topo
+	$(MAKE) .plots
+	$(MAKE) .htmls
 
