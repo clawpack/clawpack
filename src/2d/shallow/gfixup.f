@@ -10,6 +10,10 @@ c
 
       dimension spoh(maxlv)
 
+c     Aux masking copy storage
+      integer(kind=1) :: aux_copy_mask(max1d, max1d)
+      aux_copy_mask = 0
+
 c
 c ::::::::::::::::::::::::: GFIXUP ::::::::::::::::::::::::::::::::;
 c        interpolate initial values for the newly created grids.
@@ -66,7 +70,7 @@ c
                 mx = mitot - 2*nghost
                 my = mjtot - 2*nghost
                 call setaux(nghost,mx,my,corn1,corn2,hx,hy,
-     &                    naux,alloc(locaux))
+     &                    naux,alloc(locaux),aux_copy_mask)
               else
                 locaux = 1
               endif
