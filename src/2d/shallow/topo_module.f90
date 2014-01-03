@@ -37,7 +37,6 @@ module topo_module
     integer, allocatable :: i0topo(:), mtopo(:), mtopoorder(:)
     integer, allocatable :: minleveltopo(:), maxleveltopo(:), itopotype(:)
     integer, allocatable :: topoID(:),topo0save(:)
-    logical, allocatable :: topoaltered(:)
     logical :: topo_finalized
 
     ! Moving topography support
@@ -145,7 +144,7 @@ contains
             allocate(minleveltopo(mtopofiles),maxleveltopo(mtopofiles))
             allocate(i0topo(mtopofiles),mtopo(mtopofiles),mtopoorder(mtopofiles))
             allocate(topoID(mtopofiles),topotime(mtopofiles),topo0save(mtopofiles))
-            allocate(i0topo0(mtopofiles))
+            allocate(i0topo0(mtopofiles),topo0ID(mtopofiles))
 
             topo0save(:)= 0
             do i=1,mtopofiles - num_dtopo
@@ -705,10 +704,10 @@ contains
         allocate(xhidtopo(num_dtopo),yhidtopo(num_dtopo),tfdtopo(num_dtopo))
         allocate(dtopotype(num_dtopo),i0dtopo(num_dtopo))
         allocate(dxdtopo(num_dtopo),dydtopo(num_dtopo),dtdtopo(num_dtopo))
-        allocate(topoaltered(num_dtopo),mdtopoorder(num_dtopo))
         allocate(kdtopo1(num_dtopo),kdtopo2(num_dtopo))
         allocate(index0_dtopowork1(num_dtopo),index0_dtopowork2(num_dtopo))
         allocate(tdtopo1(num_dtopo),tdtopo2(num_dtopo),taudtopo(num_dtopo))
+        allocate(mdtopoorder(num_dtopo))
 
         do i=1,num_dtopo
             read(iunit,*) dtopofname(i)
