@@ -18,15 +18,10 @@ c
       implicit double precision (a-h,o-z)
       dimension aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
       dimension dtopo(mxdtopo,mydtopo,mtdtopo)
-    
-c     Aux masking copy storage
-      integer(kind=1) :: aux_copy_mask(1-mbc:mx+mbc, 1-mbc:my+mbc)
 
       logical topoaltered
 
       dimension auxorig(maux,-1:mx+mbc,-1:my+mbc)
-
-      aux_copy_mask = 0
 
         t0=t  !# start of coming timestep
         tf=t+dt !# end of coming timestep
@@ -82,7 +77,7 @@ c       write(26,*) 'MOVETOPO: setting dtopo at time = ',t
 
 c     # recreate original topography:
       call setaux(mbc,mx,my,xlow,ylow,dx,dy,
-     &                  maux,auxorig,aux_copy_mask)
+     &                  maux,auxorig)
 
 c=======loop through the computational grid row by row====================
         do j=1-mbc,my+mbc
