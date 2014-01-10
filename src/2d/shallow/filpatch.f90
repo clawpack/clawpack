@@ -20,6 +20,9 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
     use geoclaw_module, only: sea_level, dry_tolerance
 
+    use topo_module, only: num_dtopo,topotime
+    use topo_module, only: tfdtopo,t0dtopo,topo_finalized
+
     implicit none
 
     ! Input
@@ -44,12 +47,12 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     real(kind=8) :: hv_fine, v_fine, v_new, divide_mass
     real(kind=8) :: h_fine_average, h_fine, h_count, h_coarse
     integer(kind=1) :: flaguse(fill_indices(2)-fill_indices(1)+1,fill_indices(4)-fill_indices(3)+1)
-    
+
     ! Scratch arrays for interpolation
     logical :: fine_flag(num_eqn, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
 
     logical :: reloop
-    
+
     real(kind=8) :: fine_mass(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
     real(kind=8) :: eta_coarse(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
     real(kind=8) :: vel_max(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
@@ -66,8 +69,8 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     !  when pass it in to subroutines they treat it as having di_fineerent
     !  dimensions than the max size need to allocate here
     ! the +2 is to expand on coarse grid to enclose fine
-    real(kind=8) :: valcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_eqn)  
-    real(kind=8) :: auxcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_aux)  
+    real(kind=8) :: valcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_eqn)
+    real(kind=8) :: auxcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_aux)
 
     ! We begin by filling values for grids at level level.
     mx_patch = fill_indices(2) - fill_indices(1) + 1 ! nrowp
@@ -103,7 +106,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     ! recursively.
     if (.not.set) then
 
-        ! Error check 
+        ! Error check
         if (level == 1) then
             write(outunit,*)" error in filrecur - level 1 not set"
             write(outunit,'("start at row: ",i4," col ",i4)') nrowst,ncolst
@@ -157,10 +160,16 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
             stop
         endif
 
-        ! Set the aux array values for the coarse grid, this could be done 
+        ! Set the aux array values for the coarse grid, this could be done
         ! instead in intfil using possibly already available bathy data from the
         ! grids
         if (num_aux > 0) then
+            ! update topography if needed
+            if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
+               if ((minval(topotime)<maxval(tfdtopo)).and.(t>=minval(t0dtopo))) then
+                  call topo_update(t)
+               endif
+            endif
             call setaux(nghost, mx_coarse - 2*nghost,my_coarse - 2*nghost, &
                         coarse_rect(1) + nghost * dx_coarse,coarse_rect(3) + nghost * dy_coarse, &
                         dx_coarse,dy_coarse,num_aux,auxcrse)
@@ -182,7 +191,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         fine_flag = .false.
         fine_mass = 0.d0
         slope = 0.d0
-        
+
         ! Calculate surface elevation eta using dry limiting
         do i_coarse = 1, mx_coarse
             do j_coarse = 1, my_coarse
@@ -199,8 +208,8 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
         ! Calculate limited gradients of coarse grid eta
         do i_coarse = 2, mx_coarse - 1
-            do j_coarse = 2, my_coarse - 1 
-                
+            do j_coarse = 2, my_coarse - 1
+
                 ! X-Direction
                 down_slope = eta_coarse(i_coarse,j_coarse) - eta_coarse(i_coarse-1,j_coarse)
                 up_slope = eta_coarse(i_coarse+1,j_coarse) - eta_coarse(i_coarse,j_coarse)
@@ -238,7 +247,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                     h_fine = max(eta_fine - aux(1,i_fine + nrowst - 1, j_fine + ncolst - 1), 0.d0)
                     valbig(1,i_fine + nrowst - 1, j_fine + ncolst - 1) = h_fine
                     fine_mass(i_coarse,j_coarse) = fine_mass(i_coarse,j_coarse) + h_fine
-                    
+
                     ! Flag the corresponding coarse cell as needing relimiting
                     ! if one of the fine cells ends up being dry
                     if (h_fine < dry_tolerance) then
@@ -258,14 +267,14 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                     down_slope = (valcrse(ivalc(n,i_coarse,j_coarse)) - valcrse(ivalc(n,i_coarse-1,j_coarse)))
                     up_slope = (valcrse(ivalc(n,i_coarse+1,j_coarse)) - valcrse(ivalc(n,i_coarse,j_coarse)))
                     if (up_slope * down_slope > 0.d0) then
-                        slope(1,i_coarse,j_coarse) = &  
+                        slope(1,i_coarse,j_coarse) = &
                                         min(abs(up_slope), abs(down_slope)) * &
                              sign(1.d0, valcrse(ivalc(n,i_coarse+1,j_coarse)) &
                            - valcrse(ivalc(n,i_coarse-1,j_coarse)))
                     endif
 
-                    down_slope = (valcrse(ivalc(n,i_coarse,j_coarse)) - valcrse(ivalc(n,i_coarse,j_coarse-1))) 
-                    up_slope = (valcrse(ivalc(n,i_coarse,j_coarse+1)) - valcrse(ivalc(n,i_coarse,j_coarse))) 
+                    down_slope = (valcrse(ivalc(n,i_coarse,j_coarse)) - valcrse(ivalc(n,i_coarse,j_coarse-1)))
+                    up_slope = (valcrse(ivalc(n,i_coarse,j_coarse+1)) - valcrse(ivalc(n,i_coarse,j_coarse)))
                     if (up_slope * down_slope > 0.d0) then
                         slope(2,i_coarse,j_coarse) = &
                                           min(abs(up_slope), abs(down_slope)) &
@@ -335,7 +344,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                                 fine_flag(n,i_coarse,j_coarse) = .true.
                                 reloop = .true.
                             else
-                                valbig(n,i_fine+nrowst-1,j_fine+ncolst-1) = hv_fine 
+                                valbig(n,i_fine+nrowst-1,j_fine+ncolst-1) = hv_fine
                             endif
                         endif
                     endif
@@ -351,17 +360,17 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                     do j_fine  = 1,my_patch
                         j_coarse = 2 + (j_fine  - (unset_indices(3) - fill_indices(3)) - 1) / refinement_ratio_y
                         eta2 = (-0.5d0 + real(mod(j_fine - 1, refinement_ratio_y),kind=8)) / real(refinement_ratio_y, kind=8)
-                        
+
                         if (flaguse(i_fine,j_fine) == 0) then
                             if (fine_flag(1,i_coarse,j_coarse) .or. fine_flag(n,i_coarse,j_coarse)) then
                                 if (fine_mass(i_coarse,j_coarse) > dry_tolerance) then
-                                    h_coarse = valcrse(ivalc(1,i_coarse,j_coarse)) 
+                                    h_coarse = valcrse(ivalc(1,i_coarse,j_coarse))
                                     h_count = real(fine_cell_count(i_coarse,j_coarse),kind=8)
                                     h_fine_average = fine_mass(i_coarse,j_coarse) / h_count
                                     divide_mass = max(h_count, h_fine_average)
-                                    h_fine = valbig(1, i_fine + nrowst - 1, j_fine + ncolst - 1) 
+                                    h_fine = valbig(1, i_fine + nrowst - 1, j_fine + ncolst - 1)
                                     v_new = valcrse(ivalc(n,i_coarse,j_coarse)) / (divide_mass)
-                                    
+
                                     valbig(n,i_fine+nrowst-1,j_fine+ncolst-1) = &
                                         v_new * valbig(1,i_fine+nrowst-1,j_fine+ncolst-1)
                                 else

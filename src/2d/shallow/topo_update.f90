@@ -1,12 +1,14 @@
 !======================================================================
-subroutine topo_update(t,dt)
+subroutine topo_update(t)
 !======================================================================
 !
 !  called to update topography grids to the current time t
 !  topo arrays are modified directly from topo0 and dtopo
 !
 !  this routine replaces the old method implemented in movetopo
-!  where dtopo modified aux arrays
+!  where dtopo modified aux arrays directly. Now aux values are
+!  always determined from topography grids.
+!
 !                   David George, dgeorge@usgs.gov, December 20 2013
 
 
@@ -15,7 +17,7 @@ subroutine topo_update(t,dt)
    implicit none
 
    !arguments
-   real(kind=8), intent(in) ::t,dt
+   real(kind=8), intent(in) ::t
 
    !locals
    integer :: i,j,m,mt

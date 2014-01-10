@@ -44,7 +44,7 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
     ! update topography if needed
    if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
       if ((minval(topotime)<maxval(tfdtopo)).and.(t>=minval(t0dtopo))) then
-         call topo_update(t,dt)
+         call topo_update(t)
          call setaux(mbc,mx,my,xlower,ylower,dx,dy,maux,aux)
       endif
    endif
