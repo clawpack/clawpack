@@ -22,22 +22,21 @@ module topo_module
     implicit none
 
     ! Work array for topography for all t
-    double precision, allocatable :: topowork(:)
+    real(kind=8), allocatable :: topowork(:)
 
     ! Topography file data
     integer :: test_topography
     character(len=150), allocatable :: topofname(:)
     integer :: mtopofiles,mtoposize
-    double precision, allocatable :: xlowtopo(:), ylowtopo(:), tlowtopo(:)
-    double precision, allocatable :: xhitopo(:), yhitopo(:), thitopo(:)
-    double precision, allocatable :: dxtopo(:), dytopo(:)
-    double precision, allocatable :: topotime(:)
+    real(kind=8), allocatable :: xlowtopo(:), ylowtopo(:), tlowtopo(:)
+    real(kind=8), allocatable :: xhitopo(:), yhitopo(:), thitopo(:)
+    real(kind=8), allocatable :: dxtopo(:), dytopo(:)
+    real(kind=8), allocatable :: topotime(:)
     integer, allocatable ::  mxtopo(:), mytopo(:)
 
     integer, allocatable :: i0topo(:), mtopo(:), mtopoorder(:)
     integer, allocatable :: minleveltopo(:), maxleveltopo(:), itopotype(:)
     integer, allocatable :: topoID(:),topo0save(:)
-    logical, allocatable :: topoaltered(:)
     logical :: topo_finalized
 
     ! Moving topography support
@@ -50,18 +49,14 @@ module topo_module
 
     ! dtopo variables
     ! Work array
-    double precision, allocatable :: dtopowork(:)
-
-    ! Work array for initial topography (only arrays where topo evolves)
-    double precision, allocatable :: topo0work(:)
-
+    real(kind=8), allocatable :: dtopowork(:)
 
     ! File data parameters
     character*150, allocatable :: dtopofname(:)
-    double precision, allocatable :: xlowdtopo(:),ylowdtopo(:),xhidtopo(:)
-    double precision, allocatable :: yhidtopo(:),t0dtopo(:),tfdtopo(:)
-    double precision, allocatable :: dxdtopo(:),dydtopo(:),dtdtopo(:)
-    double precision, allocatable :: tdtopo1(:),tdtopo2(:),taudtopo(:)
+    real(kind=8), allocatable :: xlowdtopo(:),ylowdtopo(:),xhidtopo(:)
+    real(kind=8), allocatable :: yhidtopo(:),t0dtopo(:),tfdtopo(:)
+    real(kind=8), allocatable :: dxdtopo(:),dydtopo(:),dtdtopo(:)
+    real(kind=8), allocatable :: tdtopo1(:),tdtopo2(:),taudtopo(:)
 
     integer, allocatable :: mxdtopo(:),mydtopo(:),mtdtopo(:),mdtopo(:)
     integer, allocatable :: minleveldtopo(:),maxleveldtopo(:),dtopotype(:)
@@ -69,10 +64,13 @@ module topo_module
     integer, allocatable :: index0_dtopowork1(:),index0_dtopowork2(:)
 
     integer :: num_dtopo
-    !double precision dz
-    ! Initial topography
-    integer, allocatable :: i0topo0(:),topo0ID(:)
+    real(kind=8) dz
+    logical, allocatable :: topoaltered(:) !don't think this is needed anymore
 
+    ! Initial topography
+    ! Work array for initial topography (only arrays where topo evolves)
+    real(kind=8), allocatable :: topo0work(:)
+    integer, allocatable :: i0topo0(:),topo0ID(:)
     integer :: mtopo0size,mtopo0files
 
 contains
@@ -105,8 +103,8 @@ contains
         ! Locals
         integer, parameter :: iunit = 7
         integer :: i,j,itopo,finer_than,rank
-        double precision :: area_i,area_j,x_junk,y_junk
-        double precision :: area, area_domain
+        real(kind=8) :: area_i,area_j,x_junk,y_junk
+        real(kind=8) :: area, area_domain
 
         ! Open and begin parameter file output
         write(GEO_PARM_UNIT,*) ' '
@@ -147,7 +145,7 @@ contains
             allocate(minleveltopo(mtopofiles),maxleveltopo(mtopofiles))
             allocate(i0topo(mtopofiles),mtopo(mtopofiles),mtopoorder(mtopofiles))
             allocate(topoID(mtopofiles),topotime(mtopofiles),topo0save(mtopofiles))
-            allocate(i0topo0(mtopofiles))
+            allocate(i0topo0(mtopofiles),topo0ID(mtopofiles))
 
             topo0save(:)= 0
             do i=1,mtopofiles - num_dtopo
@@ -270,7 +268,6 @@ contains
                enddo
             endif
 
-
             ! Check that topo arrays cover full domain:
             call topoarea(xlower,xupper,ylower,yupper,1,area)
             area_domain = (yupper-ylower)*(xupper-xlower)
@@ -316,13 +313,13 @@ contains
 
         !arguments
         integer, intent(in) :: mx,my
-        double precision, intent(in) :: dx,dy,xlow,xhi,ylow,yhi
-        double precision, intent(inout) :: newtopo(1:mx*my)
+        real(kind=8), intent(in) :: dx,dy,xlow,xhi,ylow,yhi
+        real(kind=8), intent(inout) :: newtopo(1:mx*my)
 
         !locals
         integer :: i,j,k,ij,id,irank,itopo1,itopo2,jtopo1,jtopo2
         integer :: ijll,ijlr,ijul,ijur
-        double precision :: x,y,xl,xr,yu,yl,zll,zlr,zul,zur,z,dxdy
+        real(kind=8) :: x,y,xl,xr,yu,yl,zll,zlr,zul,zur,z,dxdy
 
         do j=1,my
                y = yhi - (j-1)*dy
@@ -394,14 +391,14 @@ contains
         ! Arguments
         integer, intent(in) :: mx,my,topo_type
         character(len=150), intent(in) :: fname
-        double precision, intent(inout) :: topo(1:mx*my)
+        real(kind=8), intent(inout) :: topo(1:mx*my)
 
         ! Locals
         integer, parameter :: iunit = 19, miss_unit = 17
-        double precision, parameter :: topo_missing = -150.d0
+        real(kind=8), parameter :: topo_missing = -150.d0
         logical, parameter :: maketype2 = .false.
         integer :: i,j,num_points,missing,status,topo_start
-        double precision :: no_data_value,x,y,z,topo_temp
+        real(kind=8) :: no_data_value,x,y,z,topo_temp
 
         print *, ' '
         print *, 'Reading topography file  ', fname
@@ -540,12 +537,12 @@ contains
         character(len=150), intent(in) :: fname
         integer, intent(in) :: topo_type
         integer, intent(out) :: mx,my
-        double precision, intent(out) :: xll,yll,xhi,yhi,dx,dy
+        real(kind=8), intent(out) :: xll,yll,xhi,yhi,dx,dy
 
         ! Local
         integer, parameter :: iunit = 19
         integer :: topo_size, status
-        double precision :: x,y,z,nodata_value
+        real(kind=8) :: x,y,z,nodata_value
         logical :: found_file
 
         inquire(file=fname,exist=found_file)
@@ -684,7 +681,7 @@ contains
         ! Locals
         integer, parameter :: iunit = 79
         integer :: itopo,finer_than,rank
-        double precision :: area_i,area_j
+        real(kind=8) :: area_i,area_j
         real(kind=8) :: xcell, xim, xip, ycell, yjm, yjp, ztopoij
         real(kind=8) :: capac_area
         integer :: i,j,m,ib,jb,ij,ijdtopo,jbr
@@ -717,10 +714,10 @@ contains
         allocate(xhidtopo(num_dtopo),yhidtopo(num_dtopo),tfdtopo(num_dtopo))
         allocate(dtopotype(num_dtopo),i0dtopo(num_dtopo))
         allocate(dxdtopo(num_dtopo),dydtopo(num_dtopo),dtdtopo(num_dtopo))
-        allocate(topoaltered(num_dtopo),mdtopoorder(num_dtopo))
         allocate(kdtopo1(num_dtopo),kdtopo2(num_dtopo))
         allocate(index0_dtopowork1(num_dtopo),index0_dtopowork2(num_dtopo))
         allocate(tdtopo1(num_dtopo),tdtopo2(num_dtopo),taudtopo(num_dtopo))
+        allocate(mdtopoorder(num_dtopo),topoaltered(num_dtopo))
 
         do i=1,num_dtopo
             read(iunit,*) dtopofname(i)
@@ -790,12 +787,12 @@ contains
       ! Arguments
       integer, intent(in) :: mx,my,mt,dtopo_type
       character*150, intent(in) :: fname
-      double precision, intent(inout) :: dtopo(1:mx*my*mt)
+      real(kind=8), intent(inout) :: dtopo(1:mx*my*mt)
 
       ! Local
       integer, parameter :: iunit = 29
       integer :: i,j,k,dtopo_size,status
-      double precision :: t,x,y
+      real(kind=8) :: t,x,y
 
       open(unit=iunit, file=fname, status = 'unknown',form='formatted')
 
@@ -858,12 +855,12 @@ contains
 
         ! Output Arguments
         integer, intent(out) :: mx,my,mt
-        double precision, intent(out) :: xlow,ylow,t0,xhi,yhi,tf,dx,dy,dt
+        real(kind=8), intent(out) :: xlow,ylow,t0,xhi,yhi,tf,dx,dy,dt
 
         ! Locals
         integer, parameter :: iunit = 7
         integer :: topo_size,status
-        double precision :: x,y,t,y_old,t_old
+        real(kind=8) :: x,y,t,y_old,t_old
         logical :: found_file
 
         ! Open file

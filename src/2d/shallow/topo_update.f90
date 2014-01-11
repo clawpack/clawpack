@@ -1,12 +1,14 @@
 !======================================================================
-subroutine topo_update(t,dt)
+subroutine topo_update(t)
 !======================================================================
 !
 !  called to update topography grids to the current time t
 !  topo arrays are modified directly from topo0 and dtopo
 !
 !  this routine replaces the old method implemented in movetopo
-!  where dtopo modified aux arrays
+!  where dtopo modified aux arrays directly. Now aux values are
+!  always determined from topography grids.
+!
 !                   David George, dgeorge@usgs.gov, December 20 2013
 
 
@@ -15,7 +17,7 @@ subroutine topo_update(t,dt)
    implicit none
 
    !arguments
-   real(kind=8), intent(in) ::t,dt
+   real(kind=8), intent(in) ::t
 
    !locals
    integer :: i,j,m,mt
@@ -41,13 +43,14 @@ subroutine topo_update(t,dt)
       kdtopo2(m) = min(kdtopo2(m),mtdtopo(m))
       kdtopo1(m) = max(kdtopo1(m),1)
       kdtopo2(m) = max(kdtopo2(m),1)
-      tdtopo1(m) = t0dtopo(m)+ dtdtopo(m)*(kdtopo1(m)-1) ! tdtopo1<= t
-      tdtopo2(m) = t0dtopo(m)+ dtdtopo(m)*(kdtopo2(m)-1) ! tdtopo2>= t
+      tdtopo1(m) = t0dtopo(m)+ dtdtopo(m)*real(kdtopo1(m)-1,kind=8) ! tdtopo1<= t
+      tdtopo2(m) = t0dtopo(m)+ dtdtopo(m)*real(kdtopo2(m)-1,kind=8) ! tdtopo2>= t
       taudtopo(m) = 1.d0-max(0.d0,((t-tdtopo1(m))/dtdtopo(m)))
       taudtopo(m) = max(taudtopo(m),0.d0)
-      index0_dtopowork1(m) = i0dtopo(m) + (kdtopo1(m)-1)*mtdtopo(m)
-      index0_dtopowork2(m) = i0dtopo(m) + (kdtopo2(m)-1)*mtdtopo(m)
+      index0_dtopowork1(m) = i0dtopo(m) + (kdtopo1(m)-1)*mxdtopo(m)*mydtopo(m)
+      index0_dtopowork2(m) = i0dtopo(m) + (kdtopo2(m)-1)*mxdtopo(m)*mydtopo(m)
    enddo
+
 
    !first set topofiles aligned exactly with corresponding dtopo
    do i= mtopofiles - num_dtopo + 1, mtopofiles !topofile
@@ -73,11 +76,11 @@ subroutine topo_update(t,dt)
       endif
 
       do j=1,mytopo(mt)
-         y = yhitopo(mt) - (j-1)*dytopo(mt)
+         y = yhitopo(mt) - real(j-1,kind=8)*dytopo(mt)
          do i=1,mxtopo(mt)
             ij = i0topo(mt) + (j-1)*mxtopo(mt) + i -1
             ij0 = i0topo0(mt) + (j-1)*mxtopo(mt) + i -1
-            x = xlowtopo(mt) + (i-1)*dxtopo(mt)
+            x = xlowtopo(mt) +  real(i-1,kind=8)*dxtopo(mt)
             do irank = 1,num_dtopo
                m = mdtopoorder(irank)
                if ( (x>xhidtopo(m)).or.(x<xlowdtopo(m)).or. &
@@ -93,11 +96,11 @@ subroutine topo_update(t,dt)
                idtopo2 = int(ceiling((x-xlowdtopo(m))/dxdtopo(m)))+1
                jdtopo1 = int(floor((yhidtopo(m)-y)/dydtopo(m))) + 1
                jdtopo2 = int(ceiling((yhidtopo(m)-y)/dydtopo(m))) + 1
-               !indices for work array
-               ijll = index0_dtopowork2(m) + (jdtopo2-1)*mxdtopo(m) + idtopo1 -1
-               ijlr = index0_dtopowork2(m) + (jdtopo2-1)*mxdtopo(m) + idtopo2 -1
-               ijul = index0_dtopowork2(m) + (jdtopo1-1)*mxdtopo(m) + idtopo1 -1
-               ijur = index0_dtopowork2(m) + (jdtopo1-1)*mxdtopo(m) + idtopo2 -1
+               !indices for dtopo work array
+               ijll = index0_dtopowork1(m) + (jdtopo2-1)*mxdtopo(m) + idtopo1 -1
+               ijlr = index0_dtopowork1(m) + (jdtopo2-1)*mxdtopo(m) + idtopo2 -1
+               ijul = index0_dtopowork1(m) + (jdtopo1-1)*mxdtopo(m) + idtopo1 -1
+               ijur = index0_dtopowork1(m) + (jdtopo1-1)*mxdtopo(m) + idtopo2 -1
 
                !find x,y,z values for bilinear
                !z may be from only 1 or 2 nodes for coincidently aligned grids
@@ -106,12 +109,12 @@ subroutine topo_update(t,dt)
                zlr = dtopowork(ijlr)
                zul = dtopowork(ijul)
                zur = dtopowork(ijur)
-               xl = xlowdtopo(m) + (idtopo1-1)*dxdtopo(m)
+               xl = xlowdtopo(m) + real(idtopo1-1,kind=8)*dxdtopo(m)
                xr = xl + dxdtopo(m)
-               yu = yhidtopo(m) - (jdtopo1-1)*dydtopo(m)
-               yl = yu - dytopo(m)
+               yu = yhidtopo(m) - real(jdtopo1-1,kind=8)*dydtopo(m)
+               yl = yu - dydtopo(m)
 
-               !bilinear value at t=tdtopo1
+               !bilinear value at (x,y) of dtopo cell at t=tdtopo1
                dz1 = zll*(xr-x)*(yu-y) + zlr*(x-xl)*(yu-y) + zul*(xr-x)*(y-yl) + zur*(x-xl)*(y-yl)
 
                !indices for work array at later time
@@ -123,12 +126,14 @@ subroutine topo_update(t,dt)
                zlr = dtopowork(ijlr)
                zul = dtopowork(ijul)
                zur = dtopowork(ijur)
-               !bilinear value at t=tdtopo2
+               !bilinear value of at (x,y) of dtopo cell at t=tdtopo2
                dz2 = zll*(xr-x)*(yu-y) + zlr*(x-xl)*(yu-y) + zul*(xr-x)*(y-yl) + zur*(x-xl)*(y-yl)
                dz12 = taudtopo(m)*dz1 + (1.0-taudtopo(m))*dz2
-               dz12 = dz12/(dxtopo(m)*dytopo(m))
+               dz12 = dz12/(dxdtopo(m)*dydtopo(m))
                !set topo value
                topowork(ij) = topo0work(ij0) + dz12
+               !found value from finest dtopo
+               cycle
             enddo
 
          enddo
