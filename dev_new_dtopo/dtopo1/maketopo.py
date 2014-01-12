@@ -26,12 +26,12 @@ def maketopo2():
     """
     Another topo file for testing
     """
-    nxpoints=101
-    nypoints=101
-    xlower = -10e0
-    xupper= 10e0
-    ylower = -10e0
-    yupper= 10e0
+    nxpoints=21
+    nypoints=51
+    xlower = -0.02
+    xupper= 0.18
+    ylower = -0.1
+    yupper= 0.4
     outfile= "topo2.topotype2"
     topo2writer(outfile,topo2,xlower,xupper,ylower,yupper,nxpoints,nypoints)
 
@@ -41,7 +41,7 @@ def topo(x,y):
     return z
 
 def topo2(x,y):
-    z = -2000*ones(x.shape)
+    z = -15*ones(x.shape)
     return z
 
 
@@ -90,8 +90,8 @@ def make_dtopo_dtopo1(plotfig=None):
         yupper = 0.4
 
         # number of grid points in dtopo file
-        mx = 121
-        my = 81
+        mx = 51
+        my = 41
 
         # Create dtopo_params dictionary with parameters for dtopo file: 
         dtopo_params = {}
@@ -121,5 +121,5 @@ def make_dtopo_dtopo1(plotfig=None):
 
 if __name__=='__main__':
     maketopo()
-    #maketopo2()
+    maketopo2()
     make_dtopo_dtopo1()

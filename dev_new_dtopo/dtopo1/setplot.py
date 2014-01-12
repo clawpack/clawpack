@@ -65,17 +65,15 @@ def setplot(plotdata):
 
     # Add contour lines of bathymetry:
     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.show = False
+    plotitem.show = True
     plotitem.plot_var = geoplot.topo
     from numpy import arange, linspace
-    #plotitem.contour_levels = linspace(-.1, 0.5, 20)
-    plotitem.contour_levels = linspace(0.5,7.5,8)
-    plotitem.amr_contour_colors = ['k']  # color on each level
+    plotitem.contour_levels = [-14,-13,-12,-11]
+    plotitem.amr_contour_colors = ['g']  # color on each level
     plotitem.kwargs = {'linestyles':'solid'}
-    plotitem.amr_contour_show = [1]  
+    plotitem.amr_contour_show = [1,0]  
     plotitem.celledges_show = 0
     plotitem.patchedges_show = 0
-    plotitem.show = True
 
     #-----------------------------------------
     # Figure for cross section

@@ -361,16 +361,17 @@ def setgeo(rundata):
     refinement_data.variable_dt_refinement_ratios = True
 
     # == settopo.data values ==
-    topo_data = rundata.topo_data
+    topofiles = rundata.topo_data.topofiles
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
-    topo_data.topofiles.append([2, 1, 10, 0., 1.e10, 'topo1.topotype2'])
+    topofiles.append([2, 1, 1, 0., 1.e10, 'topo1.topotype2'])
+    topofiles.append([2, 2, 2, 0., 100, 'topo2.topotype2'])
 
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
-    dtopo_data.dtopofiles.append([3,1,1,'dtopo1.tt3'])
+    dtopo_data.dtopofiles.append([3,2,2,'dtopo1.tt3'])
     dtopo_data.dt_max_dtopo = 5.
 
     # == setqinit.data values ==
