@@ -372,6 +372,7 @@ def setgeo(rundata):
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
     dtopo_data.dtopofiles.append([3,2,2,'dtopo1.tt3'])
+    dtopo_data.dtopofiles.append([3,2,2,'dtopo2.tt3'])
     dtopo_data.dt_max_dtopo = 5.
 
     # == setqinit.data values ==
