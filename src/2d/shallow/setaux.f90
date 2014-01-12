@@ -26,7 +26,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux,aux_copy_mask)
     integer(kind=1), intent(in) :: aux_copy_mask(1-mbc:mx+mbc,1-mbc:my+mbc)
     
     ! Locals
-    integer :: i,j,m
+    integer :: i,j,m, iint,jint
     real(kind=8) :: x,y,xm,ym,xp,yp,topo_integral
     character(len=*), parameter :: aux_format = "(2i4,4d15.3)"
 
@@ -73,6 +73,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux,aux_copy_mask)
             if ((ym>=yupper) .or. (yp<=ylower) .or. &
                 (xm>=xupper) .or. (xp<=xlower)) cycle
 
+
             ! Use input topography files if available
             if (mtopofiles > 0 .and. test_topography == 0) then
                 topo_integral = 0.d0
@@ -84,6 +85,70 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux,aux_copy_mask)
                     aux(1,i,j) = topo_integral / (dx * dy * aux(2,i,j))
             endif
         enddo
+    enddo
+
+    do j=1-mbc,0
+        ym = ylow + (j - 1.d0) * dy
+        y = ylow + (j - 0.5d0) * dy
+        yp = ylow + real(j,kind=8) * dy
+        if (yp <= ylower) then
+            do i=1-mbc,mx+mbc
+                xm = xlow + (i - 1.d0) * dx
+                x = xlow + (i - 0.5d0) * dx
+                xp = xlow + real(i,kind=8) * dx
+                iint = min(max(i,1),mx)  ! adjacent interior cell
+                jint = min(max(j,1),my)  ! adjacent interior cell
+                aux(1,i,j) = aux(1,iint,jint)
+            enddo
+        endif
+    enddo
+
+    do j=my+1,my+mbc
+        ym = ylow + (j - 1.d0) * dy
+        y = ylow + (j - 0.5d0) * dy
+        yp = ylow + real(j,kind=8) * dy
+        if (ym <= yupper) then
+            do i=1-mbc,mx+mbc
+                xm = xlow + (i - 1.d0) * dx
+                x = xlow + (i - 0.5d0) * dx
+                xp = xlow + real(i,kind=8) * dx
+                iint = min(max(i,1),mx)  ! adjacent interior cell
+                jint = min(max(j,1),my)  ! adjacent interior cell
+                aux(1,i,j) = aux(1,iint,jint)
+            enddo
+        endif
+    enddo
+
+    do i=1-mbc,0
+        xm = xlow + (i - 1.d0) * dx
+        x = xlow + (i - 0.5d0) * dx
+        xp = xlow + real(i,kind=8) * dx
+        if (xp <= xlower) then
+            do j=1,my
+                ym = ylow + (j - 1.d0) * dy
+                y = ylow + (j - 0.5d0) * dy
+                yp = ylow + real(j,kind=8) * dy
+                iint = min(max(i,1),mx)  ! adjacent interior cell
+                jint = min(max(j,1),my)  ! adjacent interior cell
+                aux(1,i,j) = aux(1,iint,jint)
+            enddo
+        endif
+    enddo
+
+    do i=mx+1,mx+mbc
+        xm = xlow + (i - 1.d0) * dx
+        x = xlow + (i - 0.5d0) * dx
+        xp = xlow + real(i,kind=8) * dx
+        if (xm >= xupper) then
+            do j=1,my
+                ym = ylow + (j - 1.d0) * dy
+                y = ylow + (j - 0.5d0) * dy
+                yp = ylow + real(j,kind=8) * dy
+                iint = min(max(i,1),mx)  ! adjacent interior cell
+                jint = min(max(j,1),my)  ! adjacent interior cell
+                aux(1,i,j) = aux(1,iint,jint)
+            enddo
+        endif
     enddo
 
     ! Output for debugging
