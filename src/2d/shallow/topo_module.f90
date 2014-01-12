@@ -50,6 +50,7 @@ module topo_module
     ! dtopo variables
     ! Work array
     real(kind=8), allocatable :: dtopowork(:)
+    real(kind=8) :: dt_max_dtopo
 
     ! File data parameters
     character*150, allocatable :: dtopofname(:)
@@ -734,6 +735,10 @@ contains
                 dtdtopo(i))
             mdtopo(i) = mxdtopo(i) * mydtopo(i) * mtdtopo(i)
         enddo
+
+        read(iunit,*) dt_max_dtopo  
+        !  largest allowable dt while dtopo is moving
+
 
         ! Indexing into work array
         i0dtopo(1) = 1

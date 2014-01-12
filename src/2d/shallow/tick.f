@@ -7,9 +7,9 @@ c
       use geoclaw_module
       use refinement_module, only: varRefTime
       use amr_module
+      use topo_module, only: dt_max_dtopo, num_dtopo, topo_finalized
 
       implicit double precision (a-h,o-z)
-c     include  "call.i"
 
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
@@ -341,6 +341,10 @@ c
         else  ! since refinement ratio in time can change need to set new timesteps in different order
 c             ! use same alg. as when setting refinement when first make new fine grids
           dtnew(1) = min(dtnew(1),dt_max)
+          if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
+              dtnew(1) = min(dtnew(1),dt_max_dtopo)
+          endif
+
           possk(1) = dtnew(1)
           do 125 i = 2, lfine
              if (dtnew(i)  .gt. possk(i-1)) then
