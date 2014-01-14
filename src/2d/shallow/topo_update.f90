@@ -91,6 +91,12 @@ subroutine topo_update(t)
                      cycle
                endif
 
+               if (t<t0dtopo(m)) then
+                  !this dtopo does not take place yet.
+                  !intersection might be with a coarser dtopo
+                  cycle
+               endif
+
                !find indices for bilinear dtopo
                !dtopo arrays are in form of DEM...high y values first
                !note for xy points lying on nodes all indices will be equal
@@ -134,7 +140,7 @@ subroutine topo_update(t)
                dz12 = dz12/(dxdtopo(m)*dydtopo(m))
                !set topo value
                topowork(ij) = topo0work(ij0) + dz12
-               !found value from finest dtopo
+               !found value from finest dtopo, move to next point
                exit
             enddo
 

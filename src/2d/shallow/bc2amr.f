@@ -89,7 +89,7 @@ c ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::;
 
       hxmarg = hx*.01
       hymarg = hy*.01
-      write(*,*) 'level',level
+
       if (xperiodic .and. (yperiodic .or. spheredom)) go to 499
 c
 c
