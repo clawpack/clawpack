@@ -56,6 +56,10 @@ subroutine topo_update(t)
    do i= mtopofiles - num_dtopo + 1, mtopofiles !topofile
       m = i - mtopofiles + num_dtopo !corresponding dtopofile
       !interpolate in time directly for matching nodes
+      if (t<t0dtopo(m).or.topotime(i)>tfdtopo(m)) then
+         !dtopo has not started or topo has already been set from final dz
+         cycle
+      endif
       topowork(i0topo(i):i0topo(i) + mtopo(i)-1) = &
                topo0work(i0topo0(i):i0topo0(i) + mtopo(i)-1) &!initial topo
                + taudtopo(m)*dtopowork(index0_dtopowork1(m):index0_dtopowork1(m) + mtopo(i)-1) &
@@ -91,9 +95,9 @@ subroutine topo_update(t)
                      cycle
                endif
 
-               if (t<t0dtopo(m)) then
-                  !this dtopo does not take place yet.
-                  !intersection might be with a coarser dtopo
+               if (t<t0dtopo(m).or.topotime(mt)>tfdtopo(m)) then
+                  !this dtopo does not take place yet or topo has already been set for final dz from this dtopo
+                  !intersection might be with another dtopo with different time bands
                   cycle
                endif
 
