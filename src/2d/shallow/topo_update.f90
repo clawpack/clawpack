@@ -25,7 +25,7 @@ subroutine topo_update(t)
    integer :: ijll,ijlr,ijul,ijur
    double precision :: x,y,xl,xr,yu,yl,zll,zlr,zul,zur,dz12,dz1,dz2
 
-   if (t<minval(t0dtopo)) then
+   if (t<minval(t0dtopo).or.topo_finalized.eqv..true.) then
       return
    endif
    if (minval(topotime)>=maxval(tfdtopo)) then
@@ -68,6 +68,8 @@ subroutine topo_update(t)
    do mt=1,mtopofiles-num_dtopo
       if (topo0save(mt)<=0) then
          !no intersection or dtopo area already covered by finer topo files
+         !shouldn't ever need to alter this topofile
+         topotime(mt)=t
          cycle
       endif
       if (topotime(mt)==t) then
@@ -140,5 +142,6 @@ subroutine topo_update(t)
       enddo
       topotime(mt) = t
    enddo
+
 
 end subroutine topo_update

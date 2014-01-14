@@ -145,7 +145,6 @@ contains
             allocate(topoID(mtopofiles),topotime(mtopofiles),topo0save(mtopofiles))
             allocate(i0topo0(mtopofiles),topo0ID(mtopofiles))
 
-            topo0save(:)= 0
             do i=1,mtopofiles - num_dtopo
                 read(iunit,*) topofname(i)
                 read(iunit,*) itopotype(i),minleveltopo(i), maxleveltopo(i), &
@@ -170,6 +169,9 @@ contains
             enddo
 
             ! adding extra topo arrays corresponding spatially to dtopo
+            ! arrays will be part of time dependent topowork as with all others.
+            ! the state of these arrays at t=0 will be stored in topo0work
+            topo0save(:)= 0
             do i= mtopofiles - num_dtopo + 1, mtopofiles
                j = i - mtopofiles + num_dtopo
                itopotype(i) = dtopotype(j)
@@ -199,7 +201,7 @@ contains
                 enddo
             endif
 
-            ! Read and allocate topography for each file
+            ! Read topography and allocate space for each file
             mtoposize = sum(mtopo)
             allocate(topowork(mtoposize))
 
@@ -241,6 +243,7 @@ contains
             write(GEO_PARM_UNIT,*) ' '
 
             !set values in topo array for dtopo generated topo
+            !this call will also determine which topo arrays to save in topo0work
             do i = mtopofiles - num_dtopo + 1, mtopofiles
                call set_topo_for_dtopo(mxtopo(i),mytopo(i),dxtopo(i),dytopo(i), &
                     xlowtopo(i),ylowtopo(i),xhitopo(i),yhitopo(i), &
@@ -248,6 +251,7 @@ contains
             enddo
 
             !create topo0work array for finest arrays covering dtopo
+            !arrays to be saved are indicated in topo0save
             topo_finalized = .true.
             if (num_dtopo>0) then
                topo_finalized = .false.
@@ -315,10 +319,12 @@ contains
                x = xlow + (i-1)*dx
                ij = (j-1)*mx + i
                !find intersection starting from finest topo
+               !all points must lie in some topo file therefore the
+               !finest topo file for all dtopo points will be saved in topo0
                do irank = 1,mtopofiles
                   id = mtopoorder(irank)
                   if (id.gt.mtopofiles-num_dtopo) then
-                     !this is another dtopo file: skip
+                     !this is another dtopo ==> topo file: skip
                      cycle
                   elseif ( (x>xhitopo(id)).or.(x<xlowtopo(id)).or. &
                           (y>yhitopo(id)).or.(y<ylowtopo(id))) then
@@ -327,7 +333,7 @@ contains
                   else !lies in this topofile
                      !save this topo
                      topo0save(id) = 1
-                     !find indices for bilinear
+                     !find indices for bilinear cell in topo
                      !arrays are in form of DEM...high y values first
                      !note for xy points lying on nodes all indices will be equal
                      itopo1 = int(floor((x-xlowtopo(id))/dxtopo(id)))+1
@@ -346,9 +352,9 @@ contains
                      zlr = topowork(ijlr)
                      zul = topowork(ijul)
                      zur = topowork(ijur)
-                     xl = xlowtopo(id) + (itopo1-1)*dxtopo(id)
+                     xl = xlowtopo(id) + real(itopo1-1,kind=8)*dxtopo(id)
                      xr = xl + dxtopo(id)
-                     yu = yhitopo(id) - (jtopo1-1)*dytopo(id)
+                     yu = yhitopo(id) - real(jtopo1-1,kind=8)*dytopo(id)
                      yl = yu - dytopo(id)
                      dxdy = dxtopo(id)*dytopo(id)
                      z = zll*(xr-x)*(yu-y) + zlr*(x-xl)*(yu-y) + zul*(xr-x)*(y-yl) + zur*(x-xl)*(y-yl)
