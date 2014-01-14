@@ -135,7 +135,7 @@ subroutine topo_update(t)
                !set topo value
                topowork(ij) = topo0work(ij0) + dz12
                !found value from finest dtopo
-               cycle
+               exit
             enddo
 
          enddo
