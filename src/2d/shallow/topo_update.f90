@@ -68,8 +68,9 @@ subroutine topo_update(t)
       topotime(i) = t
    enddo
 
+
    !set non-dtopo associated topofiles
-   do mt=1,mtopofiles-num_dtopo
+   do mt=1,mtopofiles
       if (topo0save(mt)<=0) then
          !no intersection or dtopo area already covered by finer topo files
          !shouldn't ever need to alter this topofile
@@ -78,6 +79,7 @@ subroutine topo_update(t)
       endif
       if (topotime(mt)==t) then
          !topofile is already at correct time
+         !this should catch the files set in the first loop above for topo/dtopo files
          cycle
       endif
 
@@ -100,7 +102,6 @@ subroutine topo_update(t)
                   !intersection might be with another dtopo with different time bands
                   cycle
                endif
-
                !find indices for bilinear dtopo
                !dtopo arrays are in form of DEM...high y values first
                !note for xy points lying on nodes all indices will be equal
@@ -146,6 +147,7 @@ subroutine topo_update(t)
                topowork(ij) = topo0work(ij0) + dz12
                !found value from finest dtopo, move to next point
                exit
+               dz12=0.0
             enddo
 
          enddo
