@@ -25,7 +25,7 @@ subroutine topo_update(t)
    integer :: ijll,ijlr,ijul,ijur
    double precision :: x,y,xl,xr,yu,yl,zll,zlr,zul,zur,dz12,dz1,dz2
 
-   if (t<minval(t0dtopo)) then
+   if (t<minval(t0dtopo).or.topo_finalized.eqv..true.) then
       return
    endif
    if (minval(topotime)>=maxval(tfdtopo)) then
@@ -56,6 +56,10 @@ subroutine topo_update(t)
    do i= mtopofiles - num_dtopo + 1, mtopofiles !topofile
       m = i - mtopofiles + num_dtopo !corresponding dtopofile
       !interpolate in time directly for matching nodes
+      if (t<t0dtopo(m).or.topotime(i)>tfdtopo(m)) then
+         !dtopo has not started or topo has already been set from final dz
+         cycle
+      endif
       topowork(i0topo(i):i0topo(i) + mtopo(i)-1) = &
                topo0work(i0topo0(i):i0topo0(i) + mtopo(i)-1) &!initial topo
                + taudtopo(m)*dtopowork(index0_dtopowork1(m):index0_dtopowork1(m) + mtopo(i)-1) &
@@ -64,14 +68,18 @@ subroutine topo_update(t)
       topotime(i) = t
    enddo
 
+
    !set non-dtopo associated topofiles
-   do mt=1,mtopofiles-num_dtopo
+   do mt=1,mtopofiles
       if (topo0save(mt)<=0) then
          !no intersection or dtopo area already covered by finer topo files
+         !shouldn't ever need to alter this topofile
+         topotime(mt)=t
          cycle
       endif
       if (topotime(mt)==t) then
          !topofile is already at correct time
+         !this should catch the files set in the first loop above for topo/dtopo files
          cycle
       endif
 
@@ -89,6 +97,11 @@ subroutine topo_update(t)
                      cycle
                endif
 
+               if (t<t0dtopo(m).or.topotime(mt)>tfdtopo(m)) then
+                  !this dtopo does not take place yet or topo has already been set for final dz from this dtopo
+                  !intersection might be with another dtopo with different time bands
+                  cycle
+               endif
                !find indices for bilinear dtopo
                !dtopo arrays are in form of DEM...high y values first
                !note for xy points lying on nodes all indices will be equal
@@ -132,13 +145,15 @@ subroutine topo_update(t)
                dz12 = dz12/(dxdtopo(m)*dydtopo(m))
                !set topo value
                topowork(ij) = topo0work(ij0) + dz12
-               !found value from finest dtopo
-               cycle
+               !found value from finest dtopo, move to next point
+               exit
+               dz12=0.0
             enddo
 
          enddo
       enddo
       topotime(mt) = t
    enddo
+
 
 end subroutine topo_update
