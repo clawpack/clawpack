@@ -10,7 +10,8 @@ function setplot is called to set the plot parameters.
 import numpy
 from clawpack.geoclaw import dtopotools as D
 
-dtopo = D.read_dtopo('dtopo1.tt3',3)
+dtopo1 = D.read_dtopo('dtopo1.tt3',3)
+dtopo2 = D.read_dtopo('dtopo2.tt3',3)
 
 #--------------------------
 def setplot(plotdata):
@@ -110,22 +111,25 @@ def setplot(plotdata):
 
     def add_dtopo_plot(current_data):
         from pylab import find, plot, legend
-        j = max(find(dtopo.y <= y0))
-        j1 = min(j+1, len(dtopo.y)-1)
-        beta = (y0 - dtopo.y[j])/(dtopo.y[1] - dtopo.y[0])
-
-        t = current_data.t
-        it = max(find(dtopo.times <= t))
-        #print "+++ t, it, dtopo.times[it]: ",t, it, dtopo.times[it]
-        dz = dtopo.dz_list[it]
-        dzj = dz[j,:]
-        if it < len(dtopo.times)-1:
-            dz1 = dtopo.dz_list[it+1]
-            dz1j = dz1[j,:]
-            alpha = (t - dtopo.times[it])/(dtopo.times[it+1] - dtopo.times[it])
-            #print "+++ alpha = ",alpha
-            dzj = (1.-alpha)*dzj + alpha*dz1j
-        plot(dtopo.x, dzj, 'k',label="dtopo")
+        for dtopo in [dtopo1,dtopo2]:
+            j = max(find(dtopo.y <= y0))
+            j1 = min(j+1, len(dtopo.y)-1)
+            beta = (y0 - dtopo.y[j])/(dtopo.y[1] - dtopo.y[0])
+    
+            t = current_data.t
+            itlist = find(dtopo.times <= t)
+            if len(itlist) > 0:
+                it = max(find(dtopo.times <= t))
+                #print "+++ t, it, dtopo.times[it]: ",t, it, dtopo.times[it]
+                dz = dtopo.dz_list[it]
+                dzj = dz[j,:]
+                if it < len(dtopo.times)-1:
+                    dz1 = dtopo.dz_list[it+1]
+                    dz1j = dz1[j,:]
+                    alpha = (t - dtopo.times[it])/(dtopo.times[it+1] - dtopo.times[it])
+                    #print "+++ alpha = ",alpha
+                    dzj = (1.-alpha)*dzj + alpha*dz1j
+                plot(dtopo.x, dzj, label="dtopo")
         legend()
     plotaxes.afteraxes = add_dtopo_plot
 
