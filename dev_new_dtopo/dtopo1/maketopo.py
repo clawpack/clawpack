@@ -21,6 +21,9 @@ def maketopo():
     yupper= 10e0
     outfile= "topo1.topotype2"
     topo2writer(outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints)
+    dx = (xupper-xlower)/(nxpoints-1)
+    dy = (yupper-ylower)/(nypoints-1)
+    print "topo1 has dx = %g, dy = %g" % (dx,dy)
 
 def maketopo2():
     """
@@ -28,12 +31,15 @@ def maketopo2():
     """
     nxpoints=21
     nypoints=51
-    xlower = -0.02
-    xupper= 0.18
+    xlower = -0.5
+    xupper= -0.3
     ylower = -0.1
     yupper= 0.4
     outfile= "topo2.topotype2"
     topo2writer(outfile,topo2,xlower,xupper,ylower,yupper,nxpoints,nypoints)
+    dx = (xupper-xlower)/(nxpoints-1)
+    dy = (yupper-ylower)/(nypoints-1)
+    print "topo2 has dx = %g, dy = %g" % (dx,dy)
 
 
 def topo(x,y):
@@ -78,10 +84,11 @@ def make_dtopo1(plotfig=None):
 
     dtopo_fname = fname_subfaults.split('.')[0] + '.tt3'
 
-    if os.path.exists(dtopo_fname):
-        print "*** Not regenerating dtopo file (already exists): %s" \
-                % dtopo_fname
-    else:
+    #if os.path.exists(dtopo_fname):
+    #    print "*** Not regenerating dtopo file (already exists): %s" \
+    #            % dtopo_fname
+    #else:
+    if 1:
         print "Using Okada model to create %s " % dtopo_fname
 
         # Needed for extent of dtopo file:
@@ -93,6 +100,10 @@ def make_dtopo1(plotfig=None):
         # number of grid points in dtopo file
         mx = 51
         my = 41
+
+        dx = (xupper-xlower)/(mx-1)
+        dy = (yupper-ylower)/(my-1)
+        print "dtopo1 has dx = %g, dy = %g" % (dx,dy)
 
         # Create dtopo_params dictionary with parameters for dtopo file: 
         dtopo_params = {}
@@ -132,10 +143,11 @@ def make_dtopo2(plotfig=None):
 
     dtopo_fname = fname_subfaults.split('.')[0] + '.tt3'
 
-    if os.path.exists(dtopo_fname):
-        print "*** Not regenerating dtopo file (already exists): %s" \
-                % dtopo_fname
-    else:
+    #if os.path.exists(dtopo_fname):
+    #    print "*** Not regenerating dtopo file (already exists): %s" \
+    #            % dtopo_fname
+    #else:
+    if 1:
         print "Using Okada model to create %s " % dtopo_fname
 
         # Needed for extent of dtopo file:
@@ -147,6 +159,10 @@ def make_dtopo2(plotfig=None):
         # number of grid points in dtopo file
         mx = 51
         my = 41
+
+        dx = (xupper-xlower)/(mx-1)
+        dy = (yupper-ylower)/(my-1)
+        print "dtopo2 has dx = %g, dy = %g" % (dx,dy)
 
         # Create dtopo_params dictionary with parameters for dtopo file: 
         dtopo_params = {}
