@@ -7,6 +7,8 @@ c=====================================================================
 
 c *** Note: xcell and ycell are no longer needed -- should be removed.
 
+      use topo_module, only: rectintegral, intersection
+
       implicit double precision (a-h,o-z)
 
       dimension topo(mtoposize)
@@ -85,48 +87,4 @@ c              !integrate surface and get out of here
       return
       end
 
-c=======================================================================
-      subroutine intersection(indicator,area,xintlo,xinthi,
-     &      yintlo,yinthi,x1lo,x1hi,y1lo,y1hi,x2lo,x2hi,y2lo,y2hi)
-
-c     find the intersection of two rectangles, return the intersection
-c     and it's area, and indicator =1
-c     if there is no intersection, indicator =0
-
-      implicit none
-
-c     !i/o integer
-      integer indicator
-
-c     !i/o doubles
-      double precision area,xintlo,xinthi,yintlo,yinthi,
-     &                 x1lo,x1hi,y1lo,y1hi,x2lo,x2hi,y2lo,y2hi
-
-
-      xintlo=dmax1(x1lo,x2lo)
-      xinthi=dmin1(x1hi,x2hi)
-      yintlo=dmax1(y1lo,y2lo)
-      yinthi=dmin1(y1hi,y2hi)
-
-
-      if (xinthi.gt.xintlo.and.yinthi.gt.yintlo) then
-         area = (xinthi-xintlo)*(yinthi-yintlo)
-         indicator = 1
-      else
-         area = 0.d0
-         indicator = 0
-      endif
-
-      return
-      end
-
-
-
-
-
-
-
-
-
-
-
+c ## moved subroutine intersection to topo_module.f90

@@ -13,11 +13,11 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 # ----------------------------------
 
 CLAW_PKG = geoclaw                  # Clawpack package to use
-EXE = xgeoclaw                 # Executable to create
+EXE = xgeoclaw_new             # Executable to create
 SETRUN_FILE = setrun.py        # File containing function to make data
-OUTDIR = _output               # Directory for output
+OUTDIR = _output_new           # Directory for output
 SETPLOT_FILE = setplot.py      # File containing function to set plots
-PLOTDIR = _plots               # Directory for plots
+PLOTDIR = _plots_new           # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
@@ -48,8 +48,8 @@ MODULES = \
 SOURCES = \
   ./qinit.f90 \
   $(GEOLIB)/setprob.f90 \
-  $(GEOLIB)/movetopo.f \
-  ./cellgridintegrate.f \
+  $(GEOLIB)/topo_update.f \
+  $(GEOLIB)/cellgridintegrate2.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \

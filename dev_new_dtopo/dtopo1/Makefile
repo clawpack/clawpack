@@ -50,7 +50,6 @@ SOURCES = \
   $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/topo_update.f \
   $(GEOLIB)/cellgridintegrate2.f \
-  $(GEOLIB)/rectintegral2.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
