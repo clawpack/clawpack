@@ -41,15 +41,16 @@ def maketopo2():
     dy = (yupper-ylower)/(nypoints-1)
     print "==> topo2 has dx = %g, dy = %g" % (dx,dy)
 
+h0 = 10.
 
 def topo(x,y):
     #z = -10*ones(x.shape)
-    z = -1000*(1 + 0.5*cos(x-y))
+    z = -h0*(1 + 0.5*cos(x-y))
     return z
 
 def topo2(x,y):
     #z = -15*ones(x.shape)
-    z = -1000 - 1000*exp(x+y)
+    z = -h0*(1. + exp(x+y))
     return z
 
 

@@ -76,7 +76,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 4
+    clawdata.num_aux = 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -108,7 +108,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 3
+    clawdata.output_style = 1
 
     if clawdata.output_style == 1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -278,7 +278,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.flag2refine = True
 
     # steps to take on each level L between regriddings of level L+1:
-    amrdata.regrid_interval = 1000
+    amrdata.regrid_interval = 3
 
     # width of buffer zone around flagged points:
     # (typically the same as regrid_interval so waves don't escape):
