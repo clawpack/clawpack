@@ -23,7 +23,7 @@ def maketopo():
     topo2writer(outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints)
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
-    print "topo1 has dx = %g, dy = %g" % (dx,dy)
+    print "==> topo1 has dx = %g, dy = %g" % (dx,dy)
 
 def maketopo2():
     """
@@ -39,7 +39,7 @@ def maketopo2():
     topo2writer(outfile,topo2,xlower,xupper,ylower,yupper,nxpoints,nypoints)
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
-    print "topo2 has dx = %g, dy = %g" % (dx,dy)
+    print "==> topo2 has dx = %g, dy = %g" % (dx,dy)
 
 
 def topo(x,y):
@@ -98,12 +98,12 @@ def make_dtopo1(plotfig=None):
         yupper = 0.4
 
         # number of grid points in dtopo file
-        mx = 51
-        my = 41
+        mx = 151
+        my = 121
 
         dx = (xupper-xlower)/(mx-1)
         dy = (yupper-ylower)/(my-1)
-        print "dtopo1 has dx = %g, dy = %g" % (dx,dy)
+        print "==> dtopo1 has dx = %g, dy = %g" % (dx,dy)
 
         # Create dtopo_params dictionary with parameters for dtopo file: 
         dtopo_params = {}
@@ -157,12 +157,12 @@ def make_dtopo2(plotfig=None):
         yupper = 0.4
 
         # number of grid points in dtopo file
-        mx = 51
-        my = 41
+        mx = 201
+        my = 161
 
         dx = (xupper-xlower)/(mx-1)
         dy = (yupper-ylower)/(my-1)
-        print "dtopo2 has dx = %g, dy = %g" % (dx,dy)
+        print "==> dtopo2 has dx = %g, dy = %g" % (dx,dy)
 
         # Create dtopo_params dictionary with parameters for dtopo file: 
         dtopo_params = {}
