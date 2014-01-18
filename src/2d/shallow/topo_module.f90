@@ -992,8 +992,8 @@ recursive subroutine topoarea(x1,x2,y1,y2,m,area)
     real (kind=8), intent(out) :: area
 
     ! local
-    real(kind=8) :: xmlo,xmc,xmhi,ymlo,ymc,ymhi,x1m,xmm,x2m, &
-        y1m,ymm,y2m, area1,area2,area_m
+    real(kind=8) :: xmlo,xmhi,ymlo,ymhi,x1m,x2m, &
+        y1m,y2m, area1,area2,area_m
     integer :: mfid, indicator, i0
     real(kind=8), external :: topointegral  
 
@@ -1004,8 +1004,8 @@ recursive subroutine topoarea(x1,x2,y1,y2,m,area)
     if (m == mtopofiles) then
          ! innermost step of recursion reaches this point.
          ! only using coarsest topo grid -- compute directly...
-         call intersection(indicator,area,xmlo,xmc,xmhi, &
-             ymlo,ymc,ymhi, x1,x2,y1,y2, &
+         call intersection(indicator,area,xmlo,xmhi, &
+             ymlo,ymhi, x1,x2,y1,y2, &
              xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
 
     else
@@ -1013,8 +1013,8 @@ recursive subroutine topoarea(x1,x2,y1,y2,m,area)
         call topoarea(x1,x2,y1,y2,m+1,area1)
 
         ! region of intersection of cell with new topo grid:
-        call intersection(indicator,area_m,x1m,xmm,x2m, &
-             y1m,ymm,y2m, x1,x2,y1,y2, &
+        call intersection(indicator,area_m,x1m,x2m, &
+             y1m,y2m, x1,x2,y1,y2, &
              xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
 
         

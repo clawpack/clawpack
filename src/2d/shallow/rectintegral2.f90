@@ -36,8 +36,8 @@ recursive subroutine rectintegral(x1,x2,y1,y2,m,integral)
     real (kind=8), intent(out) :: integral
 
     ! local
-    real(kind=8) :: xmlo,xmc,xmhi,ymlo,ymc,ymhi,area,x1m,xmm,x2m, &
-        y1m,ymm,y2m, int1,int2,int3
+    real(kind=8) :: xmlo,xmhi,ymlo,ymhi,area,x1m,x2m, &
+        y1m,y2m, int1,int2,int3
     integer :: mfid, indicator, mp1fid, i0
     real(kind=8), external :: topointegral  
 
@@ -48,14 +48,14 @@ recursive subroutine rectintegral(x1,x2,y1,y2,m,integral)
     if (m == mtopofiles) then
          ! innermost step of recursion reaches this point.
          ! only using coarsest topo grid -- compute directly...
-         call intersection(indicator,area,xmlo,xmc,xmhi, &
-             ymlo,ymc,ymhi, x1,x2,y1,y2, &
+         call intersection(indicator,area,xmlo,xmhi, &
+             ymlo,ymhi, x1,x2,y1,y2, &
              xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
 
          if (indicator.eq.1) then
             ! cell overlaps the file
             ! integrate surface over intersection of grid and cell
-            integral = topointegral( xmlo,xmc,xmhi,ymlo,ymc, &
+            integral = topointegral( xmlo,xmhi,ymlo, &
                     ymhi,xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid), &
                     dytopo(mfid),mxtopo(mfid),mytopo(mfid),topowork(i0),1)
          else
@@ -67,8 +67,8 @@ recursive subroutine rectintegral(x1,x2,y1,y2,m,integral)
         call rectintegral(x1,x2,y1,y2,m+1,int1)
 
         ! region of intersection of cell with new topo grid:
-        call intersection(indicator,area,x1m,xmm,x2m, &
-             y1m,ymm,y2m, x1,x2,y1,y2, &
+        call intersection(indicator,area,x1m,x2m, &
+             y1m,y2m, x1,x2,y1,y2, &
              xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
 
         
@@ -78,7 +78,7 @@ recursive subroutine rectintegral(x1,x2,y1,y2,m,integral)
             call rectintegral(x1m,x2m,y1m,y2m,m+1,int2)
     
             ! correction to add in for new topo grid:
-            int3 = topointegral(x1m,xmm,x2m, y1m,ymm,y2m, &
+            int3 = topointegral(x1m,x2m, y1m,y2m, &
                         xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid), &
                         dytopo(mfid),mxtopo(mfid),mytopo(mfid),topowork(i0),1)
     

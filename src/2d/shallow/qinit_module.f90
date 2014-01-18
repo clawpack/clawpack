@@ -42,7 +42,7 @@ contains
         
         ! Local
         integer :: i,j
-        real(kind=8) :: ximc,xim,x,xc,xip,xipc,yjmc,yjm,y,yc,yjp,yjpc,dq
+        real(kind=8) :: ximc,xim,x,xip,xipc,yjmc,yjm,y,yjp,yjpc,dq
         
         ! Topography integral function
         real(kind=8) :: topointegral
@@ -63,13 +63,11 @@ contains
 
                         xipc=min(xip,x_hi_qinit)
                         ximc=max(xim,x_low_qinit)
-                        xc=0.5d0*(xipc+ximc)
 
                         yjpc=min(yjp,y_hi_qinit)
                         yjmc=max(yjm,y_low_qinit)
-                        yc=0.5d0*(yjmc+yjpc)
 
-                        dq = topointegral(ximc,xc,xipc,yjmc,yc,yjpc,x_low_qinit, &
+                        dq = topointegral(ximc,xipc,yjmc,yjpc,x_low_qinit, &
                                           y_low_qinit,dx_qinit,dy_qinit,mx_qinit, &
                                           my_qinit,qinit,1)
                         dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(2,i,j))

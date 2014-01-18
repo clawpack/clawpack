@@ -5,6 +5,7 @@ c====================================================================
      &           mtopofiles,mtoposize,topo)
 c=====================================================================
 
+c *** Note: xcell and ycell are no longer needed -- should be removed.
 
       implicit double precision (a-h,o-z)
 
@@ -34,7 +35,7 @@ c     The rectangle has coords:
 c     xim <= x <= xip, yjm <= y <= yjp, with center (x,y) = (xcell, ycell)
 c
 c     The intersection (with one particular grid has coords:
-c     xintlo <= x <= xinthi, yintlo <= y <= yinthi, with center (x,y) = (xintc, yintc)
+c     xintlo <= x <= xinthi, yintlo <= y <= yinthi
 
 c     The _set_ version uses a recursive strategy using the formulas for
 c     intersections of sets.
@@ -52,15 +53,14 @@ c        !look at topofiles, from fine to coarse
          i0=i0topo(mfid)
 c        !check for intersection of grid cell and this topofile
          cellarea = (xip-xim)*(yjp-yjm)
-         call intersection(indicator,area,xmlo,xmc,xmhi,
-     &       ymlo,ymc,ymhi,xim,xip,yjm,yjp,
+         call intersection(indicator,area,xmlo,xmhi,
+     &       ymlo,ymhi,xim,xip,yjm,yjp,
      &       xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
          if (indicator.eq.1) then !cell overlaps grid
             if (area.eq.cellarea) then !cell is entirely in grid
                ! (should we check if they agree to some tolerance??)
 c              !integrate surface and get out of here
-                topoint = topoint + topointegral(
-     &              xmlo,xmc,xmhi,ymlo,ymc,
+                topoint = topoint + topointegral(xmlo,xmhi,ymlo,
      &              ymhi,xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid),
      &              dytopo(mfid),mxtopo(mfid),mytopo(mfid),
      &              topo(i0),im)
@@ -86,8 +86,8 @@ c              !integrate surface and get out of here
       end
 
 c=======================================================================
-      subroutine intersection(indicator,area,xintlo,xintc,xinthi,
-     &      yintlo,yintc,yinthi,x1lo,x1hi,y1lo,y1hi,x2lo,x2hi,y2lo,y2hi)
+      subroutine intersection(indicator,area,xintlo,xinthi,
+     &      yintlo,yinthi,x1lo,x1hi,y1lo,y1hi,x2lo,x2hi,y2lo,y2hi)
 
 c     find the intersection of two rectangles, return the intersection
 c     and it's area, and indicator =1
@@ -99,7 +99,7 @@ c     !i/o integer
       integer indicator
 
 c     !i/o doubles
-      double precision area,xintlo,xintc,xinthi,yintlo,yintc,yinthi,
+      double precision area,xintlo,xinthi,yintlo,yinthi,
      &                 x1lo,x1hi,y1lo,y1hi,x2lo,x2hi,y2lo,y2hi
 
 
@@ -108,8 +108,6 @@ c     !i/o doubles
       yintlo=dmax1(y1lo,y2lo)
       yinthi=dmin1(y1hi,y2hi)
 
-      xintc = 0.5d0*(xintlo+xinthi)
-      yintc = 0.5d0*(yintlo+yinthi)
 
       if (xinthi.gt.xintlo.and.yinthi.gt.yintlo) then
          area = (xinthi-xintlo)*(yinthi-yintlo)
