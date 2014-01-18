@@ -86,12 +86,14 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         enddo
     enddo
 
+    ! Copy topo to ghost cells 
+
     do j=1-mbc,0
         yp = ylow + real(j,kind=8) * dy
         if (yp <= ylower) then
             do i=1-mbc,mx+mbc
                 iint = min(max(i,1),mx)  ! adjacent interior cell
-                jint = min(max(j,1),my)  ! adjacent interior cell
+                jint = 1                 ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
             enddo
         endif
@@ -102,7 +104,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         if (ym >= yupper) then
             do i=1-mbc,mx+mbc
                 iint = min(max(i,1),mx)  ! adjacent interior cell
-                jint = min(max(j,1),my)  ! adjacent interior cell
+                jint = my                ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
             enddo
         endif
@@ -111,8 +113,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     do i=1-mbc,0
         xp = xlow + real(i,kind=8) * dx
         if (xp <= xlower) then
-            do j=1,my
-                iint = min(max(i,1),mx)  ! adjacent interior cell
+            do j=1-mbc,my+mbc
+                iint = 1                 ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
             enddo
@@ -122,8 +124,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     do i=mx+1,mx+mbc
         xm = xlow + (i - 1.d0) * dx
         if (xm >= xupper) then
-            do j=1,my
-                iint = min(max(i,1),mx)  ! adjacent interior cell
+            do j=1-mbc,my+mbc
+                iint = mx                ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
             enddo
@@ -132,15 +134,17 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     ! Output for debugging
     if (.false.) then
-        open(23, file='fort.aux',status='unknown',form='formatted')
         print *,'Writing out aux arrays'
         print *,' '
-        do j=1,my
-            do i=1,mx
+        write(23,*) '==> dx, dy', dx,dy
+        do j=1-mbc,my+mbc
+            do i=1-mbc,mx+mbc
+                !x = xlow + (i-0.5d0)*dx
+                !y = ylow + (j-0.5d0)*dy
+                !if ((x<-0.9) .and. (y>-0.1) .and. (y<0.1)) &
                 write(23,*) i,j,(aux(m,i,j),m=1,maux)
             enddo
         enddo
-        close(23)
     endif
 
 end subroutine setaux
