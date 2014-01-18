@@ -60,9 +60,6 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     real(kind=8) :: slope(2, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
     integer :: fine_cell_count(fill_indices(2)-fill_indices(1)+2, fill_indices(4)-fill_indices(3)+2)
 
-    ! Aux masking copy storage
-    integer(kind=1) :: aux_copy_mask(mx, my)
-
     ! Stack storage
     !  use stack-based scratch arrays instead of alloc, since dont really
     !  need to save beyond these routines, and to allow dynami_coarse memory resizing
@@ -74,9 +71,6 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     ! the +2 is to expand on coarse grid to enclose fine
     real(kind=8) :: valcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_eqn)
     real(kind=8) :: auxcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_aux)
-
-    ! Temporarily set all aux array values
-    aux_copy_mask = 0
 
     ! We begin by filling values for grids at level level.
     mx_patch = fill_indices(2) - fill_indices(1) + 1 ! nrowp
@@ -178,7 +172,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
             endif
             call setaux(nghost, mx_coarse - 2*nghost,my_coarse - 2*nghost, &
                         coarse_rect(1) + nghost * dx_coarse,coarse_rect(3) + nghost * dy_coarse, &
-                        dx_coarse,dy_coarse,num_aux,auxcrse,aux_copy_mask)
+                        dx_coarse,dy_coarse,num_aux,auxcrse)
         endif
 
         ! Fill in the edges of the coarse grid

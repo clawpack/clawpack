@@ -1,4 +1,4 @@
-subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux,aux_copy_mask)
+subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !     ============================================
 !
 !     # set auxiliary arrays
@@ -23,7 +23,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux,aux_copy_mask)
     integer, intent(in) :: mbc,mx,my,maux
     real(kind=8), intent(in) :: xlow,ylow,dx,dy
     real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-    integer(kind=1), intent(in) :: aux_copy_mask(1-mbc:mx+mbc,1-mbc:my+mbc)
     
     ! Locals
     integer :: i,j,m, iint,jint
