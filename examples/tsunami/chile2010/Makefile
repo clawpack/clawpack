@@ -48,8 +48,7 @@ SOURCES = \
   $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/topo_update.f90 \
-  $(GEOLIB)/movetopo.f \
-  $(GEOLIB)/cellgridintegrate.f \
+  $(GEOLIB)/cellgridintegrate2.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
