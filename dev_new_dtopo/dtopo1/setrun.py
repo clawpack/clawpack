@@ -108,7 +108,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 1
+    clawdata.output_style = 3
 
     if clawdata.output_style == 1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -123,7 +123,7 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 1
+        clawdata.total_steps = 5
         clawdata.output_t0 = True
         
 
@@ -278,7 +278,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.flag2refine = True
 
     # steps to take on each level L between regriddings of level L+1:
-    amrdata.regrid_interval = 3
+    amrdata.regrid_interval = 1000
 
     # width of buffer zone around flagged points:
     # (typically the same as regrid_interval so waves don't escape):
@@ -312,8 +312,10 @@ def setrun(claw_pkg='geoclaw'):
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
     regions.append([1,1,0,1e9,-1,1,-1,1])
-    regions.append([1,2,0,1e9,-0.3,0.4,-1,1])
+    regions.append([1,2,0,20,-0.3,0.4,-.1,.1])
+    regions.append([1,2,20,1e9,-0.4,0.5,-.2,.2])
     regions.append([1,3,0,1e9,-0.2,-0.1,-0.05,0.05])
+    regions.append([1,3,50,1e9,-0.2,-0.1,-0.05,0.2])
 
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
@@ -374,6 +376,7 @@ def setgeo(rundata):
     #   [topotype, minlevel,maxlevel,fname]
     dtopo_data.dtopofiles.append([3,2,2,'dtopo1.tt3'])
     dtopo_data.dtopofiles.append([3,2,2,'dtopo2.tt3'])
+    #dtopo_data.dtopofiles.append([1,2,2,'dtopo3.tt1'])
     dtopo_data.dt_max_dtopo = 5.
 
     # == setqinit.data values ==

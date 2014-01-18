@@ -43,11 +43,13 @@ def maketopo2():
 
 
 def topo(x,y):
-    z = -10*ones(x.shape)
+    #z = -10*ones(x.shape)
+    z = -1000*(1 + 0.5*cos(x-y))
     return z
 
 def topo2(x,y):
-    z = -15*ones(x.shape)
+    #z = -15*ones(x.shape)
+    z = -1000 - 1000*exp(x+y)
     return z
 
 
