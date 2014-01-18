@@ -23,7 +23,7 @@ subroutine topo_update(t)
    integer :: i,j,m,mt
    integer :: ij,ij0,irank,idtopo1,idtopo2,jdtopo1,jdtopo2
    integer :: ijll,ijlr,ijul,ijur
-   double precision :: x,y,xl,xr,yu,yl,zll,zlr,zul,zur,dz12,dz1,dz2
+   real(kind=8) :: x,y,xl,xr,yu,yl,zll,zlr,zul,zur,dz12,dz1,dz2,dztotal
 
    if (t<minval(t0dtopo).or.topo_finalized.eqv..true.) then
       return
@@ -53,23 +53,24 @@ subroutine topo_update(t)
 
 
    !first set topofiles aligned exactly with corresponding dtopo
-   do i= mtopofiles - num_dtopo + 1, mtopofiles !topofile
-      m = i - mtopofiles + num_dtopo !corresponding dtopofile
+   !do i= mtopofiles - num_dtopo + 1, mtopofiles !topofile
+   !   m = i - mtopofiles + num_dtopo !corresponding dtopofile
       !interpolate in time directly for matching nodes
-      if (t<t0dtopo(m).or.topotime(i)>tfdtopo(m)) then
+   !   if (t<t0dtopo(m).or.topotime(i)>tfdtopo(m)) then
          !dtopo has not started or topo has already been set from final dz
-         cycle
-      endif
-      topowork(i0topo(i):i0topo(i) + mtopo(i)-1) = &
-               topo0work(i0topo0(i):i0topo0(i) + mtopo(i)-1) &!initial topo
-               + taudtopo(m)*dtopowork(index0_dtopowork1(m):index0_dtopowork1(m) + mtopo(i)-1) &
-               + (1.0-taudtopo(m))*dtopowork(index0_dtopowork2(m):index0_dtopowork2(m) + mtopo(i)-1)
+   !      cycle
+   !   endif
+   !   topowork(i0topo(i):i0topo(i) + mtopo(i)-1) = &
+   !            topo0work(i0topo0(i):i0topo0(i) + mtopo(i)-1) &!initial topo
+   !            + taudtopo(m)*dtopowork(index0_dtopowork1(m):index0_dtopowork1(m) + mtopo(i)-1) &
+   !            + (1.0-taudtopo(m))*dtopowork(index0_dtopowork2(m):index0_dtopowork2(m) + mtopo(i)-1)
       !set time-stamp
-      topotime(i) = t
-   enddo
+   !   topotime(i) = t
+   !enddo
 
 
    !set non-dtopo associated topofiles
+   !rather, set all topofiles
    do mt=1,mtopofiles
       if (topo0save(mt)<=0) then
          !no intersection or dtopo area already covered by finer topo files
@@ -89,6 +90,7 @@ subroutine topo_update(t)
             ij = i0topo(mt) + (j-1)*mxtopo(mt) + i -1
             ij0 = i0topo0(mt) + (j-1)*mxtopo(mt) + i -1
             x = xlowtopo(mt) +  real(i-1,kind=8)*dxtopo(mt)
+            dztotal = 0.0
             do irank = 1,num_dtopo
                m = mdtopoorder(irank)
                if ( (x>xhidtopo(m)).or.(x<xlowdtopo(m)).or. &
@@ -97,8 +99,10 @@ subroutine topo_update(t)
                      cycle
                endif
 
-               if (t<t0dtopo(m).or.topotime(mt)>tfdtopo(m)) then
+               !if (t<t0dtopo(m).or.topotime(mt)>tfdtopo(m)) then
+               if (t<t0dtopo(m)) then
                   !this dtopo does not take place yet or topo has already been set for final dz from this dtopo
+                  !this is important to skip, because of limits set above that would use the initial dz even when t<t0dtopo. this should be revisited
                   !intersection might be with another dtopo with different time bands
                   cycle
                endif
@@ -143,13 +147,13 @@ subroutine topo_update(t)
                dz2 = zll*(xr-x)*(yu-y) + zlr*(x-xl)*(yu-y) + zul*(xr-x)*(y-yl) + zur*(x-xl)*(y-yl)
                dz12 = taudtopo(m)*dz1 + (1.0-taudtopo(m))*dz2
                dz12 = dz12/(dxdtopo(m)*dydtopo(m))
-               !set topo value
-               topowork(ij) = topo0work(ij0) + dz12
                !found value from finest dtopo, move to next point
-               exit
-               dz12=0.0
+               !exit
+               !rather, don't exit, add dtopo
+               dztotal = dztotal + dz12
             enddo
-
+            !set topo value from ALL dtopo
+            topowork(ij) = topo0work(ij0) + dz12
          enddo
       enddo
       topotime(mt) = t
