@@ -153,7 +153,7 @@ subroutine topo_update(t)
                dztotal = dztotal + dz12
             enddo
             !set topo value from ALL dtopo
-            topowork(ij) = topo0work(ij0) + dz12
+            topowork(ij) = topo0work(ij0) + dztotal
          enddo
       enddo
       topotime(mt) = t
