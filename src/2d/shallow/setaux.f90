@@ -87,14 +87,9 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     enddo
 
     do j=1-mbc,0
-        ym = ylow + (j - 1.d0) * dy
-        y = ylow + (j - 0.5d0) * dy
         yp = ylow + real(j,kind=8) * dy
         if (yp <= ylower) then
             do i=1-mbc,mx+mbc
-                xm = xlow + (i - 1.d0) * dx
-                x = xlow + (i - 0.5d0) * dx
-                xp = xlow + real(i,kind=8) * dx
                 iint = min(max(i,1),mx)  ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
@@ -104,13 +99,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     do j=my+1,my+mbc
         ym = ylow + (j - 1.d0) * dy
-        y = ylow + (j - 0.5d0) * dy
-        yp = ylow + real(j,kind=8) * dy
-        if (ym <= yupper) then
+        if (ym >= yupper) then
             do i=1-mbc,mx+mbc
-                xm = xlow + (i - 1.d0) * dx
-                x = xlow + (i - 0.5d0) * dx
-                xp = xlow + real(i,kind=8) * dx
                 iint = min(max(i,1),mx)  ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
@@ -119,14 +109,9 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     enddo
 
     do i=1-mbc,0
-        xm = xlow + (i - 1.d0) * dx
-        x = xlow + (i - 0.5d0) * dx
         xp = xlow + real(i,kind=8) * dx
         if (xp <= xlower) then
             do j=1,my
-                ym = ylow + (j - 1.d0) * dy
-                y = ylow + (j - 0.5d0) * dy
-                yp = ylow + real(j,kind=8) * dy
                 iint = min(max(i,1),mx)  ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
@@ -136,13 +121,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     do i=mx+1,mx+mbc
         xm = xlow + (i - 1.d0) * dx
-        x = xlow + (i - 0.5d0) * dx
-        xp = xlow + real(i,kind=8) * dx
         if (xm >= xupper) then
             do j=1,my
-                ym = ylow + (j - 1.d0) * dy
-                y = ylow + (j - 0.5d0) * dy
-                yp = ylow + real(j,kind=8) * dy
                 iint = min(max(i,1),mx)  ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
