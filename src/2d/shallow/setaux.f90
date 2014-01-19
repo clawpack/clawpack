@@ -134,17 +134,19 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         endif
     enddo
 
-    ! Output for debugging
+    ! Output for debugging to fort.23
     if (.false.) then
         print *,'Writing out aux arrays'
         print *,' '
-        write(23,*) '==> dx, dy', dx,dy
+        write(23,230)  mx,my,dx,dy
+ 230    format('==> mx, my:  ',2i5,'  dx, dy:',2f10.6)
         do j=1-mbc,my+mbc
             do i=1-mbc,mx+mbc
-                !x = xlow + (i-0.5d0)*dx
-                !y = ylow + (j-0.5d0)*dy
-                !if ((x<-0.9) .and. (y>-0.1) .and. (y<0.1)) &
-                write(23,*) i,j,(aux(m,i,j),m=1,maux)
+                x = xlow + (i-0.5d0)*dx
+                y = ylow + (j-0.5d0)*dy
+                if ((x>225) .and. (x<230) .and. (y<37)) &
+                write(23,231) i,j,x,y,(aux(m,i,j),m=1,maux)
+ 231            format(2i4,2f10.3,3e20.10)
             enddo
         enddo
     endif
