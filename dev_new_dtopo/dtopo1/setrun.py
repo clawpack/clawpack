@@ -108,7 +108,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 1
+    clawdata.output_style = 2
 
     if clawdata.output_style == 1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -118,7 +118,7 @@ def setrun(claw_pkg='geoclaw'):
 
     elif clawdata.output_style == 2:
         # Specify a list of output times.
-        clawdata.output_times = [0.5, 1.0]
+        clawdata.output_times = [0.2,0.4,0.6,0.8,1.,1.2,1.4,10]
 
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
@@ -377,7 +377,7 @@ def setgeo(rundata):
     dtopo_data.dtopofiles.append([3,2,2,'dtopo1.tt3'])
     dtopo_data.dtopofiles.append([3,2,2,'dtopo2.tt3'])
     #dtopo_data.dtopofiles.append([1,2,2,'dtopo3.tt1'])
-    dtopo_data.dt_max_dtopo = 5.
+    dtopo_data.dt_max_dtopo = 0.01
 
     # == setqinit.data values ==
     rundata.qinit_data.qinit_type = 0

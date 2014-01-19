@@ -41,7 +41,7 @@ def maketopo2():
     dy = (yupper-ylower)/(nypoints-1)
     print "==> topo2 has dx = %g, dy = %g" % (dx,dy)
 
-h0 = 10.
+h0 = 1000.
 
 def topo(x,y):
     #z = -10*ones(x.shape)
@@ -120,7 +120,7 @@ def make_dtopo1(plotfig=None):
         dtopo_params['ylower'] = ylower
         dtopo_params['yupper'] = yupper
         dtopo_params['t0'] = 0.
-        dtopo_params['tfinal'] = 100.
+        dtopo_params['tfinal'] = 1.
         dtopo_params['ntimes'] = 25
 
         dtopo = dtopotools.make_dtopo_from_subfaults(subfaults, dtopo_params)
@@ -178,8 +178,8 @@ def make_dtopo2(plotfig=None):
         dtopo_params['xupper'] = xupper
         dtopo_params['ylower'] = ylower
         dtopo_params['yupper'] = yupper
-        dtopo_params['t0'] = 50.
-        dtopo_params['tfinal'] = 150.
+        dtopo_params['t0'] = 0.5
+        dtopo_params['tfinal'] = 1.2
         dtopo_params['ntimes'] = 25
 
         dtopo = dtopotools.make_dtopo_from_subfaults(subfaults, dtopo_params)

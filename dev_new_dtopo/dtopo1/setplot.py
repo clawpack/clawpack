@@ -72,7 +72,7 @@ def setplot(plotdata):
     #plotitem.contour_levels = [-14,-13,-12,-11]
 
     # need to adjust if h0 is changed in maketopo.py:
-    plotitem.contour_levels = linspace(-40,-11,21)
+    plotitem.contour_levels = linspace(-3000,-1100,21)
 
     plotitem.amr_contour_colors = ['g']  # color on each level
     plotitem.kwargs = {'linestyles':'solid'}
