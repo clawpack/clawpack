@@ -40,7 +40,7 @@ module topo_module
     logical :: topo_finalized
 
     ! Moving topography support
-    integer :: imovetopo
+    integer :: imovetopo, aux_finalized
 
     ! Analytic topography
     real(kind=8), private :: topo_left, topo_right, topo_location
@@ -256,8 +256,10 @@ contains
             !create topo0work array for finest arrays covering dtopo
             !arrays to be saved are indicated in topo0save
             topo_finalized = .true.
+            aux_finalized = 2   !# indicates aux arrays properly set with dtopo
             if (num_dtopo>0) then
                topo_finalized = .false.
+               aux_finalized = 0  !# will be incremented each time level 1 goes
                i0topo0(1) = 1
                mtopo0size = dot_product(mtopo,topo0save)
                allocate(topo0work(mtopo0size))

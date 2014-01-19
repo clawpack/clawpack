@@ -21,7 +21,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     use geoclaw_module, only: sea_level, dry_tolerance
 
     use topo_module, only: num_dtopo,topotime
-    use topo_module, only: tfdtopo,t0dtopo,topo_finalized
+    use topo_module, only: tfdtopo,t0dtopo,topo_finalized,aux_finalized
 
     implicit none
 
@@ -163,13 +163,15 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         ! Set the aux array values for the coarse grid, this could be done
         ! instead in intfil using possibly already available bathy data from the
         ! grids
+        
         if (num_aux > 0) then
             ! update topography if needed
-            if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
-               if ((minval(topotime)<maxval(tfdtopo)).and.(t>=minval(t0dtopo))) then
-                  call topo_update(t)
-               endif
-            endif
+            !if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
+            !   if ((minval(topotime)<maxval(tfdtopo)).and.(t>=minval(t0dtopo))) then
+            if (.not. topo_finalized) then
+                call topo_update(t)
+                endif
+
             call setaux(nghost, mx_coarse - 2*nghost,my_coarse - 2*nghost, &
                         coarse_rect(1) + nghost * dx_coarse,coarse_rect(3) + nghost * dy_coarse, &
                         dx_coarse,dy_coarse,num_aux,auxcrse)
