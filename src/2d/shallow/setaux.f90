@@ -68,9 +68,11 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 aux(3,i,j) = ym * deg2rad
             endif
             
-            ! skip ghost cells if outside physical domain:
-            if ((ym>=yupper) .or. (yp<=ylower) .or. &
-                (xm>=xupper) .or. (xp<=xlower)) cycle
+            ! skip setting aux(1,i,j) in ghost cell if outside physical domain
+            ! since topo files may not cover ghost cell, and values
+            ! should be extrapolated, which is done in next set of loops.
+            if ((y>yupper) .or. (y<ylower) .or. &
+                (x>xupper) .or. (x<xlower)) cycle
 
 
             ! Use input topography files if available
@@ -86,11 +88,11 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         enddo
     enddo
 
-    ! Copy topo to ghost cells 
+    ! Copy topo to ghost cells if outside physical domain
 
     do j=1-mbc,0
-        yp = ylow + real(j,kind=8) * dy
-        if (yp <= ylower) then
+        y = ylow + (j-0.5d0) * dy
+        if (y < ylower) then
             do i=1-mbc,mx+mbc
                 iint = min(max(i,1),mx)  ! adjacent interior cell
                 jint = 1                 ! adjacent interior cell
@@ -100,8 +102,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     enddo
 
     do j=my+1,my+mbc
-        ym = ylow + (j - 1.d0) * dy
-        if (ym >= yupper) then
+        y = ylow + (j-0.5d0) * dy
+        if (y > yupper) then
             do i=1-mbc,mx+mbc
                 iint = min(max(i,1),mx)  ! adjacent interior cell
                 jint = my                ! adjacent interior cell
@@ -111,8 +113,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     enddo
 
     do i=1-mbc,0
-        xp = xlow + real(i,kind=8) * dx
-        if (xp <= xlower) then
+        x = xlow + (i-0.5d0) * dx
+        if (x < xlower) then
             do j=1-mbc,my+mbc
                 iint = 1                 ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
@@ -122,8 +124,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     enddo
 
     do i=mx+1,mx+mbc
-        xm = xlow + (i - 1.d0) * dx
-        if (xm >= xupper) then
+        x = xlow + (i-0.5d0) * dx
+        if (x > xupper) then
             do j=1-mbc,my+mbc
                 iint = mx                ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
