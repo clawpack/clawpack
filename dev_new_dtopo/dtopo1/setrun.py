@@ -315,7 +315,7 @@ def setrun(claw_pkg='geoclaw'):
     regions.append([1,2,0,20,-0.3,0.4,-.1,.1])
     regions.append([1,2,20,1e9,-0.4,0.5,-.2,.2])
     regions.append([1,3,0,1e9,-0.2,-0.1,-0.05,0.05])
-    regions.append([1,3,50,1e9,-0.2,-0.1,-0.05,0.2])
+    regions.append([3,3,50,1e9,-0.3,-0.1,-0.05,0.4])
 
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]

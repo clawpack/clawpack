@@ -121,7 +121,7 @@ def make_dtopo1(plotfig=None):
         dtopo_params['yupper'] = yupper
         dtopo_params['t0'] = 0.
         dtopo_params['tfinal'] = 100.
-        dtopo_params['ntimes'] = 5
+        dtopo_params['ntimes'] = 25
 
         dtopo = dtopotools.make_dtopo_from_subfaults(subfaults, dtopo_params)
 
@@ -180,7 +180,7 @@ def make_dtopo2(plotfig=None):
         dtopo_params['yupper'] = yupper
         dtopo_params['t0'] = 50.
         dtopo_params['tfinal'] = 150.
-        dtopo_params['ntimes'] = 5
+        dtopo_params['ntimes'] = 25
 
         dtopo = dtopotools.make_dtopo_from_subfaults(subfaults, dtopo_params)
 
