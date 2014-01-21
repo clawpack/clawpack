@@ -1,7 +1,7 @@
 subroutine qinit(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-    use qinit_module, only: qinit_type,add_perturbation
-    use geoclaw_module, only: num_layers,rho,eta_init
+    use qinit_module, only: qinit_type, add_perturbation
+    use multilayer_module, only: num_layers, rho, eta_init
     
     implicit none
     

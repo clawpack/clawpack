@@ -53,6 +53,8 @@ def setrun(claw_pkg='geoclaw'):
     set_multilayer(rundata)
     rundata.add_data(surge.data.FrictionData(),'frictiondata')
     set_friction(rundata)
+    rundata.add_data(surge.data.SurgeData(),'stormdata')
+    set_storm(rundata)
 
     #------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
@@ -94,6 +96,8 @@ def setrun(claw_pkg='geoclaw'):
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
     clawdata.num_aux = 4 + rundata.multilayer_data.num_layers
+    if rundata.stormdata.storm_type > 0:
+        clawdata.num_aux += 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 0
@@ -395,10 +399,14 @@ def setgeo(rundata):
     #   [topotype, minlevel,maxlevel,fname]
 
     # == setqinit.data values ==
-    rundata.qinit_data.qinit_type = 0
-    rundata.qinit_data.qinitfiles = []
-    # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
-    #   [minlev, maxlev, fname]
+    # Use multilayer qinit data object
+    rundata.replace_data('qinit_data', multilayer.data.QinitMultilayerData())
+    rundata.qinit_data.qinit_type = 6
+    rundata.qinit_data.epsilon = 0.02
+    rundata.qinit_data.angle = 0.0
+    rundata.qinit_data.sigma = 0.02
+    rundata.qinit_data.wave_family = 4
+    rundata.qinit_data.init_location = [0.25,0.25]
 
 
     return rundata
@@ -426,8 +434,14 @@ def set_multilayer(rundata):
     data.eigen_method = 2
     data.inundation_method = 2
     data.richardson_tolerance = 0.95
-    data.wave_tolerance = [0.1,0.1]
-    data.dry_limit = True
+    # data.wave_tolerance = [0.1,0.1]
+    # data.dry_limit = True
+
+
+def set_storm(rundata):
+
+    # No storm
+    rundata.stormdata.storm_type = 0
 
 
 def bathy_step(x, y, location=0.0, angle=0.0, left=-1.0, right=-0.2):

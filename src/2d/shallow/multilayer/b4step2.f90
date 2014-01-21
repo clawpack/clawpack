@@ -11,9 +11,13 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
 ! 
 ! Also calls movetopo if topography might be moving.
 
-    use geoclaw_module, only:num_layers,dry_tolerance,rho
-    use geoclaw_module, only:KAPPA_UNIT,check_richardson,richardson_tolerance
-    use geoclaw_module, only:g => grav
+    use geoclaw_module, only: g => grav
+
+    use storm_module, only: set_storm_fields
+
+    use multilayer_module, only: num_layers, rho, KAPPA_UNIT, dry_tolerance
+    use multilayer_module, only: check_richardson, richardson_tolerance
+
     use topo_module
     use dtopo_module
     
@@ -67,6 +71,10 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
                       mxdtopo(i),mydtopo(i),mtdtopo(i),mdtopo(i),             &
                       minleveldtopo(i),maxleveldtopo(i),topoaltered(i))
     enddo
+
+    ! Set wind and pressure aux variables for this grid
+    ! write(26,*) "B4STEP2:  Setting aux array for wind and pressure"
+    call set_storm_fields(maux,mbc,mx,my,xlower,ylower,dx,dy,t,aux)
 
     ! Check Richardson number -- Only implemented for 2 layers
     if (num_layers == 2 .and. check_richardson) then

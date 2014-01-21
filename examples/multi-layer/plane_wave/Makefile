@@ -35,25 +35,35 @@ GEOLIB = $(CLAW)/geoclaw/src/2d/shallow
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
+ $(GEOLIB)/geoclaw_module.f90 \
  $(AMRLIB)/regions_module.f90 \
  $(AMRLIB)/gauges_module.f90 \
- $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/dtopo_module.f90 \
- $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
  $(GEOLIB)/fgmax_module.f90 \
- $(GEOLIB)/multilayer/multilayer_module.f90
+ $(GEOLIB)/surge/holland_storm_module.f90 \
+ $(GEOLIB)/surge/constant_storm_module.f90 \
+ $(GEOLIB)/surge/stommel_storm_module.f90 \
+ $(GEOLIB)/surge/storm_module.f90 \
+ $(GEOLIB)/surge/friction_module.f90 \
+ $(GEOLIB)/multilayer/multilayer_module.f90 \
+ $(GEOLIB)/multilayer/qinit_module.f90
 
 SOURCES = \
-  $(GEOLIB)/setprob.f90 \
-  $(GEOLIB)/qinit.f90 \
+  $(GEOLIB)/multilayer/setprob.f90 \
+  $(GEOLIB)/multilayer/qinit.f90 \
+  $(GEOLIB)/multilayer/setaux.f90 \
+  $(GEOLIB)/multilayer/b4step2.f90 \
+  $(GEOLIB)/multilayer/dumpgauge.f \
+  $(GEOLIB)/multilayer/getmaxspeed.f90 \
+  $(GEOLIB)/multilayer/stepgrid.f \
+  $(GEOLIB)/multilayer/valout.f \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
-  $(GEOLIB)/stepgrid.f \
   $(CLAW)/riemann/src/rpn2_geoclaw.f \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
@@ -62,7 +72,6 @@ SOURCES = \
   $(GEOLIB)/step2.f90 \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
-  $(GEOLIB)/valout.f \
   $(GEOLIB)/filval.f90 \
   $(GEOLIB)/filpatch.f90 \
   $(AMRLIB)/prefilp.f90 \
@@ -71,18 +80,14 @@ SOURCES = \
   $(AMRLIB)/intfil.f \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine2.f90  \
   $(AMRLIB)/flagregions2.f90  \
   $(GEOLIB)/allowflag.f90  \
-  $(GEOLIB)/b4step2.f90 \
-  $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
-  $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
   $(GEOLIB)/amr2.f90 \
   $(GEOLIB)/fgmax_read.f90 \

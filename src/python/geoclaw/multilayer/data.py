@@ -2,7 +2,10 @@
 
 """Classes representing parameters for GeoClaw Multilayer runs"""
 
+import os
+
 import clawpack.clawutil.data
+import clawpack.geoclaw.data
 
 class MultilayerData(clawpack.clawutil.data.ClawData):
     r"""
@@ -21,25 +24,78 @@ class MultilayerData(clawpack.clawutil.data.ClawData):
         # Algorithm parameters
         self.add_attribute('eigen_method',4)
         self.add_attribute('inundation_method',2)
+        self.add_attribute('check_richardson',True)
         self.add_attribute('richardson_tolerance',0.95)
-        self.add_attribute('wave_tolerance',[1e-1,2e-1])
-        self.add_attribute('dry_limit',False)
+
+        # Need to adjust refinement module for this, dry_limit is in geodata
+        # self.add_attribute('wave_tolerance',[1e-1,2e-1])
+        # self.add_attribute('dry_limit',False)
     
 
     def write(self,out_file='./multilayer.data',datasource="setrun.py"):
         
         self.open_data_file(out_file, datasource)
         
-        self.data_write(out_file,self,'layers','(Number of layers)')
-        self.data_write(out_file,self,'rho','(Densities of layers)')
-        self.data_write(out_file,self,'eta','(Initial top surface of each layer)')
-        self.data_write(out_file,self,None)
-        self.data_write(out_file,self,'eigen_method','(Method for calculating eigenspace)')
-        self.data_write(out_file,self,'inundation_method','(Method for calculating inundation eigenspace)')
-        self.data_write(out_file,self,'richardson_tolerance','(Tolerance for Richardson number)')
-        self.data_write(out_file,self,'wave_tolerance','(Tolerance for wave height refinement)')
-        self.data_write(out_file,self,'dry_limit','(Turn off limiting when near a dry state)')
+        self.data_write('num_layers', description='(Number of layers)')
+        self.data_write('rho',description='(Densities of layers)')
+        self.data_write('eta',description='(Initial top surface of each layer)')
+        self.data_write(None)
+        self.data_write('check_richardson',description="(Check Richardson number)")
+        self.data_write('richardson_tolerance',description='(Tolerance for Richardson number)')
+        self.data_write('eigen_method',description='(Method for calculating eigenspace)')
+        self.data_write('inundation_method',description='(Method for calculating inundation eigenspace)')
+        
+        # self.data_write('wave_tolerance',description='(Tolerance for wave height refinement)')
+        # self.data_write('dry_limit',description='(Turn off limiting when near a dry state)')
         
         self.close_data_file()
 
+class QinitMultilayerData(clawpack.geoclaw.data.QinitData):
+    r"""
+    Modified Qinit data object for multiple layers
 
+    """
+
+    def __init__(self):
+        super(QinitMultilayerData, self).__init__()
+
+        # Test qinit data > 4
+        self.add_attribute("init_location")
+        self.add_attribute("wave_family")
+        self.add_attribute("epsilon")
+        self.add_attribute("angle")
+        self.add_attribute("sigma")
+
+    def write(self, data_source='setrun.py'):
+
+        # Initial perturbation
+        self.open_data_file('qinit.data',data_source)
+        self.data_write('qinit_type')
+
+        # Perturbation requested
+        if self.qinit_type == 0:
+            pass
+        elif 0 < self.qinit_type < 5:
+            # Check to see if each qinit file is present and then write the data
+            for tfile in self.qinitfiles:
+                try:
+                    fname = "'%s'" % os.path.abspath(tfile[-1])
+                except:
+                    raise Warning("File %s was not found." % fname)
+                    # raise MissingFile("file not found")
+                self._out_file.write("\n%s  \n" % fname)
+                self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
+        elif self.qinit_type > 5 and self.qinit_type <= 9:
+            self.data_write('epsilon')
+            if self.qinit_type == 5 or self.qinit_type == 6:
+                self.data_write("init_location")
+                self.data_write("wave_family")
+                if self.qinit_type == 6 or self.qinit_type == 9:
+                    self.data_write("angle")
+                    self.data_write("sigma")
+            elif self.qinit_type == 7:
+                self.data_write("init_location")
+                self.data_write("sigma")
+        else:
+            raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
+        self.close_data_file()

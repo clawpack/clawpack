@@ -1,7 +1,8 @@
       subroutine dumpgauge(q,aux,xlow,ylow,nvar,mitot,mjtot,naux,mptr)
 
       use amr_module
-      use geoclaw_module
+      use geoclaw_module, only: grav
+      use multilayer_module, only: num_layers, dry_tolerance, rho
       use gauges_module
 
       implicit double precision (a-h,o-z)
