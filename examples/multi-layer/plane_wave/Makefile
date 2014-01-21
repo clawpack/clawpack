@@ -60,6 +60,7 @@ SOURCES = \
   $(GEOLIB)/multilayer/getmaxspeed.f90 \
   $(GEOLIB)/multilayer/stepgrid.f \
   $(GEOLIB)/multilayer/valout.f \
+  $(GEOLIB)/multilayer/src2.f90 \
   $(GEOLIB)/movetopo.f \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
@@ -67,7 +68,6 @@ SOURCES = \
   $(CLAW)/riemann/src/rpn2_geoclaw.f \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
-  $(GEOLIB)/src2.f90 \
   $(GEOLIB)/src1d.f90 \
   $(GEOLIB)/step2.f90 \
   $(GEOLIB)/flux2fw.f \
