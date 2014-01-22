@@ -25,6 +25,23 @@ RESTART = False
 # Compiler flags can be specified here or set as an environment variable
 FFLAGS ?=
 
+# Include flags for LAPACK linking
+UNAME = $(shell uname)
+ifeq ($(UNAME), Darwin)
+	ifndef LFLAGS
+		LFLAGS = -framework accelerate
+	else
+		LFLAGS += -framework accelerate
+	endif
+endif
+ifeq ($(UNAME), Linux)
+	ifndef LFLAGS
+		LFLAGS = -llapack
+	else
+		LFLAGS += -llapack
+	endif
+endif
+
 # ---------------------------------
 # List of sources for this program:
 # ---------------------------------
@@ -49,7 +66,8 @@ MODULES = \
  $(GEOLIB)/surge/storm_module.f90 \
  $(GEOLIB)/surge/friction_module.f90 \
  $(GEOLIB)/multilayer/multilayer_module.f90 \
- $(GEOLIB)/multilayer/qinit_module.f90
+ $(GEOLIB)/multilayer/qinit_module.f90 \
+ $(CLAW)/riemann/src/multilayer_eigen_module.f90
 
 SOURCES = \
   $(GEOLIB)/multilayer/setprob.f90 \
@@ -65,8 +83,8 @@ SOURCES = \
   $(GEOLIB)/cellgridintegrate.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
-  $(CLAW)/riemann/src/rpn2_geoclaw.f \
-  $(CLAW)/riemann/src/rpt2_geoclaw.f \
+  $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \
+  $(CLAW)/riemann/src/rpt2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
   $(GEOLIB)/src1d.f90 \
   $(GEOLIB)/step2.f90 \

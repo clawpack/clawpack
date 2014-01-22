@@ -103,37 +103,35 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     call set_friction_field(mx,my,mbc,maux,xlow,ylow,dx,dy,aux)
 
     ! Record initial depths if using multiple layers
-    if (num_layers > 1) then
-        do j=1-mbc,mx+mbc
-            do i=1-mbc,mx+mbc
-                do m=1,num_layers-1
-                    if (eta_init(m) > aux(1,i,j)) then
-                        if (eta_init(m+1) > aux(1,i,j)) then
-                            ! There's a layer below this one
-                            aux(aux_layer_index + (m - 1), i, j) =      &
-                                                     eta_init(m) - eta_init(m+1)
-                        else
-                            ! This is the last wet layer
-                            aux(aux_layer_index + (m - 1), i, j) =      &
-                                                        eta_init(m) - aux(1,i,j)
-                        endif
+    do j=1-mbc,my+mbc
+        do i=1-mbc,mx+mbc
+            do m=1,num_layers-1
+                if (eta_init(m) > aux(1,i,j)) then
+                    if (eta_init(m+1) > aux(1,i,j)) then
+                        ! There's a layer below this one
+                        aux(aux_layer_index + (m - 1), i, j) =      &
+                                                 eta_init(m) - eta_init(m+1)
                     else
-                        ! This layer is dry here
-                        aux(aux_layer_index + (m - 1), i, j) = 0.d0
+                        ! This is the last wet layer
+                        aux(aux_layer_index + (m - 1), i, j) =      &
+                                                    eta_init(m) - aux(1,i,j)
                     endif
-                enddo    
-                ! Handle bottom layer seperately
-                if (eta_init(num_layers) > aux(1,i,j)) then
-                    ! Bottom layer is wet here
-                    aux(aux_layer_index + num_layers - 1,i,j) =             &
-                                               eta_init(num_layers) - aux(1,i,j)        
                 else
-                    ! Bottom layer is dry here
-                    aux(aux_layer_index + num_layers - 1,i,j) = 0.d0
+                    ! This layer is dry here
+                    aux(aux_layer_index + (m - 1), i, j) = 0.d0
                 endif
-            enddo
+            enddo    
+            ! Handle bottom layer seperately
+            if (eta_init(num_layers) > aux(1,i,j)) then
+                ! Bottom layer is wet here
+                aux(aux_layer_index + num_layers - 1,i,j) =             &
+                                           eta_init(num_layers) - aux(1,i,j)        
+            else
+                ! Bottom layer is dry here
+                aux(aux_layer_index + num_layers - 1,i,j) = 0.d0
+            endif
         enddo
-    endif
+    enddo
 
     ! Output for debugging
     if (.false.) then
