@@ -41,6 +41,15 @@ from datatools import *
 
 from data import Rearth
 
+def latlong_resolution(dx,dy,latitude):
+    """
+    At a given latitude (in degrees), 
+    convert dx and dy measured in degrees to distances in meters.
+    """
+    dym = dy*np.pi*Rearth / 180.
+    dxm = dym * np.cos(latitude*np.pi/180.)
+    return dxm,dym
+    
 
 
 #==========================================================================
