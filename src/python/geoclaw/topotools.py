@@ -7,6 +7,9 @@ file: topotools.py
    for manipulating topography data.
 
 Contains:
+   
+   dms2decimal   convert (degree, minutes, seconds) to decimal
+   latlong_resolution convert dx,dy in degrees to meters at given latitude
    get_topo:     downloads topo file from GeoClaw repository on web.
    topo1writer:  create files of topotype1 from synthetic topo function.
    topo2writer:  create files of topotype2 from synthetic topo function.
@@ -39,7 +42,30 @@ import os
 import string
 from datatools import *
 
-from data import Rearth
+#==========================================================================
+
+from data import Rearth   # radius of earth
+
+#==========================================================================
+
+def dms2decimal(d,m,s,coord='N'):
+    """
+    convert coordinates on earth measured in (degrees,minutes,seconds)
+    to decimal form.  
+    If coord == 'S' or coord == 'W' then value is negated too.
+    Example: 
+        >>> topotools.dms2decimal(7,30,36,'W')
+        -7.51
+    (Note that you might want to add 360 to resulting W coordinate
+    if using E coordinates everywhere in a computation spanning date line.)
+    """
+
+    deg = d + m/60. + s/3600.
+    if coord in ['S','W']:
+        deg = -deg
+    return deg
+
+#==========================================================================
 
 def latlong_resolution(dx,dy,latitude):
     """
@@ -50,7 +76,6 @@ def latlong_resolution(dx,dy,latitude):
     dxm = dym * np.cos(latitude*np.pi/180.)
     return dxm,dym
     
-
 
 #==========================================================================
 
