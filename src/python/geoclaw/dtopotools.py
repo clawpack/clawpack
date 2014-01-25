@@ -827,3 +827,24 @@ def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
     title('Seafloor deformation')
 
 
+def strike_direction(x1,y1,x2,y2):
+    """
+    Calculate strike direction between two points.
+    Actually calculates "initial bearing" from (x1,y1) in direction
+    towards (x2,y2), following
+        http://www.movable-type.co.uk/scripts/latlong.html
+    """
+
+    from numpy import pi,sin,cos,arctan2
+    x1 = x1*pi/180.
+    y1 = y1*pi/180.
+    x2 = x2*pi/180.
+    y2 = y2*pi/180.
+    dx = x2-x1
+    theta = arctan2(sin(dx)*cos(y2), \
+             cos(y1)*sin(y2) - sin(y1)*cos(y2)*cos(dx))
+    s = theta*180./pi
+    if s<0:
+        s = 360+s
+    return s
+
