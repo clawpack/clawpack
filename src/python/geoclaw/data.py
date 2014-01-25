@@ -6,6 +6,11 @@ import os
 
 import clawpack.clawutil.data
 
+# Radius of earth in meters.  
+# For consistency, should always use this value when needed, e.g.
+# in setrun.py or topotools:
+Rearth = 6367.5e3  # average of polar and equatorial radii
+
 class GeoClawData(clawpack.clawutil.data.ClawData):
     r"""
     Object containing the basic .
@@ -17,7 +22,7 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
 
         # GeoClaw physics parameters
         self.add_attribute('gravity',9.8)
-        self.add_attribute('earth_radius',6367500.0)
+        self.add_attribute('earth_radius',Rearth)
         self.add_attribute('coordinate_system',1)
         self.add_attribute('coriolis_forcing',True)
         self.add_attribute('theta_0',45.0)
