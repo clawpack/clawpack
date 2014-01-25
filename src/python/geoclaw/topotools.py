@@ -26,8 +26,11 @@ Contains:
    removenodata_value
    changenodata_value
    swapheader
+   create_topo_func
+   class TopoPlotData
+   plot_topo_file
 
-Authors: Dave George and Randy LeVeque
+Authors: Dave George, Randy LeVeque, Kyle Mandli
  
 """
 
@@ -36,15 +39,8 @@ import os
 import string
 from datatools import *
 
-# These don't seem to be needed now...  but maybe missed something.
-# Best to not import * to avoid cluttering up namespace.
-#  - rjl 7/6/10
-#import numpy
-#from numpy import *
-#from scipy import *
-#from matplotlib import *
+from data import Rearth
 
-Rearth = 6367.5e3  # average of polar and equatorial radii
 
 
 #==========================================================================
@@ -279,7 +275,7 @@ def dx_from_gcdist(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
     return dx
 
 
-#==============================================================================================
+#===============================================================================
 def scatter2gridded (scatterdatafile=" ",boundarydatafile=" ", headerfile=" ", outputfile=" "):
 
     """
@@ -350,7 +346,7 @@ def scatter2gridded (scatterdatafile=" ",boundarydatafile=" ", headerfile=" ", o
                 fout.write("%s\n" % Z[i,j])
         fout.close()
     return (X,Y,Z)
-    # end scatter2gridded===================================================
+    # end scatter2gridded
 
 
 #============================================================================
@@ -385,10 +381,10 @@ def topoheaderwrite (topoheader,outputfile,closefile=True):
         fout.close()
     else:
        return fout
-    #end headerwriter=========================================================================
+    #end headerwriter
 
 
-#=========================================================================================
+#============================================================================
 def topoheaderread (inputfile, closefile=True):
 
     """
@@ -440,9 +436,9 @@ def topoheaderread (inputfile, closefile=True):
     else:
         return (fid,topoheader)
 
-    #end topoheader================================================================================
+    #end topoheader
 
-#==================================================================================================
+#==============================================================================
 def topofile2griddata (inputfile,topotype=2):
     """
     topofile2griddata (inputfile):
@@ -495,9 +491,9 @@ def topofile2griddata (inputfile,topotype=2):
 
 
     return X,Y,Z
-    #end topofile2griddata ======================================================================
+    #end topofile2griddata 
 
-#==================================================================================================
+#==============================================================================
 def griddata2topofile (X,Y,Z,outputfile,topotype=2,nodata_value_in=9999.,nodata_value_out=9999.):
     """
     griddata2topofile takes gridded data and produces a topofile with a header
@@ -558,9 +554,9 @@ def griddata2topofile (X,Y,Z,outputfile,topotype=2,nodata_value_in=9999.,nodata_
                 fout.write("%s %s %s\n" % (X[i,j],Y[i,j],Z[i,j]))
         fout.close()
 
-    # end griddata2topofile ======================================================================
+    # end griddata2topofile 
 
-#================================================================================================
+#============================================================================
 def converttopotype (inputfile,outputfile,topotypein=1,topotypeout=2,nodata_value=None):
     """
     convert topofiles of one type to another.
@@ -576,10 +572,10 @@ def converttopotype (inputfile,outputfile,topotypein=1,topotypeout=2,nodata_valu
 
     griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
 
-    #end converttopotype ==========================================================================
+    #end converttopotype 
 
 
-#==================================================================================================
+#==============================================================================
 def griddatasubset (X,Y,Z,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.0e6):
     """
     griddatasubset takes grided data (X,Y,Z) and creates a subset of new gridded data
@@ -598,9 +594,9 @@ def griddatasubset (X,Y,Z,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.0e6):
     Zsub= Z[np.ix_(yind,xind)]
 
     return Xsub,Ysub,Zsub
-    #end griddatasubset ==========================================================================
+    #end griddatasubset 
 
-#==================================================================================================
+#==============================================================================
 def topofilefindz (pts,inputfile,topotypein=2):
     """
     topofilefindz takes an inputfile, and the coordinates of multiple points, as a list of pairs,
@@ -669,7 +665,7 @@ def topofilefindz (pts,inputfile,topotypein=2):
     z=np.array(z)
     return z
 
-#==================================================================================================
+#==============================================================================
 def topofilesubset (inputfile,outputfile,topotypein=2,topotypeout=2,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.e6,\
                     nodata_value_in=None, cheap=False ):
     """
@@ -760,9 +756,9 @@ def topofilesubset (inputfile,outputfile,topotypein=2,topotypeout=2,xlow=-1.e6,x
 
         fidout.close()
         fidin.close()
-    #end topofilesubset==========================================================================
+    #end topofilesubset
 
-#==================================================================================================
+#==============================================================================
 def topofilesubsample (inputfile,outputfile,sampleinteger,topotypein=2,topotypeout=2,\
                     nodata_value_in=None ):
     """
@@ -791,7 +787,7 @@ def topofilesubsample (inputfile,outputfile,sampleinteger,topotypein=2,topotypeo
     Zsub = Z[0::sampleinteger,0::sampleinteger]
     griddata2topofile(Xsub,Ysub,Zsub,outputfile,topotypeout,nodata_value_in,nodata_value_out)
 
-#================================================================================================
+#==============================================================================
 def removenodata_value (inputfile,outputfile,topotypein=2,topotypeout=2,nodata_value=None,method='fill'):
     """
     remove the nodata_values in a topo file by interpolating from meaningful values.
@@ -840,10 +836,10 @@ def removenodata_value (inputfile,outputfile,topotypein=2,topotypeout=2,nodata_v
 
     return
 
-    #end removenodata_value ======================================================================
+    #end removenodata_value 
 
 
-#=================================================================================================
+#===============================================================================
 def changenodata_value (inputfile,outputfile,topotypein,topotypeout=None,\
         nodata_valuein=None, nodata_valueout=np.nan):
     """
@@ -876,10 +872,10 @@ def changenodata_value (inputfile,outputfile,topotypein,topotypeout=None,\
 
     return
 
-    #end removenodata_value =================================================================
+    #end removenodata_value 
 
 
-#============================================================================================
+#===============================================================================
 def swapheader (inputfile,outputfile):
     """
     take a topo file and swap the order of key and value in header so that value is in the
@@ -899,14 +895,13 @@ def swapheader (inputfile,outputfile):
     fidout.close()
 
     return
-    #=========================================================================================
 
 #==============================================================================
 def create_topo_func(loc,verbose=False):
-    """Given a set of (x,z) locations, create a lambda function
-    
-    Create a lambda function that when evaluated will give the topgraphy 
-    height at the point (x,y).
+    """
+    Given a 1-dimensional topography profile specfied by a set of (x,z) 
+    values, create a lambda function that when evaluated will give the 
+    topgraphy at the point (x,y).  (The resulting function is constant in y.)
     
     :Example: 
     >>> f = create_topo_profile_func(loc)
@@ -950,44 +945,185 @@ def create_topo_func(loc,verbose=False):
     return eval(cmd_str)
 
 
-# Generic, spheroid based conversion
-# TODO: Convert this to using the basemap package instead
-deg2meters = lambda theta,lat:R_earth * theta * np.pi / 180.0 * np.cos(lat * np.pi / 180.0)
-meters2deg = lambda d,lat:d / (R_earth * np.pi / 180.0 * np.cos(lat * np.pi / 180.0))
+#=====================================
+# For reading and plotting topo files
 
-# Based at lat = 24 degrees
-long2meters = lambda degree_resolution:degree_resolution * 100950.05720513177
-lat2meters = lambda degree_resolution:degree_resolution * 110772.87259559495
+class TopoPlotData(object):
+    def __init__(self, fname):
+        self.fname = fname 
+        self.topotype = 3
+        self.neg_cmap = None
+        self.pos_cmap = None
+        self.cmap = None
+        self.cmax = 100.
+        self.cmin = -4000.
+        self.climits = None
+        self.figno = 200
+        self.addcolorbar = False
+        self.addcontour = False
+        self.contour_levels = [0, 0]
+        self.xlimits = None
+        self.ylimits = None
+        self.coarsen = 1
+        self.imshow = True
+        self.gridedges_show = True
+        self.print_fname = True
 
-def calculate_resolution(ratios,base_resolutions=[0.25,0.25],
-                                print_resolutions=False):
-    r"""Given *ratios* and starting resolutions, calculate level resolutions
+    def plot(self):
+        plot_topo_file(self)
+        
 
-    returns a dictionary of resolutions key valued by level"""
-    num_levels = len(ratios) + 1
+def plot_topo_file(topoplotdata):
+    """
+    Read in a topo or bathy file and produce a pcolor map.
+    """
 
-    degree_resolutions = np.empty((num_levels,2))
-    meter_resolutions = np.empty((num_levels,2))
-    degree_resolutions[0,:] = base_resolutions
-    meter_resolutions[0,0] = long2meters(base_resolutions[0])
-    meter_resolutions[0,1] = lat2meters(base_resolutions[1])
-    for level in xrange(1,num_levels):
-        degree_resolutions[level,:] = degree_resolutions[level-1,:] / ratios[level-1]
-        meter_resolutions[level,0] = long2meters(degree_resolutions[level,0])
-        meter_resolutions[level,1] = lat2meters(degree_resolutions[level,1])
+    import os
+    import pylab
+    from clawpack.clawutil.data import ClawData
 
-    if print_resolutions:
-        print "Resolutions:"
-        for level in xrange(num_levels):
-            print " Level %s - (%sº,%sº) - (%s m, %s m)" % (str(level+1),
-                                                        degree_resolutions[level,0],
-                                                        degree_resolutions[level,1],
-                                                        meter_resolutions[level,0],
-                                                        meter_resolutions[level,1])
+    fname = topoplotdata.fname 
+    topotype = topoplotdata.topotype
+    if topoplotdata.climits:
+        # deprecated option
+        cmin = topoplotdata.climits[0]
+        cmax = topoplotdata.climits[1]
+    else:
+        cmin = topoplotdata.cmin
+        cmax = topoplotdata.cmax
+    figno = topoplotdata.figno
+    addcolorbar = topoplotdata.addcolorbar
+    addcontour = topoplotdata.addcontour
+    contour_levels = topoplotdata.contour_levels
+    xlimits = topoplotdata.xlimits
+    ylimits = topoplotdata.ylimits
+    coarsen = topoplotdata.coarsen
+    imshow = topoplotdata.imshow
+    gridedges_show = topoplotdata.gridedges_show
+    neg_cmap = topoplotdata.neg_cmap
+    pos_cmap = topoplotdata.pos_cmap
+    cmap = topoplotdata.cmap
+    print_fname = topoplotdata.print_fname
 
-    resolutions = {}
-    for level in xrange(1,num_levels):
-        resolutions[level] = (degree_resolutions,meter_resolutions)
-    return [(degree_resolutions,meter_resolutions) 
-                        for level in xrange(1,num_levels)]
 
+    if neg_cmap is None:
+        neg_cmap = colormaps.make_colormap({cmin:[0.3,0.2,0.1],
+                                                0:[0.95,0.9,0.7]})
+    if pos_cmap is None:
+        pos_cmap = colormaps.make_colormap({    0:[.5,.7,0],
+                                        cmax:[.2,.5,.2]})
+    if cmap is None:
+        cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
+                                           -0.00001:[0.95,0.9,0.7],
+                                           0.00001:[.5,.7,0],
+                                           1:[.2,.5,.2]})
+        #cmap = colormaps.make_colormap({-1:[0,0,1],0:[1,1,1],1:[1,0,0]})
+
+    if abs(topotype) == 1:
+
+        X,Y,topo = topotools.topofile2griddata(fname, topotype)
+        topo = pylab.flipud(topo)
+        Y = pylab.flipud(Y)
+        x = X[0,:]
+        y = Y[:,0]
+        xllcorner = x[0]
+        yllcorner = y[0]
+        cellsize = x[1]-x[0]
+
+
+    elif abs(topotype) == 3:
+
+        file = open(fname, 'r')
+        lines = file.readlines()
+        ncols = int(lines[0].split()[0])
+        nrows = int(lines[1].split()[0])
+        xllcorner = float(lines[2].split()[0])
+        yllcorner = float(lines[3].split()[0])
+        cellsize = float(lines[4].split()[0])
+        NODATA_value = int(lines[5].split()[0])
+
+        print "Loading file ",fname
+        print "   nrows = %i, ncols = %i" % (nrows,ncols)
+        topo = pylab.loadtxt(fname,skiprows=6,dtype=float)
+        print "   Done loading"
+
+        if 0:
+            topo = []
+            for i in range(nrows):
+                topo.append(pylab.array(lines[6+i],))
+            print '+++ topo = ',topo
+            topo = pylab.array(topo)
+
+        topo = pylab.flipud(topo)
+
+        x = pylab.linspace(xllcorner, xllcorner+ncols*cellsize, ncols)
+        y = pylab.linspace(yllcorner, yllcorner+nrows*cellsize, nrows)
+        print "Shape of x, y, topo: ", x.shape, y.shape, topo.shape
+
+    else:
+        raise Exception("*** Only topotypes 1 and 3 supported so far")
+    
+
+    if coarsen > 1:
+        topo = topo[slice(0,nrows,coarsen), slice(0,ncols,coarsen)]
+        x = x[slice(0,ncols,coarsen)]
+        y = y[slice(0,nrows,coarsen)]
+        print "Shapes after coarsening: ", x.shape, y.shape, topo.shape
+
+
+    if topotype < 0:
+        topo = -topo
+
+    if figno:
+        pylab.figure(figno)
+
+    if topoplotdata.imshow:
+            color_norm = Normalize(cmin,cmax,clip=True)
+            xylimits = (x[0],x[-1],y[0],y[-1])
+            #pylab.imshow(pylab.flipud(topo.T), extent=xylimits, \
+            pylab.imshow(pylab.flipud(topo), extent=xylimits, \
+                    cmap=cmap, interpolation='nearest', \
+                    norm=color_norm)
+            #pylab.clim([cmin,cmax])
+            if addcolorbar:
+                pylab.colorbar()
+    else:
+        neg_topo = ma.masked_where(topo>0., topo)
+        all_masked = (ma.count(neg_topo) == 0)
+        if not all_masked:
+            pylab.pcolormesh(x,y,neg_topo,cmap=neg_cmap)
+            pylab.clim([cmin,0])
+            if addcolorbar:
+                pylab.colorbar()
+
+        pos_topo = ma.masked_where(topo<0., topo)
+        all_masked = (ma.count(pos_topo) == 0)
+        if not all_masked:
+            pylab.pcolormesh(x,y,pos_topo,cmap=pos_cmap)
+            pylab.clim([0,cmax])
+    if addcolorbar:
+        pylab.colorbar()
+
+    pylab.axis('scaled')
+
+
+    if addcontour:
+        pylab.contour(x,y,topo,levels=contour_levels,colors='k')
+
+    patchedges_show = True
+    if patchedges_show:
+        pylab.plot([x[0],x[-1]],[y[0],y[0]],'k')
+        pylab.plot([x[0],x[-1]],[y[-1],y[-1]],'k')
+        pylab.plot([x[0],x[0]],[y[0],y[-1]],'k')
+        pylab.plot([x[-1],x[-1]],[y[0],y[-1]],'k')
+
+    if print_fname:
+        fname2 = os.path.splitext(fname)[0]
+        pylab.text(xllcorner+cellsize, yllcorner+cellsize, fname2, color='m')
+
+    topodata = ClawData()
+    topodata.x = x
+    topodata.y = y
+    topodata.topo = topo
+
+    return topodata
