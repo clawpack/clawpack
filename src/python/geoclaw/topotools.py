@@ -41,6 +41,10 @@ import numpy as np
 import os
 import string
 from datatools import *
+from clawpack.visclaw import colormaps
+from matplotlib.colors import Normalize
+from numpy import ma
+
 
 #==========================================================================
 
@@ -438,7 +442,8 @@ def topoheaderread (inputfile, closefile=True):
     keylist=topoheader.keys()
 
     keymap = {'ncols':'ncols','nrows':'nrows','xll':'xll','yll':'yll','cellsize':'cellsize','nodata_value':'nodata_value', \
-    'xllcenter':'xll','yllcenter':'yll','xllcorner':'xll','yllcorner':'yll'}
+    'xllcenter':'xll','yllcenter':'yll','xllcorner':'xll','yllcorner':'yll',\
+    'xlower':'xll', 'ylower':'yll'}
 
     fid=open(inputfile,'r')
     keyleft=len(keylist)
@@ -473,19 +478,22 @@ def topoheaderread (inputfile, closefile=True):
     #end topoheader
 
 #==============================================================================
-def topofile2griddata (inputfile,topotype=2):
+def topofile2griddata (inputfile,topotype=2,xy1d=False):
     """
     topofile2griddata (inputfile):
     read topofile into a numpy array.
 
     read data in topo files of type 1, 2 or 3 into numpy arrays
     X,Y, Z, each with shape=(nrows,ncols) holding x,y and z coords.
+    
+    If xy1d==True then one dimensional arrays x and y are returned
+    rather than 2d arrays.
 
     """
     import pylab
 
 
-    if topotype>1:
+    if abs(topotype)>1:
         (fin,topoheader)=topoheaderread(inputfile,closefile=False)
         zdata=fin.readlines()
         fin.close()
@@ -505,9 +513,12 @@ def topofile2griddata (inputfile,topotype=2):
         yupper = ylower+ topoheader['cellsize']*(topoheader['nrows']-1)
 
         x=np.linspace(xlower,xupper,topoheader['ncols'])
+        #y=np.linspace(yupper,ylower,topoheader['nrows'])
         y=np.linspace(ylower,yupper,topoheader['nrows'])
-        [X,Y]=np.meshgrid(x,y)
-        Y=np.flipud(Y)
+        if not xy1d:
+            [X,Y]=np.meshgrid(x,y)
+            #Y=np.flipud(Y)
+
     else:
         a=iotools.datafile2array(inputfile)
         xdiff=np.diff(a[:,0])
@@ -521,26 +532,53 @@ def topofile2griddata (inputfile,topotype=2):
         X=np.reshape(x,(ylength,xlength))
         Y=np.reshape(y,(ylength,xlength))
         Z=np.reshape(z,(ylength,xlength))
+        Y = np.flipud(Y)       
 
+        x = X[0,:]
+        y = Y[:,0]
 
+    if topotype < 0: 
+        Z = -Z
 
-    return X,Y,Z
+    Z = np.flipud(Z)
+    if xy1d:
+        return x,y,Z
+    else:
+        return X,Y,Z
+        
     #end topofile2griddata 
 
 #==============================================================================
-def griddata2topofile (X,Y,Z,outputfile,topotype=2,nodata_value_in=9999.,nodata_value_out=9999.):
+def griddata2topofile (X,Y,Z,outputfile,topotype=2,nodata_value_in=9999., \
+                       nodata_value_out=9999.,xy1d=False):
     """
-    griddata2topofile takes gridded data and produces a topofile with a header
+    griddata2topofile takes gridded data and produces a topofile with a header.
+    
+    Input: 
+      if xy1d==True then X, Y are 1-dimensional arrays and Z is 2-dimensional.
+         otherwise X,Y,Z are all 2-dimensional of the same shape.
+      outputfile: filename to write output to.
+      topotype: 1, 2, or 3.
 
     """
 
     nrows=len(Z[:,0])
     ncols=len(Z[0,:])
-    xll=X[0,0]
-    yll=Y[-1,0]
+    if xy1d:
+        x = X
+        y = Y
+    else:
+        x = X[0,:]
+        y = Y[:,0]
+    
+    xll = x[0]
+    yll = y[-1]
+    xupper = x[-1]
+    yupper = y[0]
+
+        
     nodata_value=nodata_value_out
-    xupper=X[0,-1]
-    yupper=Y[0,0]
+    
 
     if (yupper<yll):
         print ("geotools.topotools.griddata2topofile:")
@@ -560,7 +598,7 @@ def griddata2topofile (X,Y,Z,outputfile,topotype=2,nodata_value_in=9999.,nodata_
     topoheader["nodata_value"]=nodata_value_out
 
     if ((abs(cellsizeX-cellsizeY)<-1.e-9)&(topotype>1)):
-        print ("geotools.topotools.griddata2topofile:")
+        print ("topotools.griddata2topofile:")
         print ("WARNING: cellsize is not uniform in x and y")
         print ("cellsize in the x-direction %s" % cellsizeX)
         print ("cellsize in the y-direction %s" % cellsizeY)
@@ -585,7 +623,7 @@ def griddata2topofile (X,Y,Z,outputfile,topotype=2,nodata_value_in=9999.,nodata_
         fout=open(outputfile,'w')
         for i in xrange(nrows) :
             for j in xrange(ncols) :
-                fout.write("%s %s %s\n" % (X[i,j],Y[i,j],Z[i,j]))
+                fout.write("%s %s %s\n" % (x[i],y[j],Z[i,j]))
         fout.close()
 
     # end griddata2topofile 
@@ -610,7 +648,7 @@ def converttopotype (inputfile,outputfile,topotypein=1,topotypeout=2,nodata_valu
 
 
 #==============================================================================
-def griddatasubset (X,Y,Z,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.0e6):
+def griddatasubset (X,Y,Z,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.0e6,xy1d=False):
     """
     griddatasubset takes grided data (X,Y,Z) and creates a subset of new gridded data
 
@@ -619,13 +657,20 @@ def griddatasubset (X,Y,Z,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.0e6):
 
     the new gridded data will correspond to the largest subset of the region [xlow,xhi] X [ylow,yhi]
     """
+    from pylab import find
 
-    xind=np.where((X[0,:]>=xlow)&(X[0,:]<=xhi))[0]
-    yind=np.where((Y[:,0]<=yhi)&(Y[:,0]>=ylow))[0]
-
-    Xsub= X[np.ix_(yind,xind)]
-    Ysub= Y[np.ix_(yind,xind)]
-    Zsub= Z[np.ix_(yind,xind)]
+    if xy1d:
+        xind = find((X >= xlow) & (X <= xhi))
+        yind = find((Y >= ylow) & (Y <= yhi))
+        Xsub = X[xind]
+        Ysub = Y[yind]
+    else:
+        xind = find((X[0,:]>=xlow)&(X[0,:]<=xhi))
+        yind = find((Y[:,0]<=yhi)&(Y[:,0]>=ylow))
+        Xsub = X[np.ix_(yind,xind)]
+        Ysub = Y[np.ix_(yind,xind)]
+        
+    Zsub = Z[np.ix_(yind,xind)]
 
     return Xsub,Ysub,Zsub
     #end griddatasubset 
@@ -727,7 +772,7 @@ def topofilesubset (inputfile,outputfile,topotypein=2,topotypeout=2,xlow=-1.e6,x
 
     else:
         if topotypein==1:
-            print("geotools.topotools.topofilesubset")
+            print("topotools.topofilesubset")
             print("ERROR: topotype=1 not supported in cheap mode")
             print("convert the input file to topotype 2 or 3")
             print("with converttopotype")
@@ -785,7 +830,7 @@ def topofilesubset (inputfile,outputfile,topotypein=2,topotypeout=2,xlow=-1.e6,x
                             fidout.write("\n")
 
             if writtenpts!=ncolsout*nrowsout:
-                print("geotools.topotools.topofilesubset")
+                print("topotools.topofilesubset")
                 print("ERROR: points written != ncols*nrows in header")
 
         fidout.close()
@@ -1002,6 +1047,7 @@ class TopoPlotData(object):
         self.imshow = True
         self.gridedges_show = True
         self.print_fname = True
+        self.latlong = True
 
     def plot(self):
         plot_topo_file(self)
@@ -1041,11 +1087,11 @@ def plot_topo_file(topoplotdata):
 
 
     if neg_cmap is None:
-        neg_cmap = colormaps.make_colormap({cmin:[0.3,0.2,0.1],
-                                                0:[0.95,0.9,0.7]})
+        neg_cmap = colormaps.make_colormap({0:[0.3,0.2,0.1],
+                                                1:[0.95,0.9,0.7]})
     if pos_cmap is None:
         pos_cmap = colormaps.make_colormap({    0:[.5,.7,0],
-                                        cmax:[.2,.5,.2]})
+                                        1:[.2,.5,.2]})
     if cmap is None:
         cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
                                            -0.00001:[0.95,0.9,0.7],
@@ -1053,50 +1099,16 @@ def plot_topo_file(topoplotdata):
                                            1:[.2,.5,.2]})
         #cmap = colormaps.make_colormap({-1:[0,0,1],0:[1,1,1],1:[1,0,0]})
 
-    if abs(topotype) == 1:
 
-        X,Y,topo = topotools.topofile2griddata(fname, topotype)
-        topo = pylab.flipud(topo)
-        Y = pylab.flipud(Y)
-        x = X[0,:]
-        y = Y[:,0]
-        xllcorner = x[0]
-        yllcorner = y[0]
-        cellsize = x[1]-x[0]
+    # read in the topofile data:
+    x,y,topo = topofile2griddata(fname, topotype, xy1d=True)
+    #topo = pylab.flipud(topo)
+    #Y = pylab.flipud(Y)
+    xllcorner = x[0]
+    yllcorner = y[0]
+    cellsize = x[1]-x[0]
 
 
-    elif abs(topotype) == 3:
-
-        file = open(fname, 'r')
-        lines = file.readlines()
-        ncols = int(lines[0].split()[0])
-        nrows = int(lines[1].split()[0])
-        xllcorner = float(lines[2].split()[0])
-        yllcorner = float(lines[3].split()[0])
-        cellsize = float(lines[4].split()[0])
-        NODATA_value = int(lines[5].split()[0])
-
-        print "Loading file ",fname
-        print "   nrows = %i, ncols = %i" % (nrows,ncols)
-        topo = pylab.loadtxt(fname,skiprows=6,dtype=float)
-        print "   Done loading"
-
-        if 0:
-            topo = []
-            for i in range(nrows):
-                topo.append(pylab.array(lines[6+i],))
-            print '+++ topo = ',topo
-            topo = pylab.array(topo)
-
-        topo = pylab.flipud(topo)
-
-        x = pylab.linspace(xllcorner, xllcorner+ncols*cellsize, ncols)
-        y = pylab.linspace(yllcorner, yllcorner+nrows*cellsize, nrows)
-        print "Shape of x, y, topo: ", x.shape, y.shape, topo.shape
-
-    else:
-        raise Exception("*** Only topotypes 1 and 3 supported so far")
-    
 
     if coarsen > 1:
         topo = topo[slice(0,nrows,coarsen), slice(0,ncols,coarsen)]
@@ -1105,41 +1117,39 @@ def plot_topo_file(topoplotdata):
         print "Shapes after coarsening: ", x.shape, y.shape, topo.shape
 
 
-    if topotype < 0:
-        topo = -topo
-
     if figno:
         pylab.figure(figno)
 
-    if topoplotdata.imshow:
-            color_norm = Normalize(cmin,cmax,clip=True)
-            xylimits = (x[0],x[-1],y[0],y[-1])
-            #pylab.imshow(pylab.flipud(topo.T), extent=xylimits, \
-            pylab.imshow(pylab.flipud(topo), extent=xylimits, \
-                    cmap=cmap, interpolation='nearest', \
-                    norm=color_norm)
-            #pylab.clim([cmin,cmax])
-            if addcolorbar:
-                pylab.colorbar()
-    else:
-        neg_topo = ma.masked_where(topo>0., topo)
-        all_masked = (ma.count(neg_topo) == 0)
-        if not all_masked:
-            pylab.pcolormesh(x,y,neg_topo,cmap=neg_cmap)
-            pylab.clim([cmin,0])
-            if addcolorbar:
-                pylab.colorbar()
-
-        pos_topo = ma.masked_where(topo<0., topo)
-        all_masked = (ma.count(pos_topo) == 0)
-        if not all_masked:
+    xylimits = (x[0],x[-1],y[0],y[-1])
+    pos_topo = ma.masked_where(topo<0., topo)
+    all_masked = (ma.count(pos_topo) == 0)
+    if not all_masked:
+        if topoplotdata.imshow:
+            pylab.imshow(pos_topo, extent=xylimits, origin='lower', \
+                    cmap=pos_cmap)
+        else:
             pylab.pcolormesh(x,y,pos_topo,cmap=pos_cmap)
-            pylab.clim([0,cmax])
-    if addcolorbar:
-        pylab.colorbar()
+        pylab.clim([0,cmax])
+        if addcolorbar:
+            pylab.colorbar()
 
-    pylab.axis('scaled')
+    neg_topo = ma.masked_where(topo>0., topo)
+    all_masked = (ma.count(neg_topo) == 0)
+    if not all_masked:
+        if topoplotdata.imshow:
+            pylab.imshow(neg_topo, extent=xylimits, origin='lower', \
+                    cmap=neg_cmap)
+        else:
+            pylab.pcolormesh(x,y,neg_topo,cmap=neg_cmap)
+        pylab.clim([cmin,0])
+        if addcolorbar:
+            pylab.colorbar()
 
+    if topoplotdata.latlong:
+        y_ave = 0.5*(y[0]+y[-1])
+        pylab.gca().set_aspect(1./np.cos(y_ave*np.pi/180.))
+    else:
+        pylab.axis('scaled')
 
     if addcontour:
         pylab.contour(x,y,topo,levels=contour_levels,colors='k')
@@ -1156,8 +1166,8 @@ def plot_topo_file(topoplotdata):
         pylab.text(xllcorner+cellsize, yllcorner+cellsize, fname2, color='m')
 
     topodata = ClawData()
-    topodata.x = x
-    topodata.y = y
-    topodata.topo = topo
+    topodata.add_attribute('x',x)
+    topodata.add_attribute('y',y)
+    topodata.add_attribute('topo',topo)
 
     return topodata
