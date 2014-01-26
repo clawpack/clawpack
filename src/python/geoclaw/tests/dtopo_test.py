@@ -203,3 +203,7 @@ def plot_dtopo1():
     dtopotools.plot_dz_colors(x,y,dz_final,cmax_dz=16,dz_interval=1)
     return dtopo
 
+if __name__=='__main__':
+
+    test_tohoku_ucsb()
+    test_dtopo1()
