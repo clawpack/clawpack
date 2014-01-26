@@ -21,6 +21,8 @@ import os
 import string
 from datatools import fixdata
 
+from data import Rearth  # radius of earth
+
 poisson = 0.25  # Poisson ratio
 
 
@@ -35,7 +37,8 @@ def okadamap(okadaparams,X,Y):
     """
 
     rad = pi/180.       # conversion factor from degrees to radians
-    rr = 6.378e6        # radius of earth
+    rr = 6.378e6       # radius of earth -- original code
+    #rr = Rearth         # should use this instead!   
     lat2meter = rr*rad  # conversion factor from degrees latitude to meters
 
     hh =  okadaparams["depth"]
@@ -244,7 +247,8 @@ def filtermask (dZ,faultparams):
 
     osixty = 0.016666666667
     rad = 0.01745329252
-    rr = 6.378e6
+    rr = 6.378e6       # original code
+    #rr = Rearth         # should use this instead!   
 
     xo = faultparams['xlower']
     yo = faultparams['ylower']

@@ -24,6 +24,8 @@ import os
 import string
 from datatools import *
 
+from data import Rearth  # radius of earth   
+
 #=================================================================================
 def builddeffile (okadaparamfile,faultparamfile,outfile):
 
@@ -182,7 +184,8 @@ def  okadamap(okadaparams,X,Y):
     zero = 0.0
     osixty = 0.016666666667
     rad = 0.01745329252
-    rr = 6.378e6
+    rr = 6.378e6       # radius of earth -- original code
+    #rr = Rearth         # should use this instead!   
 
     hh =  okadaparams["Focal_Depth"]
     l  =  okadaparams["Fault_Length"]
@@ -305,7 +308,8 @@ def filtermask (dZ,faultparams):
 
     osixty = 0.016666666667
     rad = 0.01745329252
-    rr = 6.378e6
+    rr = 6.378e6       # radius of earth -- original code
+    #rr = Rearth         # should use this instead!   
 
     xo = faultparams['xlower']
     yo = faultparams['ylower']
