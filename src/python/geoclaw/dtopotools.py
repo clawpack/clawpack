@@ -526,36 +526,6 @@ def write_dz_witht(fname,X,Y,dZ,times):
     print "Created ",fname
 
 
-def test_make_dz_subfault_1():
-    fname_subfaults = 'testdata/subfault-1.txt'
-    fname_dtopo = 'testdata/subfault-1.tt1'
-    dtopo_params = {}
-    dtopo_params['mx'] = 101
-    dtopo_params['my'] = 101
-    dtopo_params['xlower'] = -1
-    dtopo_params['xupper'] = 3
-    dtopo_params['ylower'] = -1
-    dtopo_params['yupper'] = 3
-    subfaults = read_subfault_model_ucsb(fname_subfaults)
-    x,y,dz = make_okada_dz(subfaults, dtopo_params)
-    write_dz(fname_dtopo, x,y,dz)
-    return x,y,dz,subfaults
-
-def test_make_dz_subdivided_1():
-    fname_subfaults = 'subdividedfault.csv'
-    fname_dtopo = 'subdividedfault.tt1'
-    dtopo_params = {}
-    dtopo_params['mx'] = 101
-    dtopo_params['my'] = 101
-    dtopo_params['xlower'] = -2
-    dtopo_params['xupper'] = 2
-    dtopo_params['ylower'] = 48
-    dtopo_params['yupper'] = 52
-    subfaults = read_subfault_model_csv(fname_subfaults)
-    x,y,dz = make_okada_dz(subfaults, dtopo_params)
-    write_dz(fname_dtopo, x,y,dz)
-    return x,y,dz,subfaults
-
 def read_dtopo_old(fname, deftype=None, only_last=True):
     """
     Read in a deformation file and return arrays X,Y,dZ.
@@ -729,12 +699,12 @@ def plot_subfaults(subfaults, plot_centerline=False, slip_color=False, \
             if test_random:
                 subfault['rake'] = 90. + 30.*(rand()-0.5)  # for testing
             tau = (subfault['rake'] - 90) * pi/180.
-            plot([x_centroid],[y_centroid],'go',label="Centroid")
+            plot([x_centroid],[y_centroid],'go',markersize=5,label="Centroid")
             dxr = x_top - x_centroid
             dyr = y_top - y_centroid
             x_rake = x_centroid + cos(tau)*dxr - sin(tau)*dyr
             y_rake = y_centroid + sin(tau)*dxr + cos(tau)*dyr
-            plot([x_rake,x_centroid],[y_rake,y_centroid],'g-',linewidth=2)
+            plot([x_rake,x_centroid],[y_rake,y_centroid],'g-',linewidth=1)
         if slip_color:
             slip = subfault['slip']
             #c = cmap_slip(0.5*(cmax_slip + slip)/cmax_slip)
