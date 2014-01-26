@@ -13,6 +13,8 @@ on or with them including reading, writing, transformations and plotting.
 
 """
 
+import os
+
 import numpy
 
 import matplotlib.pyplot as plt
@@ -156,7 +158,7 @@ class Topography(object):
         return self._delta
 
 
-    def __init__(self, path, topo_type=3, unstructured=False):
+    def __init__(self, path, topo_type=None, unstructured=False):
         r"""
         Topography initialization routine
         
@@ -166,8 +168,20 @@ class Topography(object):
         super(Topography, self).__init__()
 
         self.path = path
-        self.topo_type = topo_type
+        if topo_type is not None:
+            self.topo_type = topo_type
+        else:
+            # Try to look at suffix for type
+            extension = os.path.splitext(path)[1][1:]
+            if extension[:2] == "tt":
+                self.topo_type = int(extension[2])
+            elif extension == 'xyz':
+                self.topo_type = 1
+            else:
+                # Default to 3
+                self.topo_type = 3
         self.unstructured = False
+        self.no_data_value = None
 
         # Data storage for only calculating array shapes when needed
         self._z = None
@@ -227,24 +241,22 @@ class Topography(object):
         else:
             # Data is in one of the GeoClaw supported formats
             if self.topo_type == 1:
-                pass
-            if self.topo_type == 2 or self.topo_type == 3:
-
+                raise NotImplemented("Topography type 1 not implemented yet.")
+            elif self.topo_type == 2 or self.topo_type == 3:
                 # Get header information
-                N, extent, delta, no_data_value = self.read_header()
-                self._x = numpy.linspace(extent[0],extent[1],N[0])
-                self._y = numpy.linspace(extent[3],extent[2],N[1])
+                N = self.read_header()
+                self._x = numpy.linspace(self.extent[0], self.extent[1], N[0])
+                self._y = numpy.linspace(self.extent[3], self.extent[2], N[1])
 
                 if self.topo_type == 2:
-                    raise NotImplemented("Topography type 2 unsupported" + \
-                                         " right now.")
+                    # Data is read in as a single column, reshape it
+                    self._Z = numpy.loadtxt(self.path, skiprows=6).reshape(N[1],N[0])
                 elif self.topo_type == 3:
-        
                     # Data is read in starting at the top right corner
-                    self._Z = numpy.loadtxt(self.path, skiprows=6)
+                    self._Z = numpy.flipud(numpy.loadtxt(self.path, skiprows=6))
     
                 if mask:
-                    self._Z = numpy.ma.masked_values(self._Z, no_data_value, copy=False)
+                    self._Z = numpy.ma.masked_values(self._Z, self.no_data_value, copy=False)
 
 
     def read_header(self):
@@ -253,28 +265,27 @@ class Topography(object):
         If a value returns numpy.nan then the value was not retrievable.
         """
 
-        if self.topo_type != 2 or self.topo_type != 3:
+        if self.topo_type != 2 and self.topo_type != 3:
             raise ValueError("The topography type must either be 2 or 3 to" + \
                              " read in a header.")
 
         # Default values to track errors
         num_cells = [numpy.nan,numpy.nan]
-        extent = [numpy.nan,numpy.nan,numpy.nan,numpy.nan]
-        delta = numpy.nan
-        no_data_value = numpy.nan
+        self._extent = [numpy.nan,numpy.nan,numpy.nan,numpy.nan]
+        self._delta = numpy.nan
 
         with open(self.path, 'r') as bathy_file:
             num_cells[0] = int(bathy_file.readline().split()[0])
             num_cells[1] = int(bathy_file.readline().split()[0])
-            extent[0] = float(bathy_file.readline().split()[0])
-            extent[2] = float(bathy_file.readline().split()[0])
-            delta = float(bathy_file.readline().split()[0])
-            no_data_value = float(bathy_file.readline().split()[0])
+            self._extent[0] = float(bathy_file.readline().split()[0])
+            self._extent[2] = float(bathy_file.readline().split()[0])
+            self._delta = float(bathy_file.readline().split()[0])
+            self.no_data_value = float(bathy_file.readline().split()[0])
             
-            extent[1] = extent[0] + num_cells[0] * delta
-            extent[3] = extent[2] + num_cells[1] * delta
+            self._extent[1] = self._extent[0] + num_cells[0] * self.delta
+            self._extent[3] = self._extent[2] + num_cells[1] * self.delta
 
-        return num_cells, extent, delta, no_data_value
+        return num_cells
 
     
     def generate_2d_depths(self, mask=True):
@@ -323,8 +334,12 @@ class Topography(object):
                 # Try to read the data to get these, may not have been done yet
                 self.read(mask=mask)
 
-            # Generate arrays
-            self._X, self._Y = numpy.meshgrid(self._x, self._y)
+            if self.topo_type == 1:
+                raise NotImplemented("Topography type 1 not implemented yet.")
+            elif self.topo_type == 2 or self.topo_type == 3:
+                # Generate arrays
+                self._X, self._Y = numpy.meshgrid(self._x, self._y)
+
             
             # If masking has been requested try to get the mask first from 
             # self._Z and then self._z
@@ -431,8 +446,8 @@ class Topography(object):
                 # Write out header
                 outfile.write('%s ncols\n' % self.Z.shape[1])
                 outfile.write('%s nrows\n' % self.Z.shape[0])
-                outfile.write('%s xll\n' % self.x[0])
-                outfile.write('%s yll\n' % self.y[0])
+                outfile.write('%s xll\n' % self.extent[0])
+                outfile.write('%s yll\n' % self.extent[2])
                 outfile.write('%s cellsize\n' % self.delta)
                 outfile.write('%s nodata_value\n' % no_data_value)
 
@@ -568,8 +583,3 @@ class TimeDependentTography(Topography):
         """
 
         super(TimeDependentTography, self).__init__()
-
-
-
-if __name__ == "__main__":
-    pass
