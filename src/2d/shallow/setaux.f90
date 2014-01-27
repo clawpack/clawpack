@@ -138,8 +138,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     if (.false.) then
         print *,'Writing out aux arrays'
         print *,' '
-        write(23,230)  mx,my,dx,dy
- 230    format('==> mx, my:  ',2i5,'  dx, dy:',2f10.6)
+        write(23,230)  mbc,mx,my,dx,dy
+ 230    format('==> mbc, mx, my:  ',3i5,'  dx, dy:',2f10.6)
         do j=1-mbc,my+mbc
             do i=1-mbc,mx+mbc
                 x = xlow + (i-0.5d0)*dx
