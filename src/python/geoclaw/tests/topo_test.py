@@ -41,7 +41,7 @@ def test1():
     plt.title('Bathymetry / topography')
     fname = 'topotest1.png'
     plt.savefig(fname)
-    print 'Created ',fname
+    # print 'Created ',fname
 
 
 def topo1(x,y):
@@ -83,7 +83,7 @@ def maketopo1b(path):
                           nxpoints,nypoints)
 
 
-def test_topography_object():
+def test_topography_object(plot=False):
     """
     Test the Topography object's functionality
     """
@@ -91,65 +91,50 @@ def test_topography_object():
     try:
         base_path = tempfile.mkdtemp()
 
-        # Test basic reading of topo type 2
-        topo_files = []
-        paths = [os.path.join(base_path,'bowl.tt2'), 
-                 os.path.join(base_path,'hill.tt2')]
-        maketopo1a(paths[0])
-        topo_files.append(topo.Topography(paths[0]))
-        maketopo1b(paths[1])
-        topo_files.append(topo.Topography(paths[1]))
+        # Create initial test bathymetry
+        maketopo1a(os.path.join(base_path, 'bowl.tt2'))
+        maketopo1b(os.path.join(base_path, 'hill.tt2'))
 
-        fig = plt.figure()
+        hill_topo = []
+        bowl_topo = []
+        topo_types = [2,3,1,2]
+        for (n, topo_type) in enumerate(topo_types):
+            bowl_path = os.path.join(base_path, 'bowl.tt%s' % topo_type)
+            hill_path = os.path.join(base_path, 'hill.tt%s' % topo_type)
 
-        axes = fig.add_subplot(1,1,1)
-        topo_files[1].plot(axes=axes, limits=[-2000,0])
-        topo_files[0].plot(axes=axes, limits=[-2000,0])
-        fig.suptitle('Bathymetry / topography')
-        plt.savefig('topotest2.png')
+            bowl_topo.append(topo.Topography(bowl_path))
+            hill_topo.append(topo.Topography(hill_path))
 
-        paths[0] = os.path.join(base_path,'bowl.tt3')
-        paths[1] = os.path.join(base_path,'hill.tt3')
-        topo_files[0].write(paths[0])
-        topo_files[1].write(paths[1])
+            if plot:
+                fig = plt.figure()
+                axes = fig.add_subplot(1,1,1)
+                hill_topo[-1].plot(axes=axes, limits=[-2000,0])
+                bowl_topo[-1].plot(axes=axes, limits=[-2000,0])
+                fig.suptitle('Bathymetry / topography, topo type = %s' % topo_type)
+                plt.savefig('topotest%s.png' % (n + 2))
 
-        del topo_files
+            print n, topo_type
+            if n + 1 != len(topo_types):
+                bowl_path = os.path.join(base_path, 'bowl.tt%s' % topo_types[n+1])
+                hill_path = os.path.join(base_path, 'hill.tt%s' % topo_types[n+1])
+                bowl_topo[-1].write(bowl_path)
+                hill_topo[-1].write(hill_path)
 
-        # Test topo type 3
-        topo_files = []
-        topo_files.append(topo.Topography(paths[0]))
-        topo_files.append(topo.Topography(paths[1]))
-
-
-        fig = plt.figure()
-
-        axes = fig.add_subplot(1,1,1)
-        topo_files[1].plot(axes=axes, limits=[-2000,0])
-        topo_files[0].plot(axes=axes, limits=[-2000,0])
-        fig.suptitle('Bathymetry / topography')
-        plt.savefig('topotest3.png')
-
-        paths[0] = os.path.join(base_path,'bowl.tt1')
-        paths[1] = os.path.join(base_path,'hill.tt1')
-        topo_files[0].write(paths[0])
-        topo_files[1].write(paths[1])
-
-        del topo_files
-
-        # Test topo type 1
-        topo_files = []
-        topo_files.append(topo.Topography(paths[0]))
-        topo_files.append(topo.Topography(paths[1]))
-
-        fig = plt.figure()
-
-        axes = fig.add_subplot(1,1,1)
-        topo_files[1].plot(axes=axes, limits=[-2000,0])
-        topo_files[0].plot(axes=axes, limits=[-2000,0])
-        fig.suptitle('Bathymetry / topography')
-        plt.savefig('topotest4.png')
-
-        del topo_files
+        # Check data
+        for (n,topo_type) in enumerate(topo_types):
+            for (m,topo_type) in enumerate(topo_types):
+                assert np.all(bowl_topo[n].X == bowl_topo[m].X), \
+                       "bowl[%s].X != bowl[%s].X" % (n,m)
+                assert np.all(bowl_topo[n].Y == bowl_topo[m].Y), \
+                       "bowl[%s].Y != bowl[%s].Y" % (n,m)
+                assert np.all(bowl_topo[n].Z == bowl_topo[m].Z), \
+                       "bowl[%s].Z != bowl[%s].Z" % (n,m)
+                assert np.all(hill_topo[n].X == hill_topo[m].X), \
+                       "hill[%s].X != hill[%s].X" % (n,m)
+                assert np.all(hill_topo[n].Y == hill_topo[m].Y), \
+                       "hill[%s].Y != hill[%s].Y" % (n,m)
+                assert np.all(hill_topo[n].Z == hill_topo[m].Z), \
+                       "hill[%s].Z != hill[%s].Z" % (n,m)
 
     finally:
         paths = glob.glob(os.path.join(base_path,"*"))
@@ -164,5 +149,5 @@ if __name__=='__main__':
     print "Done performing procedural test."
 
     print "Starting object test..."
-    test_topography_object()
+    test_topography_object(plot=True)
     print "Done performing object test..."

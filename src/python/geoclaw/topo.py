@@ -7,8 +7,8 @@ dependent topography files (dtopo) along with various operations one can perform
 on or with them including reading, writing, transformations and plotting.
 
 :TODO:
- - Implement tests (no testing really at all right now)
- - Implement topotype == 2
+ - Tests are implemented but not passing, should we expect the arrays to be
+   identical?
  - Implement subclass TimeDependentTopography
 
 """
@@ -196,6 +196,79 @@ class Topography(object):
         self.coordinate_transform = lambda x,y: (x,y)
 
 
+    def generate_2d_depths(self, mask=True):
+        r"""Generate a 2d array of the depths"""
+
+        # Check to see if we need to generate these
+        if self._Z is None:
+
+            if self.unstructured:
+                # Really no way to do this here with performing a projection via
+                # extract.  Note that if the projection is performed these
+                # arrays are already stored in self._X and self._Y
+                raise ValueError("Unstructured data does not allow for use of" \
+                                 + " 2d arrays, first project the data and" \
+                                 + " try to perform this operation again.") 
+
+            if self._z is None:
+            # Try to read the data, may not have done this yet
+                self.read(mask=mask)
+                if self._Z is not None:
+                    # We are done, the read function did our work
+                    return
+
+            # See if self._X and self._Y are already computed and use them if
+            # available, otherwise just use self._x and self._y
+            if self._X is not None and self._Y is not None:
+                new_shape = self._X.shape
+            else:
+                new_shape = (self._x.shape[0], self._y.shape[0])
+            # Reshape, note that the mask follows along with the new array
+            self._Z = numpy.reshape(self._z, new_shape)
+
+
+    def generate_2d_coordinates(self, mask=True):
+        r"""Generate 2d coordinate arrays."""
+
+        # Check to see if we need to generate these
+        if self._X is None and self._Y is None:
+
+            if self.unstructured:
+                # Really no way to do this here with performing a projection via
+                # extract.  Note that if the projection is performed these
+                # arrays are already stored in self._X and self._Y
+                raise ValueError("Unstructured data does not allow for use of" \
+                                 + " 2d coordinates, first project the data" \
+                                 + " and try to perform this operation again.")
+
+            if self.topo_type == 1:
+                # Reading this topo_type should produce the X and Y arrays
+                self.read(mask=mask)
+            elif self.topo_type == 2 or self.topo_type == 3:
+                if self._x is None or self._y is None:
+                    # Try to read the data to get these, may not have been done yet
+                    self.read(mask=mask)
+                # Generate arrays
+                self._X, self._Y = numpy.meshgrid(self._x, self._y)
+
+            
+            # If masking has been requested try to get the mask first from 
+            # self._Z and then self._z
+            if mask:
+                if self._Z is None:
+                    # Check to see if we really need to do anything here
+                    if isinstance(self._z, numpy.ma.MaskedArray):
+                        # Try to create self._Z
+                        self.generate_2d_depths(mask=mask)
+
+                if isinstance(self._Z, numpy.ma.MaskedArray):
+                    # Use Z's mask for the X and Y coordinates
+                    self._X = numpy.ma.MaskedArray(self._X, mask=self._Z.mask, 
+                                                                     copy=False)
+                    self._Y = numpy.ma.MaskedArray(self._Y, mask=self._Z.mask, 
+                                                                     copy=False)
+
+
     def read(self, mask=True, filter_region=None):
         r"""
         Read in the data from the object's *path* attribute
@@ -241,7 +314,28 @@ class Topography(object):
         else:
             # Data is in one of the GeoClaw supported formats
             if self.topo_type == 1:
-                raise NotImplemented("Topography type 1 not implemented yet.")
+                data = numpy.loadtxt(self.path)
+                N = [0,0]
+                y0 = data[0,1]
+                for (n, y) in enumerate(data[1:,1]):
+                    if y != y0:
+                        N[1] = n + 1
+                        break
+                N[0] = data.shape[0] / N[1]
+
+                self._X = data[:,0].reshape(N)
+                self._x = data[:N[0],0]
+                self._Y = data[:,1].reshape(N)
+                self._y = data[::N[0],1]
+                self._Z = data[:,2].reshape(N)
+                self._delta = self.X[0,1] - self.X[0,0]
+                # import pdb; pdb.set_trace()
+                # delta_y = self.Y[1,0] - self.Y[0,0]
+                # assert self.delta == delta_y, \
+                #        ValueError("The calculated value of delta is " + \
+                #                   "not uniform, %s != %s." \
+                #                   % (self.delta, delta_y))
+
             elif self.topo_type == 2 or self.topo_type == 3:
                 # Get header information
                 N = self.read_header()
@@ -265,97 +359,86 @@ class Topography(object):
         If a value returns numpy.nan then the value was not retrievable.
         """
 
-        if self.topo_type != 2 and self.topo_type != 3:
-            raise ValueError("The topography type must either be 2 or 3 to" + \
-                             " read in a header.")
+        if self.topo_type == 2 or self.topo_type == 3:
 
-        # Default values to track errors
-        num_cells = [numpy.nan,numpy.nan]
-        self._extent = [numpy.nan,numpy.nan,numpy.nan,numpy.nan]
-        self._delta = numpy.nan
+            # Default values to track errors
+            num_cells = [numpy.nan,numpy.nan]
+            self._extent = [numpy.nan,numpy.nan,numpy.nan,numpy.nan]
+            self._delta = numpy.nan
 
-        with open(self.path, 'r') as bathy_file:
-            num_cells[0] = int(bathy_file.readline().split()[0])
-            num_cells[1] = int(bathy_file.readline().split()[0])
-            self._extent[0] = float(bathy_file.readline().split()[0])
-            self._extent[2] = float(bathy_file.readline().split()[0])
-            self._delta = float(bathy_file.readline().split()[0])
-            self.no_data_value = float(bathy_file.readline().split()[0])
-            
-            self._extent[1] = self._extent[0] + num_cells[0] * self.delta
-            self._extent[3] = self._extent[2] + num_cells[1] * self.delta
+            with open(self.path, 'r') as bathy_file:
+                num_cells[0] = int(bathy_file.readline().split()[0])
+                num_cells[1] = int(bathy_file.readline().split()[0])
+                self._extent[0] = float(bathy_file.readline().split()[0])
+                self._extent[2] = float(bathy_file.readline().split()[0])
+                self._delta = float(bathy_file.readline().split()[0])
+                self.no_data_value = float(bathy_file.readline().split()[0])
+                
+                self._extent[1] = self._extent[0] + num_cells[0] * self.delta
+                self._extent[3] = self._extent[2] + num_cells[1] * self.delta
 
         return num_cells
 
     
-    def generate_2d_depths(self, mask=True):
-        r"""Generate a 2d array of the depths"""
+    def write(self, path, no_data_value=999999, topotype=None):
+        r"""
+        Write out a topography file to path of type topotype
 
-        # Check to see if we need to generate these
-        if self._Z is None:
+        Writes out a bathymetry file of topo type specified with *topotype* or
+        inferred from the output file's extension, defaulting to 3, to path from
+        data in Z.  The rest of the arguments are used to write the header data.
+        """
 
-            if self.unstructured:
-                # Really no way to do this here with performing a projection via
-                # extract.  Note that if the projection is performed these
-                # arrays are already stored in self._X and self._Y
-                raise ValueError("Unstructured data does not allow for use of" \
-                                 + " 2d arrays, first project the data and" \
-                                 + " try to perform this operation again.") 
-
-            if self._z is None:
-            # Try to read the data, may not have done this yet
-                self.read(mask=mask)
-
-            # See if self._X and self._Y are already computed and use them if
-            # available, otherwise just use self._x and self._y
-            if self._X is not None and self._Y is not None:
-                new_shape = self._X.shape
+        # Determine topo type if not specified
+        if topotype is None:
+            # Try to look at suffix for type
+            extension = os.path.splitext(path)[1][1:]
+            if extension[:2] == "tt":
+                topotype = int(extension[2])
+            elif extension == 'xyz':
+                topotype = 1
             else:
-                new_shape = (self._x.shape[0], self._y.shape[0])
-            # Reshape, note that the mask follows along with the new array
-            self._Z = numpy.reshape(self._z, new_shape)
+                # Default to 3
+                topotype = 3
 
-
-    def generate_2d_coordinates(self, mask=True):
-        r"""Generate 2d coordinate arrays."""
-
-        # Check to see if we need to generate these
-        if self._X is None and self._Y is None:
-
+        with open(path,'w') as outfile:
             if self.unstructured:
-                # Really no way to do this here with performing a projection via
-                # extract.  Note that if the projection is performed these
-                # arrays are already stored in self._X and self._Y
-                raise ValueError("Unstructured data does not allow for use of" \
-                                 + " 2d coordinates, first project the data" \
-                                 + " and try to perform this operation again.")
+                for (i, depth) in enumerate(self.z):
+                    outfile.write("%s %s %s\n" % (self.x[i], self.y[i], depth))
 
-            if self._x is None or self._y is None:
-                # Try to read the data to get these, may not have been done yet
-                self.read(mask=mask)
+            elif topotype == 1:
+                # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
+                # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
+                for (j, latitude) in enumerate(self.y):
+                    for (i, longitude) in enumerate(self.x):
+                        outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
 
-            if self.topo_type == 1:
-                raise NotImplemented("Topography type 1 not implemented yet.")
-            elif self.topo_type == 2 or self.topo_type == 3:
-                # Generate arrays
-                self._X, self._Y = numpy.meshgrid(self._x, self._y)
+            elif topotype == 2 or topotype == 3:
 
-            
-            # If masking has been requested try to get the mask first from 
-            # self._Z and then self._z
-            if mask:
-                if self._Z is None:
-                    # Check to see if we really need to do anything here
-                    if isinstance(self._z, numpy.ma.MaskedArray):
-                        # Try to create self._Z
-                        self.generate_2d_depths(mask=mask)
+                # Write out header
+                outfile.write('%s ncols\n' % self.Z.shape[1])
+                outfile.write('%s nrows\n' % self.Z.shape[0])
+                outfile.write('%s xll\n' % self.extent[0])
+                outfile.write('%s yll\n' % self.extent[2])
+                outfile.write('%s cellsize\n' % self.delta)
+                outfile.write('%s nodata_value\n' % no_data_value)
 
-                if isinstance(self._Z, numpy.ma.MaskedArray):
-                    # Use Z's mask for the X and Y coordinates
-                    self._X = numpy.ma.MaskedArray(self._X, mask=self._Z.mask, 
-                                                                     copy=False)
-                    self._Y = numpy.ma.MaskedArray(self._Y, mask=self._Z.mask, 
-                                                                     copy=False)
+                # Write out bathy data
+                # We flip the output data here since we write from the upper left corner
+                # to lower right and the data is ordered from lower left to upper right
+                if topotype == 2:
+                    for i in xrange(self.Z.shape[0]):
+                        for j in xrange(self.Z.shape[1]):
+                            outfile.write("%s\n" % self.Z[i,j])
+                elif topotype == 3:
+                    Z_flipped = numpy.flipud(self.Z)
+                    for i in xrange(self.Z.shape[0]):
+                        for j in xrange(self.Z.shape[1]):
+                            outfile.write("%s   " % (Z_flipped[i,j]))
+                        outfile.write("\n")
+
+            else:
+                raise NotImplemented("Output type %s not implemented." % topotype)
 
 
     def plot(self, axes=None, region_extent=None, contours=None, 
@@ -416,52 +499,6 @@ class Topography(object):
         axes.set_ylim(region_extent[2:])
 
         return axes
-
-
-    def write(self, path, no_data_value=999999, topotype=3):
-        r"""
-        Write out a topography file to path of type topotype
-
-        Writes out a bathymetry file of type 3 to path from data in Z.  The rest of
-        the arguments are used to write the header data.
-        """
-
-        with open(path,'w') as outfile:
-            if self.unstructured:
-                for (i, depth) in enumerate(self.z):
-                    outfile.write("%s %s %s\n" % (self.x[i], self.y[i], depth))
-
-            elif topotype == 1:
-                # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
-                # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
-                for (j, latitude) in enumerate(self.y):
-                    for (i, longitude) in enumerate(self.x):
-                        outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[i,j]))
-
-            elif topotype == 2 or topotype == 3:
-
-                if topotype == 2:
-                    raise NotImplemented("Writing topo type = 2 is not implemented.")
-
-                # Write out header
-                outfile.write('%s ncols\n' % self.Z.shape[1])
-                outfile.write('%s nrows\n' % self.Z.shape[0])
-                outfile.write('%s xll\n' % self.extent[0])
-                outfile.write('%s yll\n' % self.extent[2])
-                outfile.write('%s cellsize\n' % self.delta)
-                outfile.write('%s nodata_value\n' % no_data_value)
-
-                # Write out bathy data
-                # We flip the output data here since we write from the upper left corner
-                # to lower right and the data is ordered from lower left to upper right
-                Z_flipped = numpy.flipud(self.Z)
-                for i in xrange(self.Z.shape[0]):
-                    for j in xrange(self.Z.shape[1]):
-                        outfile.write("%s   " % (Z_flipped[i,j]))
-                    outfile.write("\n")
-
-            else:
-                raise NotImplemented("Output type %s not implemented." % topotype)
 
 
     def project_unstructured(self, X_fill, Y_fill, Z_fill, extent=None,
