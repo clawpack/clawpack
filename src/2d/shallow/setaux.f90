@@ -28,11 +28,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     integer :: i,j,m, iint,jint
     real(kind=8) :: x,y,xm,ym,xp,yp,topo_integral
     character(len=*), parameter :: aux_format = "(2i4,4d15.3)"
-    real(kind=8) :: xup, yup
-
-    if (mx<0) then
-        xup = 1.d0/(mx+1)
-        endif
 
     ! Lat-Long coordinate system in use, check input variables
     if (coordinate_system == 2) then
@@ -102,7 +97,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 iint = min(max(i,1),mx)  ! adjacent interior cell
                 jint = 1                 ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
-                write(23,*) '=1= ',i,j,iint,jint
             enddo
         endif
     enddo
@@ -114,7 +108,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 iint = min(max(i,1),mx)  ! adjacent interior cell
                 jint = my                ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
-                write(23,*) '=2= ',i,j,iint,jint
             enddo
         endif
     enddo
@@ -126,7 +119,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 iint = 1                 ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
-                write(23,*) '=3= ',i,j,iint,jint
             enddo
         endif
     enddo
@@ -138,22 +130,15 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 iint = mx                ! adjacent interior cell
                 jint = min(max(j,1),my)  ! adjacent interior cell
                 aux(1,i,j) = aux(1,iint,jint)
-                write(23,*) '=4= ',i,j,iint,jint
             enddo
         endif
     enddo
 
     ! Output for debugging to fort.23
-    if (.true.) then
+    if (.false.) then
         print *,'Writing out aux arrays'
         print *,' '
         write(23,230)  mbc,mx,my,dx,dy
-        write(23,*) '= xlow, ylow: ',  xlow,ylow
-        write(23,*) '= xlower, ylower: ',  xlower,ylower
-        xup = xlow + mx*dx
-        yup = ylow + my*dy
-        write(23,*) '= xup, yup: ',  xup,yup
-        write(23,*) '= xupper, yupper: ',  xupper,yupper
  230    format('==> mbc, mx, my:  ',3i5,'  dx, dy:',2f10.6)
         do j=1-mbc,my+mbc
             do i=1-mbc,mx+mbc
