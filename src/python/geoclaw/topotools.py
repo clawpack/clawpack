@@ -42,7 +42,6 @@ import os
 import string
 from datatools import *
 from clawpack.visclaw import colormaps
-from matplotlib.colors import Normalize
 from numpy import ma
 
 
@@ -70,16 +69,41 @@ def dms2decimal(d,m,s,coord='N'):
     return deg
 
 #==========================================================================
+def dist_latlong2meters(dx, dy, latitude=0.0):
+    """Convert distance from degrees longitude-latitude to meters.
 
-def latlong_resolution(dx,dy,latitude):
+    Takes the distance described by *dx* and *dy* in degrees and converts it into
+    distances in meters.
+
+    returns (float, float) 
+
     """
-    At a given latitude (in degrees), 
-    convert dx and dy measured in degrees to distances in meters.
-    """
-    dym = dy*np.pi*Rearth / 180.
-    dxm = dym * np.cos(latitude*np.pi/180.)
+    # dym = dy*np.pi*Rearth / 180.
+    # dxm = dym * np.cos(latitude*np.pi/180.)
+    dym = Rearth * np.pi / 180.0 * dy
+    dxm = Rearth * np.cos(latitude * np.pi / 180.0) * dx * np.pi / 180.0
+
+
+
     return dxm,dym
-    
+
+
+def dist_meters2latlong(dx, dy, latitude=0.0, equitorial_tolerance=1e-3):
+    """Convert distance from meters to degrees of longitude-latitude.
+
+    Takes the distance described by *dx* and *dy* in meters and converts it into
+    distances in the longitudinal and latitudinal directions in degrees.  
+
+    returns (float, float)
+
+    """
+
+    # dxd = np.arccos(dx) * 180.0 / (latitude * np.pi)
+    # dyd = dy * 180.0 / (np.pi * Rearth)
+    dxd = dx * 180.0 / (Rearth * np.pi * np.cos(latitude * np.pi / 180.0))
+    dyd = dy * 180.0 / (Rearth * np.pi)
+
+    return dxd, dyd
 
 #==========================================================================
 
