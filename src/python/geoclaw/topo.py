@@ -664,73 +664,6 @@ class Topography(object):
         self._delta = delta
         self.unstructured = False
 
-# Old project
-# def project(x, y, z, X_fill, Y_fill, Z_fill, extent=None,
-#                                                     method='nearest', 
-#                                                     delta_limit=20.0, 
-#                                                     no_data_value=-9999,
-#                                                     buffer_length=100.0,
-#                                                     proximity_radius=100.0):
-        
-#     # Calculate new grid coordinates
-#     if extent is None:
-#         buffer_degrees = latlong_resolution(buffer_length, 0.0, 0.5 * (y[0] + y[-1]))
-#         extent = [numpy.min(x) - buffer_degrees, numpy.max(x) + buffer_degrees, 
-#                   numpy.min(y) - buffer_degrees, numpy.max(y) + buffer_degrees]
-#     delta = max( min(numpy.min(numpy.abs(x[1:] - x[:-1])), 
-#                      numpy.min(numpy.abs(y[1:] - y[:-1])) ), 
-#                  latlong_resolution(delta_limit, 0.0, 0.5 * (y[0] + y[-1])) )
-#     N = ( numpy.ceil((extent[1] - extent[0]) / delta),
-#           numpy.ceil((extent[3] - extent[2]) / delta) )
-#     assert numpy.all(N[:] < numpy.ones((2)) * resolution_limit), \
-#            ValueError("Calculated resolution too high, N=%s!" % str(N))
-#     X, Y = numpy.meshgrid( numpy.linspace(extent[0], extent[1], N[0]),
-#                            numpy.linspace(extent[2], extent[3], N[1]) )
-#     Z = numpy.empty(N)
-
-#     # Create extent mask
-#     extent_mask = extent[0] > X_fill
-#     extent_mask = numpy.logical_or(extent_mask,extent[1] < X_fill)
-#     extent_mask = numpy.logical_or(extent_mask,extent[2] > Y_fill)
-#     extent_mask = numpy.logical_or(extent_mask,extent[3] < Y_fill)
-    
-#     # Create fill no-data value mask
-#     no_data_mask = numpy.logical_or(extent_mask, Z_fill == no_data_value)
-
-#     all_mask = numpy.logical_or(extent_mask, no_data_mask)
-
-#     # Create proximity mask
-#     proximity_mask = numpy.ndarray(X_fill.shape, dtype=bool)
-#     proximity_radius_deg = latlong_resolution(proximity_radius, 0.0, 0.5 * (y[0] + y[-1]))
-    
-#     indices = (~all_mask).nonzero()
-#     count = 0
-#     for n in xrange(indices[0].shape[0]):
-#         i = indices[0][n]
-#         j = indices[1][n]
-#         all_mask[i,j] = numpy.any(numpy.sqrt( (x - X_fill[i,j])**2 + (y - Y_fill[i,j])**2 ) < proximity_radius_deg)
-#         count += int(all_mask[i,j])
-#     print "Masked %s/%s points." % (count, indices[0].shape[0])
-
-#     X_fill_masked = numpy.ma.masked_where(all_mask, X_fill)
-#     Y_fill_masked = numpy.ma.masked_where(all_mask, Y_fill)
-#     Z_fill_masked = numpy.ma.masked_where(all_mask, Z_fill)    
-
-#     # Stick both the input data and fill data into arrays
-#     fill_points = numpy.column_stack((X_fill_masked.compressed(),
-#                                    Y_fill_masked.compressed()))
-#     points = numpy.concatenate((numpy.array([x,y]).transpose(), fill_points))
-#     values = numpy.concatenate((z, Z_fill_masked.compressed()))
-
-#     # Use nearest-neighbor interpolation
-#     Z = interpolate.griddata(points, values, (X,Y), method=method)
-
-#     return X, Y, Z, delta, extent
-
-
-
-
-
 
     def in_poly(self, polygon):
         r"""Mask points (x,y) that are not in the specified polygon.
@@ -755,8 +688,8 @@ class Topography(object):
         TOLERANCE = 1e-6
 
         # Flatten the input arrays to make this a bit easier
-        x = X.flatten()
-        y = Y.flatten()
+        x = self.X.flatten()
+        y = self.Y.flatten()
 
         # Construct edges
         edges = []
@@ -805,3 +738,38 @@ class TimeDependentTography(Topography):
         """
 
         super(TimeDependentTography, self).__init__()
+
+        self.t = numpy.array([0.0, 1.0])
+
+
+    def write(self, path, topo_type=1):
+        r"""Write out a dtopo file to *path*.
+
+        input
+        -----
+         - *path* (path) - Path to the output file to written to.
+         - *topo_type* (int) - Type of topography file to write out.  Default is 1.
+
+        """
+
+        # Temporary catch for non implemented topo_type input
+        if topo_type != 1:
+            raise NotImplementedError("Topography types 2 and 3 are not yet supported.")
+
+        # Construct each interpolating function and evaluate at new grid
+        with open(self.path, 'w') as outfile:
+
+            if topo_type == 1:
+                # Topography file with 4 columns, t, x, y, dz written from the upper
+                # left corner of the region
+                Y_flipped = numpy.flipud(Y)
+                for n in xrange(t.shape[0]):
+                    Z_flipped = numpy.flipud(Z[:,:,n])
+                    for j in xrange(Y.shape[0]):
+                        for i in xrange(X.shape[1]):
+                            outfile.write("%s %s %s %s\n" % (t[n], X[j,i], Y_flipped[j,i], Z_flipped[j,i]))
+        
+            elif topo_type == 2 or topo_type == 3:
+                raise NotImplementedError("Topography types 2 and 3 are not yet supported.")
+            else:
+                raise ValueError("Only topography types 1, 2, and 3 are supported.")
