@@ -414,10 +414,10 @@ class Topography(object):
 
         return num_cells
 
-    def write(self, path, no_data_value=None, topotype=None, masked=True):
-        r"""Write out a topography file to path of type topotype.
+    def write(self, path, no_data_value=None, topo_type=None, masked=True):
+        r"""Write out a topography file to path of type *topo_type*.
 
-        Writes out a bathymetry file of topo type specified with *topotype* or
+        Writes out a bathymetry file of topo type specified with *topo_type* or
         inferred from the output file's extension, defaulting to 3, to path
         from data in Z.  The rest of the arguments are used to write the header
         data.
@@ -425,16 +425,16 @@ class Topography(object):
         """
 
         # Determine topo type if not specified
-        if topotype is None:
+        if topo_type is None:
             # Try to look at suffix for type
             extension = os.path.splitext(path)[1][1:]
             if extension[:2] == "tt":
-                topotype = int(extension[2])
+                topo_type = int(extension[2])
             elif extension == 'xyz':
-                topotype = 1
+                topo_type = 1
             else:
                 # Default to 3
-                topotype = 3
+                topo_type = 3
 
         # Default to this object's no_data_value if the passed is None, 
         # otherwise the argument will override the object's value or it will 
@@ -454,14 +454,14 @@ class Topography(object):
                 for (i, depth) in enumerate(self.z):
                     outfile.write("%s %s %s\n" % (self.x[i], self.y[i], depth))
 
-            elif topotype == 1:
+            elif topo_type == 1:
                 # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
                 # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
                 for (j, latitude) in enumerate(self.y):
                     for (i, longitude) in enumerate(self.x):
                         outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
 
-            elif topotype == 2 or topotype == 3:
+            elif topo_type == 2 or topo_type == 3:
                 # Write out header
                 outfile.write('%s ncols\n' % self.Z.shape[1])
                 outfile.write('%s nrows\n' % self.Z.shape[0])
@@ -470,25 +470,33 @@ class Topography(object):
                 outfile.write('%s cellsize\n' % self.delta)
                 outfile.write('%s nodata_value\n' % no_data_value)
 
+                masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
+
                 # Write out bathy data
-                # We flip the output data here since we write from the upper left corner
-                # to lower right and the data is ordered from lower left to upper right
-                if topotype == 2:
-                    Z_filled = self.Z.filled()
+                if topo_type == 2:
+                    if masked_Z:
+                        Z_filled = self.Z.filled()
+                    else:
+                        Z_filled = self.Z
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
                             outfile.write("%s\n" % Z_filled[i,j])
-                    del Z_filled
-                elif topotype == 3:
-                    Z_flipped = numpy.flipud(self.Z.filled())
+                    if masked_Z:
+                        del Z_filled
+                elif topo_type == 3:
+                    if masked_Z:
+                        Z_flipped = numpy.flipud(self.Z.filled())
+                    else:
+                        Z_flipped = self.Z
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
                             outfile.write("%s   " % (Z_flipped[i,j]))
                         outfile.write("\n")
-                    del Z_flipped
+                    if masked_Z:
+                        del Z_flipped
 
             else:
-                raise NotImplemented("Output type %s not implemented." % topotype)
+                raise NotImplemented("Output type %s not implemented." % topo_type)
 
 
     def plot(self, axes=None, region_extent=None, contours=None, 
@@ -654,6 +662,7 @@ class Topography(object):
 
         self._extent = extent
         self._delta = delta
+        self.unstructured = False
 
 # Old project
 # def project(x, y, z, X_fill, Y_fill, Z_fill, extent=None,
