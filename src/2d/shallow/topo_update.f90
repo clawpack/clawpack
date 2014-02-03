@@ -28,8 +28,8 @@ subroutine topo_update(t)
    if (t<minval(t0dtopo).or.topo_finalized.eqv..true.) then
       return
    endif
+
    if (minval(topotime)>=maxval(tfdtopo)) then
-      deallocate(topo0work)
       topo_finalized = .true.
       return
    endif

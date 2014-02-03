@@ -8,7 +8,7 @@ c
       use refinement_module, only: varRefTime
       use amr_module
       use topo_module, only: dt_max_dtopo, num_dtopo, topo_finalized,
-     &                       aux_finalized
+     &                       aux_finalized, topo0work
 
       implicit double precision (a-h,o-z)
 
@@ -164,6 +164,10 @@ c     all aux arrays are consistent with the final topography.
 c     The variable aux_finalized is incremented so that we can check
 c     if this is true by checking if aux_finalized == 2 elsewhere in code.
 
+	  if (aux_finalized .eq. 1) then
+c         # this is only true once, and only if there was moving topo
+          deallocate(topo0work)
+          endif 
       if (topo_finalized .and. (aux_finalized .lt. 2)) then
           aux_finalized = aux_finalized + 1
           endif
