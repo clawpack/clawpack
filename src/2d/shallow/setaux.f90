@@ -94,8 +94,11 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         y = ylow + (j-0.5d0) * dy
         if (y < ylower) then
             do i=1-mbc,mx+mbc
-                iint = min(max(i,1),mx)  ! adjacent interior cell
-                jint = 1                 ! adjacent interior cell
+                x = xlow + (i-0.5d0) * dx 
+                iint = i + max(0, ceiling((xlower-x)/dx)) &
+                         - max(0, ceiling((x-xupper)/dx))
+                jint = j + max(0, ceiling((ylower-y)/dy)) &
+                         - max(0, ceiling((y-yupper)/dy))
                 aux(1,i,j) = aux(1,iint,jint)
             enddo
         endif
@@ -105,8 +108,11 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         y = ylow + (j-0.5d0) * dy
         if (y > yupper) then
             do i=1-mbc,mx+mbc
-                iint = min(max(i,1),mx)  ! adjacent interior cell
-                jint = my                ! adjacent interior cell
+                x = xlow + (i-0.5d0) * dx 
+                iint = i + max(0, ceiling((xlower-x)/dx)) &
+                         - max(0, ceiling((x-xupper)/dx))
+                jint = j + max(0, ceiling((ylower-y)/dy)) &
+                         - max(0, ceiling((y-yupper)/dy))
                 aux(1,i,j) = aux(1,iint,jint)
             enddo
         endif
@@ -116,8 +122,11 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         x = xlow + (i-0.5d0) * dx
         if (x < xlower) then
             do j=1-mbc,my+mbc
-                iint = 1                 ! adjacent interior cell
-                jint = min(max(j,1),my)  ! adjacent interior cell
+                y = ylow + (j-0.5d0) * dy 
+                iint = i + max(0, ceiling((xlower-x)/dx)) &
+                         - max(0, ceiling((x-xupper)/dx))
+                jint = j + max(0, ceiling((ylower-y)/dy)) &
+                         - max(0, ceiling((y-yupper)/dy))
                 aux(1,i,j) = aux(1,iint,jint)
             enddo
         endif
@@ -127,8 +136,11 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         x = xlow + (i-0.5d0) * dx
         if (x > xupper) then
             do j=1-mbc,my+mbc
-                iint = mx                ! adjacent interior cell
-                jint = min(max(j,1),my)  ! adjacent interior cell
+                y = ylow + (j-0.5d0) * dy 
+                iint = i + max(0, ceiling((xlower-x)/dx)) &
+                         - max(0, ceiling((x-xupper)/dx))
+                jint = j + max(0, ceiling((ylower-y)/dy)) &
+                         - max(0, ceiling((y-yupper)/dy))
                 aux(1,i,j) = aux(1,iint,jint)
             enddo
         endif
@@ -138,13 +150,14 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     if (.false.) then
         print *,'Writing out aux arrays'
         print *,' '
-        write(23,230)  mbc,mx,my,dx,dy
- 230    format('==> mbc, mx, my:  ',3i5,'  dx, dy:',2f10.6)
+        write(23,230)  mbc,mx,my,dx,dy,xlow,ylow
+ 230    format('==> mbc, mx, my:  ',3i5,'  dx, dy:',2f10.6, &
+                '  xlow,ylow:', 2f10.6)
         do j=1-mbc,my+mbc
             do i=1-mbc,mx+mbc
                 x = xlow + (i-0.5d0)*dx
                 y = ylow + (j-0.5d0)*dy
-                if ((x>225) .and. (x<230) .and. (y<37)) &
+                if ((x>223) .and. (x<232) .and. (y<37)) &
                 write(23,231) i,j,x,y,(aux(m,i,j),m=1,maux)
  231            format(2i4,2f10.3,3e20.10)
             enddo
