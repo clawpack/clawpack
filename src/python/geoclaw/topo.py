@@ -796,53 +796,17 @@ class SubFault(object):
 
     # Calculated geometry
     @property
-    def bottom(self):
-        r"""Coordintes of bottom-central edge."""
-        if self._bottom is None:
-            self.calculate_geometry()
-        return self._bottom
-    @property
-    def top(self):
-        r"""Coordintes of top-central edge."""
-        if self._top is None:
-            self.calculate_geometry()
-        return self._top
-    @property
-    def centroid(self):
-        r"""Coordintes of centroid."""
-        if self._centroid is None:
-            self.calculate_geometry()
-        return self._centroid
-    @property
-    def depths(self):
-        r"""Tuple of relevant depths of fault plane in (top, centoid, bottom)."""
-        if self._depths is None:
-            self.calculate_geometry()
-        return self._depths
-    @property
     def fault_plane_corners(self):
         r"""Coordinates of the corners of the fault plane"""
         if self._fault_plane_corners is None:
             self.calculate_geometry()
         return self._fault_plane_corners
     @property
-    def depth_top(self):
-        r"""Depth of top of fault plane."""
-        if self._depth_top is None:
+    def fault_plane_centers(self):
+        r"""Coordinates along the center-line of the fault plane"""
+        if self._fault_plane_centers is None:
             self.calculate_geometry()
-        return self._depth_top
-    @property
-    def depth_centroid(self):
-        r"""Depth of centroid of fault plane."""
-        if self._depth_centroid is None:
-            self.calculate_geometry()
-        return self._depth_centroid
-    @property
-    def depth_bottom(self):
-        r"""Depth of bottom of fault plane."""
-        if self._depth_bottom is None:
-            self.calculate_geometry()
-        return self._depth_bottom
+        return self._fault_plane_centers
 
     def __init__(self, path=None, units={}):
         r"""SubFault initialization routine.
@@ -857,14 +821,8 @@ class SubFault(object):
         self._x = None
         self._y = None
         self._dZ = None
-        self._bottom = None
-        self._top = None
-        self._centroid = None
-        self._depths = None
         self._fault_plane_corners = None
-        self._depth_top = None
-        self._depth_centroid = None
-        self._depth_bottom = None
+        self._fault_plane_centers = None
 
         # Parameters for subfault specification
         self.coordinates = [] # longitude, latitude
@@ -956,13 +914,13 @@ class SubFault(object):
         return extent
 
 
-    def transform(self, origin, point, theta, offset=numpy.pi * 0.75, direction=-1.0):
+    def transform(self, origin, point, theta):
         r""""""
-        return (  (point[0] - origin[0]) * numpy.cos(direction * (theta - offset)) 
-                - (point[1] - origin[1]) * numpy.sin(direction * (theta - offset)) 
+        return (  (point[0] - origin[0]) * numpy.cos(-theta) 
+                - (point[1] - origin[1]) * numpy.sin(-theta) 
                 + origin[0],
-                  (point[0] - origin[0]) * numpy.sin(direction * (theta - offset)) 
-                + (point[1] - origin[1]) * numpy.cos(direction * (theta - offset)) 
+                  (point[0] - origin[0]) * numpy.sin(-theta) 
+                + (point[1] - origin[1]) * numpy.cos(-theta) 
                 + origin[1]) 
 
 
@@ -973,10 +931,13 @@ class SubFault(object):
         lat2meter = topotools.dist_latlong2meters(0.0, 1.0)[1]
 
         # Setup coordinate arrays
-        self._fault_plane_corners = [[None, None, None], 
-                                     [None, None, None], 
-                                     [None, None, None], 
-                                     [None, None, None]]
+        self._fault_plane_corners = [[None, None, None], # a 
+                                     [None, None, None], # b
+                                     [None, None, None], # c
+                                     [None, None, None]] # d
+        self._fault_plane_centers = [[None, None, None], # 1
+                                     [None, None, None], # 2 
+                                     [None, None, None]] # 3
 
         # Convert values to meters
         dimensions, depth, slip = self.convert2meters()
@@ -985,26 +946,32 @@ class SubFault(object):
         if self.coordinate_specification == 'top center':
             self._fault_plane_corners[0][2] = depth
             self._fault_plane_corners[1][2] = depth     \
-                                 + dimensions[1] * numpy.sin(self.dip * RAD2DEG)
+                                 + dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[1][2] = depth      \
+                           + 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
         elif self.coordinate_specification == 'centroid':
             self._fault_plane_corners[0][2] = depth     \
-                                 - dimensions[1] * numpy.sin(self.dip * RAD2DEG)
+                                 - dimensions[1] * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_corners[1][2] = depth     \
-                                 + dimensions[1] * numpy.sin(self.dip * RAD2DEG)
+                                 + dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[1][2] = depth
         elif self.coordinate_specification == 'bottom center':
             self._fault_plane_corners[0][2] = depth
             self._fault_plane_corners[1][2] = depth     \
-                                 - dimensions[1] * numpy.sin(self.dip * RAD2DEG)
+                                 - dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[1][2] = depth      \
+                           - 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
         self._fault_plane_corners[2][2] = self._fault_plane_corners[0][2]
         self._fault_plane_corners[3][2] = self._fault_plane_corners[1][2]
-
+        self._fault_plane_centers[0][2] = self._fault_plane_corners[0][2]
+        self._fault_plane_centers[2][2] = self._fault_plane_corners[1][2]
 
         # Convert dimensions to lat-long
         dimensions[0] *= 1.0 / lat2meter
         dimensions[1] *= 1.0 / lat2meter
 
         # Calculate xy-plane projected width
-        xy_width = dimensions[1] * numpy.cos(self.dip * RAD2DEG)
+        xy_width = dimensions[1] * numpy.cos(self.dip * DEG2RAD)
         
         # Locate fault plane in 3D space
         # Note that the coodinate specification is in reference to the fault 
@@ -1024,6 +991,7 @@ class SubFault(object):
         #            W
         #
         xy_corners = [None, None, None, None]
+        xy_centers = [None, None, None]
         if self.coordinate_specification == 'top center':
             # Non-rotated locations of corners
             xy_corners[0] = (self.coordinates[0],
@@ -1034,6 +1002,14 @@ class SubFault(object):
                              self.coordinates[1] - 0.5 * dimensions[0])
             xy_corners[3] = (self.coordinates[0],
                              self.coordinates[1] - 0.5 * dimensions[0])
+
+            # Non-rotated lcoations of center-line coordinates
+            xy_centers[0] = self.coordinates
+            xy_centers[1] = (self.coordinates[0] + 0.5 * xy_width,
+                             self.coordinates[1])
+            xy_centers[2] = (self.coordinates[0] + xy_width,
+                             self.coordinates[1])
+
         elif self.coordinate_specification == 'centroid':
             # Non-rotated locations of corners
             xy_corners[0] = (self.coordinates[0] - 0.5 * xy_width,
@@ -1044,6 +1020,13 @@ class SubFault(object):
                              self.coordinates[1] - 0.5 * dimensions[0])
             xy_corners[3] = (self.coordinates[0] - 0.5 * xy_width,
                              self.coordinates[1] - 0.5 * dimensions[0])
+
+            # Non-rotated lcoations of center-line coordinates
+            xy_centers[0] = (self.coordinates[0] - 0.5 * xy_width,
+                             self.coordinates[1])
+            xy_centers[1] = self.coordinates
+            xy_centers[2] = (self.coordinates[0] + 0.5 * xy_width,
+                             self.coordinates[1])
 
         elif self.coordinate_specification == 'bottom center':
             # Non-rotated locations of corners
@@ -1056,14 +1039,24 @@ class SubFault(object):
             xy_corners[3] = (self.coordinates[0] - xy_width,
                              self.coordinates[1] - 0.5 * dimensions[0])
 
+            # Non-rotated lcoations of center-line coordinates
+            xy_centers[0] = (self.coordinates[0] - xy_width,
+                             self.coordinates[1])
+            xy_centers[1] = (self.coordinates[0] - 0.5 * xy_width,
+                             self.coordinates[1])
+            xy_centers[2] = self.coordinates
+
         else:
             raise ValueError("Unknown coordinate specification '%s'." % self.coordinate_specification)
 
         # Rotate fault plane corners and store
-        top_center = [xy_corners[0][0], xy_corners[0][1] - 0.5 * dimensions[0]]
+        # top_center = [xy_corners[0][0], xy_corners[0][1] - 0.5 * dimensions[0]]
         for (n, corner) in enumerate(xy_corners):
             self._fault_plane_corners[n][0:2] = \
-                       self.transform(self.coordinates, corner, self.strike * RAD2DEG)
+                       self.transform(self.coordinates, corner, self.strike * DEG2RAD)
+        for (n, center) in enumerate(xy_centers):
+            self._fault_plane_centers[n][0:2] = \
+                       self.transform(self.coordinates, center, self.strike * DEG2RAD)
 
 
     def create_coordinate_arrays(self, resolution=60, buffer_size=0.5):
@@ -1263,7 +1256,8 @@ class SubFault(object):
         return axes
 
 
-    def plot_fault_rect(self, axes=None, color='r', markerstyle="o", linestyle='-'):
+    def plot_fault_rect(self, axes=None, plot_rake=True, color='r', 
+                           markerstyle="o", linestyle='-'):
         r"""Plot fault rectangle.
 
         Input
@@ -1298,6 +1292,72 @@ class SubFault(object):
         for edge in edges:
             axes.plot([edge[0][0], edge[1][0]], [edge[0][1], edge[1][1]], style)
 
+        if plot_rake:
+            axes.plot()
         return axes
 
 
+    def plot_rake(self, axes=None, color='r', markerstyle="o", linestyle='-'):
+        r"""Plot fault rectangle.
+
+        Input
+        -----
+         - *axes* (`matplotlib.axes.Axes`) - 
+
+        Output
+        ------
+         - (`matplotlib.axes.Axes`) - 
+
+        """
+        
+        # Create axes object if needed
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(1,1,1)
+
+        centroid = self.fault_plane_centers[1][:2]
+        top_edge = self.fault_plane_centers[0][:2]
+        r = numpy.sqrt((top_edge[0] - self.fault_plane_corners[0][0])**2 +
+                       (top_edge[1] - self.fault_plane_corners[0][1])**2 )
+        theta = (self.strike + self.rake) * DEG2RAD
+        xy_rake = (r * numpy.cos(-theta + 1.5 * numpy.pi) + centroid[0], 
+                   r * numpy.sin(-theta + 1.5 * numpy.pi) + centroid[1])
+        print r, theta, xy_rake
+
+        axes.annotate("",
+            xy=xy_rake, xycoords='data',
+            xytext=self.fault_plane_centers[1][:2], textcoords='data',
+            arrowprops=dict(arrowstyle="->", connectionstyle="arc3") )
+
+        return axes
+
+if __name__ == "__main__":
+
+    # Simple test plots SubFault class
+    subfaults = []
+    test_strikes = [0.0, 30.0, 45.0, 60.0, 90.0, 180.0, 270.0, 360.0, -45.0]
+    for strike in test_strikes:
+        subfaults.append(SubFault(units={"slip":"cm", "dimensions":"km", "depth":"km"}))
+        subfaults[-1].coordinates = [-99.1, 16.8]
+        subfaults[-1].coordinate_specification = "top center"
+        subfaults[-1].slip = 165
+        subfaults[-1].rake = 90.0
+        subfaults[-1].strike = strike
+        subfaults[-1].dip = 25.0
+        subfaults[-1].depth = 12.0
+        subfaults[-1].dimensions = (90.0, 70.0)
+
+    fig = plt.figure(figsize=(16.0, 16.0))
+    fig.suptitle("Subfault Tests")
+    for (n, subfault) in enumerate(subfaults):
+        print "Subfault Characteristics:"
+        print "  Mw = %s" % str(subfault.Mw(mu=5e13))
+        print "  Containing Rect = %s" % subfault.containing_rect()
+        
+        axes = fig.add_subplot(3,3,n+1)
+        subfault.plot(axes)
+        subfault.plot_fault_rect(axes, color='k')
+        subfault.plot_rake(axes)
+        axes.set_title("strike = %s" % subfault.strike)
+
+    plt.show()
