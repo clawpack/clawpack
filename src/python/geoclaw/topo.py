@@ -486,7 +486,7 @@ class Topography(object):
 
 
     def plot(self, axes=None, region_extent=None, contours=None, 
-             coastlines=True, limits=None, cmap=plt.get_cmap('terrain')):
+             coastlines=True, limits=None, cmap=None):
         r"""Plot the topography."""
 
         # Create axes if needed
@@ -509,11 +509,12 @@ class Topography(object):
             depth_extent = limits
 
         # Create color map
-        cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
-                                           -0.00001:[0.95,0.9,0.7],
-                                           0.00001:[.5,.7,0],
-                                           1:[.2,.5,.2]})
-        color_norm = colors.Normalize(depth_extent[0],depth_extent[1],clip=True)
+        if cmap is not None:
+            cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
+                                               -0.00001:[0.95,0.9,0.7],
+                                               0.00001:[.5,.7,0],
+                                               1:[.2,.5,.2]})
+            color_norm = colors.Normalize(depth_extent[0],depth_extent[1],clip=True)
 
         # Plot data
         if contours is not None:
@@ -707,6 +708,9 @@ class Topography(object):
                numpy.ma.masked_where(intersect, y, copy=False).reshape(Y.shape)
 
 
+# ==============================================================================
+#  Sub-Fault Class 
+# ==============================================================================
 class SubFault(object):
 
     r"""Class representing a single subfault.
@@ -730,7 +734,7 @@ class SubFault(object):
        clockwise from North.  Between 0 and 360. The fault plane dips downward 
        to the right when moving along the top edge in the strike direction.
      - *dip* (float) - Angle at which the plane dips downward from the top edge,
-       a positive angle between 0 and 9 degrees.
+       a positive angle between 0 and 90 degrees.
      - *rake* (float) - Angle in the fault plane in which the slip occurs,
        measured in degrees counterclockwise from the strike direction. Between 
        -180 and 180.
@@ -936,16 +940,30 @@ class SubFault(object):
 
 
     def containing_rect(self):
-        r"""Find containing rectangle of subfault in model coordinates.
+        r"""Find containing rectangle of subfault in x-y plane.
 
         Returns tuple of x-limits and y-limits.
 
         """
-        
-        return [ numpy.min(self.fault_plane_corners[0]),
-                 numpy.max(self.fault_plane_corners[0]),
-                 numpy.min(self.fault_plane_corners[1]),
-                 numpy.max(self.fault_plane_corners[1]) ]
+
+        extent = [numpy.infty, -numpy.infty, numpy.infty, -numpy.infty]
+        for corner in self.fault_plane_corners:
+            extent[0] = min(corner[0], extent[0])
+            extent[1] = max(corner[0], extent[1])
+            extent[2] = min(corner[1], extent[2])
+            extent[3] = max(corner[1], extent[3])
+
+        return extent
+
+
+    def transform(self, origin, point, theta, offset=numpy.pi * 0.75, direction=-1.0):
+        r""""""
+        return (  (point[0] - origin[0]) * numpy.cos(direction * (theta - offset)) 
+                - (point[1] - origin[1]) * numpy.sin(direction * (theta - offset)) 
+                + origin[0],
+                  (point[0] - origin[0]) * numpy.sin(direction * (theta - offset)) 
+                + (point[1] - origin[1]) * numpy.cos(direction * (theta - offset)) 
+                + origin[1]) 
 
 
     def calculate_geometry(self):
@@ -955,98 +973,116 @@ class SubFault(object):
         lat2meter = topotools.dist_latlong2meters(0.0, 1.0)[1]
 
         # Setup coordinate arrays
-        self._top = [None, None]
-        self._centroid = [None, None]
-        self._bottom = [None, None]
-        self._fault_plane_corners = [None, None]
+        self._fault_plane_corners = [[None, None, None], 
+                                     [None, None, None], 
+                                     [None, None, None], 
+                                     [None, None, None]]
 
         # Convert values to meters
-        dimensions, depth, slip = self.convert2meters() 
+        dimensions, depth, slip = self.convert2meters()
+
+        # Depths (in meters)
+        if self.coordinate_specification == 'top center':
+            self._fault_plane_corners[0][2] = depth
+            self._fault_plane_corners[1][2] = depth     \
+                                 + dimensions[1] * numpy.sin(self.dip * RAD2DEG)
+        elif self.coordinate_specification == 'centroid':
+            self._fault_plane_corners[0][2] = depth     \
+                                 - dimensions[1] * numpy.sin(self.dip * RAD2DEG)
+            self._fault_plane_corners[1][2] = depth     \
+                                 + dimensions[1] * numpy.sin(self.dip * RAD2DEG)
+        elif self.coordinate_specification == 'bottom center':
+            self._fault_plane_corners[0][2] = depth
+            self._fault_plane_corners[1][2] = depth     \
+                                 - dimensions[1] * numpy.sin(self.dip * RAD2DEG)
+        self._fault_plane_corners[2][2] = self._fault_plane_corners[0][2]
+        self._fault_plane_corners[3][2] = self._fault_plane_corners[1][2]
+
+
+        # Convert dimensions to lat-long
+        dimensions[0] *= 1.0 / lat2meter
+        dimensions[1] *= 1.0 / lat2meter
+
+        # Calculate xy-plane projected width
+        xy_width = dimensions[1] * numpy.cos(self.dip * RAD2DEG)
         
-        # Generate extents and depths
-        if self.coordinate_specification == 'bottom center':
-            print "*** WARNING *** - Untested coordinate specification, use at own risk!"
+        # Locate fault plane in 3D space
+        # Note that the coodinate specification is in reference to the fault 
+        #
+        #    Top edge    Bottom edge
+        #      a ----------- b
+        #      |             |
+        #      |             |
+        #      |             |
+        #      |             |
+        #      1      2      3   L
+        #      |             |
+        #      |             |
+        #      |             |
+        #      |             |
+        #      d ----------- c
+        #            W
+        #
+        xy_corners = [None, None, None, None]
+        if self.coordinate_specification == 'top center':
+            # Non-rotated locations of corners
+            xy_corners[0] = (self.coordinates[0],
+                             self.coordinates[1] + 0.5 * dimensions[0])
+            xy_corners[1] = (self.coordinates[0] + xy_width,
+                             self.coordinates[1] + 0.5 * dimensions[0])
+            xy_corners[2] = (self.coordinates[0] + xy_width,
+                             self.coordinates[1] - 0.5 * dimensions[0])
+            xy_corners[3] = (self.coordinates[0],
+                             self.coordinates[1] - 0.5 * dimensions[0])
+        elif self.coordinate_specification == 'centroid':
+            # Non-rotated locations of corners
+            xy_corners[0] = (self.coordinates[0] - 0.5 * xy_width,
+                             self.coordinates[1] + 0.5 * dimensions[0])
+            xy_corners[1] = (self.coordinates[0] + 0.5 * xy_width,
+                             self.coordinates[1] + 0.5 * dimensions[0])
+            xy_corners[2] = (self.coordinates[0] + 0.5 * xy_width,
+                             self.coordinates[1] - 0.5 * dimensions[0])
+            xy_corners[3] = (self.coordinates[0] - 0.5 * xy_width,
+                             self.coordinates[1] - 0.5 * dimensions[0])
 
-            # Depths
-            self._depth_top = depth - 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
-            self._depth_centroid = depth - 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
-            self._depth_bottom = depth
-
-            # Distance to top edge of fault plane
-            del_x = dimensions[1] * numpy.cos(self.dip * RAD2DEG) * numpy.cos(self.strike * RAD2DEG) / (lat2meter * numpy.cos(self.coordinates[1] * DEG2RAD))
-            del_y = -dimensions[1] * numpy.cos(self.dip * RAD2DEG) * numpy.sin(self.strike * RAD2DEG) / lat2meter
-
-            # Coordinate extents
-            self._bottom[0] = self.coordinates[0]
-            self._bottom[1] = self.coordinates[1]
-            self._top[0] = self.coordinates[0] + del_x
-            self._top[1] = self.coordinates[1] + del_y
-            self._centroid[0] = self.coordinates[0] + 0.5 * del_x
-            self._centroid[1] = self.coordinates[1] + 0.5 * del_y
-
-        elif self.coordiante_specification == 'top center':
-            # Depths
-            self._depth_top = depth
-            self._depth_centroid = depth + 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
-            self._depth_bottom = depth + dimensions[1] * numpy.sin(self.dip * DEG2RAD)
-
-            # Distance to bottom edge of fault plane
-            del_x =  dimensions[1] * numpy.cos(self.dip * RAD2DEG) * numpy.cos(self.strike * RAD2DEG) / (lat2meter * numpy.cos(self.coordinates[1] * DEG2RAD))
-            del_y = -dimensions[1] * numpy.cos(self.dip * RAD2DEG) * numpy.sin(self.strike * RAD2DEG) / lat2meter
-
-            # Coordinate extents
-            self._top[0] = self.coordinates[0]
-            self._top[1] = self.coordinates[1]
-            self._bottom[0] = self.coordinates[0] + del_x
-            self._bottom[1] = self.coordinates[1] + del_y
-            self._centroid[0] = self.coordinates[0] + 0.5 * del_x
-            self._centroid[1] = self.coordinates[1] + 0.5 * del_y
-
-        elif self.coordinate_specification == "centroid":
-            # Depths
-            self._depth_top = depth - 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
-            self._depth_centroid = depth
-            self._depth_bottom = depth + 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
-
-            # Distance to bottom/top edge of fault plane
-            del_x =  0.5 * dimensions[1] * numpy.cos(self.dip * RAD2DEG) * numpy.cos(self.strike * RAD2DEG) / (lat2meter * numpy.cos(self.coordinates[1] * DEG2RAD))
-            del_y = -0.5 * dimensions[1] * numpy.cos(self.dip * RAD2DEG) * numpy.sin(self.strike * RAD2DEG) / lat2meter
-
-            # Coordinate extents
-            self._centroid[0] = self.coordinates[0]
-            self._centroid[1] = self.coordinates[1]
-            self._top[0] = self.coordinates[0] - del_x
-            self._top[1] = self.coordinates[1] - del_y
-            self._bottom[0] = self.coordinates[0] + del_x
-            self._bottom[1] = self.coordinates[1] + del_y
+        elif self.coordinate_specification == 'bottom center':
+            # Non-rotated locations of corners
+            xy_corners[0] = (self.coordinates[0] - xy_width,
+                             self.coordinates[1] + 0.5 * dimensions[0])
+            xy_corners[1] = (self.coordinates[0],
+                             self.coordinates[1] + 0.5 * dimensions[0])
+            xy_corners[2] = (self.coordinates[0],
+                             self.coordinates[1] - 0.5 * dimensions[0])
+            xy_corners[3] = (self.coordinates[0] - xy_width,
+                             self.coordinates[1] - 0.5 * dimensions[0])
 
         else:
             raise ValueError("Unknown coordinate specification '%s'." % self.coordinate_specification)
 
-        # Calculate extent of fault plane
-        dx2 = 0.5 * dimensions[0] * numpy.sin(self.strike * DEG2RAD) / (lat2meter * numpy.cos(self.bottom[1] * DEG2RAD))
-        dy2 = 0.5 * dimensions[0] * numpy.cos(self.strike * DEG2RAD) / lat2meter
-
-        self._fault_plane_corners[0] = [self.bottom[0] - dx2,
-                                        self.top[0] - dx2,
-                                        self.top[0] + dx2,
-                                        self.bottom[0] + dx2]
-        self._fault_plane_corners[1] = [self.bottom[1] - dy2,
-                                        self.top[1] - dy2,
-                                        self.top[1] + dy2,
-                                        self.bottom[1] + dy2]
+        # Rotate fault plane corners and store
+        top_center = [xy_corners[0][0], xy_corners[0][1] - 0.5 * dimensions[0]]
+        for (n, corner) in enumerate(xy_corners):
+            self._fault_plane_corners[n][0:2] = \
+                       self.transform(self.coordinates, corner, self.strike * RAD2DEG)
 
 
-    def create_coordinate_arrays(self, resolution=60):
+    def create_coordinate_arrays(self, resolution=60, buffer_size=0.5):
         r"""Create coordinate arrays containing subfault.
 
-        :Input:
+        Input
+        -----
          - *resolution* (int) - Number of grid points per degree.  Defaults to
            1" resolution.
-
+         - *buffer_size* (float) - Buffer distance around edge of fault in 
+           degrees, defaults to 0.5 degrees.
         """
 
         rect = self.containing_rect()
+        rect[0] -= buffer_size
+        rect[1] += buffer_size
+        rect[2] -= buffer_size
+        rect[3] += buffer_size
+
         N = [int((rect[1] - rect[0]) * resolution),
              int((rect[3] - rect[2]) * resolution)]
 
@@ -1061,6 +1097,7 @@ class SubFault(object):
         contained in this object.
 
         Currently only calculates the vertical displacement.
+
         """
 
         dimensions, depth, slip = self.convert2meters()
@@ -1087,85 +1124,8 @@ class SubFault(object):
             pass
 
 
-    def write(self, path):
-        r"""Write out subfault characterization.
-
-        Input
-        -----
-         - *path* (path) - Path to output file.
-
-        """
-
-        with open(path, 'w') as data_file:
-            pass
-
-
-    def plot(self, axes=None):
-        r"""Plot subfault slip or other characterizations."""
-        pass
-
-
-
-
-class TimeDependentTography(object):
-
-    r"""Class represents a patch of time dependent topography (dtopo).
-
-    Input
-    -----
-
-    """
-
-    def __init__(self, path=None, topo_type=3):
-        r"""TimeDepedentTopography initialization routine.
-        
-        See :class:`TimeDependentTography` for more info.
-
-        """
-
-        super(TimeDependentTography, self).__init__()
-
-        self.path = path
-        self.topo_type = topo_type
-
-        self.t = None
-        self.x = None
-        self.y = None
-        self.X = None
-        self.Y = None
-        self.z = None
-        self.Z = None
-
-
-    def create_deformation(self, okada_params, units={}, col_labels=None):
-        r"""Use Okada deformation information to create a deformation.
-
-        Input
-        -----
-         - *okada_params* (dict) - Dictionary containing parameters for Okada
-           deformation specification.
-         - *units* (dict) - Dictionary specifying the units of some of the 
-           parameters in *okada_params*.  Defaults all units to meters except
-           for those units in degrees.
-
-        """
-
-        # Apply defaults
-        default_units = {'slip':'m', 'length':'m', 'width':'m', 'depth':'m'}
-        units.update(default_units)
-
-
-
-        pass
-
-
-    def read(self, path):
-        r"""Read in a deformation (dtopo) file at *path*."""
-        pass
-
-
     def write(self, path, topo_type=1):
-        r"""Write out a dtopo file to *path*.
+        r"""Write out subfault characterization file to *path*.
 
         input
         -----
@@ -1174,6 +1134,7 @@ class TimeDependentTography(object):
 
         """
 
+        raise NotImplemented("Writing out dtopo files not supported yet.")
 
         # Construct each interpolating function and evaluate at new grid
         with open(self.path, 'w') as data_file:
@@ -1190,8 +1151,8 @@ class TimeDependentTography(object):
         
             elif topo_type == 2 or topo_type == 3:
                 # Write out header
-                data_file.write("%7i       mx \n" % self.X.shape[1])
-                data_file.write("%7i       my \n" % self.Y.shape[0])
+                data_file.write("%7i       mx \n" % self.x.shape[0])
+                data_file.write("%7i       my \n" % self.y.shape[0])
                 data_file.write("%7i       mt \n" % self.t.shape[0])
                 data_file.write("%20.14e   xlower\n" % self.extent[0])
                 data_file.write("%20.14e   ylower\n" % self.extent[2])
@@ -1209,3 +1170,134 @@ class TimeDependentTography(object):
 
             else:
                 raise ValueError("Only topography types 1, 2, and 3 are supported.")
+
+
+    def plot(self, axes=None, region_extent=None, contours=None, 
+                   coastlines=None, limits=None, cmap=None):
+        r"""Plot subfault deformation.
+
+
+        Input
+        -----
+         - *axes* (`matplotlib.axes.Axes`) -
+         - *region_extent* (list) - 
+         - *contours* (list) -
+         - *coastlines* (path) -
+         - *limits* (list) -
+         - *cmap* (`matplotlib.colors.Colormap`) -
+
+        Output
+        ------
+         - *axes* (`matplotlib.axes.Axes`) - Axes used for plot, either
+           this is created in this method if the input argument *axes* is None
+           or the same object is passed back.
+
+        """
+        
+        # Create axes object if needed
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(1,1,1)
+
+        # Calculate plot extent and limits if not provided
+        if region_extent is None:
+            region_extent = ( numpy.min(self.x), numpy.max(self.x),
+                              numpy.min(self.y), numpy.max(self.y) )
+        if limits is None:
+            depth_extent = [numpy.min(self.dZ),numpy.max(self.dZ)]
+        else:
+            depth_extent = limits
+
+        # Setup axes labels, ticks and aspect
+        axes.ticklabel_format(format="plain", useOffset=False)
+        mean_lat = 0.5 * (region_extent[3] - region_extent[2])
+        axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
+        axes.set_title("Subfault Deformation")
+        axes.set_xlabel("Longitude")
+        axes.set_ylabel("Latitude")
+
+        # Colormap and color norm
+        if cmap is None:
+            if depth_extent[0] >= 0.0:
+                cmap = colormaps.make_colormap({0.0:'w', 1.0:'r'})
+                extend = 'top'
+            elif depth_extent[1] <= 0.0:
+                cmap = colormaps.make_colormap({0.0:'b', 1.0:'w'})
+                extend = 'bottom'
+            else:
+                cmap = colormaps.make_colormap({0.0:'b', 0.5:'w', 1.0:'r'})
+                extend = 'both'
+        # Equalize color extents
+        if depth_extent[0] >= 0.0:
+            depth_extent[0] = 0.0
+        elif depth_extent[1] <= 0.0:
+            depth_extent[1] = 0.0
+        else:
+            depth_extent[1] = max(-depth_extent[0], depth_extent[1])
+            depth_extent[0] = -depth_extent[1]
+        color_norm = colors.Normalize(depth_extent[0], depth_extent[1], clip=True)
+
+        # Plot data
+        if contours is not None:
+            plot = axes.contourf(self.x, self.y, self.dZ, contours, cmap=cmap,
+                                 extend=extend)
+        else:
+            plot = axes.imshow(numpy.flipud(self.dZ), vmin=depth_extent[0], 
+                                                      vmax=depth_extent[1],
+                                                      extent=region_extent,
+                                                      cmap=cmap,
+                                                      norm=color_norm)
+
+        cbar = plt.colorbar(plot, ax=axes)
+        cbar.set_label("Deformation (m)")
+
+        # Plot coastlines
+        if coastlines is not None:
+            coastline_data = Topography(coastlines)
+            axes.contour(coastline_data.X, coastline_data.Y, 
+                         coastline_data.Z, levels=[0.0],colors='r')
+
+        axes.set_xlim(region_extent[0:2])
+        axes.set_ylim(region_extent[2:])
+
+        return axes
+
+
+    def plot_fault_rect(self, axes=None, color='r', markerstyle="o", linestyle='-'):
+        r"""Plot fault rectangle.
+
+        Input
+        -----
+         - *axes* (`matplotlib.axes.Axes`) - 
+
+        Output
+        ------
+         - (`matplotlib.axes.Axes`) - 
+
+        """
+        
+        # Create axes object if needed
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(1,1,1)
+
+        # Plot corners
+        style = color + markerstyle
+        for (n,corner) in enumerate(self.fault_plane_corners):
+            axes.plot(corner[0], corner[1], style)
+            axes.text(corner[0], corner[1], str(n+1))
+
+        # Plot edges
+        style = color + linestyle
+        edges = []
+        for edge in xrange(len(self.fault_plane_corners) - 1):
+            edges.append([self.fault_plane_corners[edge][:2], 
+                          self.fault_plane_corners[edge+1][:2]])
+        edges.append([self.fault_plane_corners[-1][:2], 
+                      self.fault_plane_corners[0][:2]])
+        for edge in edges:
+            axes.plot([edge[0][0], edge[1][0]], [edge[0][1], edge[1][1]], style)
+
+        return axes
+
+
