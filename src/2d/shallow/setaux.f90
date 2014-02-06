@@ -90,9 +90,9 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     ! Copy topo to ghost cells if outside physical domain
 
-    do j=1-mbc,0
+    do j=1-mbc,my+mbc
         y = ylow + (j-0.5d0) * dy
-        if (y < ylower) then
+        if ((y < ylower) .or. (y>yupper)) then
             do i=1-mbc,mx+mbc
                 x = xlow + (i-0.5d0) * dx 
                 iint = i + max(0, ceiling((xlower-x)/dx)) &
@@ -104,23 +104,10 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         endif
     enddo
 
-    do j=my+1,my+mbc
-        y = ylow + (j-0.5d0) * dy
-        if (y > yupper) then
-            do i=1-mbc,mx+mbc
-                x = xlow + (i-0.5d0) * dx 
-                iint = i + max(0, ceiling((xlower-x)/dx)) &
-                         - max(0, ceiling((x-xupper)/dx))
-                jint = j + max(0, ceiling((ylower-y)/dy)) &
-                         - max(0, ceiling((y-yupper)/dy))
-                aux(1,i,j) = aux(1,iint,jint)
-            enddo
-        endif
-    enddo
 
-    do i=1-mbc,0
+    do i=1-mbc,mx+mbc
         x = xlow + (i-0.5d0) * dx
-        if (x < xlower) then
+        if ((x < xlower) .or. (x > xupper)) then
             do j=1-mbc,my+mbc
                 y = ylow + (j-0.5d0) * dy 
                 iint = i + max(0, ceiling((xlower-x)/dx)) &
@@ -132,19 +119,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         endif
     enddo
 
-    do i=mx+1,mx+mbc
-        x = xlow + (i-0.5d0) * dx
-        if (x > xupper) then
-            do j=1-mbc,my+mbc
-                y = ylow + (j-0.5d0) * dy 
-                iint = i + max(0, ceiling((xlower-x)/dx)) &
-                         - max(0, ceiling((x-xupper)/dx))
-                jint = j + max(0, ceiling((ylower-y)/dy)) &
-                         - max(0, ceiling((y-yupper)/dy))
-                aux(1,i,j) = aux(1,iint,jint)
-            enddo
-        endif
-    enddo
+
 
     ! Output for debugging to fort.23
     if (.false.) then
