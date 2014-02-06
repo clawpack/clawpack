@@ -767,6 +767,15 @@ class SubFault(object):
     @x.deleter
     def x(self):
         del self._x
+    @property
+    def X(self):
+        r"""2d x-coordinate array."""
+        if self._X is None:
+            self.create_2d_coordinate_arrays()
+        return self._X
+    @X.deleter
+    def X(self):
+        del self._X
 
     @property
     def y(self):
@@ -780,6 +789,15 @@ class SubFault(object):
     @y.deleter
     def y(self):
         del self._y
+    @property
+    def Y(self):
+        r"""2d y-coordinate array."""
+        if self._Y is None:
+            self.create_2d_coordinate_arrays()
+        return self._Y
+    @Y.deleter
+    def Y(self):
+        del self._Y
 
     @property
     def dZ(self):
@@ -819,7 +837,9 @@ class SubFault(object):
 
         # Object defered storage
         self._x = None
+        self._X = None
         self._y = None
+        self._Y = None
         self._dZ = None
         self._fault_plane_corners = None
         self._fault_plane_centers = None
@@ -832,7 +852,8 @@ class SubFault(object):
         self.strike = None
         self.dip = None
         self.slip = None
-        self.rupture_type = None # 'static', 'dynamic', 'kinetic'
+        self.rupture_type = 'static' # 'static', 'dynamic', 'kinetic'
+        self.t = numpy.array([0.0, 5.0, 10.0])
 
         # Default units of each parameter type
         self.units = {'coordinates':'lat-long', 'dimensions':'m', 'slip':'m',
@@ -874,10 +895,8 @@ class SubFault(object):
 
         dimensions, depth, slip = self.convert2meters()
         total_slip = dimensions[0] * dimensions[1] * slip
-
-        # Moment, note the 0.1 factor is to convert to nautical miles
         Mo = 0.1 * mu * total_slip
-        return 2.0 / 3.0 * (numpy.log10(Mo) - 9.1)
+        return 2.0 / 3.0 * (numpy.log10(Mo) - 9.0)
 
 
     def calculate_slip(self, Mw, mu=5e11):
@@ -915,7 +934,20 @@ class SubFault(object):
 
 
     def transform(self, origin, point, theta):
-        r""""""
+        r"""Transform to rotated coordinate system (via strike).
+
+        Input
+        -----
+         - *origin* (tuple) - Point being rotated about, (x,y).
+         - *point* (tuple) - Point to be rotated, (x,y).
+         - *theta* (float) - Angle of rotation in radians.
+
+        Output
+        ------
+         - (tuple) The result of the transforming *point* about the point
+           *origin*.
+
+        """
         return (  (point[0] - origin[0]) * numpy.cos(-theta) 
                 - (point[1] - origin[1]) * numpy.sin(-theta) 
                 + origin[0],
@@ -925,7 +957,13 @@ class SubFault(object):
 
 
     def calculate_geometry(self):
-        r"""Create x-y coordinate arrays."""
+        r"""Calculate the fault geometry.
+
+        Routine calculates the class attributes *fault_plane_corners* and 
+        *fault_plane_centers* which are the corners of the fault plane and 
+        points along the centerline respecitvely in 3D space.
+
+        """
 
         # Simple conversion factor of latitude to meters
         lat2meter = topotools.dist_latlong2meters(0.0, 1.0)[1]
@@ -1068,6 +1106,7 @@ class SubFault(object):
            1" resolution.
          - *buffer_size* (float) - Buffer distance around edge of fault in 
            degrees, defaults to 0.5 degrees.
+
         """
 
         rect = self.containing_rect()
@@ -1076,11 +1115,17 @@ class SubFault(object):
         rect[2] -= buffer_size
         rect[3] += buffer_size
 
+        self.delta = float(1.0 / resolution)
         N = [int((rect[1] - rect[0]) * resolution),
              int((rect[3] - rect[2]) * resolution)]
 
         self._x = numpy.linspace(rect[0],rect[1],N[0])
         self._y = numpy.linspace(rect[2],rect[3],N[1])
+
+
+    def create_2d_coordinate_arrays(self):
+        r"""Create 2d-coodrinate arrays."""
+        self._X, self._Y = numpy.meshgrid(self.x, self.y)
 
 
     def create_deformation_array(self):
@@ -1106,7 +1151,7 @@ class SubFault(object):
         okada_params["rake"] = self.rake
         okada_params["longitude"] = self.coordinates[0]
         okada_params["latitude"] = self.coordinates[1]
-
+        okada_params["latlong_location"] = self.coordinate_specification
         self._dZ = okada.okadamap(okada_params, self.x, self.y)
 
 
@@ -1117,7 +1162,7 @@ class SubFault(object):
             pass
 
 
-    def write(self, path, topo_type=1):
+    def write(self, path, topo_type=None):
         r"""Write out subfault characterization file to *path*.
 
         input
@@ -1127,39 +1172,55 @@ class SubFault(object):
 
         """
 
-        raise NotImplemented("Writing out dtopo files not supported yet.")
+        if topo_type is None:
+            # Try to look at suffix for type
+            extension = os.path.splitext(path)[1][1:]
+            if extension[:2] == "tt":
+                topo_type = int(extension[2])
+            elif extension == 'xyz':
+                topo_type = 1
+            else:
+                # Default to 3
+                topo_type = 3
+
+        if self.rupture_type != "static":
+            raise NotImplemented("Only the 'static' rupture type is supported.")
 
         # Construct each interpolating function and evaluate at new grid
-        with open(self.path, 'w') as data_file:
+        with open(path, 'w') as data_file:
 
             if topo_type == 1:
                 # Topography file with 4 columns, t, x, y, dz written from the upper
                 # left corner of the region
                 Y_flipped = numpy.flipud(self.Y)
-                for n in xrange(self.t.shape[0]):
-                    Z_flipped = numpy.flipud(self.Z[:,:,n])
+                for (n, time) in enumerate(self.t):
+                    alpha = (time - self.t[0]) / self.t[-1]
+                    dZ_flipped = numpy.flipud(alpha * self.dZ[:,:])
                     for j in xrange(self.Y.shape[0]):
                         for i in xrange(self.X.shape[1]):
-                            data_file.write("%s %s %s %s\n" % (self.t[n], self.X[j,i], Y_flipped[j,i], Z_flipped[j,i]))
+                            data_file.write("%s %s %s %s\n" % (self.t[n], self.X[j,i], Y_flipped[j,i], dZ_flipped[j,i]))
         
             elif topo_type == 2 or topo_type == 3:
                 # Write out header
                 data_file.write("%7i       mx \n" % self.x.shape[0])
                 data_file.write("%7i       my \n" % self.y.shape[0])
                 data_file.write("%7i       mt \n" % self.t.shape[0])
-                data_file.write("%20.14e   xlower\n" % self.extent[0])
-                data_file.write("%20.14e   ylower\n" % self.extent[2])
+                data_file.write("%20.14e   xlower\n" % self.x[0])
+                data_file.write("%20.14e   ylower\n" % self.y[0])
                 data_file.write("%20.14e   t0\n" % self.t[0])
-                data_file.write("%20.14e   dx\n" % dx)
-                data_file.write("%20.14e   dy\n" % dy)
-                data_file.write("%20.14e   dt\n" % dt)
+                data_file.write("%20.14e   dx\n" % self.delta)
+                data_file.write("%20.14e   dy\n" % self.delta)
+                data_file.write("%20.14e   dt\n" % float(self.t[1] - self.t[0]))
 
                 if topo_type == 2:
                     raise ValueError("Topography type 2 is not yet supported.")
                 elif topo_type == 3:
-                    for j in range(self.Y.shape[0]-1, -1, -1):
-                        data_file.write(self.X.shape[1] * '%012.6e  ' % self.Z[j,:])
-                        data_file.write("\n")
+                    for (n, time) in enumerate(self.t):
+                        alpha = (time - self.t[0]) / (self.t[-1])
+                        for j in range(self.Y.shape[0]-1, -1, -1):
+                            data_file.write(self.X.shape[1] * '%012.6e  ' 
+                                                  % tuple(alpha * self.dZ[j,:]))
+                            data_file.write("\n")
 
             else:
                 raise ValueError("Only topography types 1, 2, and 3 are supported.")
@@ -1322,7 +1383,6 @@ class SubFault(object):
         theta = (self.strike + self.rake) * DEG2RAD
         xy_rake = (r * numpy.cos(-theta + 1.5 * numpy.pi) + centroid[0], 
                    r * numpy.sin(-theta + 1.5 * numpy.pi) + centroid[1])
-        print r, theta, xy_rake
 
         axes.annotate("",
             xy=xy_rake, xycoords='data',
@@ -1339,7 +1399,7 @@ if __name__ == "__main__":
     for strike in test_strikes:
         subfaults.append(SubFault(units={"slip":"cm", "dimensions":"km", "depth":"km"}))
         subfaults[-1].coordinates = [-99.1, 16.8]
-        subfaults[-1].coordinate_specification = "top center"
+        subfaults[-1].coordinate_specification = "centroid"
         subfaults[-1].slip = 165
         subfaults[-1].rake = 90.0
         subfaults[-1].strike = strike
