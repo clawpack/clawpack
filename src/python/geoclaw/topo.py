@@ -1317,8 +1317,8 @@ class SubFault(object):
         return axes
 
 
-    def plot_fault_rect(self, axes=None, plot_rake=True, color='r', 
-                           markerstyle="o", linestyle='-'):
+    def plot_fault_rect(self, axes=None, color='r', markerstyle="o", 
+                                         linestyle='-'):
         r"""Plot fault rectangle.
 
         Input
@@ -1353,8 +1353,6 @@ class SubFault(object):
         for edge in edges:
             axes.plot([edge[0][0], edge[1][0]], [edge[0][1], edge[1][1]], style)
 
-        if plot_rake:
-            axes.plot()
         return axes
 
 
