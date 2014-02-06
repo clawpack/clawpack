@@ -15,7 +15,7 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
     use geoclaw_module, only: dry_tolerance
     use geoclaw_module, only: g => grav
     use topo_module, only: num_dtopo,topotime
-    use topo_module, only: tfdtopo,t0dtopo,topo_finalized,aux_finalized
+    use topo_module, only: aux_finalized
     use topo_module, only: xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
 
     use amr_module, only: xlowdomain => xlower
@@ -48,12 +48,7 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
         q(2:3,i,j) = 0.d0
     end forall
 
-    ! update topography if needed
-    !if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
 
-    if (.not. topo_finalized) then
-        call topo_update(t)
-        endif
     if (aux_finalized < 2) then
         ! topo arrays might have been updated by dtopo more recently than
         ! aux arrays were set unless at least 1 step taken on all levels
