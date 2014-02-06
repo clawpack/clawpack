@@ -59,6 +59,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     real(kind=8) :: vel_min(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
     real(kind=8) :: slope(2, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
     integer :: fine_cell_count(fill_indices(2)-fill_indices(1)+2, fill_indices(4)-fill_indices(3)+2)
+    integer :: nghost_patch
 
     ! Stack storage
     !  use stack-based scratch arrays instead of alloc, since dont really
@@ -172,8 +173,9 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                 call topo_update(t)
                 endif
 
-            call setaux(nghost, mx_coarse - 2*nghost,my_coarse - 2*nghost, &
-                        coarse_rect(1) + nghost * dx_coarse,coarse_rect(3) + nghost * dy_coarse, &
+            nghost_patch = 0                           
+            call setaux(nghost_patch, mx_coarse, my_coarse,       &
+                        coarse_rect(1), coarse_rect(3),           &
                         dx_coarse,dy_coarse,num_aux,auxcrse)
         endif
 
