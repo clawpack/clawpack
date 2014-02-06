@@ -25,7 +25,7 @@ def calculate_resolution(ratios, base_resolutions=[0.25,0.25],
     if lat_long:
         meter_resolutions = np.empty((num_levels,2))
         for level in xrange(num_levels):
-            meter_resolutions[level,:] = topotools.latlong_resolution(
+            meter_resolutions[level,:] = topotools.dist_latlong2meters(
                                                    natural_resolutions[level,0],
                                                    natural_resolutions[level,1],
                                                    latitude)
