@@ -182,6 +182,8 @@ class Topography(object):
                 self.topo_type = int(extension[2])
             elif extension == 'xyz':
                 self.topo_type = 1
+            elif extension == 'asc':
+                self.topo_type = 3
             else:
                 # Default to 3
                 self.topo_type = 3
@@ -509,12 +511,12 @@ class Topography(object):
             depth_extent = limits
 
         # Create color map
-        if cmap is not None:
+        if cmap is None:
             cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
                                                -0.00001:[0.95,0.9,0.7],
                                                0.00001:[.5,.7,0],
                                                1:[.2,.5,.2]})
-            color_norm = colors.Normalize(depth_extent[0],depth_extent[1],clip=True)
+        color_norm = colors.Normalize(depth_extent[0],depth_extent[1],clip=True)
 
         # Plot data
         if contours is not None:
