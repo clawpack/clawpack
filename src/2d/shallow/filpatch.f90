@@ -166,12 +166,6 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         ! grids
         
         if (num_aux > 0) then
-            ! update topography if needed
-            !if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
-            !   if ((minval(topotime)<maxval(tfdtopo)).and.(t>=minval(t0dtopo))) then
-            if (.not. topo_finalized) then
-                call topo_update(t)
-                endif
 
             nghost_patch = 0                           
             call setaux(nghost_patch, mx_coarse, my_coarse,       &
