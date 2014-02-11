@@ -6,6 +6,7 @@ c
       use geoclaw_module
       use refinement_module, only: varRefTime
       use amr_module
+      use topo_module, only: topo_finalized
       implicit double precision (a-h,o-z)
 
       dimension spoh(maxlv)
@@ -52,6 +53,11 @@ c
 c  interpolate level lcheck
 c
           mptr   = newstl(lcheck)
+          time   = rnode(timemult, mptr)
+          if (.not. topo_finalized) then
+             call topo_update(time)
+             endif
+
  10       if (mptr .eq. 0) go to 80
               nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
               ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
@@ -71,7 +77,6 @@ c
                 locaux = 1
               endif
               node(storeaux, mptr)  = locaux
-              time   = rnode(timemult, mptr)
 c
 c      We now fill in the values for grid mptr using filval. It uses
 c      piecewise linear interpolation to obtain values from the
