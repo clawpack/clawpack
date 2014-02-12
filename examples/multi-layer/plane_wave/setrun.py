@@ -148,7 +148,7 @@ def setrun(claw_pkg='geoclaw'):
         clawdata.output_t0 = True
         
 
-    clawdata.output_format = 'binary'      # 'ascii' or 'binary' 
+    clawdata.output_format = 'ascii'      # 'ascii' or 'binary' 
 
     clawdata.output_q_components = 'all'   # need all
     clawdata.output_aux_components = 'all'  # eta=h+B is in q
@@ -356,14 +356,14 @@ def setrun(claw_pkg='geoclaw'):
         # x_p,y_p = transform_c2p(x_c,0.0,location[0],location[1],angle)
         x_p = x_c * numpy.cos(0.0)
         y_p = x_c * numpy.sin(0.0)
-        print "+=====+"
-        print x_c,0.0
-        print x_p,y_p
+        # print "+=====+"
+        # print x_c,0.0
+        # print x_p,y_p
         if (rundata.clawdata.lower[0] < x_p < rundata.clawdata.upper[0] and
                 rundata.clawdata.lower[1] < y_p < rundata.clawdata.upper[1]):
             rundata.gaugedata.gauges.append([i, x_p, y_p, 0.0, 1e10])
-            print "Gauge %s: (%s,%s)" % (i,x_p,y_p)
-    print "+=====+"
+            # print "Gauge %s: (%s,%s)" % (i,x_p,y_p)
+    # print "+=====+"
 
     return rundata
     # end of function setrun
