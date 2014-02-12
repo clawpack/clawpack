@@ -26,7 +26,7 @@ import clawpack.geoclaw.topotools as tt
 
 import setrun
 
-class PlaneWaveJob(batch.Job):
+class PlaneWaveTest(batch.Job):
 
     r"""Base plane wave test case.
 
@@ -35,7 +35,7 @@ class PlaneWaveJob(batch.Job):
     def __init__(self, angle=0.0, bathy_angle=0.0, location=[-0.1, 0.0], 
                        bathy_location=0.15):
 
-        super(PlaneWaveJob, self).__init__()
+        super(PlaneWaveTest, self).__init__()
 
         self.executable = 'xgeoclaw'
         self.type = "multilayer"
@@ -72,13 +72,13 @@ class PlaneWaveJob(batch.Job):
         # print "+=====+"
 
     def __str__(self):
-        output = super(PlaneWaveJob, self).__str__()
+        output = super(PlaneWaveTest, self).__str__()
         output += "  Angle = %s\n" % self.rundata.qinit_data.angle
         output += "  Bathy Angle = %s\n" % self.bathy_angle
         return output
 
     def write_data_objects(self):
-        super(PlaneWaveJob, self).write_data_objects()
+        super(PlaneWaveTest, self).write_data_objects()
 
         # Write out bathy file
         mx = self.rundata.clawdata.num_cells[0]
@@ -104,15 +104,56 @@ class PlaneWaveJob(batch.Job):
         tt.topo2writer('./topo.tt2', step, xlower, xupper, ylower, yupper, 
                                      mx, my, nodata_value=-99999)
 
-if __name__ == "__main__":
 
-    tests = []
-    tests.append(PlaneWaveJob())
-    tests.append(PlaneWaveJob(numpy.pi / 4.0, numpy.pi / 4.0))
-    tests.append(PlaneWaveJob(numpy.pi / 4.0, 0.0))
-    tests.append(PlaneWaveJob(0.0, numpy.pi / 4.0))
-    tests.append(PlaneWaveJob(numpy.pi / 8.0, 0.0))
-    tests.append(PlaneWaveJob(numpy.pi / 4.0, numpy.pi / 8.0))
+class BubbleTest(PlaneWaveTest):
+
+    r"""Jump bathymetry with gaussian bump initial conditions."""
+
+    def __init__(self, eigen_method=1):
+
+        super(BubbleTest, self).__init__()
+
+        self.type = "multilayer"
+        self.name = "bubble"
+        self.prefix = "ml_e%s" % eigen_method
+
+        # Data objects
+        self.rundata = setrun.setrun()
+
+        self.rundata.clawdata.lower = [0.0, 0.0]
+        self.rundata.clawdata.upper = [1.0, 1.0]
+        self.rundata.clawdata.num_cells = [100, 100]
+        self.rundata.multilayer_data.eigen_method = eigen_method
+        self.rundata.multilayer_data.eta = [0.0, -0.5]
+
+        self.rundata.qinit_data.qinit_type = 7
+        self.rundata.qinit_data.init_location = [0.25,0.25]
+        self.rundata.qinit_data.wave_family = 0
+        self.rundata.qinit_data.epsilon = 0.4
+        self.rundata.qinit_data.sigma = 0.08
+
+        self.bathy_location = 0.8
+
+
+    def __str__(self):
+        output = super(PlaneWaveTest, self).__str__()
+        output += "  Eigen Method = %s\n" % self.rundata.multilayer_data.eigen_method
+        return output
+
+
+# Defintion of tests defined here
+tests = []
+tests.append(PlaneWaveTest())
+tests.append(PlaneWaveTest(numpy.pi / 4.0, numpy.pi / 4.0))
+tests.append(PlaneWaveTest(numpy.pi / 4.0, 0.0))
+tests.append(PlaneWaveTest(0.0, numpy.pi / 4.0))
+tests.append(PlaneWaveTest(numpy.pi / 8.0, 0.0))
+tests.append(PlaneWaveTest(numpy.pi / 4.0, numpy.pi / 8.0))
+for method in [1,2,3,4]:
+    tests.append(BubbleTest(eigen_method=method))
+
+
+if __name__ == "__main__":
 
     if len(sys.argv) > 1:
         if sys.argv[1].lower() == 'all':
@@ -122,7 +163,7 @@ if __name__ == "__main__":
             for test in sys.argv[1:]:
                 tests_to_run.append(tests[int(test)])
 
-        controller = batch.BatchController(tests)
+        controller = batch.BatchController(tests_to_run)
         controller.run()
 
     else:
