@@ -206,7 +206,7 @@ contains
             write(GEO_PARM_UNIT,*)  min_level_qinit, max_level_qinit, qinit_fname
             
             call read_qinit(qinit_fname)
-        else if (qinit_type > 5) then
+        else if (qinit_type >= 5) then
             read(unit,*) epsilon
             if (qinit_type == 5 .or. qinit_type == 6) then  
                 read(unit,*) init_location

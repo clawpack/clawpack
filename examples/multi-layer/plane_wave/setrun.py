@@ -84,8 +84,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 100
-    clawdata.num_cells[1] = 100
+    clawdata.num_cells[0] = 3*100
+    clawdata.num_cells[1] = 3*100
 
     # ---------------
     # Size of system:
@@ -144,11 +144,11 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 3
+        clawdata.total_steps = 10
         clawdata.output_t0 = True
         
 
-    clawdata.output_format = 'ascii'      # 'ascii' or 'binary' 
+    clawdata.output_format = 'binary'      # 'ascii' or 'binary' 
 
     clawdata.output_q_components = 'all'   # need all
     clawdata.output_aux_components = 'all'  # eta=h+B is in q
@@ -177,15 +177,17 @@ def setrun(claw_pkg='geoclaw'):
 
     # Initial time step for variable dt.
     # If dt_variable==0 then dt=dt_initial for all steps:
-    clawdata.dt_initial = 2.
+    clawdata.dt_initial = 0.025
 
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1e+99
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    clawdata.cfl_desired = 0.75
-    clawdata.cfl_max = 1.0
+    # clawdata.cfl_desired = 0.75
+    # clawdata.cfl_max = 1.0
+    clawdata.cfl_desired = 0.45
+    clawdata.cfl_max = 0.5
 
     # Maximum number of time steps to allow between output times:
     clawdata.steps_max = 5000
@@ -201,7 +203,10 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.order = 2
     
     # Use dimensional splitting? (not yet available for AMR)
-    clawdata.dimensional_split = 'unsplit'
+    #  0 or 'unsplit' or none'  ==> Unsplit
+    #  1 or 'increment'         ==> corner transport of waves
+    #  2 or 'all'               ==> corner transport of 2nd order corrections too
+    clawdata.dimensional_split = 0
     
     # For unsplit method, transverse_waves can be 
     #  0 or 'none'      ==> donor cell (only normal solver used)
@@ -345,6 +350,20 @@ def setrun(claw_pkg='geoclaw'):
     # ---------------
     rundata.gaugedata.gauges = []
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
+    gauge_locations = [-0.1,0.0,0.1,0.2,0.3]
+    for (i,x_c) in enumerate(gauge_locations):
+        # y0 = (self.run_data.clawdata.yupper - self.run_data.clawdata.ylower) / 2.0
+        # x_p,y_p = transform_c2p(x_c,0.0,location[0],location[1],angle)
+        x_p = x_c * numpy.cos(0.0)
+        y_p = x_c * numpy.sin(0.0)
+        print "+=====+"
+        print x_c,0.0
+        print x_p,y_p
+        if (rundata.clawdata.lower[0] < x_p < rundata.clawdata.upper[0] and
+                rundata.clawdata.lower[1] < y_p < rundata.clawdata.upper[1]):
+            rundata.gaugedata.gauges.append([i, x_p, y_p, 0.0, 1e10])
+            print "Gauge %s: (%s,%s)" % (i,x_p,y_p)
+    print "+=====+"
 
     return rundata
     # end of function setrun
@@ -392,7 +411,7 @@ def setgeo(rundata):
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
     topo_data.topofiles.append([2, 1, 5, 0.0, 1e10, 'topo.tt2'])
-
+    
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
@@ -406,7 +425,7 @@ def setgeo(rundata):
     rundata.qinit_data.angle = 0.0
     rundata.qinit_data.sigma = 0.02
     rundata.qinit_data.wave_family = 4
-    rundata.qinit_data.init_location = [0.25,0.25]
+    rundata.qinit_data.init_location = [-0.1,0.0]
 
 
     return rundata
@@ -444,7 +463,7 @@ def set_storm(rundata):
     rundata.stormdata.storm_type = 0
 
 
-def bathy_step(x, y, location=0.0, angle=0.0, left=-1.0, right=-0.2):
+def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
     x_c,y_c = transform_p2c(x, y, location, 0.0, angle)
     return ((x_c <= 0.0) * left 
           + (x_c >  0.0) * right)
@@ -485,4 +504,4 @@ if __name__ == '__main__':
 
     rundata.write()
 
-    write_topo_file(rundata, 'topo.tt2', location=0.6, left=-1.0, right=-0.2)
+    write_topo_file(rundata, 'topo.tt2')

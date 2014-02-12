@@ -6,7 +6,7 @@ c
       use amr_module
       use multilayer_module, only: num_layers, rho
       implicit double precision (a-h,o-z)
-      character*10  fname1, fname2, fname3, fname4, fname5
+      character(len=10) :: fname1, fname2, fname3, fname4
 
 c     # GeoClaw specific output....  add eta to q array before printing
 c
@@ -35,7 +35,8 @@ c     # how many aux components requested?
         
 c     # Currently outputs all aux components if any are requested!
       outaux = ((output_aux_num > 0) .and. 
-     .         ((.not. output_aux_onlyonce) .or. (time==t0)))
+     .         ((.not. output_aux_onlyonce) .or. 
+     .          (abs(time - t0) < 1d-8)))
 
 c     open(unit=77,file='fort.b',status='unknown',access='stream')
 
@@ -128,9 +129,9 @@ c                 # output in 1d format if ny=1:
                    ! Extract depth and momenta
                    do k=1,num_layers-1
                      index = 3 * (k - 1)
-                     h(k) = alloc(iadd(index + 1,i,j)) 
-                     hu(k)= alloc(iadd(index + 2,i,j))
-                     hv(k) = alloc(iadd(index + 3,i,j))
+                     h(k) = alloc(iadd(index + 1,i,j)) / rho(k)
+                     hu(k)= alloc(iadd(index + 2,i,j)) / rho(k)
+                     hv(k) = alloc(iadd(index + 3,i,j)) / rho(k)
                    end do
                   ! Extract bottom layer
                   index = 3 * (num_layers - 1) 
@@ -280,7 +281,7 @@ c         # and we want to use 1d plotting routines
 c     # NOTE: we need to print out nghost too in order to strip
 c     #       ghost cells from q when reading in pyclaw.io.binary
 c     # Print meqn = nvar+1 because eta added.
-      write(matunit2,1000) time,nvar+1,ngrids,naux,ndim,nghost
+      write(matunit2,1000) time,nvar+num_layers,ngrids,naux,ndim,nghost
  1000 format(e18.8,'    time', /,
      &       i5,'                 meqn'/,
      &       i5,'                 ngrids'/,

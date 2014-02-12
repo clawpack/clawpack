@@ -29,24 +29,24 @@ FFLAGS ?=
 UNAME = $(shell uname)
 ifeq ($(UNAME), Darwin)
 	ifndef LFLAGS
-		LFLAGS = -framework accelerate
+		LFLAGS = -framework accelerate $(FFLAGS)
 	else
-		LFLAGS += -framework accelerate
+		LFLAGS += -framework accelerate $(FFLAGS)
 	endif
 else ifeq ($(shell hostname), sandy.ices.utexas.edu)
 	# Created using Intel MKL Link Line Advisor
 	# http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
 	FFLAGS += -I$(MKLROOT)/include
 	ifndef LFLAGS                                                                                                                                    
-	    LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm
+	    LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
 	else
-	    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm
+	    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
 	endif
 else ifeq ($(UNAME), Linux)
 	ifndef LFLAGS
-		LFLAGS = -llapack
+		LFLAGS = -llapack $(FFLAGS)
 	else
-		LFLAGS += -llapack
+		LFLAGS += -llapack $(FFLAGS)
 	endif
 endif
 

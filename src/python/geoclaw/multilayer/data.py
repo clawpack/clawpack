@@ -85,7 +85,7 @@ class QinitMultilayerData(clawpack.geoclaw.data.QinitData):
                     # raise MissingFile("file not found")
                 self._out_file.write("\n%s  \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
-        elif self.qinit_type > 5 and self.qinit_type <= 9:
+        elif self.qinit_type >= 5 and self.qinit_type <= 9:
             self.data_write('epsilon')
             if self.qinit_type == 5 or self.qinit_type == 6:
                 self.data_write("init_location")
