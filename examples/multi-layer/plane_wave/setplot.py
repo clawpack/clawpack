@@ -6,9 +6,6 @@ This module is imported by the plotting routines and then the
 function setplot is called to set the plot parameters.
     
 """ 
-
-def meters_to_km(x,y):
-    return x/1e3,y/1e3
     
 def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,  
                        bathy_left=-1.0,      bathy_right=-0.2):
@@ -18,6 +15,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     Output: a modified version of plotdata.
     
     returns plotdata object
+
     """ 
 
     import os
@@ -36,7 +34,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
 
     # Load data from output
     clawdata = clawutil.ClawInputData(2)
-    clawdata.read('claw.data')
+    clawdata.read(os.path.join(plotdata.outdir,'claw.data'))
     amrdata = amrclaw.AmrclawInputData(clawdata)
     amrdata.read(os.path.join(plotdata.outdir,'amr.data'))
     geodata = geodata.GeoClawData()
@@ -56,6 +54,9 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
         
     
     # Setup bathymetry reference lines
+    with open(os.path.join(plotdata.outdir,"bathy_geometry.data"), 'r') as bathy_geometry_file:
+        bathy_location = float(bathy_geometry_file.readline())
+        bathy_angle = float(bathy_geometry_file.readline())
     x = [0.0,0.0]
     y = [0.0,1.0]
     x1,y1 = transform_c2p(x[0],y[0],bathy_location,
@@ -63,11 +64,15 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     x2,y2 = transform_c2p(x[1],y[1],bathy_location,
                                 0.0,bathy_angle)
     
-    m = (y1 - y2) / (x1 - x2)
-    x[0] = (clawdata.lower[1] - y1) / m + x1
-    y[0] = clawdata.lower[1]
-    x[1] = (clawdata.upper[1] - y1) / m + x1
-    y[1] = clawdata.upper[1]
+    if abs(x1 - x2) < 10**-3:
+        x = [x1, x1]
+        y = [clawdata.lower[1], clawdata.upper[1]]
+    else:
+        m = (y1 - y2) / (x1 - x2)
+        x[0] = (clawdata.lower[1] - y1) / m + x1
+        y[0] = clawdata.lower[1]
+        x[1] = (clawdata.upper[1] - y1) / m + x1
+        y[1] = clawdata.upper[1]
     ref_lines = [((x[0],y[0]),(x[1],y[1]))]
 
     plotdata.clearfigures()
@@ -115,7 +120,6 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # Axis limits
     #xlimits = [amrdata.xlower,amrdata.xupper]
     xlimits = [-0.5,0.5]
-    xlimits_zoomed = xlimits
     #ylimits = [amrdata.ylower,amrdata.yupper]
     ylimits = [-0.5,0.5]
     eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
@@ -125,11 +129,6 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # internal_surface_limits = [eta[1]-0.15,eta[1]+0.15]
     top_speed_limits = [0.0,0.1]
     internal_speed_limits = [0.0,0.03]
-    
-    top_surf_zoomed = [eta[0] - 0.03,eta[0]+0.03]
-    bottom_surf_zoomed = [-0.7,-0.5]
-    # bottom_surf_zoomed = [eta[1] - 0.5,eta[1] + 0.5]
-    velocities_zoomed = [-0.005,0.005]
     
     # Single layer test limits
     # top_surface_limits = [eta[0]-2.5,eta[0]+2.5]

@@ -71,6 +71,11 @@ class PlaneWaveTest(batch.Job):
                 # print "Gauge %s: (%s,%s)" % (i,x_p,y_p)
         # print "+=====+"
 
+        # self.setplot = lambda plotdata:setplot.setplot(
+        #                                         plotdata, 
+        #                                         bathy_location=bathy_location, 
+        #                                         bathy_angle=bathy_angle)
+
     def __str__(self):
         output = super(PlaneWaveTest, self).__str__()
         output += "  Angle = %s\n" % self.rundata.qinit_data.angle
@@ -104,6 +109,11 @@ class PlaneWaveTest(batch.Job):
         tt.topo2writer('./topo.tt2', step, xlower, xupper, ylower, yupper, 
                                      mx, my, nodata_value=-99999)
 
+        # Write out simple bathy geometry file for communication to the plotting
+        with open("./bathy_geometry.data", 'w') as bathy_geometry_file:
+            bathy_geometry_file.write("%s\n%s" % (self.bathy_location,
+                                                  self.bathy_angle) )
+
 
 class BubbleTest(PlaneWaveTest):
 
@@ -127,7 +137,7 @@ class BubbleTest(PlaneWaveTest):
         self.rundata.multilayer_data.eta = [0.0, -0.5]
 
         self.rundata.qinit_data.qinit_type = 7
-        self.rundata.qinit_data.init_location = [0.25,0.25]
+        self.rundata.qinit_data.init_location = [-0.25,0.0]
         self.rundata.qinit_data.wave_family = 0
         self.rundata.qinit_data.epsilon = 0.4
         self.rundata.qinit_data.sigma = 0.08
@@ -164,6 +174,7 @@ if __name__ == "__main__":
                 tests_to_run.append(tests[int(test)])
 
         controller = batch.BatchController(tests_to_run)
+        print controller
         controller.run()
 
     else:
