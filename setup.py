@@ -90,8 +90,8 @@ Operating System :: MacOS
 
 MAJOR               = 5
 MINOR               = 0
-MICRO               = 0
-TYPE                = ''
+MICRO               = 1
+TYPE                = 'rc-alpha'
 VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
 
 package_path       = os.path.join(os.path.dirname(__file__),'clawpack')
