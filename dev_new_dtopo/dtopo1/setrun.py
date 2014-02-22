@@ -118,7 +118,7 @@ def setrun(claw_pkg='geoclaw'):
 
     elif clawdata.output_style == 2:
         # Specify a list of output times.
-        clawdata.output_times = [0.2,0.4,0.6,0.8,1.,1.2,1.4,10]
+        clawdata.output_times = [0.2,0.4,0.6,0.8,1.,1.2,1.4,3]
 
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
@@ -321,7 +321,8 @@ def setrun(claw_pkg='geoclaw'):
 
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    rundata.gaugedata.gauges.append([1,0,0,0,1e10])
+    rundata.gaugedata.gauges.append([1,-0.45,0.05,0,1e10])
+
 
     return rundata
     # end of function setrun

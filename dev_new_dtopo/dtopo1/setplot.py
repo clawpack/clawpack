@@ -29,6 +29,14 @@ def setplot(plotdata):
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
+    # To plot gauge locations on pcolor or contour plot, use this as
+    # an afteraxis function:
+
+    def addgauges(current_data):
+        from clawpack.visclaw import gaugetools
+        gaugetools.plot_gauge_locations(current_data.plotdata, \
+             gaugenos='all', format_string='ko', add_labels=True)
+
 
     #-----------------------------------------
     # Figure for pcolor plot
@@ -79,6 +87,8 @@ def setplot(plotdata):
     plotitem.amr_contour_show = [1,0]  
     plotitem.celledges_show = 0
     plotitem.patchedges_show = 0
+
+    plotaxes.afteraxes = addgauges
 
     #-----------------------------------------
     # Figure for cross section
@@ -137,6 +147,46 @@ def setplot(plotdata):
         legend()
     plotaxes.afteraxes = add_dtopo_plot
 
+
+    #-----------------------------------------
+    # Figures for gauges
+    #-----------------------------------------
+    plotfigure = plotdata.new_plotfigure(name='Surface at gauges', figno=300, \
+                    type='each_gauge')
+    plotfigure.clf_each_gauge = True
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = 'subplot(211)'
+    plotaxes.xlimits = 'auto'
+    plotaxes.ylimits = 'auto'
+    plotaxes.title = 'Surface'
+
+    # Plot surface as blue curve:
+    plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
+    plotitem.plot_var = 3
+    plotitem.plotstyle = 'bo-'
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = 'subplot(212)'
+    plotaxes.xlimits = 'auto'
+    plotaxes.ylimits = 'auto'
+    plotaxes.title = 'Topography'
+
+    # Plot topo as green curve:
+    plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
+    #plotitem.show = False
+
+    def gaugetopo(current_data):
+        q = current_data.q
+        h = q[0,:]
+        eta = q[3,:]
+        topo = eta - h
+        return topo
+
+    plotitem.plot_var = gaugetopo
+    plotitem.plotstyle = 'g-'
 
 
     #-----------------------------------------
