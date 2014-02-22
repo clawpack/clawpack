@@ -1,74 +1,70 @@
 #!/usr/bin/env python
 # encoding: utf-8
-"""
-file: topotools.py 
 
-   Provides several useful functions
-   for manipulating topography data.
+r"""GeoClaw Topography Tools Module
 
-Contains:
-   
-   dms2decimal   convert (degree, minutes, seconds) to decimal
-   latlong_resolution convert dx,dy in degrees to meters at given latitude
-   get_topo:     downloads topo file from GeoClaw repository on web.
-   topo1writer:  create files of topotype1 from synthetic topo function.
-   topo2writer:  create files of topotype2 from synthetic topo function.
-   gcdist:       computes great circle distance between points on sphere.
-   dx_from_gcdist:  inverts gcdist function at a give latitude.
+Module provides several functions for reading, writing and manipulating
+topography (bathymetry) files.
 
-   scatter2gridded
-   topoheaderread
-   topoheaderwrite
-   topofile2griddata
-   griddata2topofile
-   griddatasubset
-   topofilesubset
-   topofilesubsample
-   topofilefindz
-   converttopotype
-   removenodata_value
-   changenodata_value
-   swapheader
-   create_topo_func
-   class TopoPlotData
-   plot_topo_file
+:Functions:
+ - dms2decimal - Convert (degrees, minutes, seconds) to decimal degrees
+ - dist_meters2latlong - Convert dx, dy distance in meters to degrees
+ - dist_latlong2meters - Convert dx, dy distance in degrees to meters
+ - haversine - Calculate the haversine based great circle distance
+ - inv_haversine - Inverts the haversine distance
 
-Authors: Dave George, Randy LeVeque, Kyle Mandli
- 
+:Topography Class:
+
+:TODO:
+ - Tests are implemented but not passing, should we expect the arrays to be 
+   identical?
+ - Add sub and super sampling capababilities
+ - Add functions for creating topography based off a topo function, incorporate
+   the creta_topo_func into Topography class
+ - Fix `in_poly` function
+ - Add remove/fill no data value
+ - Probably should better handle remote files (fetching from http)
 """
 
-import numpy as np
 import os
-import string
-from datatools import *
-from clawpack.visclaw import colormaps
-from numpy import ma
+import urllib
 
+import numpy
 
-#==========================================================================
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
-from data import Rearth   # radius of earth
+import clawpack.visclaw.colormaps as colormaps
 
-#==========================================================================
+# Constants
+from data import Rearth
+DEG2RAD = numpy.pi / 180.0
+RAD2DEG = 180.0 / numpy.pi
 
+# ==============================================================================
+#  Functions
+# ==============================================================================
 def dms2decimal(d,m,s,coord='N'):
-    """
-    convert coordinates on earth measured in (degrees,minutes,seconds)
-    to decimal form.  
+    r"""Convert coordinates in (degrees, minutes, seconds) to decimal form.  
+    
     If coord == 'S' or coord == 'W' then value is negated too.
     Example: 
         >>> topotools.dms2decimal(7,30,36,'W')
         -7.51
     (Note that you might want to add 360 to resulting W coordinate
     if using E coordinates everywhere in a computation spanning date line.)
+
+    returns float
+
     """
 
-    deg = d + m/60. + s/3600.
+    deg = d + m / 60.0 + s / 3600.0
     if coord in ['S','W']:
         deg = -deg
+
     return deg
 
-#==========================================================================
+
 def dist_latlong2meters(dx, dy, latitude=0.0):
     """Convert distance from degrees longitude-latitude to meters.
 
@@ -78,17 +74,14 @@ def dist_latlong2meters(dx, dy, latitude=0.0):
     returns (float, float) 
 
     """
-    # dym = dy*np.pi*Rearth / 180.
-    # dxm = dym * np.cos(latitude*np.pi/180.)
-    dym = Rearth * np.pi / 180.0 * dy
-    dxm = Rearth * np.cos(latitude * np.pi / 180.0) * dx * np.pi / 180.0
 
-
+    dym = Rearth * DEG2RAD * dy
+    dxm = Rearth * numpy.cos(latitude * DEG2RAD) * dx * DEG2RAD
 
     return dxm,dym
 
 
-def dist_meters2latlong(dx, dy, latitude=0.0, equitorial_tolerance=1e-3):
+def dist_meters2latlong(dx, dy, latitude=0.0):
     """Convert distance from meters to degrees of longitude-latitude.
 
     Takes the distance described by *dx* and *dy* in meters and converts it into
@@ -98,908 +91,59 @@ def dist_meters2latlong(dx, dy, latitude=0.0, equitorial_tolerance=1e-3):
 
     """
 
-    # dxd = np.arccos(dx) * 180.0 / (latitude * np.pi)
-    # dyd = dy * 180.0 / (np.pi * Rearth)
-    dxd = dx * 180.0 / (Rearth * np.pi * np.cos(latitude * np.pi / 180.0))
-    dyd = dy * 180.0 / (Rearth * np.pi)
+    dxd = dx / (Rearth * np.cos(latitude * DEG2RAD)) * RAD2DEG
+    dyd = dy * RAD2DEG / Rearth
 
     return dxd, dyd
 
-#==========================================================================
 
-def get_topo(topo_fname, remote_directory, force=None):
+def haversine(x, y, units='degrees'):
+    r"""Compute the great circle distance on the earth between points x and y.
+
+
     """
-    Download a topo file from the web, provided the file does not 
-    already exist locally.
-
-    remote_directory should be a URL.  For GeoClaw data it may be a
-    subdirectory of  http://kingkong.amath.washington.edu/topo/
-    See that website for a list of archived topo datasets.
-    
-    If force==False then prompt the user to make sure it's ok to download,
-    with option to first get small file of metadata.
-
-    If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
-    and if this exists use its value.  This is useful for the script 
-    python/run_examples.py that runs all examples so it won't stop to prompt.
-    """
-    import urllib
-
-    if force is None:
-        CTD = os.environ.get('CLAW_TOPO_DOWNLOAD', None)
-        force = (CTD in [True, 'True'])
-    print 'force = ',force
-
-    if os.path.exists(topo_fname):
-        print "*** Not downloading topo file (already exists): %s " % topo_fname
-    else:
-        remote_fname = topo_fname
-        local_fname = topo_fname
-        remote_fname_txt = remote_fname + '.txt'
-        local_fname_txt = local_fname + '.txt'
-
-        print "Require remote file ", remote_fname
-        print "      from ", remote_directory
-        if not force:
-            ans=raw_input("  Ok to download topo file?  \n"  +\
-                          "     Type y[es], n[o] or ? to first retrieve and print metadata  ")
-            if ans.lower() not in ['y','yes','?']:
-                print "*** Aborting!   Missing: ", local_fname
-                return
-            if ans=="?":
-                try:
-                    print "Retrieving remote file ", remote_fname_txt
-                    print "      from ", remote_directory
-                    url = os.path.join(remote_directory, remote_fname_txt)
-                    urllib.urlretrieve(url, local_fname_txt)
-                    os.system("cat %s" % local_fname_txt)
-                except:
-                    print "*** Error retrieving metadata file!"
-                ans=raw_input("  Ok to download topo file?  ")
-                if ans.lower() not in ['y','yes','?']:
-                    print "*** Aborting!   Missing: ", local_fname
-                    return
-
-        if not os.path.exists(local_fname_txt):
-            try:
-                print "Retrieving metadata file ", remote_fname_txt
-                print "      from ", remote_directory
-                url = os.path.join(remote_directory, remote_fname_txt)
-                urllib.urlretrieve(url, local_fname_txt)
-            except:
-                print "*** Error retrieving metadata file!"
-
-        try:
-            print "Retrieving topo file ", remote_fname
-            print "      from ", remote_directory
-            url = os.path.join(remote_directory, remote_fname)
-            urllib.urlretrieve(url, local_fname)
-        except:
-            print "*** Error retrieving file!  Missing: ", local_fname
-            raise Exception("Error from urllib.urlretrieve")
-        try:
-            firstline = open(local_fname,'r').readline()
-            if firstline.find('DOC') > -1:
-                print "*** Possible error -- check the file ", local_fname
-            else:
-                print "Saved to ", local_fname
-        except:
-            raise Exception("Error opening file %s" % local_fname)
-
-
-
-#==========================================================================
-def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
-    """ 
-    Function topo1writer will write out the topofiles by evaluating the
-    function topo on the grid specified by the other parameters.
-
-    Assumes topo can be called on arrays X,Y produced by np.meshgrid.
-
-    Output file is of "topotype1," which we use to refer to a file with 
-    (x,y,z) values on each line, progressing from upper left corner across
-    rows, then down.
-    """
- 
-    fout=open(outfile, 'w')
-    dx = float(xupper-xlower)/(nxpoints-1)
-    dy = float(yupper-ylower)/(nypoints-1)
-
-    x = np.linspace(xlower,xupper,nxpoints)
-    y = np.linspace(ylower,yupper,nypoints)
-    X,Y = np.meshgrid(x,y)
-    Z = topo(X,Y).T
-    
-
-    for jj in xrange(0,nypoints):
-        y = yupper - jj*dy
-        for i in xrange(0,nxpoints):
-            x =  xlower + i*dx
-            j = nypoints - 1 - jj
-            z = Z[i,j]
-            fout.write("%22.15e  %22.15e  %22.15e\n" % (x,y,z)) 
-
-    fout.close
-    print "Created file ",outfile
-
-
-#==========================================================================
-def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
-                 nodata_value=-99999):
-    """ 
-    Function topo2writer will write out the topofiles by evaluating the
-    function topo on the grid specified by the other parameters.
-
-    Assumes topo can be called on arrays X,Y produced by np.meshgrid.
-
-    Output file is of "topotype2," which we use to refer to a file with a 
-    header and one z value of topography per row in the file
-    
-    Header is of the form:
-    # ---------------------------
-    # integer   ncols   (= nxpoints)
-    # integer   nrows   (= nypoints)
-    # double    xlower
-    # double    ylower
-    # double    cellsize
-    #integer   nodata_value
-    # -----------------------------
-    """
-
- 
-    # note: for topotype2, dx=dy=cellsize
-    dx = float(xupper-xlower)/(nxpoints-1)
-    dy = float(yupper-ylower)/(nypoints-1)
-    if abs(dx-dy) > 1.e-8:
-        print "*** Error in topo2writer, need dx=dy"
-        print "    dx = %s, dy = %s" % (dx,dy)
-        return
-    cellsize = dx
-
-    nrows = nypoints
-    ncols = nxpoints
-    dx=cellsize
-    dy=cellsize
-
-    fout=open(outfile, 'w')
-    fout.write("%6i                              %s\n" % (ncols,"ncols"))
-    fout.write("%6i                              %s\n" % (nrows,"nrows"))
-    fout.write("%22.15e              %s\n" % (xlower,"xlower"))
-    fout.write("%22.15e              %s\n" % (ylower,"ylower"))
-    fout.write("%22.15e              %s\n" % (cellsize,"cellsize"))
-    fout.write("%10i                 %s\n" % (nodata_value,"nodata_value"))
-
-    x = np.linspace(xlower,xupper,nxpoints)
-    y = np.linspace(ylower,yupper,nypoints)
-    X,Y = np.meshgrid(x,y)
-    Z = topo(X,Y).T
-    
-
-    for jj in xrange(0,nrows):
-        for i in xrange(0,ncols):
-            j = nypoints - 1 - jj
-            fout.write("%22.15e\n" % Z[i,j]) 
-
-    fout.close
-    print "Created file ",outfile
-
-
-#==========================================================
-def gcdist(x1,y1,x2,y2,Rsphere=Rearth,units='degrees'):
-    """
-    Compute the great circle distance on the earth between points
-    (x1,y1) and (x2,y2), where:
-    x = longitude, y = latitude 
-    """
-    from numpy import pi,sin,cos,arccos,arcsin,sqrt
-    if units=='degrees':
+    if units == 'degrees':
         # convert to radians:
-        x1 = x1 * pi/180.
-        y1 = y1 * pi/180.
-        x2 = x2 * pi/180.
-        y2 = y2 * pi/180.
-    elif units != 'radians':
-        raise Exception("unrecognized units")
+        x *= DEG2RAD
+        y *= DEG2RAD
 
-    dx = x1 - x2
-    dy = y1 - y2
+    delta = [x[0] - y[0], x[1] - y[1]]
 
     # angle subtended by two points, using Haversine formula:
-    dsigma = 2. * arcsin(sqrt(sin(0.5*dy)**2 + cos(y1)*cos(y2)*sin(0.5*dx)**2))
+    dsigma = 2.0 * numpy.arcsin( numpy.sqrt( numpy.sin(0.5 * delta[1])**2   \
+            + numpy.cos(x[1]) * numpy.cos(y[1]) * numpy.sin(0.5 * delta[0])**2))
 
     # alternative formula that may have more rounding error:
     #dsigma2 = arccos(sin(y1)*sin(y2)+ cos(y1)*cos(y2)*cos(dx))
     #print "max diff in dsigma: ", abs(dsigma-dsigma2).max()
 
-    d = Rsphere * dsigma
-    return d
+    return Rearth * dsigma
     
-#==========================================================
-def dx_from_gcdist(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
-    """
+
+def inv_haversine(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
+    r"""Invert the Haversine function to find dx given a distance and point.
+
+
     Invert the gcdist function to find dx given distance d and (x1,y1) and y2.
     The corresponding x2 can be x1+dx or x1-dx.
     May return NaN if no solution.
     """
-    from numpy import pi,sin,cos,arccos
+
     if units=='degrees':
         # convert to radians:
-        x1 = x1 * pi/180.
-        y1 = y1 * pi/180.
-        y2 = y2 * pi/180.
+        x1 = x1 * RAD2DEG
+        y1 = y1 * RAD2DEG
+        y2 = y2 * RAD2DEG
     elif units != 'radians':
         raise Exception("unrecognized units")
     dsigma = d / Rsphere
-    cos_dsigma = (cos(dsigma) - sin(y1)*sin(y2)) / (cos(y1)*cos(y2))
-    dx = arccos(cos_dsigma)
+    cos_dsigma = (numpy.cos(dsigma) - numpy.sin(y1)*numpy.sin(y2)) / (numpy.cos(y1)*numpy.cos(y2))
+    dx = numpy.arccos(cos_dsigma)
     if units=='degrees':
-        dx = dx*180./pi
+        dx = dx * RAD2DEG
     return dx
 
 
-#===============================================================================
-def scatter2gridded (scatterdatafile=" ",boundarydatafile=" ", headerfile=" ", outputfile=" "):
-
-    """
-    scatter2gridded (scatterdatafile=" ",boundarydatafile=" ", headerfile=" ", outputfile=" "):
-
-    function converts scattered data points (x,y,z) into
-    gridded data, with z values given at uniformly spaced points.
-
-    'scatterdatafile' and optional 'boundarydatafile' should each have three columns
-     containing x,y,z coordinates respectively of each point.
-
-    'headerfile' specifies the format of the grid parameters for the output data.
-     The header should have the following form:
-
-         int ncols
-         int nrows
-         float xll
-         float yll
-         float cellsize
-         float nodata_value
-
-    see topotools.headerwriter and topotools.headerreader.
-
-    'outputfile' will have the same header followed by the data advancing from northwest
-    across eastward then down, one z value per row.
-    """
-    import pylab
-
-    # Input data==========================:
-    # read scattered data
-    fin=open(scatterdatafile,'r')
-    a=fromfile(fin,sep=" ",count=-1,dtype=float)
-    fin.close
-    #read boundary data ie: points specifying a quadrilateral bounding the scattered data if it is needed
-    if boundarydatafile !=" " :
-        fin=open(boundarydatafile,'r')
-        b=fromfile(fin,sep=" ",count=-1,dtype=float)
-        fin.close
-        a=np.hstack((a,b))
-    #reshape data into (#pts , 3) array
-    pts=len(a)/3
-
-    a=np.reshape(a,(pts,3))
-
-    #determine what the output grid will look like from headerfile
-    topoheader=topoheaderread(inputfile=headerfile)
-
-    # manipulate data============================:
-    #Create the gridded data using pylab "griddata function."
-    xgrid = np.arange(topoheader['xll'], \
-                   topoheader['xll']+topoheader['ncols']*topoheader['cellsize'], \
-                   step=topoheader['cellsize'],dtype=float)
-    ygrid = np.arange(topoheader['yll'], \
-                   topoheader['yll']+topoheader['nrows']*topoheader['cellsize'], \
-                   step=topoheader['cellsize'],dtype=float)
-
-    X,Y=np.meshgrid(xgrid,ygrid)
-
-    Z = pylab.griddata(a[:,0],a[:,1],a[:,2],X,Y)
-    Y=np.flipud(Y)
-    Z=np.flipud(Z)
-#    pyplot.contour(X,Y,Z)
-    #write the output file =====================:
-    if outputfile != " ":
-        fout=topoheaderwrite(topoheader,outputfile,closefile=False)
-        for i in xrange(topoheader['nrows']) :
-            for j in xrange(topoheader['ncols']) :
-                fout.write("%s\n" % Z[i,j])
-        fout.close()
-    return (X,Y,Z)
-    # end scatter2gridded
-
-
-#============================================================================
-def topoheaderwrite (topoheader,outputfile,closefile=True):
-
-    """
-    topoheaderwrite(topoheader,outputfile) opens an ascii topography data file and writes the header
-    using the dictionary "topoheader"
-
-    The header is of the following form with columns containing the topoheader value and key respectively.
-
-         int ncols
-         int nrows
-         float xll
-         float yll
-         float cellsize
-         float nodata_value
-
-
-    if closefile==True: the file is closed. Otherwise return the open file object.
-    """
-
-    fout=open(outputfile,'w')
-
-    fout.write("%s %s\n" % (topoheader['ncols'],"ncols"))
-    fout.write("%s %s\n" % (topoheader['nrows'],"nrows"))
-    fout.write("%s %s\n" % (float(topoheader['xll']),"xll"))
-    fout.write("%s %s\n" % (float(topoheader['yll']),"yll"))
-    fout.write("%s %s\n" % (float(topoheader['cellsize']),"cellsize"))
-    fout.write("%s %s\n" % (topoheader['nodata_value'],"nodata_value"))
-    if closefile:
-        fout.close()
-    else:
-       return fout
-    #end headerwriter
-
-
-#============================================================================
-def topoheaderread (inputfile, closefile=True):
-
-    """
-    topoheaderread (inputfile):
-    read the header in inputfile and place in dictionary topoheader to be returned.
-
-    The header is of the following form with columns containing the topoheader value and keyword respectively.
-
-         int ncols
-         int nrows
-         float xll
-         float yll
-         float cellsize
-         float nodata_value
-    """
-    topoheader={'ncols':0,'nrows':0,'xll':0.0,'yll':0.0,'cellsize':0.0,'nodata_value':0}
-    keylist=topoheader.keys()
-
-    keymap = {'ncols':'ncols','nrows':'nrows','xll':'xll','yll':'yll','cellsize':'cellsize','nodata_value':'nodata_value', \
-    'xllcenter':'xll','yllcenter':'yll','xllcorner':'xll','yllcorner':'yll',\
-    'xlower':'xll', 'ylower':'yll'}
-
-    fid=open(inputfile,'r')
-    keyleft=len(keylist)
-    while keyleft> 0 :
-        line=string.split(fid.readline())
-        if line:
-            if line[0].lower() in keymap.keys():
-                topoheader[keymap[line[0].lower()]]= iotools.convertd2e(line[1])
-                keyleft=keyleft-1
-            if line[1].lower() in keymap.keys():
-                topoheader[keymap[line[1].lower()]]= iotools.convertd2e(line[0])
-                keyleft=keyleft-1
-
-    #check if passes convert strings values to numeric
-    for key in keylist :
-        if not key in topoheader:
-            print('ERROR: topoheader not fully specified in %s' % (inputfile))
-            exit
-        else:
-            if '.' in topoheader[key] or 'nan' in topoheader[key].lower() or 'e' in topoheader[key].lower():
-                topoheader[key]=float(topoheader[key])
-            else:
-                topoheader[key]=int(topoheader[key])
-
-
-    if closefile:
-        fid.close()
-        return topoheader
-    else:
-        return (fid,topoheader)
-
-    #end topoheader
-
-#==============================================================================
-def topofile2griddata (inputfile,topotype=2,xy1d=False):
-    """
-    topofile2griddata (inputfile):
-    read topofile into a numpy array.
-
-    read data in topo files of type 1, 2 or 3 into numpy arrays
-    X,Y, Z, each with shape=(nrows,ncols) holding x,y and z coords.
-    
-    If xy1d==True then one dimensional arrays x and y are returned
-    rather than 2d arrays.
-
-    """
-    import pylab
-
-
-    if abs(topotype)>1:
-        (fin,topoheader)=topoheaderread(inputfile,closefile=False)
-        zdata=fin.readlines()
-        fin.close()
-        for row in xrange(len(zdata)):
-            zdata[row]=iotools.convertd2e(zdata[row])
-            zdata[row]=string.split(zdata[row])
-            for col in xrange(len(zdata[row])) :
-                zdata[row][col]=float(zdata[row][col])
-
-        Z=np.array(zdata)
-        Z=np.reshape(Z,(topoheader['nrows'],topoheader['ncols']))
-
-        xlower=topoheader['xll']
-        xupper=xlower+ topoheader['cellsize']*(topoheader['ncols']-1)
-
-        ylower = topoheader['yll']
-        yupper = ylower+ topoheader['cellsize']*(topoheader['nrows']-1)
-
-        x=np.linspace(xlower,xupper,topoheader['ncols'])
-        #y=np.linspace(yupper,ylower,topoheader['nrows'])
-        y=np.linspace(ylower,yupper,topoheader['nrows'])
-        if not xy1d:
-            [X,Y]=np.meshgrid(x,y)
-            #Y=np.flipud(Y)
-
-    else:
-        a=iotools.datafile2array(inputfile)
-        xdiff=np.diff(a[:,0])
-        inddiff=pylab.find(xdiff<0)
-        xlength=inddiff[0]+1
-        ylength=len(a[:,0])/xlength
-        x=a[:,0]
-        y=a[:,1]
-        z=a[:,2]
-
-        X=np.reshape(x,(ylength,xlength))
-        Y=np.reshape(y,(ylength,xlength))
-        Z=np.reshape(z,(ylength,xlength))
-        Y = np.flipud(Y)       
-
-        x = X[0,:]
-        y = Y[:,0]
-
-    if topotype < 0: 
-        Z = -Z
-
-    Z = np.flipud(Z)
-    if xy1d:
-        return x,y,Z
-    else:
-        return X,Y,Z
-        
-    #end topofile2griddata 
-
-#==============================================================================
-def griddata2topofile (X,Y,Z,outputfile,topotype=2,nodata_value_in=9999., \
-                       nodata_value_out=9999.,xy1d=False):
-    """
-    griddata2topofile takes gridded data and produces a topofile with a header.
-    
-    Input: 
-      if xy1d==True then X, Y are 1-dimensional arrays and Z is 2-dimensional.
-         otherwise X,Y,Z are all 2-dimensional of the same shape.
-      outputfile: filename to write output to.
-      topotype: 1, 2, or 3.
-
-    """
-
-    nrows=len(Z[:,0])
-    ncols=len(Z[0,:])
-    if xy1d:
-        x = X
-        y = Y
-    else:
-        x = X[0,:]
-        y = Y[:,0]
-    
-    xll = x[0]
-    yll = y[-1]
-    xupper = x[-1]
-    yupper = y[0]
-
-        
-    nodata_value=nodata_value_out
-    
-
-    if (yupper<yll):
-        print ("geotools.topotools.griddata2topofile:")
-        print ("ERROR: griddata is not in the proper format: Y[0,0]<Y[-1,0] ")
-        print ("The matrix Y, should advance from north to south rowwise")
-
-
-    cellsizeX= (xupper-xll)/(ncols-1)
-    cellsizeY= (yupper-yll)/(nrows-1)
-
-    topoheader={}
-    topoheader["nrows"]=nrows
-    topoheader["ncols"]=ncols
-    topoheader["xll"]=xll
-    topoheader["yll"]=yll
-    topoheader["cellsize"]=cellsizeX
-    topoheader["nodata_value"]=nodata_value_out
-
-    if ((abs(cellsizeX-cellsizeY)<-1.e-9)&(topotype>1)):
-        print ("topotools.griddata2topofile:")
-        print ("WARNING: cellsize is not uniform in x and y")
-        print ("cellsize in the x-direction %s" % cellsizeX)
-        print ("cellsize in the y-direction %s" % cellsizeY)
-        print ("Consider changing to topotype=1")
-
-    if topotype==2:
-        fout=topoheaderwrite(topoheader,outputfile,closefile=False)
-        for i in xrange(nrows) :
-            for j in xrange(ncols) :
-                fout.write("%s\n" % (Z[i,j]))
-        fout.close()
-
-    elif topotype==3:
-        fout=topoheaderwrite(topoheader,outputfile,closefile=False)
-        for i in xrange(nrows) :
-            for j in xrange(ncols) :
-                fout.write("%s   " % (Z[i,j]))
-            fout.write("\n")
-        fout.close()
-
-    else:
-        fout=open(outputfile,'w')
-        for i in xrange(nrows) :
-            for j in xrange(ncols) :
-                fout.write("%s %s %s\n" % (x[i],y[j],Z[i,j]))
-        fout.close()
-
-    # end griddata2topofile 
-
-#============================================================================
-def converttopotype (inputfile,outputfile,topotypein=1,topotypeout=2,nodata_value=None):
-    """
-    convert topofiles of one type to another.
-    """
-
-    (X,Y,Z)=topofile2griddata(inputfile,topotypein)
-
-    if topotypein>1 and not nodata_value:
-        topoheader=topoheaderread(inputfile)
-        nodata_value=topoheader["nodata_value"]
-    if topotypein==1 and topotypeout>1 and not nodata_value:
-        print('You must provide a value for nodata_value')
-
-    griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
-
-    #end converttopotype 
-
-
-#==============================================================================
-def griddatasubset (X,Y,Z,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.0e6,xy1d=False):
-    """
-    griddatasubset takes grided data (X,Y,Z) and creates a subset of new gridded data
-
-    X,Y,Z are assumed to be numpy arrays where data advances from northwest---northeast then
-    southward, corresponding to advancing across columns then down rows.
-
-    the new gridded data will correspond to the largest subset of the region [xlow,xhi] X [ylow,yhi]
-    """
-    from pylab import find
-
-    if xy1d:
-        xind = find((X >= xlow) & (X <= xhi))
-        yind = find((Y >= ylow) & (Y <= yhi))
-        Xsub = X[xind]
-        Ysub = Y[yind]
-    else:
-        xind = find((X[0,:]>=xlow)&(X[0,:]<=xhi))
-        yind = find((Y[:,0]<=yhi)&(Y[:,0]>=ylow))
-        Xsub = X[np.ix_(yind,xind)]
-        Ysub = Y[np.ix_(yind,xind)]
-        
-    Zsub = Z[np.ix_(yind,xind)]
-
-    return Xsub,Ysub,Zsub
-    #end griddatasubset 
-
-#==============================================================================
-def topofilefindz (pts,inputfile,topotypein=2):
-    """
-    topofilefindz takes an inputfile, and the coordinates of multiple points, as a list of pairs,
-    pts=[(x1,y1),...,(xn,yn)] or a numpy array of shape (n,2) [[x1,x2],...[xn,yn]], etc.
-    and returns the topo z values as a numpy list z = [z1,...,zn].
-    at those coordinates. It interpolates a bilinear function between the 4 nodes surrounding (x,y).
-
-    """
-
-    (X,Y,Z)=topofile2griddata(inputfile,topotypein)
-    z=[]
-
-    for i in range(len(pts)):
-        x=pts[i][0]
-        y=pts[i][1]
-
-        if ((x<X[0,0])|(x>X[0,-1])|(y<Y[-1,0])|(y>Y[0,0])):
-            print('WARNING: point %i is outside data file: (x,y)= (%g,%g)' % (i+1,x,y))
-            print('**file corners are (X0,Y0)= (%g,%g), and (X1,Y1) = (%g,%g)' % (X[0,0],Y[0,0],X[-1,-1],Y[-1,-1]))
-            z.append(nan)
-        else:
-
-            #find indices of four corners
-            #some corners might be the same, if x or y happen to intersect X or Y
-            i0 = np.where(X[0,:]<=x)[0][-1]
-            i1 = np.where(X[0,:]>=x)[0][0]
-
-            j0 = np.where(Y[:,0]<=y)[0][0]
-            j1 = np.where(Y[:,0]>=y)[0][-1]
-
-            #find height of four corners
-            Z00=Z[j0,i0]
-            Z01=Z[j0,i1]
-            Z10=Z[j1,i0]
-            Z11=Z[j1,i1]
-
-            X00=X[j0,i0]
-            X01=X[j0,i1]
-            X10=X[j1,i0]
-            X11=X[j1,i1]
-
-            Y00=Y[j0,i0]
-            Y01=Y[j0,i1]
-            Y10=Y[j1,i0]
-            Y11=Y[j1,i1]
-
-            #find slopes of opposing lines.
-            if i0==i1:
-                dzdx0=0.0
-                dzdx1=0.0
-            else:
-                dzdx0 = (Z01-Z00)/(X11-X00)
-                dzdx1 = (Z11-Z10)/(X11-X00)
-
-            #find height of points on lines
-            zy0 = Z00 + (x-X00)*dzdx0
-            zy1 = Z10 + (x-X10)*dzdx1
-
-            if j0==j1:
-                dzdy=0.0
-            else:
-                dzdy = (zy1-zy0)/(Y11-Y00)
-
-            z.append( zy0 + (y-Y00)*dzdy)
-
-    z=np.array(z)
-    return z
-
-#==============================================================================
-def topofilesubset (inputfile,outputfile,topotypein=2,topotypeout=2,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.e6,\
-                    nodata_value_in=None, cheap=False ):
-    """
-    topofilesubset takes a topofile, takes a subset of the data and produces a new topofile.
-
-    If cheap = True then the data is directly read from one file and written to the smaller file
-    This is useful for very large topofiles that are being split into more manageable files.
-
-    """
-
-    if (cheap==False):
-        # this requires too much memory for some large files
-        # use cheap option if topotype>1
-        (X,Y,Z)=topofile2griddata(inputfile,topotypein)
-        if topotypein>1 and not nodata_value_in:
-            topoheader=topoheaderread(inputfile)
-            nodata_value_in=topoheader["nodata_value"]
-
-        if topotypein==1 and topotypeout>1 and not nodata_value_in:
-            print('You must provide a value for nodata_value_in')
-
-        nodata_value_out=nodata_value_in
-        (Xsub,Ysub,Zsub)=griddatasubset(X,Y,Z,xlow,xhi,ylow,yhi)
-        griddata2topofile(Xsub,Ysub,Zsub,outputfile,topotypeout,nodata_value_in,nodata_value_out)
-
-    else:
-        if topotypein==1:
-            print("topotools.topofilesubset")
-            print("ERROR: topotype=1 not supported in cheap mode")
-            print("convert the input file to topotype 2 or 3")
-            print("with converttopotype")
-            return
-
-        (fidin,topoheaderin)=topoheaderread(inputfile,False)
-        nodata_value_in=topoheaderin["nodata_value"]
-        ncols=topoheaderin["ncols"]
-        nrows=topoheaderin["nrows"]
-        yll=topoheaderin["yll"]
-        xll=topoheaderin["xll"]
-        cellsize=topoheaderin["cellsize"]
-        yupper=yll + cellsize*(nrows-1)
-        xupper=xll + cellsize*(ncols-1)
-
-        xupperout=min(xupper,xhi)
-        xlowout=max(xlow,xll)
-        yupperout=min(yupper,yhi)
-        ylowout=max(yll,ylow)
-
-        theadout={}
-        ncolsout= int((xupperout-xlowout)/cellsize + 1)
-        nrowsout= int((yupperout-ylowout)/cellsize + 1)
-        j=np.ceil((xlowout-xll)/cellsize + 1)
-        xllout=xll + (j-1)*cellsize
-        i=np.ceil((ylowout-yll)/cellsize + 1)
-        yllout = yll + (i-1)*cellsize
-
-        theadout["xll"]=xllout
-        theadout["yll"]=yllout
-        theadout["ncols"]=ncolsout
-        theadout["nrows"]=nrowsout
-        theadout["cellsize"]=cellsize
-        theadout["nodata_value"]= nodata_value_in
-
-        fidout=topoheaderwrite(theadout,outputfile,closefile=False)
-        outpts=ncolsout*nrowsout
-        writtenpts=0
-
-        if topotypein>1:
-            while outpts>0:
-                for row in xrange(nrows) :
-                    y=yupper-row*cellsize
-                    for col in xrange(ncols) :
-                        x=xll + col*cellsize
-                        zdata=fidin.readline()
-                        zdata=string.split(zdata)
-                        w=writtenpts
-                        for jj in xrange(len(zdata)):
-                            if ((xlow<=x<=xhi)&(ylow<=y<yhi)):
-                                fidout.write("%s  " % zdata[jj])
-                                outpts=outpts-1
-                                writtenpts=writtenpts+1
-                        if writtenpts>w:
-                            fidout.write("\n")
-
-            if writtenpts!=ncolsout*nrowsout:
-                print("topotools.topofilesubset")
-                print("ERROR: points written != ncols*nrows in header")
-
-        fidout.close()
-        fidin.close()
-    #end topofilesubset
-
-#==============================================================================
-def topofilesubsample (inputfile,outputfile,sampleinteger,topotypein=2,topotypeout=2,\
-                    nodata_value_in=None ):
-    """
-    topofilesubsample takes a topofile, and resamples the data at an integer (sampleinteger)
-     number of grid points to produces a new topofile.
-
-    For example, if a topofile contains 1m data, if the integer is 10, the resulting
-     file will be 10m data.
-
-    This is useful for shrinking huge DEMs where high accuracy is not needed.
-
-    """
-
-
-    (X,Y,Z)=topofile2griddata(inputfile,topotypein)
-    if topotypein>1 and not nodata_value_in:
-        topoheader=topoheaderread(inputfile)
-        nodata_value_in=topoheader["nodata_value"]
-
-    if topotypein==1 and topotypeout>1 and not nodata_value_in:
-        print('You must provide a value for nodata_value_in')
-
-    nodata_value_out=nodata_value_in
-    Xsub = X[0::sampleinteger,0::sampleinteger]
-    Ysub = Y[0::sampleinteger,0::sampleinteger]
-    Zsub = Z[0::sampleinteger,0::sampleinteger]
-    griddata2topofile(Xsub,Ysub,Zsub,outputfile,topotypeout,nodata_value_in,nodata_value_out)
-
-#==============================================================================
-def removenodata_value (inputfile,outputfile,topotypein=2,topotypeout=2,nodata_value=None,method='fill'):
-    """
-    remove the nodata_values in a topo file by interpolating from meaningful values.
-    """
-    import pylab
-
-    (X,Y,Z)=topofile2griddata(inputfile,topotypein)
-
-    if topotypein>1 and not nodata_value:
-        topoheader=topoheaderread(inputfile)
-        nodata_value=topoheader['nodata_value']
-    elif not nodata_value:
-        print 'provide a value for nodata_value when using topotype1'
-
-    if method=='fill':
-        ind=fixdata.findbadindices(Z,nodata_value)
-        if size(ind)>0:
-            print("Changing %s nodata_value points" % size(ind))
-        Z=fixdata.fillbaddata(Z,ind)
-        griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
-        return
-    nrows= shape(Z)[0]
-    ncols= shape(Z)[1]
-    npts = nrows*ncols
-
-    xi=X[0,:]
-    yi=Y[:,0]
-
-    X.np.reshape(npts)
-    Y.np.reshape(npts)
-    Z.np.reshape(npts)
-
-    ind=np.where(Z!=nodata_value)
-    X=X[ind]
-    Y=Y[ind]
-    Z=Z[ind]
-
-    ptsremove=npts-len(Z)
-    if ptsremove>0:
-        print("Removing %s nodata_value points" % ptsremove)
-
-    Z = pylab.griddata(X,Y,Z,xi,yi)
-    (X,Y)=np.meshgrid(xi,yi)
-
-    griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
-
-    return
-
-    #end removenodata_value 
-
-
-#===============================================================================
-def changenodata_value (inputfile,outputfile,topotypein,topotypeout=None,\
-        nodata_valuein=None, nodata_valueout=np.nan):
-    """
-    change the nodata_values in a topo file by interpolating from meaningful values.
-    """
-
-    (X,Y,Z)=topofile2griddata(inputfile,topotypein)
-
-    if topotypein>1 and not nodata_valuein:
-        topoheader=topoheaderread(inputfile)
-        nodata_valuein=topoheader['nodata_value']
-    elif not nodata_valuein:
-        print 'provide a value for nodata_valuein when using topotype1'
-
-    if not topotypeout:
-        topotypeout=topotypein
-
-    nrows= shape(Z)[0]
-    ncols= shape(Z)[1]
-    npts = nrows*ncols
-
-    ind=np.where(Z==nodata_valuein)
-    Z[ind]=nodata_valueout
-
-
-    if size(ind)>0:
-        print("Changing %s nodata_value points" % size(ind))
-
-    griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_valuein,nodata_valueout)
-
-    return
-
-    #end removenodata_value 
-
-
-#===============================================================================
-def swapheader (inputfile,outputfile):
-    """
-    take a topo file and swap the order of key and value in header so that value is in the
-    first column and key in the second.
-    """
-
-    (fidin,header) = topoheaderread(inputfile,closefile=False)
-    fidout=topoheaderwrite(header,outputfile,closefile=False)
-    while True:
-        line=fidin.readline()
-        if not line:
-            break
-        fidout.write(line)
-
-
-    fidin.close()
-    fidout.close()
-
-    return
-
-#==============================================================================
 def create_topo_func(loc,verbose=False):
     """
     Given a 1-dimensional topography profile specfied by a set of (x,z) 
@@ -1048,150 +192,756 @@ def create_topo_func(loc,verbose=False):
     return eval(cmd_str)
 
 
-#=====================================
-# For reading and plotting topo files
 
-class TopoPlotData(object):
-    def __init__(self, fname):
-        self.fname = fname 
-        self.topotype = 3
-        self.neg_cmap = None
-        self.pos_cmap = None
-        self.cmap = None
-        self.cmax = 100.
-        self.cmin = -4000.
-        self.climits = None
-        self.figno = 200
-        self.addcolorbar = False
-        self.addcontour = False
-        self.contour_levels = [0, 0]
-        self.xlimits = None
-        self.ylimits = None
-        self.coarsen = 1
-        self.imshow = True
-        self.gridedges_show = True
-        self.print_fname = True
-        self.latlong = True
+# ==============================================================================
+#  Topography class
+# ==============================================================================
+class Topography(object):
 
-    def plot(self):
-        plot_topo_file(self)
+    r"""Base topography class.
+
+    A class representing a single topography file.
+
+    :Properties:
+
+    :Initialization:
+         - 
+
+    :Examples:
+
+        >>> import clawpack.geoclaw.topo as topo
+        >>> topo_file = topo.Topography('./topo.tt3')
+        >>> topo_file.plot()
+
+    """
+
+    @property
+    def z(self):
+        r"""A representation of the data as an 1d array."""
+        if self._z is None:
+            self.read(mask=True)
+        return self._z
+    @z.setter
+    def z(self, value):
+        self._z = value
+    @z.deleter
+    def z(self):
+        del self._z
+
+    @property
+    def Z(self):
+        r"""A representation of the data as a 2d array."""
+        if self._Z is None:
+            self.generate_2d_depths(mask=True)
+        return self._Z
+    @Z.setter
+    def Z(self, value):
+        self._Z = value
+    @Z.deleter
+    def Z(self):
+        del self._Z
+
+    @property
+    def x(self):
+        r"""One dimensional coorindate array in x direction."""
+        if self._x is None:
+            self.read(mask=True)
+        return self._x
+    @x.setter
+    def x(self, value):
+        self._extent = None
+        self._x = value
+    @x.deleter
+    def x(self):
+        del self._x
+
+    @property
+    def X(self):
+        r"""Two dimensional coordinate array in x direction."""
+        if self._X is None:
+            self.generate_2d_coordinates(mask=True)
+        return self._X
+    @X.deleter
+    def X(self):
+        del self._X
+
+    @property
+    def y(self):
+        r"""One dimensional coordinate array in y direction."""
+        if self._y is None:
+            self.read(mask=True)
+        return self._y
+    @y.setter
+    def y(self, value):
+        self._extent = None
+        self._y = value
+    @y.deleter
+    def y(self):
+        del self._y
+
+    @property
+    def Y(self):
+        r"""Two dimensional coordinate array in y direction."""
+        if self._Y is None:
+            self.generate_2d_coordinates(mask=True)
+        return self._Y
+    @Y.deleter
+    def Y(self):
+        del self._Y
+
+    @property
+    def extent(self):
+        r"""Extent of the topography."""
+        if self._extent is None:
+            self._extent = ( numpy.min(self.x), numpy.max(self.x), 
+                             numpy.min(self.y), numpy.max(self.y) )
+        return self._extent
+    @extent.setter
+    def extent(self, value):
+        self._extent = value
+
+    @property
+    def delta(self):
+        r"""Spacing of data points."""
+        if self._delta is None:
+            if self.unstructured:
+
+                # Calculate the smallest spacing between grid points            
+                dx = numpy.infty
+                dy = numpy.infty
+                num_comparisons = self.x.shape[0] - 1
+                for i in xrange(self.x.shape[0]):
+                    for j in xrange(num_comparisons):
+                        dx = min(dx, numpy.abs(self.x[i + j + 1] - self.x[i]))
+                        dy = min(dy, numpy.abs(self.y[i + j + 1] - self.y[i]))
+
+                    num_comparisons -= 1
+                self._delta = [dx, dy]
+            else:
+                # All other topography types should have equally spaced grid
+                # points in each direction
+                self._delta = [self.x[1] - self.x[0], self.y[1] - self.y[0]]
+                check_delta = [self.x[-2] - self.x[-1], self.y[-2] - self.y[-1]]
+                assert self._delta[0] == check_delta,                  \
+                       "Grid spacing delta not constant, %s != %s." %  \
+                       (self._delta, check_delta)
+        return self._delta
+
+
+    def __init__(self, path, topo_type=None, unstructured=False, force=False):
+        r"""Topography initialization routine.
         
+        See :class:`Topography` for more info.
 
-def plot_topo_file(topoplotdata):
-    """
-    Read in a topo or bathy file and produce a pcolor map.
-    """
+        """
 
-    import os
-    import pylab
-    from clawpack.clawutil.data import ClawData
+        super(Topography, self).__init__()
 
-    fname = topoplotdata.fname 
-    topotype = topoplotdata.topotype
-    if topoplotdata.climits:
-        # deprecated option
-        cmin = topoplotdata.climits[0]
-        cmax = topoplotdata.climits[1]
-    else:
-        cmin = topoplotdata.cmin
-        cmax = topoplotdata.cmax
-    figno = topoplotdata.figno
-    addcolorbar = topoplotdata.addcolorbar
-    addcontour = topoplotdata.addcontour
-    contour_levels = topoplotdata.contour_levels
-    xlimits = topoplotdata.xlimits
-    ylimits = topoplotdata.ylimits
-    coarsen = topoplotdata.coarsen
-    imshow = topoplotdata.imshow
-    gridedges_show = topoplotdata.gridedges_show
-    neg_cmap = topoplotdata.neg_cmap
-    pos_cmap = topoplotdata.pos_cmap
-    cmap = topoplotdata.cmap
-    print_fname = topoplotdata.print_fname
-
-
-    if neg_cmap is None:
-        neg_cmap = colormaps.make_colormap({0:[0.3,0.2,0.1],
-                                                1:[0.95,0.9,0.7]})
-    if pos_cmap is None:
-        pos_cmap = colormaps.make_colormap({    0:[.5,.7,0],
-                                        1:[.2,.5,.2]})
-    if cmap is None:
-        cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
-                                           -0.00001:[0.95,0.9,0.7],
-                                           0.00001:[.5,.7,0],
-                                           1:[.2,.5,.2]})
-        #cmap = colormaps.make_colormap({-1:[0,0,1],0:[1,1,1],1:[1,0,0]})
-
-
-    # read in the topofile data:
-    x,y,topo = topofile2griddata(fname, topotype, xy1d=True)
-    #topo = pylab.flipud(topo)
-    #Y = pylab.flipud(Y)
-    xllcorner = x[0]
-    yllcorner = y[0]
-    cellsize = x[1]-x[0]
-
-
-
-    if coarsen > 1:
-        topo = topo[slice(0,nrows,coarsen), slice(0,ncols,coarsen)]
-        x = x[slice(0,ncols,coarsen)]
-        y = y[slice(0,nrows,coarsen)]
-        print "Shapes after coarsening: ", x.shape, y.shape, topo.shape
-
-
-    if figno:
-        pylab.figure(figno)
-
-    xylimits = (x[0],x[-1],y[0],y[-1])
-    pos_topo = ma.masked_where(topo<0., topo)
-    all_masked = (ma.count(pos_topo) == 0)
-    if not all_masked:
-        if topoplotdata.imshow:
-            pylab.imshow(pos_topo, extent=xylimits, origin='lower', \
-                    cmap=pos_cmap)
+        self.path = path
+        if topo_type is not None:
+            self.topo_type = topo_type
         else:
-            pylab.pcolormesh(x,y,pos_topo,cmap=pos_cmap)
-        pylab.clim([0,cmax])
-        if addcolorbar:
-            pylab.colorbar()
+            # Try to look at suffix for type
+            extension = os.path.splitext(path)[1][1:]
+            if extension[:2] == "tt":
+                self.topo_type = int(extension[2])
+            elif extension == 'xyz':
+                self.topo_type = 1
+            elif extension == 'asc':
+                self.topo_type = 3
+            else:
+                # Default to 3
+                self.topo_type = 3
+        self.unstructured = unstructured
+        self.no_data_value = -9999
 
-    neg_topo = ma.masked_where(topo>0., topo)
-    all_masked = (ma.count(neg_topo) == 0)
-    if not all_masked:
-        if topoplotdata.imshow:
-            pylab.imshow(neg_topo, extent=xylimits, origin='lower', \
-                    cmap=neg_cmap)
+        # Check if the path is a URL and fetch data if needed or forced
+        if "http" in self.path:
+            new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
+            if not os.path.exists(new_path) or force:
+                urllib.urlretrieve(self.path)
+
+            # Change path to be local
+            self.path = new_path
+
+        # Data storage for only calculating array shapes when needed
+        self._z = None
+        self._Z = None
+        self._x = None
+        self._X = None
+        self._y = None
+        self._Y = None
+        self._extent = None
+        self._delta = None
+
+        self.coordinate_transform = lambda x,y: (x,y)
+
+
+    def generate_2d_depths(self, mask=True):
+        r"""Generate a 2d array of the depths."""
+
+        # Check to see if we need to generate these
+        if self._Z is None:
+
+            if self.unstructured:
+                # Really no way to do this here with performing a projection via
+                # extract.  Note that if the projection is performed these
+                # arrays are already stored in self._X and self._Y
+                raise ValueError("Unstructured data does not allow for use of" \
+                                 + " 2d arrays, first project the data and" \
+                                 + " try to perform this operation again.") 
+
+            if self._z is None:
+            # Try to read the data, may not have done this yet
+                self.read(mask=mask)
+                if self._Z is not None:
+                    # We are done, the read function did our work
+                    return
+
+            # See if self._X and self._Y are already computed and use them if
+            # available, otherwise just use self._x and self._y
+            if self._X is not None and self._Y is not None:
+                new_shape = self._X.shape
+            else:
+                new_shape = (self._x.shape[0], self._y.shape[0])
+            # Reshape, note that the mask follows along with the new array
+            self._Z = numpy.reshape(self._z, new_shape)
+
+
+    def generate_2d_coordinates(self, mask=True):
+        r"""Generate 2d coordinate arrays."""
+
+        # Check to see if we need to generate these
+        if self._X is None and self._Y is None:
+
+            if self.unstructured:
+                # Really no way to do this here with performing a projection via
+                # extract.  Note that if the projection is performed these
+                # arrays are already stored in self._X and self._Y
+                raise ValueError("Unstructured data does not allow for use of" \
+                                 + " 2d coordinates, first project the data" \
+                                 + " and try to perform this operation again.")
+
+            if self.topo_type == 1:
+                # Reading this topo_type should produce the X and Y arrays
+                self.read(mask=mask)
+            elif self.topo_type == 2 or self.topo_type == 3:
+                if self._x is None or self._y is None:
+                    # Try to read the data to get these, may not have been done yet
+                    self.read(mask=mask)
+                # Generate arrays
+                self._X, self._Y = numpy.meshgrid(self._x, self._y)
+
+            
+            # If masking has been requested try to get the mask first from 
+            # self._Z and then self._z
+            if mask:
+                if self._Z is None:
+                    # Check to see if we really need to do anything here
+                    if isinstance(self._z, numpy.ma.MaskedArray):
+                        # Try to create self._Z
+                        self.generate_2d_depths(mask=mask)
+
+                if isinstance(self._Z, numpy.ma.MaskedArray):
+                    # Use Z's mask for the X and Y coordinates
+                    self._X = numpy.ma.MaskedArray(self._X, mask=self._Z.mask, 
+                                                                     copy=False)
+                    self._Y = numpy.ma.MaskedArray(self._Y, mask=self._Z.mask, 
+                                                                     copy=False)
+
+
+    def read(self, mask=True, filter_region=None):
+        r"""Read in the data from the object's *path* attribute.
+
+        Stores the resulting data in one of the sets of *x*, *y*, and *z* or 
+        *X*, *Y*, and *Z*.  
+
+        :Input:
+         - *mask* (bool)
+         - *filter_region* (tuple)
+
+        """
+
+        if self.unstructured:
+            # Read in the data as series of tuples
+            data = numpy.loadtxt(self.path)
+            points = []
+            values = []
+
+            # Filter region if requested
+            if filter_region is not None:
+                for coordinate in data:
+                    if filter_region[0] <= coordinate[0] <= filter_region[1]:
+                        if filter_region[2] <= coordinate[1] <= filter_region[3]:
+                            points.append(coordinate[0:2])
+                            values.append(coordinate[2])
+
+                if len(points) == 0:
+                    raise Exception("No points were found inside requested " \
+                                  + "filter region.")
+
+                # Cast lists as ndarrays
+                self._x = numpy.array(points[:,0])
+                self._y = numpy.array(points[:,1])
+                self._z = numpy.array(values)
+
+            else:
+                self._x = data[:,0]
+                self._y = data[:,1]
+                self._z = data[:,2]
+
         else:
-            pylab.pcolormesh(x,y,neg_topo,cmap=neg_cmap)
-        pylab.clim([cmin,0])
-        if addcolorbar:
-            pylab.colorbar()
+            # Data is in one of the GeoClaw supported formats
+            if self.topo_type == 1:
+                data = numpy.loadtxt(self.path)
+                N = [0,0]
+                y0 = data[0,1]
+                for (n, y) in enumerate(data[1:,1]):
+                    if y != y0:
+                        N[1] = n + 1
+                        break
+                N[0] = data.shape[0] / N[1]
 
-    if topoplotdata.latlong:
-        y_ave = 0.5*(y[0]+y[-1])
-        pylab.gca().set_aspect(1./np.cos(y_ave*np.pi/180.))
-    else:
-        pylab.axis('scaled')
+                self._X = data[:,0].reshape(N)
+                self._x = data[:N[0],0]
+                self._Y = data[:,1].reshape(N)
+                self._y = data[::N[0],1]
+                self._Z = data[:,2].reshape(N)
+                self._delta = self.X[0,1] - self.X[0,0]
 
-    if addcontour:
-        pylab.contour(x,y,topo,levels=contour_levels,colors='k')
+            elif self.topo_type == 2 or self.topo_type == 3:
+                # Get header information
+                N = self.read_header()
+                self._x = numpy.linspace(self.extent[0], self.extent[1], N[0])
+                self._y = numpy.linspace(self.extent[2], self.extent[3], N[1])
 
-    patchedges_show = True
-    if patchedges_show:
-        pylab.plot([x[0],x[-1]],[y[0],y[0]],'k')
-        pylab.plot([x[0],x[-1]],[y[-1],y[-1]],'k')
-        pylab.plot([x[0],x[0]],[y[0],y[-1]],'k')
-        pylab.plot([x[-1],x[-1]],[y[0],y[-1]],'k')
+                if self.topo_type == 2:
+                    # Data is read in as a single column, reshape it
+                    self._Z = numpy.loadtxt(self.path, skiprows=6).reshape(N[1],N[0])
+                elif self.topo_type == 3:
+                    # Data is read in starting at the top right corner
+                    self._Z = numpy.flipud(numpy.loadtxt(self.path, skiprows=6))
+    
+                if mask:
+                    self._Z = numpy.ma.masked_values(self._Z, self.no_data_value, copy=False)
 
-    if print_fname:
-        fname2 = os.path.splitext(fname)[0]
-        pylab.text(xllcorner+cellsize, yllcorner+cellsize, fname2, color='m')
+            # Perform region filtering
+            if filter_region is not None:
+                # Find indices of region
+                region_index = [None, None, None, None]
+                region_index[0] = (self.x >= filter_region[0]).nonzero()[0][0]
+                region_index[1] = (self.x <= filter_region[1]).nonzero()[0][-1]
+                region_index[2] = (self.y >= filter_region[2]).nonzero()[0][0]
+                region_index[3] = (self.y <= filter_region[3]).nonzero()[0][-1]
 
-    topodata = ClawData()
-    topodata.add_attribute('x',x)
-    topodata.add_attribute('y',y)
-    topodata.add_attribute('topo',topo)
+                self._x = self._x[region_index[0]:region_index[1]]
+                self._y = self._y[region_index[2]:region_index[3]]
 
-    return topodata
+                # Force regeneration of 2d coordinate arrays and extent
+                if self._X is not None or self._Y is not None:
+                    del self._X, self._Y
+                    self._X = None
+                    self._Y = None
+                self._extent = None
+
+                # Modify Z array as well
+                self._Z = self._Z[region_index[2]:region_index[3],
+                                  region_index[0]:region_index[1]]
+
+
+    def read_header(self):
+        r"""Read in header of topography file at path.
+
+        If a value returns numpy.nan then the value was not retrievable.  Note
+        that this routine can read in headers whose values and labels are 
+        swapped.
+
+        """
+
+        if self.topo_type == 2 or self.topo_type == 3:
+
+            # Default values to track errors
+            num_cells = [numpy.nan,numpy.nan]
+            self._extent = [numpy.nan,numpy.nan,numpy.nan,numpy.nan]
+            self._delta = numpy.nan
+
+            with open(self.path, 'r') as bathy_file:
+                # Check to see if we need to flip the header values
+                first_line = bathy_file.readline()
+                try:
+                    num_cells[0] = int(first_line.split()[0])
+                except ValueError:
+                    # Assume the header is flipped from what we expect
+                    num_cells[0] = int(first_line.split()[-1])
+                    value_index = -1
+                else:
+                    value_index = 0
+
+                num_cells[1] = int(bathy_file.readline().split()[value_index])
+                self._extent[0] = float(bathy_file.readline().split()[value_index])
+                self._extent[2] = float(bathy_file.readline().split()[value_index])
+                self._delta = float(bathy_file.readline().split()[value_index])
+                self.no_data_value = float(bathy_file.readline().split()[value_index])
+                
+                self._extent[1] = self._extent[0] + num_cells[0] * self.delta
+                self._extent[3] = self._extent[2] + num_cells[1] * self.delta
+
+        return num_cells
+
+    def write(self, path, no_data_value=None, topo_type=None, masked=True):
+        r"""Write out a topography file to path of type *topo_type*.
+
+        Writes out a bathymetry file of topo type specified with *topo_type* or
+        inferred from the output file's extension, defaulting to 3, to path
+        from data in Z.  The rest of the arguments are used to write the header
+        data.
+
+        """
+
+        # Determine topo type if not specified
+        if topo_type is None:
+            # Try to look at suffix for type
+            extension = os.path.splitext(path)[1][1:]
+            if extension[:2] == "tt":
+                topo_type = int(extension[2])
+            elif extension == 'xyz':
+                topo_type = 1
+            else:
+                # Default to 3
+                topo_type = 3
+
+        # Default to this object's no_data_value if the passed is None, 
+        # otherwise the argument will override the object's value or it will 
+        # default to -9999 (default for the class)
+        if no_data_value is None:
+            no_data_value = self.no_data_value
+
+        # Check to see if masks have been applied to bathymetry, if so use them
+        # if masked is True
+        if isinstance(self.Z, numpy.ma.MaskedArray) and masked:
+            pass
+        else:
+            pass
+
+        with open(path, 'w') as outfile:
+            if self.unstructured:
+                for (i, depth) in enumerate(self.z):
+                    outfile.write("%s %s %s\n" % (self.x[i], self.y[i], depth))
+
+            elif topo_type == 1:
+                # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
+                # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
+                for (j, latitude) in enumerate(self.y):
+                    for (i, longitude) in enumerate(self.x):
+                        outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
+
+            elif topo_type == 2 or topo_type == 3:
+                # Write out header
+                outfile.write('%s ncols\n' % self.Z.shape[1])
+                outfile.write('%s nrows\n' % self.Z.shape[0])
+                outfile.write('%s xll\n' % self.extent[0])
+                outfile.write('%s yll\n' % self.extent[2])
+                outfile.write('%s cellsize\n' % self.delta)
+                outfile.write('%s nodata_value\n' % no_data_value)
+
+                masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
+
+                # Write out bathy data
+                if topo_type == 2:
+                    if masked_Z:
+                        Z_filled = self.Z.filled()
+                    else:
+                        Z_filled = self.Z
+                    for i in xrange(self.Z.shape[0]):
+                        for j in xrange(self.Z.shape[1]):
+                            outfile.write("%s\n" % Z_filled[i,j])
+                    if masked_Z:
+                        del Z_filled
+                elif topo_type == 3:
+                    if masked_Z:
+                        Z_flipped = numpy.flipud(self.Z.filled())
+                    else:
+                        Z_flipped = self.Z
+                    for i in xrange(self.Z.shape[0]):
+                        for j in xrange(self.Z.shape[1]):
+                            outfile.write("%s   " % (Z_flipped[i,j]))
+                        outfile.write("\n")
+                    if masked_Z:
+                        del Z_flipped
+
+            else:
+                raise NotImplemented("Output type %s not implemented." % topo_type)
+
+
+    def plot(self, axes=None, region_extent=None, contours=None, 
+             coastlines=True, limits=None, cmap=None):
+        r"""Plot the topography."""
+
+        # Create axes if needed
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(111)
+        
+        # Turn off annoying offset
+        axes.ticklabel_format(format="plain", useOffset=False)
+
+        # Generate limits if need be
+        if region_extent is None:
+            region_extent = ( numpy.min(self.X), numpy.max(self.X),
+                              numpy.min(self.Y), numpy.max(self.Y) )
+        mean_lat = 0.5 * (region_extent[3] - region_extent[2])
+        axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
+        if limits is None:
+            depth_extent = (numpy.min(self.Z),numpy.max(self.Z))
+        else:
+            depth_extent = limits
+
+        # Create color map
+        if cmap is None:
+            cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
+                                               -0.00001:[0.95,0.9,0.7],
+                                               0.00001:[.5,.7,0],
+                                               1:[.2,.5,.2]})
+        color_norm = colors.Normalize(depth_extent[0],depth_extent[1],clip=True)
+
+        # Plot data
+        if contours is not None:
+            plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
+        elif isinstance(self.Z, numpy.ma.MaskedArray):
+            plot = axes.pcolor(self.X, self.Y, self.Z, vmin=depth_extent[0], 
+                                                       vmax=depth_extent[1],
+                                                       cmap=cmap, 
+                                                       norm=color_norm)
+        else:
+            plot = axes.imshow(self.Z, vmin=depth_extent[0], 
+                                       vmax=depth_extent[1],
+                                       extent=region_extent, 
+                                       cmap=cmap, 
+                                       norm=color_norm)
+        cbar = plt.colorbar(plot, ax=axes)
+        cbar.set_label("Depth (m)")
+        # levels = range(0,int(-numpy.min(Z)),500)
+
+        # Plot coastlines
+        if coastlines:
+            axes.contour(self.X, self.Y, self.Z, levels=[0.0],colors='r')
+
+        axes.set_xlim(region_extent[0:2])
+        axes.set_ylim(region_extent[2:])
+
+        return axes
+
+
+    def project_unstructured(self, X_fill, Y_fill, Z_fill, extent=None,
+                                   method='nearest', delta_limit=20.0, 
+                                   no_data_value=-9999, buffer_length=100.0,
+                                   proximity_radius=100.0, 
+                                   resolution_limit=2000):
+        r"""Project unstructured data on to regular grid.
+
+        Function to project the unstructured data in the topo object onto a 
+        structured grid.  Utilized a bounding box plus a buffer of size 
+        *buffer_length* (meters) containing all data unless *extent* is not 
+        None.  Then uses the fill data provided (*X_fill*, *Y_fill* and 
+        *Z_fill*) to fill in the gaps in the unstructured data.  By default this
+        is done by masking the fill data with the extents, the value 
+        *no_data_value* and if *proximity_radius* (meters) is not 0, by a radius
+        of *proximity_radius* from all grid points in the object.  Stores the 
+        result in the *self.X*, *self.Y* and *self.Z* object attributes.  The
+        resolution of the final grid is determined by calculating the minimum
+        distance between all *x* and *y* data with a hard lower limit of 
+        *delta_limit* (meters).
+
+        :Input:
+         - *extent* (tuple) - A tuple defining the rectangle of the sub-section.  
+           Must be in the form (x lower,x upper,y lower, y upper).
+         - *method* (string) - Method used for interpolation, valid methods are
+           found in *scipy.interpolate.griddata*.  Default is *nearest*.
+         - *delta_limit* (float) - Limit of finest horizontal resolution, 
+           default is 20 meters.
+         - *no_data_value* (float) - Value to use if no data was found to fill in a 
+           missing value, ignored if `method = 'nearest'`. Default is `-9999`.
+         - *buffer_length* (float) - Buffer around bounding box, only applicable
+           when *extent* is None.  Default is *100.0* meters.
+         - *proximity_radius* (float) - Radius every unstructured data point
+           used to mask the fill data with.  Default is *100.0* meters.
+         - *resolution_limit* (int) - Limit the number of grid points in a
+           single dimension.  Raises a *ValueError* if the limit is violated.
+           Default value is 
+
+        """
+
+        import scipy.interpolate as interpolate
+
+        # Convert meter inputs to degrees
+        mean_latitude = numpy.mean(self.y)
+        buffer_degrees = topotools.dist_meters2latlong(buffer_length, 0.0, mean_latitude)[0]
+        delta_degrees = topotools.dist_meters2latlong(delta_limit, 0.0, mean_latitude)[0]
+        if proximity_radius > 0.0:
+            proximity_radius_deg = topotools.dist_meters2latlong(proximity_radius, 0.0,
+                                                        mean_latitude)[0]
+            
+        # Calculate new grid coordinates
+        if extent is None:
+            extent = [ numpy.min(self.x) - buffer_degrees, 
+                       numpy.max(self.x) + buffer_degrees, 
+                       numpy.min(self.y) - buffer_degrees, 
+                       numpy.max(self.y) + buffer_degrees ]
+        delta = max( min(numpy.min(numpy.abs(self.x[1:] - self.x[:-1])), 
+                         numpy.min(numpy.abs(self.y[1:] - self.y[:-1])) ),
+                    delta_degrees)
+        N = ( numpy.ceil((extent[1] - extent[0]) / delta),
+              numpy.ceil((extent[3] - extent[2]) / delta) )
+        assert numpy.all(N[:] < numpy.ones((2)) * resolution_limit), \
+               ValueError("Calculated resolution too high, N=%s!" % str(N))
+        self._X, self._Y = numpy.meshgrid( 
+                                     numpy.linspace(extent[0], extent[1], N[0]),
+                                     numpy.linspace(extent[2], extent[3], N[1]))
+
+        # Create extent mask
+        extent_mask = extent[0] > X_fill
+        extent_mask = numpy.logical_or(extent_mask,extent[1] < X_fill)
+        extent_mask = numpy.logical_or(extent_mask,extent[2] > Y_fill)
+        extent_mask = numpy.logical_or(extent_mask,extent[3] < Y_fill)
+        
+        # Create fill no-data value mask
+        no_data_mask = numpy.logical_or(extent_mask, Z_fill == no_data_value)
+
+        all_mask = numpy.logical_or(extent_mask, no_data_mask)
+
+        # Create proximity mask
+        if proximity_radius > 0.0:
+        
+            indices = (~all_mask).nonzero()
+            for n in xrange(indices[0].shape[0]):
+                i = indices[0][n]
+                j = indices[1][n]
+                all_mask[i,j] = numpy.any(numpy.sqrt((self.x - X_fill[i,j])**2 
+                                                   + (self.y - Y_fill[i,j])**2)
+                                             < proximity_radius_deg)
+
+        X_fill_masked = numpy.ma.masked_where(all_mask, X_fill)
+        Y_fill_masked = numpy.ma.masked_where(all_mask, Y_fill)
+        Z_fill_masked = numpy.ma.masked_where(all_mask, Z_fill)    
+
+        # Stick both the input data and fill data into arrays
+        fill_points = numpy.column_stack((X_fill_masked.compressed(),
+                                          Y_fill_masked.compressed()))
+        points = numpy.concatenate((numpy.array([self.x, self.y]).transpose(), 
+                                    fill_points))
+        values = numpy.concatenate((self.z, Z_fill_masked.compressed()))
+
+        # Use nearest-neighbor interpolation
+        self._Z = interpolate.griddata(points, values, (self.X, self.Y), 
+                                                                  method=method)
+
+        self._extent = extent
+        self._delta = delta
+        self.unstructured = False
+
+
+    def in_poly(self, polygon):
+        r"""Mask points (x,y) that are not in the specified polygon.
+
+        Uses simple ray casting algorithm for speed so beware of corner cases!
+
+        Input
+        -----
+         - *polygon* (list) List of points that comprise the polygon.  Note that
+           order of the points will effect if this works (positive versus negative
+           winding order).  Points should be in counter-clockwise arrangement.
+
+        Returns
+        -------
+         - *X_mask* (numpy.ma.MaskedArray) Masked array of X coordinates where those
+           points outside of the polygon have been masked.
+         - *Y* (numpy.ndarray) Coordinates in y direction in a meshgrid type of
+           configuration.
+
+        """
+        raise NotImplemented("This function is not quite working yet, please",
+                             "try again later")
+
+        TOLERANCE = 1e-6
+
+        # Flatten the input arrays to make this a bit easier
+        x = self.X.flatten()
+        y = self.Y.flatten()
+
+        # Construct edges
+        edges = []
+        for edge in xrange(len(polygon) - 1):
+            edges.append([polygon[edge], polygon[edge+1]])
+        edges.append([polygon[-1], polygon[0]])
+
+        # Check for intersections
+        num_intersections = numpy.zeros(x.shape[0])
+
+        for edge in edges:
+            # Check for a vertical line
+            if numpy.abs(edge[0][0] - edge[1][0]) < TOLERANCE:
+                x_intersect = edge[0][0]        
+            else:
+                edge_slope = (edge[0][1] - edge[1][1]) / (edge[0][0] - edge[1][0])
+                x_intersect = (y - edge[0][1]) / edge_slope + edge[0][0]
+
+            num_intersections += (min(edge[0][1], edge[1][1]) <= y) * \
+                                 (max(edge[0][1], edge[1][1]) >= y) * \
+                                 (x_intersect <= x)
+                                 
+
+        # General intersection of two lines
+        intersect = (numpy.mod(num_intersections, numpy.ones(x.shape) * 2) != 1)
+
+        # Return masked arrays that are reshaped back to the input shapes
+        return numpy.ma.masked_where(intersect, x, copy=False).reshape(X.shape), \
+               numpy.ma.masked_where(intersect, y, copy=False).reshape(Y.shape)
+
+
+    def replace_no_data_values(self, value=numpy.nan, method='fill'):
+        r"""Replace *no_data_value* with other values as specified by *method*.
+
+        self.no_data_value
+
+        :Methods:
+         - *fill* - Fill in all *no_data_value*s with *value*
+         - *nearest* - Fill in *no_data_value*s with average of nearest
+           neighbors.
+
+        """
+        raise NotImplemented("This functionality has not been added yet.")
+
+        if method == 'fill':
+            pass
+            # ind=fixdata.findbadindices(Z,nodata_value)
+            # if size(ind)>0:
+            #     print("Changing %s nodata_value points" % size(ind))
+            # Z=fixdata.fillbaddata(Z,ind)
+            # griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
+
+        elif method == 'nearest':
+            pass
+        # nrows= shape(Z)[0]
+        # ncols= shape(Z)[1]
+        # npts = nrows*ncols
+
+        # xi=X[0,:]
+        # yi=Y[:,0]
+
+        # X.np.reshape(npts)
+        # Y.np.reshape(npts)
+        # Z.np.reshape(npts)
+
+        # ind=np.where(Z!=nodata_value)
+        # X=X[ind]
+        # Y=Y[ind]
+        # Z=Z[ind]
+
+        # ptsremove=npts-len(Z)
+        # if ptsremove>0:
+        #     print("Removing %s nodata_value points" % ptsremove)
+
+        # Z = pylab.griddata(X,Y,Z,xi,yi)
+        # (X,Y)=np.meshgrid(xi,yi)
+
+        # griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
