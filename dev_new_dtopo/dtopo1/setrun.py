@@ -313,8 +313,10 @@ def setrun(claw_pkg='geoclaw'):
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
     regions.append([1,1,0,1e9,-1,1,-1,1])
     regions.append([1,2,0,20,-0.3,0.4,-.1,.1])
+    regions.append([1,2,0,20,-0.3,0.4,-.1,.1])
     regions.append([1,2,20,1e9,-0.4,0.5,-.2,.2])
-    regions.append([1,3,0,1e9,-0.2,-0.1,-0.05,0.05])
+    regions.append([1,3,0,0.5,-0.2,-0.1,-0.05,0.05])
+    regions.append([1,3,0.7,1.5,-1,-0.4,-0.05,0.05])
     regions.append([3,3,50,1e9,-0.3,-0.1,-0.05,0.4])
 
     # == setgauges.data values ==
@@ -376,7 +378,7 @@ def setgeo(rundata):
     #   [topotype, minlevel,maxlevel,fname]
     dtopo_data.dtopofiles.append([3,2,2,'dtopo1.tt3'])
     dtopo_data.dtopofiles.append([3,2,2,'dtopo2.tt3'])
-    #dtopo_data.dtopofiles.append([1,2,2,'dtopo3.tt1'])
+    dtopo_data.dtopofiles.append([1,2,2,'dtopo3.tt1'])
     dtopo_data.dt_max_dtopo = 0.01
 
     # == setqinit.data values ==
