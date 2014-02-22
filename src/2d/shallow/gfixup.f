@@ -53,14 +53,13 @@ c
 c  interpolate level lcheck
 c
           mptr   = newstl(lcheck)
-          write(6,*) '+++ lcheck,mptr: ',lcheck,mptr
-          time   = rnode(timemult, mptr)
-          if (.not. topo_finalized) then
-             !!!call topo_update(time)
-             write(6,*) '+++ skipping topo_update'
-             endif
-
  10       if (mptr .eq. 0) go to 80
+
+              time   = rnode(timemult, mptr)
+              if (.not. topo_finalized) then
+                 call topo_update(time)
+                 endif
+
               nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
               ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
               mitot = nx + 2*nghost
