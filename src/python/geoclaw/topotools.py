@@ -422,15 +422,17 @@ class Topography(object):
                                  + " 2d coordinates, first project the data" \
                                  + " and try to perform this operation again.")
 
-            if self.topo_type == 1:
+            if abs(self.topo_type) == 1:
                 # Reading this topo_type should produce the X and Y arrays
                 self.read(mask=mask)
-            elif self.topo_type == 2 or self.topo_type == 3:
+            elif abs(self.topo_type) in [2,3]:
                 if self._x is None or self._y is None:
                     # Try to read the data to get these, may not have been done yet
                     self.read(mask=mask)
                 # Generate arrays
                 self._X, self._Y = numpy.meshgrid(self._x, self._y)
+            else:
+                raise Error("Unrecognized topo_type: %s" % self.topo_type)
 
             
             # If masking has been requested try to get the mask first from 
@@ -492,7 +494,7 @@ class Topography(object):
 
         else:
             # Data is in one of the GeoClaw supported formats
-            if self.topo_type == 1:
+            if abs(self.topo_type) == 1:
                 data = numpy.loadtxt(self.path)
                 N = [0,0]
                 y0 = data[0,1]
@@ -509,22 +511,31 @@ class Topography(object):
                 self._Z = data[:,2].reshape(N)
                 self._delta = self.X[0,1] - self.X[0,0]
 
-            elif self.topo_type == 2 or self.topo_type == 3:
+            elif abs(self.topo_type) in [2,3]:
                 # Get header information
                 N = self.read_header()
                 self._x = numpy.linspace(self.extent[0], self.extent[1], N[0])
                 self._y = numpy.linspace(self.extent[2], self.extent[3], N[1])
 
-                if self.topo_type == 2:
+                if abs(self.topo_type) == 2:
                     # Data is read in as a single column, reshape it
                     self._Z = numpy.loadtxt(self.path, skiprows=6).reshape(N[1],N[0])
-                elif self.topo_type == 3:
+                    self._Z = numpy.flipud(self._Z)
+                elif abs(self.topo_type) == 3:
                     # Data is read in starting at the top right corner
                     self._Z = numpy.flipud(numpy.loadtxt(self.path, skiprows=6))
-    
+        
                 if mask:
                     self._Z = numpy.ma.masked_values(self._Z, self.no_data_value, copy=False)
-
+                    
+            else:
+                raise IOError("Unrecognized topo_type: %s" % self.topo_type)
+                
+            if self.topo_type < 0:
+                # positive Z is depth below sea level, so negate:
+                self._Z = -self._Z
+                
+                
             # Perform region filtering
             if filter_region is not None:
                 # Find indices of region
@@ -558,7 +569,7 @@ class Topography(object):
 
         """
 
-        if self.topo_type == 2 or self.topo_type == 3:
+        if abs(self.topo_type) in [2,3]:
 
             # Default values to track errors
             num_cells = [numpy.nan,numpy.nan]
@@ -586,6 +597,9 @@ class Topography(object):
                 self._extent[1] = self._extent[0] + num_cells[0] * self.delta
                 self._extent[3] = self._extent[2] + num_cells[1] * self.delta
 
+        else:
+            raise IOError("Cannot read header for topo_type %s" % self.topo_type)
+            
         return num_cells
 
     def write(self, path, no_data_value=None, topo_type=None, masked=True):
