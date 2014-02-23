@@ -692,7 +692,11 @@ class Topography(object):
         mean_lat = 0.5 * (region_extent[3] - region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
         if limits is None:
-            depth_extent = (numpy.min(self.Z),numpy.max(self.Z))
+            #depth_extent = (numpy.min(self.Z),numpy.max(self.Z))
+            # The above line gives an extent that's not symmetric about 0 so
+            # colors are not right.
+            Zmax = max(abs(self.Z.max()), abs(self.Z.min()))
+            depth_extent = (-Zmax,Zmax)
         else:
             depth_extent = limits
 
@@ -717,7 +721,8 @@ class Topography(object):
                                        vmax=depth_extent[1],
                                        extent=region_extent, 
                                        cmap=cmap, 
-                                       norm=color_norm)
+                                       norm=color_norm,
+                                       origin='lower')
         cbar = plt.colorbar(plot, ax=axes)
         cbar.set_label("Depth (m)")
         # levels = range(0,int(-numpy.min(Z)),500)
