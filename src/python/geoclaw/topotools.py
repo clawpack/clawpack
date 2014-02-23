@@ -20,7 +20,7 @@ topography (bathymetry) files.
    identical?
  - Add sub and super sampling capababilities
  - Add functions for creating topography based off a topo function, incorporate
-   the creta_topo_func into Topography class
+   the create_topo_func into Topography class
  - Fix `in_poly` function
  - Add remove/fill no data value
  - Probably should better handle remote files (fetching from http)
@@ -124,7 +124,7 @@ def inv_haversine(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
     r"""Invert the Haversine function to find dx given a distance and point.
 
 
-    Invert the gcdist function to find dx given distance d and (x1,y1) and y2.
+    Invert the haversine function to find dx given distance d and (x1,y1) and y2.
     The corresponding x2 can be x1+dx or x1-dx.
     May return NaN if no solution.
     """
@@ -209,7 +209,7 @@ class Topography(object):
 
     :Examples:
 
-        >>> import clawpack.geoclaw.topo as topo
+        >>> import clawpack.geoclaw.topotools as topo
         >>> topo_file = topo.Topography('./topo.tt3')
         >>> topo_file.plot()
 
@@ -670,7 +670,7 @@ class Topography(object):
                         del Z_flipped
 
             else:
-                raise NotImplemented("Output type %s not implemented." % topo_type)
+                raise NotImplementedError("Output type %s not implemented." % topo_type)
 
 
     def plot(self, axes=None, region_extent=None, contours=None, 
@@ -859,7 +859,7 @@ class Topography(object):
            configuration.
 
         """
-        raise NotImplemented("This function is not quite working yet, please",
+        raise NotImplementedError("This function is not quite working yet, please "+\
                              "try again later")
 
         TOLERANCE = 1e-6
@@ -909,7 +909,7 @@ class Topography(object):
            neighbors.
 
         """
-        raise NotImplemented("This functionality has not been added yet.")
+        raise NotImplementedError("This functionality has not been added yet.")
 
         if method == 'fill':
             pass
