@@ -1,14 +1,16 @@
 
-""" 
+"""
 Set up the plot figures, axes, and items to be done for each frame.
 
 This module is imported by the plotting routines and then the
 function setplot is called to set the plot parameters.
-    
-""" 
+
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+import pykml
 
 from clawpack.geoclaw import topotools
 
@@ -20,13 +22,13 @@ except:
 #--------------------------
 def setplot(plotdata):
 #--------------------------
-    
-    """ 
+
+    """
     Specify what is to be plotted at each frame.
     Input:  plotdata, an instance of pyclaw.plotters.data.ClawPlotData.
     Output: a modified version of plotdata.
-    
-    """ 
+
+    """
 
 
     from clawpack.visclaw import colormaps, geoplot
@@ -42,7 +44,7 @@ def setplot(plotdata):
         from clawpack.visclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=True)
-    
+
 
     #-----------------------------------------
     # Figure for surface
@@ -51,7 +53,7 @@ def setplot(plotdata):
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('pcolor')
-    plotaxes.title = 'Surface'
+    plotaxes.title = ''
     plotaxes.scaled = True
 
     def fixup(current_data):
@@ -62,31 +64,31 @@ def setplot(plotdata):
         pylab.title('Surface at %4.2f hours' % t, fontsize=20)
         pylab.xticks(fontsize=15)
         pylab.yticks(fontsize=15)
-    plotaxes.afteraxes = fixup
+    # plotaxes.afteraxes = fixup
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    #plotitem.plot_var = geoplot.surface
-    plotitem.plot_var = geoplot.surface_or_depth
+    plotitem.plot_var = geoplot.surface
+    # plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
-    plotitem.add_colorbar = True
+    plotitem.add_colorbar = False
     plotitem.amr_celledges_show = [0,0,0]
-    plotitem.patchedges_show = 1
+    plotitem.patchedges_show = 0
 
     # Land
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = geoplot.land
-    plotitem.pcolor_cmap = geoplot.land_colors
-    plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 100.0
-    plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [1,1,0]
-    plotitem.patchedges_show = 1
-    plotaxes.xlimits = [-120,-60]
-    plotaxes.ylimits = [-60,0]
-
+#     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+#     plotitem.plot_var = geoplot.land
+#     plotitem.pcolor_cmap = geoplot.land_colors
+#     plotitem.pcolor_cmin = 0.0
+#     plotitem.pcolor_cmax = 100.0
+#     plotitem.add_colorbar = False
+#     plotitem.amr_celledges_show = [0,0,0]
+#     plotitem.patchedges_show = 0
+#     plotaxes.xlimits = [-120,-60]
+#     plotaxes.ylimits = [-60,0]
+#
     # add contour lines of bathy if desired:
     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
     plotitem.show = False
@@ -94,7 +96,7 @@ def setplot(plotdata):
     plotitem.contour_levels = linspace(-3000,-3000,1)
     plotitem.amr_contour_colors = ['y']  # color on each level
     plotitem.kwargs = {'linestyles':'solid','linewidths':2}
-    plotitem.amr_contour_show = [1,0,0]  
+    plotitem.amr_contour_show = [1,0,0]
     plotitem.celledges_show = 0
     plotitem.patchedges_show = 0
 
@@ -110,7 +112,7 @@ def setplot(plotdata):
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = 'auto'
     plotaxes.ylimits = 'auto'
-    plotaxes.title = 'Surface'
+    # plotaxes.title = 'Surface'
 
     # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
@@ -127,13 +129,13 @@ def setplot(plotdata):
         eta = q[3,:]
         topo = eta - h
         return topo
-        
+
     plotitem.plot_var = gaugetopo
     plotitem.plotstyle = 'g-'
 
     def add_zeroline(current_data):
         from pylab import plot, legend, xticks, floor, axis, xlabel
-        t = current_data.t 
+        t = current_data.t
         gaugeno = current_data.gaugeno
 
         if gaugeno == 32412:
@@ -153,7 +155,7 @@ def setplot(plotdata):
 
 
     #-----------------------------------------
-    
+
     # Parameters used only when creating html and/or latex hardcopy
     # e.g., via pyclaw.plotters.frametools.printframes:
 
@@ -162,12 +164,15 @@ def setplot(plotdata):
     plotdata.print_framenos = 'all'          # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
     plotdata.print_fignos = 'all'            # list of figures to print
-    plotdata.html = True                     # create html files of plots?
+    plotdata.html = False                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
     plotdata.latex = True                    # create latex file of plots?
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
 
-    return plotdata
+    plotdata.kml = True
 
+    # plotdata.printfigs = False
+
+    return plotdata
