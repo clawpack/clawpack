@@ -20,10 +20,12 @@ topography (bathymetry) files.
    identical?
  - Add sub and super sampling capababilities
  - Add functions for creating topography based off a topo function, incorporate
-   the create_topo_func into Topography class
+   the create_topo_func into Topography class, maybe allow more broad 
+   initialization ability to the class to handle this?
  - Fix `in_poly` function
  - Add remove/fill no data value
  - Probably should better handle remote files (fetching from http)
+ - Add more robust plotting capabilities
 """
 
 import os
