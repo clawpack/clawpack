@@ -164,7 +164,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Initial time step for variable dt.
     # If dt_variable==0 then dt=dt_initial for all steps:
-    clawdata.dt_initial = 2.
+    clawdata.dt_initial = 0.2
 
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1e+99
@@ -389,6 +389,7 @@ def setgeo(rundata):
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
     dtopo_data.dtopofiles.append([1,3,3,'usgs100227.tt1'])
+    dtopo_data.dt_max_dtopo = 0.2
 
 
     # == setqinit.data values ==

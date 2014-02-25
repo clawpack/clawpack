@@ -12,9 +12,20 @@ c     Topography is stored in aux(i,j,1).
 c
 c
       use geoclaw_module
-      use topo_module
       use amr_module
-      
+
+      use topo_module, only: topowork
+      use topo_module, only: mtopofiles,mtoposize
+      use topo_module, only: xlowtopo, ylowtopo, tlowtopo
+      use topo_module, only: xhitopo, yhitopo, thitopo
+      use topo_module, only: dxtopo, dytopo
+      use topo_module, only: topotime
+      use topo_module, only: mxtopo, mytopo
+
+      use topo_module, only: i0topo, mtopo, mtopoorder
+      use topo_module, only: topoID
+
+
       implicit double precision (a-h,o-z)
       dimension aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
       dimension dtopo(mxdtopo,mydtopo,mtdtopo)
