@@ -330,7 +330,7 @@ class Topography(object):
         return self._delta
 
 
-    def __init__(self, path, topo_type=None, unstructured=False, force=False):
+    def __init__(self, path=None, topo_type=None, unstructured=False, force=False):
         r"""Topography initialization routine.
         
         See :class:`Topography` for more info.
@@ -340,6 +340,8 @@ class Topography(object):
         super(Topography, self).__init__()
 
         self.path = path
+        if path is None: 
+            return
         if topo_type is not None:
             self.topo_type = topo_type
         else:
@@ -966,3 +968,31 @@ class Topography(object):
         # (X,Y)=np.meshgrid(xi,yi)
 
         # griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
+
+    def crop(self,filter_region):
+        # Find indices of region
+        region_index = [None, None, None, None]
+        region_index[0] = (self.x >= filter_region[0]).nonzero()[0][0]
+        region_index[1] = (self.x <= filter_region[1]).nonzero()[0][-1]
+        region_index[2] = (self.y >= filter_region[2]).nonzero()[0][0]
+        region_index[3] = (self.y <= filter_region[3]).nonzero()[0][-1]
+        newtopo = Topography()
+
+        newtopo._x = self._x[region_index[0]:region_index[1]]
+        newtopo._y = self._y[region_index[2]:region_index[3]]
+
+        # Force regeneration of 2d coordinate arrays and extent
+        newtopo._X = None
+        newtopo._Y = None
+        newtopo._extent = None
+
+        # Modify Z array as well
+        newtopo._Z = self._Z[region_index[2]:region_index[3],
+                          region_index[0]:region_index[1]]
+
+        newtopo.unstructured = False
+        newtopo.topo_type = None
+
+        print "Cropped to %s by %s array"  % (len(newtopo.x),len(newtopo.y))
+        return newtopo
+
