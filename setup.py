@@ -196,7 +196,8 @@ def configuration(parent_package='',top_path=None):
 
     config.set_options(ignore_setup_xxx_py=True,
                        assume_default_configuration=True,
-                       delegate_options_to_subpackages=True)
+                       delegate_options_to_subpackages=True,
+                       quiet=True)
 
     config.add_subpackage('clawpack')
     config.get_version(os.path.join('clawpack','version.py'))
@@ -253,6 +254,12 @@ def setup_package(setup_dict, subpackages, symlink_only=False):
     # Rewrite the version file every time we install
     write_version_py()
 
+
+    from os import open, close, dup
+    old = dup(1)
+    close(1)
+    open("install.log", os.O_WRONLY | os.O_CREAT)
+
     # we may end up mucking with symbolic path links for the install 
     # to support a consistent clawpack.package namespace
     # the finally clause here undoes a potentially dangerous 
@@ -270,8 +277,13 @@ def setup_package(setup_dict, subpackages, symlink_only=False):
             if 'fortran_src_dir' in package_dict:
                 unsymlink(os.path.join('clawpack', package, 'src'))
 
+    close(1)
+    dup(old)
+    close(old)
 
 if __name__ == '__main__':
+    import os
+
     setup_dict = dict(
         name = 'clawpack',
         maintainer = "Clawpack Developers",
