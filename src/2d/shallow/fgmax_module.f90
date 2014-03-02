@@ -95,11 +95,6 @@ contains
         character*80 :: fname_fg
         integer :: num_fgmax_grids, num_fgmax_val
 
-        write(parmunit,*) ' '
-        write(parmunit,*) '--------------------------------------------'
-        write(parmunit,*) 'SETFGMAX:'
-        write(parmunit,*) '-----------'
-
         ! Open data file
         call opendatafile(unit,fname)
 
@@ -120,6 +115,14 @@ contains
             read(unit,*) fname_fg
             call fgmax_read(fname_fg, ifg)
             enddo
+        write(parmunit,*) ' '
+        write(parmunit,*) '--------------------------------------------'
+        write(parmunit,*) 'SETFGMAX:'
+        write(parmunit,*) '-----------'
+
+        write(parmunit,*) 'FG_NUM_VAL = ', FG_NUM_VAL
+        write(parmunit,*) 'FG_num_fgrids = ', FG_num_fgrids
+
     
         end subroutine set_fgmax
 
