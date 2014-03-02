@@ -215,12 +215,15 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         
         # File name for fgmax points and parameters:
         self.add_attribute('fgmax_files',[])
+        self.add_attribute('num_fgmax_val',1)
 
 
     def write(self,data_source='setrun.py'):
         self.open_data_file('fgmax.data',data_source)
-        num_fgmax = len(self.fgmax_files)
-        self.data_write(value=num_fgmax,alt_name='num_fgmax')
+        num_fgmax_val = self.num_fgmax_val
+        self.data_write(value=num_fgmax_val,alt_name='num_fgmax_val')
+        num_fgmax_grids = len(self.fgmax_files)
+        self.data_write(value=num_fgmax_grids,alt_name='num_fgmax_grids')
         self.data_write()
         for fgmax_file in self.fgmax_files:
             fname = os.path.abspath(fgmax_file)
