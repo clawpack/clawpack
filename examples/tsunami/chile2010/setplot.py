@@ -164,7 +164,7 @@ def setplot(plotdata):
     plotdata.print_framenos = 'all'          # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
     plotdata.print_fignos = 'all'            # list of figures to print
-    plotdata.html = False                     # create html files of plots?
+    plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
     plotdata.latex = True                    # create latex file of plots?
     plotdata.latex_figsperline = 2           # layout of plots
@@ -172,6 +172,7 @@ def setplot(plotdata):
     plotdata.latex_makepdf = False           # also run pdflatex?
 
     plotdata.kml = True
+    plotdata.dpi = 100
 
     # plotdata.printfigs = False
 
