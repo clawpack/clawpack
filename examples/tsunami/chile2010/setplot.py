@@ -172,7 +172,7 @@ def setplot(plotdata):
     plotdata.latex_makepdf = False           # also run pdflatex?
 
     plotdata.kml = True
-    plotdata.dpi = 100
+    plotdata.dpi = 100     # Set to 750 for GoogleEarth
 
     # plotdata.printfigs = False
 
