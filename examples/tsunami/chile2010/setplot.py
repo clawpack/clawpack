@@ -50,6 +50,8 @@ def setplot(plotdata):
     # Figure for surface
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
+    plotfigure.use_for_kml = True
+    plotfigure.dpi = 200
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('pcolor')
@@ -64,7 +66,7 @@ def setplot(plotdata):
         pylab.title('Surface at %4.2f hours' % t, fontsize=20)
         pylab.xticks(fontsize=15)
         pylab.yticks(fontsize=15)
-    # plotaxes.afteraxes = fixup
+    plotaxes.afteraxes = fixup
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -73,9 +75,9 @@ def setplot(plotdata):
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
-    plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.patchedges_show = 0
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [1,1,1]
+    plotitem.patchedges_show = [1,1,1]
 
     # Land
 #     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -98,7 +100,32 @@ def setplot(plotdata):
     plotitem.kwargs = {'linestyles':'solid','linewidths':2}
     plotitem.amr_contour_show = [1,0,0]
     plotitem.celledges_show = 0
-    plotitem.patchedges_show = 0
+    plotitem.patchedges_show = [1,1,1]
+
+
+
+    #-------------------------------------------------------------------
+    # Figure for KML files
+    # This is a very limited set of items that can
+    # be controlled.
+    #--------------------------------------------------------------------
+    plotfigure = plotdata.new_plotfigure(name='kml',figno=1)
+    plotfigure.show = False   # Don't show this file in the html version
+    plotfigure.use_for_kml = True
+    plotfigure.dpi = 200
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes('kml')
+    plotaxes.scaled = True
+
+    # Water
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = geoplot.surface
+    plotitem.pcolor_cmap = geoplot.tsunami_colormap
+    plotitem.pcolor_cmin = -0.2
+    plotitem.pcolor_cmax = 0.2
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = [1,1,1]
 
 
     #-----------------------------------------
@@ -172,7 +199,6 @@ def setplot(plotdata):
     plotdata.latex_makepdf = False           # also run pdflatex?
 
     plotdata.kml = True
-    plotdata.dpi = 100     # Set to 750 for GoogleEarth
 
     # plotdata.printfigs = False
 
