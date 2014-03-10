@@ -95,16 +95,17 @@ def read_subfault_model(fname, columns, units=None, \
             usecols.append(j)
 
     try:
-        #data = loadtxt(fname, skiprows=skiprows, delimiter=delimiter)
-        data = genfromtxt(fname, skiprows=skiprows, delimiter=delimiter,usecols=usecols)
+        data = numpy.genfromtxt(fname, skiprows=skiprows, delimiter=delimiter,\
+                                usecols=usecols)
     except:
+        import os
         raise Exception("Unable to load file %s" % fname)
         
     try:
         ncols = data.shape[1]
     except:
         # if only one row in data file, convert to 2d array
-        data = array([data])  
+        data = numpy.array([data])  
         ncols = data.shape[1]
         
     if 0:

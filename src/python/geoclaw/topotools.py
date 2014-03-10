@@ -996,3 +996,98 @@ class Topography(object):
         print "Cropped to %s by %s array"  % (len(newtopo.x),len(newtopo.y))
         return newtopo
 
+
+#==========================================================================
+def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
+    """
+    Function topo1writer will write out the topofiles by evaluating the
+    function topo on the grid specified by the other parameters.
+
+    Assumes topo can be called on arrays X,Y produced by numpy.meshgrid.
+
+    Output file is of "topotype1," which we use to refer to a file with
+    (x,y,z) values on each line, progressing from upper left corner across
+    rows, then down.
+    """
+
+    fout=open(outfile, 'w')
+    dx = (xupper-xlower)/(nxpoints-1)
+    dy = (yupper-ylower)/(nypoints-1)
+
+    x = numpy.linspace(xlower,xupper,nxpoints)
+    y = numpy.linspace(ylower,yupper,nypoints)
+    X,Y = numpy.meshgrid(x,y)
+    Z = topo(X,Y).T
+
+
+    for jj in xrange(0,nypoints):
+        y = yupper - jj*dy
+        for i in xrange(0,nxpoints):
+            x =  xlower + i*dx
+            j = nypoints - 1 - jj
+            z = Z[i,j]
+            fout.write("%22.15e  %22.15e  %22.15e\n" % (x,y,z))
+
+    fout.close
+    print "Created file ",outfile
+
+
+#==========================================================================
+def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
+                 nodata_value=-99999):
+    """
+    Function topo2writer will write out the topofiles by evaluating the
+    function topo on the grid specified by the other parameters.
+
+    Assumes topo can be called on arrays X,Y produced by numpy.meshgrid.
+
+    Output file is of "topotype2," which we use to refer to a file with a
+    header and one z value of topography per row in the file
+
+    Header is of the form:
+    # ---------------------------
+    # integer   ncols   (= nxpoints)
+    # integer   nrows   (= nypoints)
+    # double    xlower
+    # double    ylower
+    # double    cellsize
+    #integer   nodata_value
+    # -----------------------------
+    """
+
+
+    # note: for topotype2, dx=dy=cellsize
+    dx = (xupper-xlower)/(nxpoints-1)
+    dy = (yupper-ylower)/(nypoints-1)
+    if abs(dx-dy) > 1.e-8:
+        print "*** Error in topo2writer, need dx=dy"
+        print "    dx = %s, dy = %s" % (dx,dy)
+        return
+    cellsize = dx
+
+    nrows = nypoints
+    ncols = nxpoints
+    dx=cellsize
+    dy=cellsize
+
+    fout=open(outfile, 'w')
+    fout.write("%6i                              %s\n" % (ncols,"ncols"))
+    fout.write("%6i                              %s\n" % (nrows,"nrows"))
+    fout.write("%22.15e              %s\n" % (xlower,"xlower"))
+    fout.write("%22.15e              %s\n" % (ylower,"ylower"))
+    fout.write("%22.15e              %s\n" % (cellsize,"cellsize"))
+    fout.write("%10i                 %s\n" % (nodata_value,"nodata_value"))
+
+    x = numpy.linspace(xlower,xupper,nxpoints)
+    y = numpy.linspace(ylower,yupper,nypoints)
+    X,Y = numpy.meshgrid(x,y)
+    Z = topo(X,Y).T
+
+
+    for jj in xrange(0,nrows):
+        for i in xrange(0,ncols):
+            j = nypoints - 1 - jj
+            fout.write("%22.15e\n" % Z[i,j])
+
+    fout.close
+    print "Created file ",outfile
