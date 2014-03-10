@@ -221,6 +221,9 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
     def write(self,data_source='setrun.py'):
         self.open_data_file('fgmax.data',data_source)
         num_fgmax_val = self.num_fgmax_val
+        if num_fgmax_val not in [1,2,5]:
+            raise NotImplementedError( \
+                    "Expecting num_fgmax_val in [1,2,5], got %s" % num_fgmax_val)
         self.data_write(value=num_fgmax_val,alt_name='num_fgmax_val')
         num_fgmax_grids = len(self.fgmax_files)
         self.data_write(value=num_fgmax_grids,alt_name='num_fgmax_grids')
