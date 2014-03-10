@@ -18,10 +18,11 @@ dtopo files, and calculating Okada based deformations.
  - Refactor Okada functionality
 """
 
-import os
+import os, sys
 import copy
 
 import numpy
+from numpy import sin,cos,sqrt
 
 # Constants
 from data import Rearth
@@ -226,9 +227,9 @@ def set_fault_xy(faultparams):
     width = faultparams['width'] 
     depth = faultparams['depth'] 
     location = faultparams['latlong_location'] 
-    ang_strike = strike*rad
-    ang_dip = dip*rad
-    ang_rake = rake*rad
+    ang_strike = strike*DEG2RAD
+    ang_dip = dip*DEG2RAD
+    ang_rake = rake*DEG2RAD
     x0 = longitude
     y0 = latitude
 
@@ -239,7 +240,7 @@ def set_fault_xy(faultparams):
         depth_bottom = depth + width*sin(ang_dip)
 
         # Convert fault origin from top of fault plane to bottom:
-        del_x = width*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*rad))
+        del_x = width*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
         del_y = -width*cos(ang_dip)*sin(ang_strike) / lat2meter
         
         x_top = x0
@@ -255,7 +256,7 @@ def set_fault_xy(faultparams):
         depth_centroid = depth 
         depth_bottom = depth + 0.5*width*sin(ang_dip)
 
-        del_x = 0.5*width*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*rad))
+        del_x = 0.5*width*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
         del_y = -0.5*width*cos(ang_dip)*sin(ang_strike) / lat2meter
 
         x_centroid = x0
@@ -269,7 +270,7 @@ def set_fault_xy(faultparams):
         raise ValueError("Unrecognized latlong_location %s " % location)
 
     # distance along strike from center of an edge to corner:
-    dx2 = 0.5*length*sin(ang_strike) / (lat2meter*cos(y_bottom*rad))
+    dx2 = 0.5*length*sin(ang_strike) / (lat2meter*cos(y_bottom*DEG2RAD))
     dy2 = 0.5*length*cos(ang_strike) / lat2meter
     x_corners = [x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2]
     y_corners = [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2]
@@ -290,9 +291,9 @@ def make_okada_final_dz(faultparamss, dtopo_params):
     mx = dtopo_params['mx']
     my = dtopo_params['my']
     
-    x=linspace(dtopo_params['xlower'],dtopo_params['xupper'],mx)
-    y=linspace(dtopo_params['ylower'],dtopo_params['yupper'],my)
-    dz = zeros((my,mx))
+    x=numpy.linspace(dtopo_params['xlower'],dtopo_params['xupper'],mx)
+    y=numpy.linspace(dtopo_params['ylower'],dtopo_params['yupper'],my)
+    dz = numpy.zeros((my,mx))
     
     print "Making Okada dz for each of %s subfaults" \
             % len(subfaults)
@@ -339,7 +340,7 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
 
 def test_rise_fraction(t0=0,t_rise=5,t_rise_ending=20):
     t2 = t0 + 2.*t_rise 
-    t = linspace(t0-10., t2+10., 1001)
+    t = numpy.linspace(t0-10., t2+10., 1001)
     rf = rise_fraction(t,t0,t_rise, t_rise_ending)
     figure(0)
     clf()
@@ -423,14 +424,14 @@ def make_dtopo_from_subfaults(subfaults, dtopo_params):
     ylower = dtopo_params['ylower']
     xupper = dtopo_params['xupper']
     yupper = dtopo_params['yupper']
-    x=linspace(xlower,xupper,mx)
-    y=linspace(ylower,yupper,my)
-    times = linspace(t0,tfinal,ntimes)
+    x=numpy.linspace(xlower,xupper,mx)
+    y=numpy.linspace(ylower,yupper,my)
+    times = numpy.linspace(t0,tfinal,ntimes)
 
 
     plot_rupture = False
 
-    dZ = zeros((my,mx))
+    dZ = numpy.zeros((my,mx))
     dz_list = []
 
     if dtopotype in [3]:
@@ -519,7 +520,7 @@ def write_dz(fname,X,Y,dZ,t0=0.,tend=1.,ntimes=2):
     t0 and tend.
     """
     fid = open(fname, 'w')
-    for t in linspace(t0,tend,ntimes):
+    for t in numpy.linspace(t0,tend,ntimes):
         alpha=(t-t0)/(tend-t0)
         
         for jj in range(len(Y)):
@@ -630,9 +631,9 @@ def read_dtopo(fname, dtopotype):
 
         xupper = xlower + (mx-1)*dx
         yupper = ylower + (my-1)*dy
-        x=linspace(xlower,xupper,mx)
-        y=linspace(ylower,yupper,my)
-        times = linspace(t0, t0+(mt-1)*dt, mt)
+        x=numpy.linspace(xlower,xupper,mx)
+        y=numpy.linspace(ylower,yupper,my)
+        times = numpy.linspace(t0, t0+(mt-1)*dt, mt)
 
         dZvals = loadtxt(fname, skiprows=9)
         dz_list = []
@@ -881,9 +882,9 @@ def okadamap(okadaparams,X,Y):
     x0 =  okadaparams["longitude"]
     location =  okadaparams.get("latlong_location", "top center")
 
-    ang_dip = rad*dl
-    ang_slip = rad*rd
-    ang_strike = rad*th
+    ang_dip = DEG2RAD*dl
+    ang_slip = DEG2RAD*rd
+    ang_strike = DEG2RAD*th
     halfL = 0.5*L
 
     plot_plane = False
@@ -907,7 +908,7 @@ def okadamap(okadaparams,X,Y):
         depth_bottom = hh
 
         # Convert fault origin from top of fault plane to bottom:
-        del_x = w*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*rad))
+        del_x = w*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
         del_y = -w*cos(ang_dip)*sin(ang_strike) / lat2meter
         
         x_top = x0
@@ -927,7 +928,7 @@ def okadamap(okadaparams,X,Y):
         depth_bottom = hh
 
         # Convert fault origin from middle of fault plane to bottom:
-        del_x = 0.5*w*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*rad))
+        del_x = 0.5*w*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
         del_y = -0.5*w*cos(ang_dip)*sin(ang_strike) / lat2meter
 
         x_centroid = x0
@@ -945,7 +946,7 @@ def okadamap(okadaparams,X,Y):
     y0 = y0 + del_y
 
     # distance along strike from center of an edge to corner:
-    dx2 = 0.5*L*sin(ang_strike) / (lat2meter*cos(y_bottom*rad))
+    dx2 = 0.5*L*sin(ang_strike) / (lat2meter*cos(y_bottom*DEG2RAD))
     dy2 = 0.5*L*cos(ang_strike) / lat2meter
 
     if print_xy:
@@ -975,10 +976,10 @@ def okadamap(okadaparams,X,Y):
         title("Blue: top center, Red: centroid of subfault")
 
 
-    x,y = meshgrid(X,Y)
+    x,y = numpy.meshgrid(X,Y)
 
     # Convert distance from (x,y) to (x_bottom,y_bottom) from degrees to meters:
-    xx = lat2meter*cos(rad*y)*(x-x_bottom)   
+    xx = lat2meter*cos(DEG2RAD*y)*(x-x_bottom)   
     yy = lat2meter*(y-y_bottom)
 
 
@@ -1021,7 +1022,7 @@ def okadamap(okadaparams,X,Y):
     dZ = (us+ud)
 
     if 0:
-        contour(x,y,dZ,linspace(-8,8,17),colors='k')
+        contour(x,y,dZ,numpy.linspace(-8,8,17),colors='k')
 
     return dZ
 
@@ -1038,7 +1039,7 @@ def strike_slip (y1,y2,ang_dip,q):
     d_bar = y2*sn - q*cs
     r = sqrt(y1**2 + y2**2 + q**2)
     xx = sqrt(y1**2 + q**2)
-    a4 = 2.0*poisson/cs*(log(r+d_bar) - sn*log(r+y2))
+    a4 = 2.0*poisson/cs*(numpy.log(r+d_bar) - sn*numpy.log(r+y2))
     f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*3.14159)
 
     return f
@@ -1057,8 +1058,8 @@ def dip_slip (y1,y2,ang_dip,q):
     d_bar = y2*sn - q*cs;
     r = sqrt(y1**2 + y2**2 + q**2)
     xx = sqrt(y1**2 + q**2)
-    a5 = 4.*poisson/cs*arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
-    f = -(d_bar*q/r/(r+y1) + sn*arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
+    a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
+    f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
 
     return f
 
@@ -1075,8 +1076,8 @@ def filtermask (dZ,faultparams):
     filterindices=[]
 
     osixty = 0.016666666667
-    rad = 0.01745329252
-    rr = 6.378e6       # original code
+    #rad = 0.01745329252
+    #rr = 6.378e6       # original code
     #rr = Rearth         # should use this instead!   
 
     xo = faultparams['xlower']
@@ -1092,15 +1093,15 @@ def filtermask (dZ,faultparams):
     dl = faultparams['dip']
 
 
-    ang_dip = rad*dl # convert degree to radian
+    ang_dip = DEG2RAD*dl # convert degree to radian
 
     #!-- fault origin in pixels -----------
     ypix = (y0-yo)/spacing
     xpix = (x0-xo)/spacing
 
     #!-- conversion from meters to pixels ---
-    tmpd=spacing*rad
-    xdist = tmpd*rr
+    tmpd=spacing*DEG2RAD
+    xdist = tmpd*Rearth
 
     #!-- size of the fault in pixels --------
     npix_x = l/xdist
@@ -1147,8 +1148,8 @@ def filtermask (dZ,faultparams):
 
 #     # Calculate relevant quantities
 #     d = fault_data.depth
-#     p = Y * numpy.cos(delta) + d * numpy.sin(delta)
-#     q = Y * numpy.sin(delta) - d * numpy.cos(delta)
+#     p = Y * cos(delta) + d * sin(delta)
+#     q = Y * sin(delta) - d * cos(delta)
 
 #     # u_B_1 =  dip_f_b(X + L, p, q, delta, i=1)        \
 #     #        - dip_f_b(X + L, p-w, q, delta, i=1)      \
@@ -1164,9 +1165,9 @@ def filtermask (dZ,faultparams):
 #     #        + dip_f_b(X - L, p-w, q, delta, i=3)
 #     # u[0,:,:] = U / (2.0 * numpy.pi) * (u_B_1)
 #     # u[1,:,:] = U / (2.0 * numpy.pi)                 \
-#     #                     * (u_B_2 * numpy.cos(delta) + u_B_3 * numpy.sin(delta))
+#     #                     * (u_B_2 * cos(delta) + u_B_3 * sin(delta))
 #     # u[2,:,:] = U / (2.0 * numpy.pi)                 \
-#     #                     * (u_B_2 * numpy.sin(delta) - u_B_3 * numpy.cos(delta))
+#     #                     * (u_B_2 * sin(delta) - u_B_3 * cos(delta))
 
 #     u_B_1 =   dip_f_b(    X,     p, q, delta, i=1)     \
 #             - dip_f_b(    X, p - w, q, delta, i=1)     \
@@ -1184,8 +1185,8 @@ def filtermask (dZ,faultparams):
 #             + dip_f_b(X - L, p - w, q, delta, i=3)
 
 #     u[0,:,:] = U / (2.0 * numpy.pi) * u_B_1
-#     u[1,:,:] = U / (2.0 * numpy.pi) * (u_B_2 * numpy.cos(delta) - u_B_3 * numpy.sin(delta))
-#     u[2,:,:] = U / (2.0 * numpy.pi) * (u_B_2 * numpy.sin(delta) + u_B_3 * numpy.cos(delta))
+#     u[1,:,:] = U / (2.0 * numpy.pi) * (u_B_2 * cos(delta) - u_B_3 * sin(delta))
+#     u[2,:,:] = U / (2.0 * numpy.pi) * (u_B_2 * sin(delta) + u_B_3 * cos(delta))
 
 #     return u
 
@@ -1197,30 +1198,30 @@ def filtermask (dZ,faultparams):
 
 #     import numpy
 
-#     d_bar = eta * numpy.sin(delta) - q * numpy.cos(delta)
+#     d_bar = eta * sin(delta) - q * cos(delta)
 #     R = numpy.sqrt(xi**2 + eta**2 + q**2)
 
 #     if i == 1:
-#         y_bar = eta * numpy.cos(delta) + q * numpy.sin(delta)
+#         y_bar = eta * cos(delta) + q * sin(delta)
         
-#         I_3 = 1.0 / numpy.cos(delta) * y_bar / (R + d_bar)                     \
-#             - 1.0 / numpy.cos(delta)**2                                        \
-#             * (numpy.log(R + eta) - numpy.sin(delta) * numpy.log(R + d_bar))
+#         I_3 = 1.0 / cos(delta) * y_bar / (R + d_bar)                     \
+#             - 1.0 / cos(delta)**2                                        \
+#             * (numpy.log(R + eta) - sin(delta) * numpy.log(R + d_bar))
 
-#         return -q / R + (1.0 + alpha) / alpha * I_3 * numpy.sin(delta) * numpy.cos(delta)
+#         return -q / R + (1.0 + alpha) / alpha * I_3 * sin(delta) * cos(delta)
     
 #     elif i == 2:
 #         X_11 = 1.0 / (R * (R + xi))
 #         theta = numpy.arctan(xi * eta / (q * R))
         
-#         return -eta * q * X_11 - theta - (1.0 - alpha) / alpha * xi / (R + d_bar) * numpy.sin(delta) * numpy.cos(delta)
+#         return -eta * q * X_11 - theta - (1.0 - alpha) / alpha * xi / (R + d_bar) * sin(delta) * cos(delta)
     
 #     elif i == 3:
 #         X_11 = 1.0 / (R * (R + xi))
 #         X = numpy.sqrt(xi**2 + q**2)
-#         I_4 = numpy.tan(delta) * xi / (R + d_bar) - 2.0 / numpy.cos(delta)**2 * numpy.arctan((eta * (X + q * numpy.cos(delta)) + X * (R + X) * numpy.sin(delta)) / (xi * (R + X) * numpy.cos(delta)))
+#         I_4 = numpy.tan(delta) * xi / (R + d_bar) - 2.0 / cos(delta)**2 * numpy.arctan((eta * (X + q * cos(delta)) + X * (R + X) * sin(delta)) / (xi * (R + X) * cos(delta)))
 
-#         return q**2 * X_11 + (1.0 - alpha) / alpha * I_4 * numpy.sin(delta) * numpy.cos(delta)
+#         return q**2 * X_11 + (1.0 - alpha) / alpha * I_4 * sin(delta) * cos(delta)
 #     else:
 #         raise ValueError("Invalid component %s requested.  Valid range = [1,3]" % i)
 
@@ -1466,11 +1467,11 @@ class SubFault(object):
            *origin*.
 
         """
-        return (  (point[0] - origin[0]) * numpy.cos(-theta) 
-                - (point[1] - origin[1]) * numpy.sin(-theta) 
+        return (  (point[0] - origin[0]) * cos(-theta) 
+                - (point[1] - origin[1]) * sin(-theta) 
                 + origin[0],
-                  (point[0] - origin[0]) * numpy.sin(-theta) 
-                + (point[1] - origin[1]) * numpy.cos(-theta) 
+                  (point[0] - origin[0]) * sin(-theta) 
+                + (point[1] - origin[1]) * cos(-theta) 
                 + origin[1]) 
 
 
@@ -1502,21 +1503,21 @@ class SubFault(object):
         if self.coordinate_specification == 'top center':
             self._fault_plane_corners[0][2] = depth
             self._fault_plane_corners[1][2] = depth     \
-                                 + dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+                                 + dimensions[1] * sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = depth      \
-                           + 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+                           + 0.5 * dimensions[1] * sin(self.dip * DEG2RAD)
         elif self.coordinate_specification == 'centroid':
             self._fault_plane_corners[0][2] = depth     \
-                                 - dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+                                 - dimensions[1] * sin(self.dip * DEG2RAD)
             self._fault_plane_corners[1][2] = depth     \
-                                 + dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+                                 + dimensions[1] * sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = depth
         elif self.coordinate_specification == 'bottom center':
             self._fault_plane_corners[0][2] = depth
             self._fault_plane_corners[1][2] = depth     \
-                                 - dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+                                 - dimensions[1] * sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = depth      \
-                           - 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
+                           - 0.5 * dimensions[1] * sin(self.dip * DEG2RAD)
         self._fault_plane_corners[2][2] = self._fault_plane_corners[0][2]
         self._fault_plane_corners[3][2] = self._fault_plane_corners[1][2]
         self._fault_plane_centers[0][2] = self._fault_plane_corners[0][2]
@@ -1527,7 +1528,7 @@ class SubFault(object):
         dimensions[1] *= 1.0 / lat2meter
 
         # Calculate xy-plane projected width
-        xy_width = dimensions[1] * numpy.cos(self.dip * DEG2RAD)
+        xy_width = dimensions[1] * cos(self.dip * DEG2RAD)
         
         # Locate fault plane in 3D space
         # Note that the coodinate specification is in reference to the fault 
@@ -1783,7 +1784,7 @@ class SubFault(object):
         # Setup axes labels, ticks and aspect
         axes.ticklabel_format(format="plain", useOffset=False)
         mean_lat = 0.5 * (region_extent[3] - region_extent[2])
-        axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
+        axes.set_aspect(1.0 / cos(numpy.pi / 180.0 * mean_lat))
         axes.set_title("Subfault Deformation")
         axes.set_xlabel("Longitude")
         axes.set_ylabel("Latitude")
@@ -1897,8 +1898,8 @@ class SubFault(object):
         r = numpy.sqrt((top_edge[0] - self.fault_plane_corners[0][0])**2 +
                        (top_edge[1] - self.fault_plane_corners[0][1])**2 )
         theta = (self.strike + self.rake) * DEG2RAD
-        xy_rake = (r * numpy.cos(-theta + 1.5 * numpy.pi) + centroid[0], 
-                   r * numpy.sin(-theta + 1.5 * numpy.pi) + centroid[1])
+        xy_rake = (r * cos(-theta + 1.5 * numpy.pi) + centroid[0], 
+                   r * sin(-theta + 1.5 * numpy.pi) + centroid[1])
 
         axes.annotate("",
             xy=xy_rake, xycoords='data',
