@@ -244,6 +244,7 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         
         # Moving topograhpy
         self.add_attribute('dtopofiles',[])
+        self.add_attribute('dt_max_dtopo', 1.e99)
 
     def write(self,data_source='setrun.py'):
 
@@ -258,6 +259,8 @@ class DTopoData(clawpack.clawutil.data.ClawData):
                 raise IOError("*** dtopo input file not found: %s" % tfile[-1])
             self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
+        self.data_write()
+        self.data_write(value=self.dt_max_dtopo,alt_name='dt_max_dtopo')
         self.close_data_file()
 
 

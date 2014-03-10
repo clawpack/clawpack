@@ -3,11 +3,11 @@ c
 c ------------------------------------------------------------------
 c
       subroutine bc2amr(val,aux,nrow,ncol,meqn,naux,
-     1                  hx, hy, level, time, 
+     1                  hx, hy, level, time,
      2                  xleft,  xright,  ybot, ytop,
      3                  xlower, ylower,xupper,yupper,
      4                  xperiodic, yperiodic,spheredom)
- 
+
 c
 c    Specific to geoclaw:  extrapolates aux(i,j,1) at boundaries
 c    to constant.
@@ -16,8 +16,8 @@ c :::::::::: bc2amr ::::::::::::::::::::::::::::::::::::::::::::::;
 c
 c     Take a grid patch with mesh widths hx,hy, of dimensions nrow by
 c     ncol,  and set the values of any piece of
-c     of the patch which extends outside the physical domain 
-c     using the boundary conditions. 
+c     of the patch which extends outside the physical domain
+c     using the boundary conditions.
 c
 c     ------------------------------------------------
 c     # Standard boundary condition choices for amr2ez in clawpack
@@ -30,22 +30,22 @@ c     #            =  3  for solid walls, assuming this can be implemented
 c     #                  by reflecting the data about the boundary and then
 c     #                  negating the 2'nd (for k=1,2) or 3'rd (for k=3,4)
 c     #                  component of q.
-c     #            =  4  sphere bcs (left half maps to right half of same 
+c     #            =  4  sphere bcs (left half maps to right half of same
 c     #                  side, and vice versa), as if domain folded in half
 c     ------------------------------------------------
 c
-c     The corners of the grid patch are at 
+c     The corners of the grid patch are at
 c        (xleft,ybot)  --  lower left corner
 c        (xright,ytop) --  upper right corner
 c
 c     The physical domain itself is a rectangle bounded by
 c        (xlower,ylower)  -- lower left corner
 c        (xupper,yupper)  -- upper right corner
-c     
-c     the picture is the following: 
+c
+c     the picture is the following:
 c
 c               _____________________ (xupper,yupper)
-c              |                     |  
+c              |                     |
 c          _________ (xright,ytop)   |
 c          |   |    |                |
 c          |   |    |                |
@@ -55,7 +55,7 @@ c (xleft,ybot) |                     |
 c              |                     |
 c              |_____________________|
 c   (xlower,ylower)
-c        
+c
 c
 c     Any cells that lie outside the physical domain are ghost cells whose
 c     values should be set in this routine.  This is tested for by comparing
@@ -63,7 +63,7 @@ c     xleft with xlower to see if values need to be set at the left, as in
 c     the figure above, and similarly at the other boundaries.
 c
 c     Patches are guaranteed to have at least 1 row of cells filled
-c     with interior values so it is possible to  extrapolate. 
+c     with interior values so it is possible to  extrapolate.
 c     Fix trimbd if you want more than 1 row pre-set.
 c
 c     Make sure the order the boundaries are specified is correct
@@ -71,11 +71,11 @@ c     so that diagonal corner cells are also properly taken care of.
 c
 c     Periodic boundaries are set before calling this routine, so if the
 c     domain is periodic in one direction only you
-c     can safely extrapolate in the other direction. 
+c     can safely extrapolate in the other direction.
 c
 c     Don't overwrite ghost cells in periodic directions!
 
-c     This particular routine bc2amr_noslopesets auxillary values so 
+c     This particular routine bc2amr_noslopesets auxillary values so
 c     that no slope in topography occurs at the physical boundary.
 c
 c ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::;
@@ -110,7 +110,7 @@ c
 c
   100 continue
 c     # user-specified boundary conditions go here in place of error output
-      write(6,*) 
+      write(6,*)
      &   '*** ERROR *** mthbc(1)=0 and no BCs specified in bc2amr'
       stop
       go to 199
@@ -164,7 +164,7 @@ c
 c
   200 continue
 c     # user-specified boundary conditions go here in place of error output
-      write(6,*) 
+      write(6,*)
      &   '*** ERROR *** mthbc(2)=0 and no BCs specified in bc2amr'
       stop
       go to 299
@@ -217,7 +217,7 @@ c
 c
   300 continue
 c     # user-specified boundary conditions go here in place of error output
-      write(6,*) 
+      write(6,*)
      &   '*** ERROR *** mthbc(3)=0 and no BCs specified in bc2amr'
       stop
       go to 399
@@ -271,7 +271,7 @@ c
 c
   400 continue
 c     # user-specified boundary conditions go here in place of error output
-      write(6,*) 
+      write(6,*)
      &   '*** ERROR *** mthbc(4)=0 and no BCs specified in bc2amr'
       stop
       go to 499

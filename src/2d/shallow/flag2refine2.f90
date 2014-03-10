@@ -25,41 +25,41 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
 
     use amr_module, only: mxnest, t0
     use geoclaw_module, only:dry_tolerance, sea_level
-    
+
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
     use topo_module, only: minleveltopo,mtopofiles
-    
-    use dtopo_module, only: tfdtopo,xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
-    use dtopo_module, only: minleveldtopo,num_dtopo
-    
+
+    use topo_module, only: tfdtopo,xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
+    use topo_module, only: minleveldtopo,num_dtopo
+
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
     use qinit_module, only: min_level_qinit,qinit_type
-    
+
     use regions_module, only: num_regions, regions
     use refinement_module
- 
+
     implicit none
-    
+
     ! Subroutine arguments
     integer, intent(in) :: mx,my,mbc,meqn,maux,level,mbuff
     real(kind=8), intent(in) :: xlower,ylower,dx,dy,t,tolsp
-    
+
     real(kind=8), intent(in) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
     real(kind=8), intent(in) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-    
+
     ! Flagging
     real(kind=8), intent(in out) :: amrflags(1-mbuff:mx+mbuff,1-mbuff:my+mbuff)
     real(kind=8), intent(in) :: DONTFLAG
     real(kind=8), intent(in) :: DOFLAG
-    
+
     logical :: allowflag
     external allowflag
-    
+
     ! Generic locals
     integer :: i,j,m
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
     real(kind=8) :: speed, eta
-    
+
     ! Initialize flags
     amrflags = DONTFLAG
 
@@ -69,7 +69,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
         y_low = ylower + (j - 1) * dy
         y_c = ylower + (j - 0.5d0) * dy
         y_hi = ylower + j * dy
-        
+
         x_loop: do i = 1,mx
             x_low = xlower + (i - 1) * dx
             x_c = xlower + (i - 0.5d0) * dx
@@ -83,7 +83,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                 if (level < minleveltopo(m) .and. t >= tlowtopo(m) .and. t <= thitopo(m)) then
                     if (  x_hi > xlowtopo(m) .and. x_low < xhitopo(m) .and. &
                           y_hi > ylowtopo(m) .and. y_low < yhitopo(m) ) then
-                        
+
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
                     endif
@@ -96,7 +96,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                     t >= regions(m)%t_low .and. t <= regions(m)%t_hi) then
                     if (x_hi > regions(m)%x_low .and. x_low < regions(m)%x_hi .and. &
                         y_hi > regions(m)%y_low .and. y_low < regions(m)%y_hi ) then
-                    
+
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
                     endif
@@ -110,8 +110,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                     t <= tfdtopo(m) .and. & !t.ge.t0dtopo(m).and.
                     x_hi > xlowdtopo(m) .and. x_low < xhidtopo(m).and. &
                     y_hi > ylowdtopo(m) .and. y_low < yhidtopo(m)) then
-                    
-                    amrflags(i,j) = DOFLAG    
+
+                    amrflags(i,j) = DOFLAG
                     cycle x_loop
                 endif
             enddo
@@ -120,11 +120,11 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! specified and need to force refinement:
             ! This assumes that t0 = 0.d0, should really be t0 but we do
             ! not have access to that parameter in this routine
-            if (qinit_type > 0 .and. t == t0) then 
-                if (level < min_level_qinit .and. & 
+            if (qinit_type > 0 .and. t == t0) then
+                if (level < min_level_qinit .and. &
                     x_hi > x_low_qinit .and. x_low < x_hi_qinit .and. &
                     y_hi > y_low_qinit .and. y_low < y_hi_qinit) then
-                    
+
                     amrflags(i,j) = DOFLAG
                     cycle x_loop
                 endif
@@ -134,7 +134,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! Refinement not forced, so check if it is allowed and if so,
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
-   
+
                 if (q(1,i,j) > dry_tolerance) then
                     eta = q(1,i,j) + aux(1,i,j)
 
@@ -151,9 +151,9 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                             cycle x_loop
                         endif
                     endif
-                
-                    ! Check speed criteria, note that it might be useful to 
-                    ! also have a per layer criteria since this is not 
+
+                    ! Check speed criteria, note that it might be useful to
+                    ! also have a per layer criteria since this is not
                     ! gradient based
                     speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2) / q(1,i,j)
                     do m=1,min(size(speed_tolerance),mxnest)
@@ -164,7 +164,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                     enddo
                 endif
             endif
-            
+
         enddo x_loop
     enddo y_loop
 end subroutine flag2refine2

@@ -100,9 +100,16 @@ c velocities are zeroed out which can then lead to increase in h again.
      &                 + (1.d0 - xoff) * yoff * aux(1,iindex,jindex+1) 
      &                 + xoff * yoff * aux(1,iindex+1,jindex+1)
               endif
-              
+
           ! Extract surfaces
           eta = var(1) + topo
+
+          ! Zero out tiny values to prevent later problems reading data,
+          ! as done in valout.f
+          do j = 1,3
+             if (abs(var(j)) < 1d-90) var(j) = 0.d0
+          end do
+          if (abs(eta) < 1d-90) eta = 0.d0
 
 !$OMP CRITICAL (gaugeio)
           write(OUTGAUGEUNIT,100) igauge(i),level,tgrid, 
