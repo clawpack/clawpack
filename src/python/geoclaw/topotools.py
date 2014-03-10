@@ -998,6 +998,8 @@ class Topography(object):
 
 
 #==========================================================================
+# From old topotools.py of Version 5.1 ... need to improve
+#==========================================================================
 def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
     """
     Function topo1writer will write out the topofiles by evaluating the
@@ -1091,3 +1093,87 @@ def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
 
     fout.close
     print "Created file ",outfile
+
+
+#==========================================================================
+
+def get_topo(topo_fname, remote_directory, force=None):
+    """
+    Download a topo file from the web, provided the file does not
+    already exist locally.
+
+    remote_directory should be a URL.  For GeoClaw data it may be a
+    subdirectory of  http://kingkong.amath.washington.edu/topo/
+    See that website for a list of archived topo datasets.
+
+    If force==False then prompt the user to make sure it's ok to download,
+    with option to first get small file of metadata.
+
+    If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
+    and if this exists use its value.  This is useful for the script
+    python/run_examples.py that runs all examples so it won't stop to prompt.
+    """
+    import urllib
+
+    if force is None:
+        CTD = os.environ.get('CLAW_TOPO_DOWNLOAD', None)
+        force = (CTD in [True, 'True'])
+    print 'force = ',force
+
+    if os.path.exists(topo_fname):
+        print "*** Not downloading topo file (already exists): %s " % topo_fname
+    else:
+        remote_fname = topo_fname
+        local_fname = topo_fname
+        remote_fname_txt = remote_fname + '.txt'
+        local_fname_txt = local_fname + '.txt'
+
+        print "Require remote file ", remote_fname
+        print "      from ", remote_directory
+        if not force:
+            ans=raw_input("  Ok to download topo file?  \n"  +\
+                          "     Type y[es], n[o] or ? to first retrieve and print metadata  ")
+            if ans.lower() not in ['y','yes','?']:
+                print "*** Aborting!   Missing: ", local_fname
+                return
+            if ans=="?":
+                try:
+                    print "Retrieving remote file ", remote_fname_txt
+                    print "      from ", remote_directory
+                    url = os.path.join(remote_directory, remote_fname_txt)
+                    urllib.urlretrieve(url, local_fname_txt)
+                    os.system("cat %s" % local_fname_txt)
+                except:
+                    print "*** Error retrieving metadata file!"
+                ans=raw_input("  Ok to download topo file?  ")
+                if ans.lower() not in ['y','yes','?']:
+                    print "*** Aborting!   Missing: ", local_fname
+                    return
+
+        if not os.path.exists(local_fname_txt):
+            try:
+                print "Retrieving metadata file ", remote_fname_txt
+                print "      from ", remote_directory
+                url = os.path.join(remote_directory, remote_fname_txt)
+                urllib.urlretrieve(url, local_fname_txt)
+            except:
+                print "*** Error retrieving metadata file!"
+
+        try:
+            print "Retrieving topo file ", remote_fname
+            print "      from ", remote_directory
+            url = os.path.join(remote_directory, remote_fname)
+            urllib.urlretrieve(url, local_fname)
+        except:
+            print "*** Error retrieving file!  Missing: ", local_fname
+            raise Exception("Error from urllib.urlretrieve")
+        try:
+            firstline = open(local_fname,'r').readline()
+            if firstline.find('DOC') > -1:
+                print "*** Possible error -- check the file ", local_fname
+            else:
+                print "Saved to ", local_fname
+        except:
+            raise Exception("Error opening file %s" % local_fname)
+
+
