@@ -152,11 +152,30 @@ def read_subfault_model(fname, columns, units=None, \
     return subfaults
     
 
-def read_subfault_model_csv(fname):
+def read_subfault_model_csv(path, delimiter=","):
+    r"""Read a subfault model from a csv file
+
+    Assumes that the first row gives the column headings, which should agree 
+    with names in *valid_labels* defined in *read_subfault_model*.
+
+    :Input:
+
+    :Output:
+
     """
-    Read a subfault model from a csv file whose first row gives the column headings, 
-    which should agree with names in valid_labels defined in read_subfault_model.
-    """
+
+    sub_fault = SubFault()
+
+    with open(path, 'r') as data_file:
+        # Parse column and units
+        columns = [label.strip() for label in data_file.readline().split(delimiter)]
+        units = [unit.strip() for unit in data_file.readline().split(delimiter)]
+
+    return read_subfault_model(path, columns, units, delimiter=delimiter, skiprows=2)
+
+    return sub_fault
+
+
 
     fid = open(fname)
     c1 = fid.readline().split(',')
@@ -1673,13 +1692,6 @@ class SubFault(object):
         self._dZ = okada.okadamap(okada_params, self.x, self.y)
 
 
-    def read(self, path):
-        r"""Read in subfault parameters at path."""
-
-        with open(path, 'r') as data_file:
-            pass
-
-
     def write(self, path, topo_type=None):
         r"""Write out subfault characterization file to *path*.
 
@@ -1906,3 +1918,48 @@ class SubFault(object):
             arrowprops=dict(arrowstyle="->", connectionstyle="arc3") )
 
         return axes
+
+
+class Fault(object):
+
+    r"""
+
+    """
+
+    def __init__(self):
+        pass
+
+
+
+    def read(self, path, columns={'latlong_location', 'centroid'}, units=None,
+                         skiprows=0, delimiter=None):
+        r"""Read in subfault parameters at path.
+
+        """
+
+        valid_labels = ["latitude", "longitude", "strike", "dip", "rake", 
+                        "slip", "length", "width", "depth", "rupture_time", 
+                        "rise_time", "rise_time_ending", "ignore"]
+
+        self.units.update(units)
+
+        usecols = []
+        for (j, label) in enumerate(columns):
+            if label not in valid_labels:
+                raise ValueError("Unrecognized label in column dict: %s" % label)
+            if label != 'ignore':
+                usecols.append(j)
+
+        data = numpy.genfromtxt(path, skiprows=skiprows, delimiter=delimiter,
+                                      usecols=usecols)
+
+        try:
+            num_cols = data.shape[1]
+        except IndexError:
+            # If only one row is in data file, convert to 2d array
+            data = array([data])
+            num_cols = data.shape[1]
+
+
+    def write(self):
+        pass
