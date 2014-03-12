@@ -17,7 +17,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0000fig0.png</href>
+            <href>frameKML0000fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -36,7 +36,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0001fig0.png</href>
+            <href>frameKML0001fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -55,7 +55,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0002fig0.png</href>
+            <href>frameKML0002fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -74,7 +74,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0003fig0.png</href>
+            <href>frameKML0003fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -93,7 +93,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0004fig0.png</href>
+            <href>frameKML0004fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -112,7 +112,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0005fig0.png</href>
+            <href>frameKML0005fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -131,7 +131,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0006fig0.png</href>
+            <href>frameKML0006fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -150,7 +150,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0007fig0.png</href>
+            <href>frameKML0007fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -169,7 +169,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0008fig0.png</href>
+            <href>frameKML0008fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -188,7 +188,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0009fig0.png</href>
+            <href>frameKML0009fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -207,7 +207,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0010fig0.png</href>
+            <href>frameKML0010fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>0.0</north>
@@ -226,7 +226,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0011fig0.png</href>
+            <href>frameKML0011fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>10.0</north>
@@ -245,7 +245,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0012fig0.png</href>
+            <href>frameKML0012fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>10.0</north>
@@ -264,7 +264,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0013fig0.png</href>
+            <href>frameKML0013fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>10.0</north>
@@ -283,7 +283,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0014fig0.png</href>
+            <href>frameKML0014fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>10.0</north>
@@ -302,7 +302,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0015fig0.png</href>
+            <href>frameKML0015fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>10.0</north>
@@ -321,7 +321,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0016fig0.png</href>
+            <href>frameKML0016fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>10.0</north>
@@ -340,7 +340,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0017fig0.png</href>
+            <href>frameKML0017fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>10.0</north>
@@ -359,7 +359,7 @@
         <altitude>0.0</altitude>
         <altitudeMode>clampToGround</altitudeMode>
         <Icon>
-            <href>frame0018fig0.png</href>
+            <href>frameKML0018fig0.png</href>
         </Icon>
         <LatLonBox>
             <north>10.0</north>
