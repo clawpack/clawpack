@@ -64,7 +64,6 @@ MODULES = \
  $(AMRLIB)/regions_module.f90 \
  $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/topo_module.f90 \
- $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
  $(GEOLIB)/fgmax_module.f90 \
@@ -83,12 +82,13 @@ SOURCES = \
   $(GEOLIB)/multilayer/setaux.f90 \
   $(GEOLIB)/multilayer/b4step2.f90 \
   $(GEOLIB)/multilayer/dumpgauge.f \
+  $(GEOLIB)/topo_update.f90 \
   $(GEOLIB)/multilayer/getmaxspeed.f90 \
   $(GEOLIB)/multilayer/stepgrid.f \
   $(GEOLIB)/multilayer/valout.f \
   $(GEOLIB)/multilayer/src2.f90 \
   $(GEOLIB)/movetopo.f \
-  $(GEOLIB)/cellgridintegrate.f \
+  $(GEOLIB)/cellgridintegrate2.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \

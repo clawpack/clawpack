@@ -11,15 +11,22 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
 ! 
 ! Also calls movetopo if topography might be moving.
 
+    use amr_module, only: xlowdomain => xlower
+    use amr_module, only: ylowdomain => ylower
+    use amr_module, only: xhidomain => xupper
+    use amr_module, only: yhidomain => yupper
+    use amr_module, only: xperdom, yperdom, spheredom
+
     use geoclaw_module, only: g => grav
+
+    use topo_module, only: num_dtopo, topotime
+    use topo_module, only: aux_finalized
+    use topo_module, only: xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
 
     use storm_module, only: set_storm_fields
 
     use multilayer_module, only: num_layers, rho, KAPPA_UNIT, dry_tolerance
     use multilayer_module, only: check_richardson, richardson_tolerance
-
-    use topo_module
-    use dtopo_module
     
     implicit none
     
@@ -49,31 +56,12 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
            q(3*(k-1)+1,i,j) / rho(k) < dry_tolerance(k))
         q(3*(k-1)+2:3*(k-1)+3,i,j) = 0.d0
     end forall
-!     do i=1-mbc,mx+mbc
-!         do j=1-mbc,my+mbc
-!             do k=1,num_layers
-!                 if (q(3*(k-1)+1,i,j) / rho(k) < dry_tolerance(k)) then
-!                     print *,3*(k-1)
-!                     q(3*(k-1)+1:3*(k-1)+2,i,j) = 0.d0
-!                 endif
-!             enddo
-!         enddo
-!     enddo
 
     ! Move the topography if needed
-    ! write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
-    do i=1,num_dtopo
-        call movetopo(mbc,mx,my,                                  &
-                      xlower,ylower,dx,dy,t,dt,maux,aux,                      &
-                      dtopowork(i0dtopo(i):i0dtopo(i)+mdtopo(i)-1),           &
-                      xlowdtopo(i),ylowdtopo(i),xhidtopo(i),yhidtopo(i),      &
-                      t0dtopo(i),tfdtopo(i),dxdtopo(i),dydtopo(i),dtdtopo(i), &
-                      mxdtopo(i),mydtopo(i),mtdtopo(i),mdtopo(i),             &
-                      minleveldtopo(i),maxleveldtopo(i),topoaltered(i))
-    enddo
+    if (aux_finalized < 2) then
+        call setaux(mbc, mx, my, xlower, ylower, dx, dy, maux, aux)
+    endif 
 
-    ! Set wind and pressure aux variables for this grid
-    ! write(26,*) "B4STEP2:  Setting aux array for wind and pressure"
     call set_storm_fields(maux,mbc,mx,my,xlower,ylower,dx,dy,t,aux)
 
     ! Check Richardson number -- Only implemented for 2 layers
