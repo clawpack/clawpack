@@ -171,7 +171,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     #  Depths
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Depths', figno=42)
-    plotfigure.show = True
+    plotfigure.show = False
     plotfigure.kwargs = {'figsize':(14,4)}
     
     # Top surface

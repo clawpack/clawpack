@@ -177,17 +177,17 @@ def setrun(claw_pkg='geoclaw'):
 
     # Initial time step for variable dt.
     # If dt_variable==0 then dt=dt_initial for all steps:
-    clawdata.dt_initial = 0.025
+    clawdata.dt_initial = 0.00225
 
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1e+99
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    # clawdata.cfl_desired = 0.75
-    # clawdata.cfl_max = 1.0
-    clawdata.cfl_desired = 0.45
-    clawdata.cfl_max = 0.5
+    clawdata.cfl_desired = 0.75
+    clawdata.cfl_max = 1.0
+    # clawdata.cfl_desired = 0.45
+    # clawdata.cfl_max = 0.5
 
     # Maximum number of time steps to allow between output times:
     clawdata.steps_max = 5000
@@ -492,6 +492,18 @@ def write_topo_file(run_data, out_file, **kwargs):
     step = lambda x,y: bathy_step(x, y, **kwargs)
     
     tt.topo2writer(out_file, step, xlower, xupper, ylower, yupper, mx, my, nodata_value=-99999)
+
+    # Write out simple bathy geometry file for communication to the plotting
+    with open("./bathy_geometry.data", 'w') as bathy_geometry_file:
+        if kwargs.has_key("location"):
+            location = kwargs['location']
+        else:
+            location = 0.15
+        if kwargs.has_key("angle"):
+            angle = kwargs['angle']
+        else:
+            angle = 0.0
+        bathy_geometry_file.write("%s\n%s" % (location, angle) )
 
 
 if __name__ == '__main__':
