@@ -176,8 +176,11 @@ SOURCES = \
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
 
-topo: gulf_caribbean.tt3
+gulf_caribbean.tt3:
 	python get_bathy.py
+
+topo: gulf_caribbean.tt3
+
 
 ### DO NOT remove this line - make depends on it ###
 
