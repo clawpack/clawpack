@@ -51,7 +51,7 @@ def setplot(plotdata):
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
     plotfigure.use_for_kml = True
-    plotfigure.dpi = 200
+    plotfigure.dpi = 100
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('pcolor')
