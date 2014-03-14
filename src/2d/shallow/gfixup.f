@@ -77,11 +77,9 @@ c   first get space, since cant do that part in parallel
               node(store1, mptr)  = loc
               if (naux .gt. 0) then
                 locaux = igetsp(mitot * mjtot * naux)
-                mx = mitot - 2*nghost
-                my = mjtot - 2*nghost
                 corn1 = rnode(cornxlo, mptr)
                 corn2 = rnode(cornylo, mptr)
-                call setaux(nghost,mx,my,corn1,corn2,hx,hy,
+                call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
      &                    naux,alloc(locaux))
               else
                 locaux = 1
@@ -98,7 +96,7 @@ c                 other reduction variables initialized in stst1
 !$OMP&            PRIVATE(clock_start,clock_finish,clock_rate)
 !$OMP&            PRIVATE(j,mptr,nx,ny,mitot,mjtot,corn1,corn2,loc)
 !$OMP&            PRIVATE(locaux,time,mic,mjc,xl,xr,yb,yt,ilo,ihi)
-!$OMP&            PRIVATE(jlo,jhi,iperim,sp_over_h,thisSetauxTime)
+!$OMP&            PRIVATE(jlo,jhi,sp_over_h,thisSetauxTime)
 !$OMP&            SHARED(newnumgrids,listnewgrids,nghost,node,hx,hy)
 !$OMP&            SHARED(rnode,intratx,intraty,lcheck,nvar,alloc,naux)
 !$OMP&            REDUCTION(MAX:this_spoh)
@@ -168,7 +166,6 @@ c          # "interior" of coarser patch to fill fine grid.
 c         ## need to get scratch space here, since passing ins
 c         ## variables indexed into alloc. This is in case dynamic
 c         ## memory would have changed the alloc location
-          iperim = mitot+mjtot    ! get max amount possible
 
            call system_clock(clock_start,clock_rate)
            call filval(alloc(loc),mitot,mjtot,hx,hy,lcheck,time,
@@ -183,7 +180,6 @@ c         ## memory would have changed the alloc location
            this_spoh = max(this_spoh, sp_over_h)
  
 !           call reclam(ivalc,mic*mjc*(nvar+naux))
-!           call reclam(locflip,iperim*(nvar+naux))
 
  
 !           mptr = node(levelptr, mptr)

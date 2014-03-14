@@ -211,6 +211,7 @@ c
           call regrid(nvar,lbase,cut,naux,start_time)
           call system_clock(clock_finish,clock_rate)
           timeRegridding = timeRegridding + clock_finish - clock_start
+          write(*,*)" new timeregridding ",timeRegridding
 
           call setbestsrc()     ! need at every grid change
 c         call conck(1,nvar,naux,time,rest)
@@ -324,7 +325,10 @@ c                   adjust time steps for this and finer levels
                  go to 60
               else
                  level = level - 1
+                 call system_clock(clock_start,clock_rate)
                  call update(level,nvar,naux)
+                 call system_clock(clock_finish,clock_rate)
+                 timeUpdating=timeUpdating+clock_finish-clock_start
               endif
           go to 105
 c
