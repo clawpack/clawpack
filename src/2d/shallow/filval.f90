@@ -10,12 +10,13 @@
 !
 !
 ! ------------------------------------------------------------------
-subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
+subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                   mjc, xleft, xright, ybot, ytop, nvar, mptr, ilo, ihi, &
-                  jlo, jhi, aux, naux, locflip, sp_over_h)
+                  jlo, jhi, aux, naux,  sp_over_h, thisSetauxTime)
 
     use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
-    use amr_module, only: yperdom, spheredom, xupper, yupper
+    use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
+    use amr_module, only: outunit
 
     use geoclaw_module, only: dry_tolerance, sea_level
     use refinement_module, only: varRefTime
@@ -23,21 +24,26 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
     implicit none
 
     ! Input
-    integer, intent(in) :: mx, my, level, mic, mjc, nvar, mptr, ilo, ihi
-    integer, intent(in) :: jlo, jhi, naux, locflip
+    integer, intent(in) :: mitot, mjtot, level, mic, mjc, nvar, mptr, ilo, ihi
+    integer, intent(in) :: jlo, jhi, naux
     real(kind=8), intent(in) :: dx, dy, time, xleft, xright, ybot, ytop
-    real(kind=8), intent(in) :: valc(nvar,mic,mjc), auxc(naux,mic,mjc)
 
     ! Output
     real(kind=8), intent(in out) :: sp_over_h
-    real(kind=8), intent(in out) :: val(nvar,mx,my), aux(naux,mx,my)
+    real(kind=8), intent(in out) :: val(nvar,mitot,mjtot), aux(naux,mitot,mjtot)
+    integer, intent (out) ::  thisSetauxTime
 
     ! Local storage
     integer :: refinement_ratio_x, refinement_ratio_y, iclo, jclo, ichi, jchi, ng, i, ico, ifine
     integer :: ii, ivar, j, jco, jfine, jj
+    real(kind=8) :: valc(nvar,mic,mjc), auxc(naux,mic,mjc)
     real(kind=8) :: coarseval(3), dx_coarse, dy_coarse, xl, xr, yb, yt, area
     real(kind=8) :: dividemass, finemass, hvf, s1m, s1p, slopex, slopey, vel
     real(kind=8) :: velmax, velmin, vf, vnew, xoff, yoff
+    real(kind=8) :: fliparray((mitot+mjtot)*(nvar+naux))
+    integer(kind=1) ::  auxflags(mitot,mjtot)
+    integer :: clock_start, clock_finish, clock_rate
+    integer :: nx, ny
     logical :: fineflag(3)
 
     ! External function definitions
@@ -63,7 +69,7 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
 
     if (naux == 0) then
         if (xperdom .or. yperdom .or. spheredom) then
-            call preintcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,level - 1,locflip)
+            call preintcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,level-1,fliparray)
         else
             call intcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,level - 1,1,1)
         endif
@@ -71,7 +77,7 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
         ! intersect grids and copy all (soln and aux)
         if (xperdom .or. yperdom .or. spheredom) then
             call preicall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi, &
-                          level - 1,locflip)
+                          level-1,fliparray)
         else
             call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,level - 1,1,1)
         endif
@@ -79,6 +85,28 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
     call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level - 1,time,xl,xr,yb, &
                 yt,xlower,ylower,xupper,yupper,xperdom,yperdom,spheredom)
 
+
+!  NOTE change in order of code.  Since the interp from coarse to fine needs the aux
+!       arrays set already, the fine copy is done first, to set up the aux arrays.
+!       we can do this since we have the flag array to test where to overwrite.
+
+!  SO this is no longer overwriting but setting for the first time.
+! overwrite interpolated values with fine grid values, if available.
+!!$    call intcopy(val,mitot,mjtot,nvar,ilo-nghost,ihi+nghost,jlo-nghost, &
+!!$                 jhi+nghost,level,1,1)              
+!! also might need preicallCopy???
+
+       call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
+                      jlo-nghost,jhi+nghost,level,1,1)   
+
+!      set remaining aux arrays values not  set by copying from prev existing grids
+       call system_clock(clock_start,clock_rate)
+       nx = mitot - 2*nghost
+       ny = mjtot - 2*nghost
+       call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux)
+       call system_clock(clock_finish,clock_rate)
+       thisSetauxTime = thisSetauxTime + clock_finish - clock_start
+  
     !-----------------------------
     ! For shallow water over topograpdy, in coarse cells convert from h to eta,
     ! before interpolating:
@@ -115,8 +143,8 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
 
             ! Interpolate from coarse cells to fine grid to find depth
             finemass = 0.d0
-            do ico = 1,refinement_ratio_x
                 do jco = 1,refinement_ratio_y
+               do ico = 1,refinement_ratio_x
                     yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
                     xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
                     jfine = (j-2) * refinement_ratio_y + nghost + jco
@@ -203,8 +231,8 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
                         dividemass = max(finemass,valc(1,i,j))
                         Vnew = area * valc(ivar,i,j) / (dividemass)
 
-                        do ico = 1,refinement_ratio_x
                             do jco = 1,refinement_ratio_y
+                            do ico = 1,refinement_ratio_x
                                 jfine = (j-2) * refinement_ratio_y + nghost + jco
                                 ifine = (i-2) * refinement_ratio_x + nghost + ico
                                 val(ivar,ifine,jfine) = Vnew * val(1,ifine,jfine)
@@ -218,17 +246,13 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
         enddo !end of coarse loop
     enddo !end of coarse loop
 
-    ! overwrite interpolated values with fine grid values, if available.
-    call intcopy(val,mx,my,nvar,ilo-nghost,ihi+nghost,jlo-nghost, &
-                 jhi+nghost,level,1,1)
-
     ! scan for max wave speed on newly created grid. this will be used to set appropriate
     ! time step and appropriate refinement in time. For this app not nec to refine by same
     ! amount as refinement in space since refinement at shores where h is shallow has lower
     ! speeds.
 
     if (varRefTime) then   ! keep consistent with setgrd_geo and qinit_geo
-        sp_over_h = get_max_speed(val,mx,my,nvar,aux,naux,nghost,dx,dy)
+        sp_over_h = get_max_speed(val,mitot,mjtot,nvar,aux,naux,nghost,dx,dy)
     endif
 
 end subroutine filval

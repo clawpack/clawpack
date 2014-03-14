@@ -162,12 +162,6 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
         ! New patch rectangle (after we have partially filled it in) but in the
         ! coarse patches [iplo,iphi,jplo,jphi]
-!!$        coarse_indices = [(unset_indices(1) - refinement_ratio_x + nghost * refinement_ratio_x) &
-!!$                                                / refinement_ratio_x - nghost, &
-!!$                          (unset_indices(2) + refinement_ratio_x) / refinement_ratio_x, &
-!!$                          (unset_indices(3) - refinement_ratio_y + nghost * refinement_ratio_y) &
-!!$                                                / refinement_ratio_y - nghost, &
-!!$                          (unset_indices(4) + refinement_ratio_y) / refinement_ratio_y]
 
         iplo = (unset_indices(1) - refinement_ratio_x + nghost * refinement_ratio_x) &
                                                 / refinement_ratio_x - nghost
@@ -176,7 +170,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                                                 / refinement_ratio_y - nghost
         jphi = (unset_indices(4) + refinement_ratio_y) / refinement_ratio_y
                                                 
-!!$        coarse_rect = [xlower +iplo * dx_coarse, &
+!!$     coarse_rect = [xlower +iplo * dx_coarse, &
 !!$                       xlower + (iphi + 1) * dx_coarse, &
 !!$                       ylower + jplo * dy_coarse, &
 !!$                       ylower + (jphi + 1) * dy_coarse]
@@ -243,8 +237,8 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         slope = 0.d0
 
         ! Calculate surface elevation eta using dry limiting
-        do i_coarse = 1, mx_coarse
-            do j_coarse = 1, my_coarse
+        do j_coarse = 1, my_coarse
+            do i_coarse = 1, mx_coarse
                 h = valcrse(ivalc(1,i_coarse,j_coarse))
                 b = auxcrse(iauxc(i_coarse,j_coarse))
 
@@ -257,8 +251,8 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         enddo
 
         ! Calculate limited gradients of coarse grid eta
-        do i_coarse = 2, mx_coarse - 1
-            do j_coarse = 2, my_coarse - 1
+        do j_coarse = 2, my_coarse - 1
+           do i_coarse = 2, mx_coarse - 1
 
                 ! X-Direction
                 down_slope = eta_coarse(i_coarse,j_coarse) - eta_coarse(i_coarse-1,j_coarse)
@@ -279,14 +273,15 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         enddo
 
         ! Loop through patch to be filled, includes multiple coarse cells
-        do i_fine = 1, mx_patch
-            i_coarse = 2 + (i_fine - (unset_indices(1) - ilo) - 1) / refinement_ratio_x
-            eta1 = (-0.5d0 + real(mod(i_fine - 1, refinement_ratio_x),kind=8)) &
-                                / real(refinement_ratio_x,kind=8)
-            do j_fine = 1, my_patch
-                j_coarse = 2 + (j_fine - (unset_indices(3) - jlo) - 1) / refinement_ratio_y
-                eta2 = (-0.5d0 + real(mod(j_fine - 1, refinement_ratio_y),kind=8)) &
+         do j_fine = 1, my_patch
+            j_coarse = 2 + (j_fine - (unset_indices(3) - jlo) - 1) / refinement_ratio_y
+            eta2 = (-0.5d0 + real(mod(j_fine - 1, refinement_ratio_y),kind=8)) &
                                     / real(refinement_ratio_y,kind=8)
+            do i_fine = 1, mx_patch
+                i_coarse = 2 + (i_fine - (unset_indices(1) - ilo) - 1) / refinement_ratio_x
+                eta1 = (-0.5d0 + real(mod(i_fine - 1, refinement_ratio_x),kind=8)) &
+                                / real(refinement_ratio_x,kind=8)
+           
 
                 if (flaguse(i_fine,j_fine) == 0) then
                     ! Interpolate from coarse cells to fine grid for surface
@@ -310,8 +305,8 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
         ! Momentum Interpolation
         do n = 2, num_eqn
+          do j_coarse = 2, my_coarse - 1
             do i_coarse = 2, mx_coarse - 1
-                do j_coarse = 2, my_coarse - 1
 
                     ! Determine slopes for interpolation
                     down_slope = (valcrse(ivalc(n,i_coarse,j_coarse)) - valcrse(ivalc(n,i_coarse-1,j_coarse)))
@@ -372,12 +367,13 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
             enddo
 
             ! Determine momentum in fine cells
-            do i_fine = 1, mx_patch
-                i_coarse = 2 + (i_fine - (unset_indices(1) - ilo) - 1) / refinement_ratio_x
-                eta1 = (-0.5d0 + real(mod(i_fine - 1, refinement_ratio_x),kind=8)) / real(refinement_ratio_x,kind=8)
-                do j_fine = 1, my_patch
-                    j_coarse = 2 + (j_fine - (unset_indices(3) - jlo) - 1) / refinement_ratio_y
-                    eta2 = (-0.5d0 + real(mod(j_fine - 1, refinement_ratio_y),kind=8)) / real(refinement_ratio_y,kind=8)
+            do j_fine = 1, my_patch
+                j_coarse = 2 + (j_fine - (unset_indices(3) - jlo) - 1) / refinement_ratio_y
+                eta2 = (-0.5d0 + real(mod(j_fine - 1, refinement_ratio_y),kind=8)) / real(refinement_ratio_y,kind=8)
+                do i_fine = 1, mx_patch
+                    i_coarse = 2 + (i_fine - (unset_indices(1) - ilo) - 1) / refinement_ratio_x
+                    eta1 = (-0.5d0 + real(mod(i_fine - 1, refinement_ratio_x),kind=8)) / real(refinement_ratio_x,kind=8)
+             
 
                     if (flaguse(i_fine,j_fine) == 0) then
                         ! Cell not already set
@@ -404,12 +400,14 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
             ! Reset momentum to conserve momentum in the cases where we may have
             ! gained momentum or if velocity bounds were violated
             if (reloop) then
-                do i_fine = 1,mx_patch
-                    i_coarse = 2 + (i_fine - (unset_indices(1) - ilo) - 1) / refinement_ratio_x
-                    eta1 = (-0.5d0 + real(mod(i_fine - 1, refinement_ratio_x),kind=8)) / real(refinement_ratio_x,kind=8)
-                    do j_fine  = 1,my_patch
-                        j_coarse = 2 + (j_fine  - (unset_indices(3) - jlo) - 1) / refinement_ratio_y
-                        eta2 = (-0.5d0 + real(mod(j_fine - 1, refinement_ratio_y),kind=8)) / real(refinement_ratio_y, kind=8)
+              
+                do j_fine  = 1,my_patch
+                  j_coarse = 2 + (j_fine  - (unset_indices(3) - jlo) - 1) / refinement_ratio_y
+                  eta2 = (-0.5d0 + real(mod(j_fine - 1, refinement_ratio_y),kind=8)) / real(refinement_ratio_y, kind=8)
+ 
+                    do i_fine = 1,mx_patch
+                        i_coarse = 2 + (i_fine - (unset_indices(1) - ilo) - 1) / refinement_ratio_x
+                        eta1 = (-0.5d0 + real(mod(i_fine - 1, refinement_ratio_x),kind=8)) / real(refinement_ratio_x,kind=8)
 
                         if (flaguse(i_fine,j_fine) == 0) then
                             if (fine_flag(1,i_coarse,j_coarse) .or. fine_flag(n,i_coarse,j_coarse)) then

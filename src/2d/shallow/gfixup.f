@@ -1,7 +1,8 @@
 c
 c  -----------------------------------------------------------
 c
-      subroutine gfixup(lbase, lfnew, nvar, naux)
+      subroutine gfixup(lbase, lfnew, nvar, naux, newnumgrids,
+     .                  maxnumnewgrids)
 c
       use geoclaw_module
       use refinement_module, only: varRefTime
@@ -10,7 +11,14 @@ c
       implicit double precision (a-h,o-z)
 
       dimension spoh(maxlv)
+      integer omp_get_thread_num, omp_get_max_threads
+      integer mythread/0/, maxthreads/1/
+      integer newnumgrids(maxlv),listnewgrids(maxnumnewgrids)
 
+      integer clock_start, clock_finish, clock_rate
+      integer wallclock_start, wallclock_finish
+      logical mjb
+      integer mbad
 c
 c ::::::::::::::::::::::::: GFIXUP ::::::::::::::::::::::::::::::::;
 c        interpolate initial values for the newly created grids.
@@ -25,6 +33,7 @@ c  (if level = mxnest so that error never estimated) don't have
 c  2 copies of solution values at old and new times.
 c
 c
+      mjb = .false. 
       call putsp(lbase,lbase,nvar,naux)
       level = lbase + 1
  1    if (level .gt. lfine) go to 4
@@ -50,34 +59,85 @@ c
           hy = hyposs(lcheck)
           spoh(lcheck) = 0.d0 ! to keep track of max wave speed for all new grids
 c
-c  interpolate level lcheck
+c prepare for doing next loop over grids at a given level in parallel
+c unlike other level loops, these are newly created grids, not yet merged in
+c so take grids from newstl (NEWSTartOfLevel), not lstart. Dont yet know
+c how many either.
+       call prepnewgrids(listnewgrids,newnumgrids(lcheck),lcheck)
 c
-          mptr   = newstl(lcheck)
- 10       if (mptr .eq. 0) go to 80
-
-              time   = rnode(timemult, mptr)
-              if (.not. topo_finalized) then
-                 call topo_update(time)
-                 endif
-
+c  interpolate level lcheck
+c   first get space, since cant do that part in parallel
+       do  j = 1, newnumgrids(lcheck)
+          mptr = listnewgrids(j)
               nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
               ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
               mitot = nx + 2*nghost
               mjtot = ny + 2*nghost
-              corn1 = rnode(cornxlo,mptr)
-              corn2 = rnode(cornylo,mptr)
               loc    = igetsp(mitot * mjtot * nvar)
               node(store1, mptr)  = loc
               if (naux .gt. 0) then
                 locaux = igetsp(mitot * mjtot * naux)
                 mx = mitot - 2*nghost
                 my = mjtot - 2*nghost
+                corn1 = rnode(cornxlo, mptr)
+                corn2 = rnode(cornylo, mptr)
                 call setaux(nghost,mx,my,corn1,corn2,hx,hy,
      &                    naux,alloc(locaux))
               else
                 locaux = 1
               endif
               node(storeaux, mptr)  = locaux
+       end do
+
+c   
+c                 other reduction variables initialized in stst1
+       this_spoh = 0.d0
+       call system_clock(wallclock_start,clock_rate)  
+
+!$OMP PARALLEL DO 
+!$OMP&            PRIVATE(clock_start,clock_finish,clock_rate)
+!$OMP&            PRIVATE(j,mptr,nx,ny,mitot,mjtot,corn1,corn2,loc)
+!$OMP&            PRIVATE(locaux,time,mic,mjc,xl,xr,yb,yt,ilo,ihi)
+!$OMP&            PRIVATE(jlo,jhi,iperim,sp_over_h,thisSetauxTime)
+!$OMP&            SHARED(newnumgrids,listnewgrids,nghost,node,hx,hy)
+!$OMP&            SHARED(rnode,intratx,intraty,lcheck,nvar,alloc,naux)
+!$OMP&            REDUCTION(MAX:this_spoh)
+!$OMP&            REDUCTION(+:timeFilval)
+!$OMP&            SCHEDULE(dynamic,1)
+!$OMP&            DEFAULT(none)
+
+! $OMP&            REDUCTION(+:timeSetaux)
+
+      do  j = 1, newnumgrids(lcheck)
+          mptr = listnewgrids(j)
+
+c          mptr   = newstl(lcheck)
+c 10       if (mptr .eq. 0) go to 80
+
+comment out setaux loop. try copying instead in filval when copy solution
+c  involves changing intcopy to icall and making flag array
+              nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
+              ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
+              mitot = nx + 2*nghost
+              mjtot = ny + 2*nghost
+              corn1 = rnode(cornxlo,mptr)
+              corn2 = rnode(cornylo,mptr)
+              loc    =  node(store1, mptr)
+              if (naux .gt. 0) then
+                locaux =  node(storeaux, mptr)
+              endif
+c for DEBUGGING SET HERE AND TEST THAT SAME IN ICALLCOPY
+c                 call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
+c     &                    naux,alloc(locaux))
+c                 if (mjb) then
+c                     mbad = 14
+c                     call lookataux(mbad,alloc(node(storeaux,mbad)),
+c     &                 node(ndilo,mbad),node(ndihi,mbad),
+c     &                 node(ndjlo,mbad),node(ndjhi,mbad),nghost,mjb)
+c                 endif
+c                 call system_clock(clock_finish,clock_rate)
+c                timeSetaux = timeSetaux + clock_finish - clock_start
+              time   = rnode(timemult, mptr)
 c
 c      We now fill in the values for grid mptr using filval. It uses
 c      piecewise linear interpolation to obtain values from the
@@ -94,14 +154,12 @@ c          # extra 2 cells so that can use linear interp. on
 c          # "interior" of coarser patch to fill fine grid.
            mic = nx/intratx(lcheck-1) + 2
            mjc = ny/intraty(lcheck-1) + 2
-           ivalc  = igetsp(mic*mjc*(nvar+naux))
-           ivalaux  = ivalc + nvar*mic*mjc
+!           ivalc  = igetsp(mic*mjc*(nvar+naux))
+!           ivalaux  = ivalc + nvar*mic*mjc
            xl = rnode(cornxlo,mptr)
            xr = rnode(cornxhi,mptr)
            yb = rnode(cornylo,mptr)
            yt = rnode(cornyhi,mptr)
-           hx = hxposs(lcheck)
-           hy = hyposs(lcheck)
            ilo    = node(ndilo, mptr)
            ihi    = node(ndihi, mptr)
            jlo    = node(ndjlo, mptr)
@@ -111,22 +169,34 @@ c         ## need to get scratch space here, since passing ins
 c         ## variables indexed into alloc. This is in case dynamic
 c         ## memory would have changed the alloc location
           iperim = mitot+mjtot    ! get max amount possible
-          locflip = igetsp(iperim*(nvar+naux))
 
+           call system_clock(clock_start,clock_rate)
            call filval(alloc(loc),mitot,mjtot,hx,hy,lcheck,time,
-     1                 alloc(ivalc),alloc(ivalaux),mic,mjc,
+     1                  mic,mjc,
      2                 xl,xr,yb,yt,nvar,
      3                 mptr,ilo,ihi,jlo,jhi,
-     4                 alloc(locaux),naux,locflip,
-     5                 sp_over_h)
-           spoh(lcheck) = max(spoh(lcheck),sp_over_h)
+     4                 alloc(locaux),naux,
+     5                 sp_over_h,thisSetauxTime)
+           call system_clock(clock_finish,clock_rate)
+           timeFilval = timeFilval + clock_finish - clock_start
+!           timeSetaux = thisSetauxTime
+           this_spoh = max(this_spoh, sp_over_h)
  
-           call reclam(ivalc,mic*mjc*(nvar+naux))
-           call reclam(locflip,iperim*(nvar+naux))
+!           call reclam(ivalc,mic*mjc*(nvar+naux))
+!           call reclam(locflip,iperim*(nvar+naux))
 
  
-           mptr = node(levelptr, mptr)
-           go to 10
+!           mptr = node(levelptr, mptr)
+!           go to 10
+        end do
+!$OMP END PARALLEL DO
+
+       call system_clock(wallclock_finish,clock_rate)  
+       timeFilvalTot = timeFilvalTot + wallclock_finish-wallclock_start
+
+       spoh(lcheck) = this_spoh
+ 
+ 
 c
 c  done filling new grids at level. move them into lstart from newstl
 c  (so can use as source grids for filling next level). can also
@@ -204,3 +274,47 @@ c    .            kratio(level-1)
 
  99   return
       end
+c
+c -----------------------------------------------------------------------------------------
+c
+c  use different routine since need to scan new grid list (newstl) not lstart
+c  to make grids.  
+c  could make one routine by passing in source of list, but this changed 4 other routines
+c  so I didnt want to have to deal with it
+
+       subroutine prepnewgrids(listnewgrids,num,level)
+
+       use amr_module
+       implicit double precision (a-h,o-z)
+       integer listnewgrids(num)
+
+       mptr = newstl(level)
+       do j = 1, num
+          listnewgrids(j) = mptr
+          mptr = node(levelptr, mptr)
+       end do
+
+       if (mptr .ne. 0) then
+         write(*,*)" Error in routine setting up grid array "
+         stop
+       endif
+
+       return
+       end
+c
+c -------------------------------------------------------------------------------------
+c
+       subroutine lookataux(mptr,aux,ilo,ihi,jlo,jhi,nghost,mjb)
+
+       implicit real*8 (a-h,o-z)
+       dimension aux(7,ilo-nghost:ihi+nghost,jlo-nghost:jhi+nghost)
+       logical mjb
+
+       if (mjb) then
+            i = ilo
+            j = jlo
+           write(*,*) (aux(iaux,i,j),iaux=1,4)
+       endif
+
+       return
+       end
