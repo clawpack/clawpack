@@ -3,12 +3,12 @@
 !
 !  Indicate whether the grid point at (x,y,t) at this refinement level
 !  is allowed to be flagged for further refinement.
-! 
+!
 !  Modified for GeoClaw to check whether the point lies in any of
 !  the various regions specified in the data files.
-! 
+!
 !  This routine is called from routine flag2refine.
-! 
+!
 !  If Richardson error estimates are used (if tol>0) then this routine
 !  is also called from errf1.
 !
@@ -19,15 +19,14 @@ logical function allowflag(x,y,t,level)
     use regions_module
     use refinement_module
     use topo_module
-    use dtopo_module
     use qinit_module
-          
+
     implicit none
 
     ! Function arguments
     real(kind=8), intent(in) :: x,y,t
     integer, intent(in) :: level
-      
+
     ! Locals
     integer :: m
 
@@ -63,7 +62,7 @@ logical function allowflag(x,y,t,level)
         endif
     enddo
     do m=1,num_regions
-        if (level < regions(m)%max_level) then 
+        if (level < regions(m)%max_level) then
             if (x > regions(m)%x_low .and. x <  regions(m)%x_hi.and. &
                 y > regions(m)%y_low .and. y <  regions(m)%y_hi.and. &
                 t > regions(m)%t_low .and. t <= regions(m)%t_hi) then
@@ -78,14 +77,14 @@ logical function allowflag(x,y,t,level)
         if (x >  xlowdtopo(m) .and. x < xhidtopo(m).and. &
             y >  ylowdtopo(m) .and. y < yhidtopo(m).and. &
             t >= t0dtopo(m)   .and. t <= tfdtopo(m)) then
-             
+
             if (level < maxleveldtopo(m)) then
                 allowflag = .true.
                 return
             endif
         endif
     enddo
-    
+
     if (t == t0 .and. qinit_type > 0) then
         if (x > x_low_qinit .and. x < x_hi_qinit .and. &
             y > y_low_qinit .and. y < y_hi_qinit) then
@@ -98,4 +97,3 @@ logical function allowflag(x,y,t,level)
     endif
 
 end function allowflag
-    

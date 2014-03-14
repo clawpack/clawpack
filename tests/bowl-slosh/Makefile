@@ -39,7 +39,6 @@ MODULES = \
  $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
- $(GEOLIB)/dtopo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
@@ -48,8 +47,8 @@ MODULES = \
 SOURCES = \
   ./qinit.f90 \
   $(GEOLIB)/setprob.f90 \
-  $(GEOLIB)/movetopo.f \
-  $(GEOLIB)/cellgridintegrate.f \
+  $(GEOLIB)/topo_update.f90 \
+  $(GEOLIB)/cellgridintegrate2.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
@@ -176,8 +175,12 @@ SOURCES = \
 include $(CLAWMAKE)
 
 # Construct the topography data
-.PHONY: topo
-topo: .data
+.PHONY: topo all
+topo:
 	python maketopo.py
 
-### DO NOT remove this line - make depends on it ###
+all: 
+	$(MAKE) topo
+	$(MAKE) .plots
+	$(MAKE) .htmls
+

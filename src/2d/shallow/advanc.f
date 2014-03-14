@@ -5,6 +5,8 @@ c
 c
       use amr_module
       use fixedgrids_module
+      use topo_module, only: topo_finalized
+
       implicit double precision (a-h,o-z)
 
 
@@ -76,6 +78,10 @@ c      call fgrid_advance(time,delt)
       
       dtlevnew = rinfinity
       cfl_level = 0.d0    !# to keep track of max cfl seen on each level
+
+      if (.not. topo_finalized) then
+         call topo_update(time)
+         endif
 c 
         
 
