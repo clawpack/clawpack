@@ -3,9 +3,9 @@ c
 c     =====================================================
       subroutine flux2(ixy,maxm,meqn,maux,mbc,mx,
      &                 q1d,dtdx1d,aux1,aux2,aux3,
-     &                 faddm,faddp,gaddm,gaddp,cfl1d,fwave,s,
-     &                 amdq,apdq,rpn2,rpt2)
-C      &                 amdq,apdq,cqxx,bmasdq,bpasdq,rpn2,rpt2)
+     &                 faddm,faddp,gaddm,gaddp,cfl1d,
+     &                 rpn2,rpt2)
+!!     &                 fwave,s,amdq,apdq,rpn2,rpt2)
 c     =====================================================
 c
 c     # clawpack routine ...  modified for AMRCLAW
@@ -88,8 +88,7 @@ c---------------------last modified 1/04/05-----------------------------
 
       external rpn2, rpt2
       dimension  q1d(meqn, 1-mbc:maxm+mbc)
-      dimension  amdq(meqn, 1-mbc:maxm+mbc)
-      dimension  apdq(meqn, 1-mbc:maxm+mbc)
+
       dimension  bmasdq(meqn, 1-mbc:maxm+mbc)
       dimension  bpasdq(meqn, 1-mbc:maxm+mbc)
       dimension  cqxx(meqn, 1-mbc:maxm+mbc)
@@ -104,6 +103,8 @@ c---------------------last modified 1/04/05-----------------------------
 c
       dimension  s(mwaves, 1-mbc:maxm+mbc)
       dimension  fwave(meqn, mwaves, 1-mbc:maxm+mbc)
+      dimension  amdq(meqn, 1-mbc:maxm+mbc)
+      dimension  apdq(meqn, 1-mbc:maxm+mbc)
 c
       logical limit, relimit
 
@@ -119,8 +120,8 @@ c     -----------------------------
 c
 
       do 30 jside=1,2
-         do 20 m=1,meqn
-            do 10 i = 1-mbc, mx+mbc
+        do 20 i = 1-mbc, mx+mbc
+          do 10 m=1,meqn
                faddm(m,i) = 0.d0
                faddp(m,i) = 0.d0
                gaddm(m,i,jside) = 0.d0

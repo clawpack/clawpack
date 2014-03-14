@@ -14,6 +14,7 @@ c
 
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
+      integer clock_start, clock_finish, clock_rate
 
 c
 c :::::::::::::::::::::::::::: TICK :::::::::::::::::::::::::::::
@@ -205,7 +206,12 @@ c level 'lbase' stays fixed.
 c
           if (rprint) write(outunit,101) lbase
 101       format(8h  level ,i5,32h  stays fixed during regridding )
+
+          call system_clock(clock_start,clock_rate)
           call regrid(nvar,lbase,cut,naux,start_time)
+          call system_clock(clock_finish,clock_rate)
+          timeRegridding = timeRegridding + clock_finish - clock_start
+
           call setbestsrc()     ! need at every grid change
 c         call conck(1,nvar,naux,time,rest)
 c         call outtre(lstart(lbase+1),.true.,nvar,naux)
