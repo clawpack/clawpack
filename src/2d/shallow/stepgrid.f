@@ -44,7 +44,7 @@ c      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
 c      dimension work(mwork)
 
       logical :: debug = .false.
-      logical :: dump = .true.
+      logical :: dump = .false.
 c
       
       level = node(nestlevel,mptr)

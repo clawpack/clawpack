@@ -8,15 +8,15 @@
 ! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 !
 !
-!
 ! ------------------------------------------------------------------
+!
 subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                   mjc, xleft, xright, ybot, ytop, nvar, mptr, ilo, ihi, &
                   jlo, jhi, aux, naux,  sp_over_h, thisSetauxTime)
 
     use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
     use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
-    use amr_module, only: outunit
+    use amr_module, only: outunit, rinfinity
 
     use geoclaw_module, only: dry_tolerance, sea_level
     use refinement_module, only: varRefTime
@@ -40,11 +40,11 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     real(kind=8) :: coarseval(3), dx_coarse, dy_coarse, xl, xr, yb, yt, area
     real(kind=8) :: dividemass, finemass, hvf, s1m, s1p, slopex, slopey, vel
     real(kind=8) :: velmax, velmin, vf, vnew, xoff, yoff
+    logical :: fineflag(3)
     real(kind=8) :: fliparray((mitot+mjtot)*(nvar+naux))
-    integer(kind=1) ::  auxflags(mitot,mjtot)
     integer :: clock_start, clock_finish, clock_rate
     integer :: nx, ny
-    logical :: fineflag(3)
+    real(kind=8) setflags(mitot,mjtot)
 
     ! External function definitions
     real(kind=8) :: get_max_speed
@@ -57,6 +57,12 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     xr      = xright + dx_coarse
     yb      = ybot   - dy_coarse
     yt      = ytop   + dy_coarse
+
+    do j = 1, mjtot
+      do i = 1, mitot
+        aux(1,i,j) = rinfinity   ! indicates fine cells not yet set
+      end do
+    end do
 
     ! set integer indices for coarser patch enlarged by 1 cell
     ! (can stick out of domain). proper nesting will insure this one
@@ -98,6 +104,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
        call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
                       jlo-nghost,jhi+nghost,level,1,1)   
+       setflags = aux(1,:,:)   ! save since will overwrite in setaux when setting all aux vals
 
 !      set remaining aux arrays values not  set by copying from prev existing grids
        call system_clock(clock_start,clock_rate)
@@ -149,6 +156,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                     xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
                     jfine = (j-2) * refinement_ratio_y + nghost + jco
                     ifine = (i-2) * refinement_ratio_x + nghost + ico
+                    if (setflags(ifine,jfine) .eq. rinfinity) then
                     val(1,ifine,jfine) = (coarseval(2) + xoff * slopex &
                                                        + yoff * slopey)
                     val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine) &
@@ -156,9 +164,12 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                     finemass = finemass + val(1,ifine,jfine)
                     if (val(1,ifine,jfine) <= dry_tolerance) then
                         fineflag(1) = .true.
+                          if (setflags(ifine,jfine) .eq. rinfinity) then
                         val(2,ifine,jfine) = 0.d0
                         val(3,ifine,jfine) = 0.d0
                     end if
+                    end if
+                    endif
                 end do
             end do
 
@@ -218,7 +229,9 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                                 fineflag(ivar) = .true.
                                 exit
                             else
+                               if (setflags(ifine,jfine) .eq. rinfinity) then
                                 val(ivar,ifine,jfine) = hvf
+                            endif
                             endif
                         enddo
                     enddo
@@ -235,7 +248,9 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                             do ico = 1,refinement_ratio_x
                                 jfine = (j-2) * refinement_ratio_y + nghost + jco
                                 ifine = (i-2) * refinement_ratio_x + nghost + ico
+                                if (setflags(ifine,jfine) .eq. rinfinity) then
                                 val(ivar,ifine,jfine) = Vnew * val(1,ifine,jfine)
+                                endif
                             enddo
                         enddo
                     endif

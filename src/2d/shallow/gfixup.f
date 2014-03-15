@@ -53,7 +53,17 @@ c
  3        level   = level + 1
           go to 1
 c
+c update topo to current time, before setting all new grids at new levels
+c
+
+
  4    lcheck = lbase + 1
+
+      time = rnode(timemult, lstart(lbase))
+      if (.not. topo_finalized) then
+          call topo_update(time)
+      endif
+
  5    if (lcheck .gt. mxnest) go to 89
           hx = hxposs(lcheck)
           hy = hyposs(lcheck)
@@ -77,10 +87,6 @@ c   first get space, since cant do that part in parallel
               node(store1, mptr)  = loc
               if (naux .gt. 0) then
                 locaux = igetsp(mitot * mjtot * naux)
-                corn1 = rnode(cornxlo, mptr)
-                corn2 = rnode(cornylo, mptr)
-                call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
-     &                    naux,alloc(locaux))
               else
                 locaux = 1
               endif
@@ -103,14 +109,10 @@ c                 other reduction variables initialized in stst1
 !$OMP&            REDUCTION(+:timeFilval)
 !$OMP&            SCHEDULE(dynamic,1)
 !$OMP&            DEFAULT(none)
-
-! $OMP&            REDUCTION(+:timeSetaux)
+!$OMP&            REDUCTION(+:timeSetaux)
 
       do  j = 1, newnumgrids(lcheck)
           mptr = listnewgrids(j)
-
-c          mptr   = newstl(lcheck)
-c 10       if (mptr .eq. 0) go to 80
 
 comment out setaux loop. try copying instead in filval when copy solution
 c  involves changing intcopy to icall and making flag array
@@ -124,18 +126,15 @@ c  involves changing intcopy to icall and making flag array
               if (naux .gt. 0) then
                 locaux =  node(storeaux, mptr)
               endif
-c for DEBUGGING SET HERE AND TEST THAT SAME IN ICALLCOPY
+c for DEBUGGING SET HERE AND TEST THAT SAME IN ICALL (NO MORE - initialized to rinfinity now in filval)
 c                 call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
-c     &                    naux,alloc(locaux))
+c     &                       naux,alloc(locaux))
 c                 if (mjb) then
 c                     mbad = 14
 c                     call lookataux(mbad,alloc(node(storeaux,mbad)),
 c     &                 node(ndilo,mbad),node(ndihi,mbad),
 c     &                 node(ndjlo,mbad),node(ndjhi,mbad),nghost,mjb)
 c                 endif
-c                 call system_clock(clock_finish,clock_rate)
-c                timeSetaux = timeSetaux + clock_finish - clock_start
-              time   = rnode(timemult, mptr)
 c
 c      We now fill in the values for grid mptr using filval. It uses
 c      piecewise linear interpolation to obtain values from the
@@ -152,16 +151,14 @@ c          # extra 2 cells so that can use linear interp. on
 c          # "interior" of coarser patch to fill fine grid.
            mic = nx/intratx(lcheck-1) + 2
            mjc = ny/intraty(lcheck-1) + 2
-!           ivalc  = igetsp(mic*mjc*(nvar+naux))
-!           ivalaux  = ivalc + nvar*mic*mjc
-           xl = rnode(cornxlo,mptr)
-           xr = rnode(cornxhi,mptr)
-           yb = rnode(cornylo,mptr)
-           yt = rnode(cornyhi,mptr)
-           ilo    = node(ndilo, mptr)
-           ihi    = node(ndihi, mptr)
-           jlo    = node(ndjlo, mptr)
-           jhi    = node(ndjhi, mptr)
+           xl  = rnode(cornxlo,mptr)
+           xr  = rnode(cornxhi,mptr)
+           yb  = rnode(cornylo,mptr)
+           yt  = rnode(cornyhi,mptr)
+           ilo   = node(ndilo, mptr)
+           ihi   = node(ndihi, mptr)
+           jlo   = node(ndjlo, mptr)
+           jhi   = node(ndjhi, mptr)
  
 c         ## need to get scratch space here, since passing ins
 c         ## variables indexed into alloc. This is in case dynamic
@@ -169,22 +166,15 @@ c         ## memory would have changed the alloc location
 
            call system_clock(clock_start,clock_rate)
            call filval(alloc(loc),mitot,mjtot,hx,hy,lcheck,time,
-     1                  mic,mjc,
+     1                 mic,mjc,
      2                 xl,xr,yb,yt,nvar,
      3                 mptr,ilo,ihi,jlo,jhi,
      4                 alloc(locaux),naux,
      5                 sp_over_h,thisSetauxTime)
            call system_clock(clock_finish,clock_rate)
            timeFilval = timeFilval + clock_finish - clock_start
-!           timeSetaux = thisSetauxTime
            this_spoh = max(this_spoh, sp_over_h)
- 
-!           call reclam(ivalc,mic*mjc*(nvar+naux))
-
- 
-!           mptr = node(levelptr, mptr)
-!           go to 10
-        end do
+         end do
 !$OMP END PARALLEL DO
 
        call system_clock(wallclock_finish,clock_rate)  
