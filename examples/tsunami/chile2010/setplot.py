@@ -48,8 +48,6 @@ def setplot(plotdata):
     # Figure for surface
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
-    plotfigure.use_for_kml = True
-    plotfigure.dpi = 200
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('pcolor')
@@ -80,18 +78,18 @@ def setplot(plotdata):
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.show = False
+    plotitem.show = True
     plotitem.plot_var = geoplot.land
     plotitem.pcolor_cmap = geoplot.land_colors
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
-    plotitem.add_colorbar = False
+    plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 0
 
     # add contour lines of bathy if desired:
     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.show = False
+    plotitem.show = True
     plotitem.plot_var = geoplot.topo
     plotitem.contour_levels = linspace(-3000,-3000,1)
     plotitem.amr_contour_colors = ['y']  # color on each level
@@ -107,14 +105,16 @@ def setplot(plotdata):
     # This is a very limited set of items that can
     # be controlled.
     #--------------------------------------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='kml',figno=1)
-    plotfigure.show = False   # Don't show this file in the html version
+    plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
+    plotfigure.show = True   # Don't show this file in the html version
     plotfigure.use_for_kml = True
     plotfigure.dpi = 200
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('kml')
     plotaxes.scaled = True
+    plotaxes.xlimits = [-120,-60]
+    plotaxes.ylimits = [-60,0.0];
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -125,6 +125,16 @@ def setplot(plotdata):
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = [1,1,1]
 
+    # add contour lines of bathy if desired:
+    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+    plotitem.show = True
+    plotitem.plot_var = geoplot.topo
+    plotitem.contour_levels = linspace(-3000,-3000,1)
+    plotitem.amr_contour_colors = ['y']  # color on each level
+    plotitem.kwargs = {'linestyles':'solid','linewidths':2}
+    plotitem.amr_contour_show = [1,0,0]
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = [1,1,1]
 
     #-----------------------------------------
     # Figures for gauges
