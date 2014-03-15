@@ -10,8 +10,6 @@ function setplot is called to set the plot parameters.
 import numpy as np
 import matplotlib.pyplot as plt
 
-import pykml
-
 from clawpack.geoclaw import topotools
 
 try:
@@ -71,26 +69,26 @@ def setplot(plotdata):
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface
-    # plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 0
+    plotaxes.xlimits = [-120,-60]
+    plotaxes.ylimits = [-60,0]
 
     # Land
-#     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-#     plotitem.plot_var = geoplot.land
-#     plotitem.pcolor_cmap = geoplot.land_colors
-#     plotitem.pcolor_cmin = 0.0
-#     plotitem.pcolor_cmax = 100.0
-#     plotitem.add_colorbar = False
-#     plotitem.amr_celledges_show = [0,0,0]
-#     plotitem.patchedges_show = 0
-#     plotaxes.xlimits = [-120,-60]
-#     plotaxes.ylimits = [-60,0]
-#
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.show = False
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 0
+
     # add contour lines of bathy if desired:
     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
     plotitem.show = False
