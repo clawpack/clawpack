@@ -44,7 +44,7 @@ c      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
 c      dimension work(mwork)
 
       logical :: debug = .false.
-      logical :: dump = .false.
+      logical :: dump = .true.
 c
       
       level = node(nestlevel,mptr)
@@ -55,8 +55,7 @@ c
          do j = 1, mjtot
             write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar),
      .                         (aux(iaux,i,j),iaux=1,maux)
-c            write(*,545) i,j,(q(ivar,i,j),ivar=1,nvar)
- 545        format(2i4,7e15.7)
+ 545        format(2i4,4e15.7,/,8x,4e15.7)
          end do
          end do
       endif
