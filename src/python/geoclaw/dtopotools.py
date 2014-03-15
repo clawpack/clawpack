@@ -22,6 +22,7 @@ import os, sys
 import copy
 
 import numpy
+import numpy as np   # Need to unify: numpy and np both used below
 from numpy import sin,cos,sqrt
 
 # Constants
@@ -636,11 +637,11 @@ def read_dtopo(fname, dtopotype):
         y=numpy.linspace(ylower,yupper,my)
         times = numpy.linspace(t0, t0+(mt-1)*dt, mt)
 
-        dZvals = loadtxt(fname, skiprows=9)
+        dZvals = np.loadtxt(fname, skiprows=9)
         dz_list = []
         for k,t in enumerate(times):
-            dZk = reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
-            dZk = flipud(dZk)
+            dZk = np.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
+            dZk = np.flipud(dZk)
             dz_list.append(dZk)
             
         dtopo = DTopo()
