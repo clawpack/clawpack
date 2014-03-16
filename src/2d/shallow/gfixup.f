@@ -7,7 +7,7 @@ c
       use geoclaw_module
       use refinement_module, only: varRefTime
       use amr_module
-      use topo_module, only: topo_finalized
+      use topo_module, only: topo_finalized,aux_finalized
       implicit double precision (a-h,o-z)
 
       dimension spoh(maxlv)
@@ -113,8 +113,9 @@ c                 other reduction variables initialized in stst1
       do  j = 1, newnumgrids(lcheck)
           mptr = listnewgrids(j)
 
-comment out setaux loop. try copying instead in filval when copy solution
-c  involves changing intcopy to icall and making flag array
+c  changed to move setaux out of this loop. instead, copy aux in filval 
+c  along with soln.involves changing intcopy to icall and making flag array
+c  can only do this after topo stops moving
               nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
               ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
               mitot = nx + 2*nghost
@@ -124,6 +125,8 @@ c  involves changing intcopy to icall and making flag array
               loc   =  node(store1, mptr)
               if (naux .gt. 0) then
                 locaux =  node(storeaux, mptr)
+              else
+                locaux = 1
               endif
 c
 c      We now fill in the values for grid mptr using filval. It uses

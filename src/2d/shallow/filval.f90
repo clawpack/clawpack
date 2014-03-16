@@ -19,6 +19,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     use amr_module, only: outunit, rinfinity
     use amr_module
 
+    use topo_module, only: aux_finalized
     use geoclaw_module, only: dry_tolerance, sea_level
     use refinement_module, only: varRefTime
 
@@ -47,7 +48,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     integer :: clock_start, clock_finish, clock_rate
     integer :: nx, ny
     real(kind=8) setflags(mitot,mjtot),maxauxdif
-    integer :: mitot1,mjtot1
 
     ! External function definitions
     real(kind=8) :: get_max_speed
@@ -61,13 +61,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     yb      = ybot   - dy_coarse
     yt      = ytop   + dy_coarse
 
-    if (naux > 0) then
-      do j = 1, mjtot
-        do i = 1, mitot
-          aux(1,i,j) = rinfinity   ! indicates fine cells not yet set
-        end do
-      end do
-    endif
+    ! if topo not yet final then aux is set outside filval (in gfixup)
+    ! and so aux has real data already, (ie dont overwrite here)
 
     ! set integer indices for coarser patch enlarged by 1 cell
     ! (can stick out of domain). proper nesting will insure this one
@@ -86,14 +81,16 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
         endif
     else  
         ! intersect grids and copy all (soln and aux)
-        mitot1 = node(ndihi,1)-node(ndilo,1)+1+2*nghost
-        mjtot1 = node(ndjhi,1)-node(ndjlo,1)+1+2*nghost
-        !call dumpaux(alloc(node(storeaux,1)),naux,mitot1,mjtot1)
         if (xperdom .or. yperdom .or. spheredom) then
             call preicall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi, &
                           level-1,fliparray)
         else
             call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,level-1,1,1)
+        endif
+        if (aux_finalized .lt. 2) then ! coarse topo was at wrong time. redo
+           ! no ghost cells on coarse enlarged patch
+           auxc(1,:,:) = rinfinity  ! needs signal for setaux, set everywhere
+           call setaux(ng,mic,mjc,xl,yb,dx_coarse,dy_coarse,naux,auxc)
         endif
     endif
     call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level-1,time,xl,xr,yb, &
@@ -106,22 +103,31 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
 !  SO this is no longer overwriting but setting for the first time.
 ! overwrite interpolated values with fine grid values, if available.
-!!$    call intcopy(val,mitot,mjtot,nvar,ilo-nghost,ihi+nghost,jlo-nghost, &
-!!$                 jhi+nghost,level,1,1)              
+! can only do this if topo stoped moving, otherwise fine grid
+! topo is at previous time step.
 !! also might need preicallCopy???
 
-       call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
-                      jlo-nghost,jhi+nghost,level,1,1)   
-       setflags = aux(1,:,:)   ! save since will overwrite in setaux when setting all aux vals
-       ! this will tell us where the fine solution has been copied from fine level
-
-!      set remaining aux arrays values not  set by copying from prev existing grids
-       call system_clock(clock_start,clock_rate)
        nx = mitot - 2*nghost
        ny = mjtot - 2*nghost
-       call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux)
-       call system_clock(clock_finish,clock_rate)
-       thisSetauxTime = thisSetauxTime + clock_finish - clock_start
+
+       if (naux .gt. 0) then 
+             aux(1,:,:) = rinfinity  ! will indicate fine cells not yet set
+             call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
+                        jlo-nghost,jhi+nghost,level,1,1)   
+             setflags = aux(1,:,:)   ! save since will overwrite in setaux when setting all aux vals
+             ! need this so we know where to use coarse grid to set fine solution w/o overwriting
+             if (aux_finalized .lt. 2) aux(1,:,:) = rinfinity  ! reset entire aux array since topo moving
+               !set remaining aux vals not set by copying from prev existing grids
+               call system_clock(clock_start,clock_rate)
+               call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux)
+               call system_clock(clock_finish,clock_rate)
+               thisSetauxTime = thisSetauxTime + clock_finish - clock_start
+       else ! either no aux exists, or cant reuse yet  
+          ! if topo not final, then setaux called in gfixup before this routine
+          ! so only call intcopy (which copies soln) and not icall.
+          call intcopy(val,mitot,mjtot,nvar,ilo-nghost,ihi+nghost,  &
+                       jlo-nghost,jhi+nghost,level,1,1)   
+       endif
   
     !-----------------------------
     ! For shallow water over topograpdy, in coarse cells convert from h to eta,
@@ -166,16 +172,16 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                     jfine = (j-2) * refinement_ratio_y + nghost + jco
                     ifine = (i-2) * refinement_ratio_x + nghost + ico
                     if (setflags(ifine,jfine) .eq. rinfinity) then
-                      val(1,ifine,jfine) = (coarseval(2) + xoff * slopex &
-                                                         + yoff * slopey)
-                      val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine)  &
-                                              - aux(1,ifine,jfine))
-                      finemass = finemass + val(1,ifine,jfine)
-                      if (val(1,ifine,jfine) <= dry_tolerance) then
+                       val(1,ifine,jfine) = (coarseval(2) + xoff * slopex &
+                                                          + yoff * slopey)
+                       val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine)  &
+                                               - aux(1,ifine,jfine))
+                       finemass = finemass + val(1,ifine,jfine)
+                       if (val(1,ifine,jfine) <= dry_tolerance) then
                           fineflag(1) = .true.
                           val(2,ifine,jfine) = 0.d0
                           val(3,ifine,jfine) = 0.d0
-                      endif
+                       endif
                     endif
                 end do
             end do
@@ -271,20 +277,20 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
 ! CHECK BY CALLING SETAUX AND SETTING ALL, THEN DIFFING
     aux2(1,:,:) = rinfinity   ! indicates fine cells not yet set
-
     call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux2)
-    maxauxdif = 0.d0
+    maxauxdif = 1.d-13
     do i = 1, mitot
     do j = 1, mjtot
       if (abs(aux(1,i,j)-aux2(1,i,j)) .gt. maxauxdif) then
          maxauxdif = abs(aux(1,i,j)-aux2(1,i,j))
-         !write(*,444)i,j,aux(1,i,j),aux2(1,i,j),maxauxdif
- 444     format("i,j = ",2i4," auxs ",2e12.5," maxauxdif ",e12.5)
+         write(*,444)i,j,aux(1,i,j),aux2(1,i,j),maxauxdif
+ 444     format("i,j = ",2i4," auxs ",2e15.7," maxauxdif ",e12.5)
       endif
     end do
     end do
-    if (maxauxdif .gt. 1.e-13) then
-       write(*,*)" maxauxdif = ",maxauxdif," with mitot,mjtot ",mitot,mjtot
+    if (maxauxdif .gt. 2.d-13) then
+       write(*,*)" maxauxdif = ",maxauxdif," with mitot,mjtot ",mitot,mjtot, &
+                 " on grid ",mptr," level ",level
     endif
     
 
