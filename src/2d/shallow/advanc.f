@@ -72,7 +72,7 @@ c
 c save coarse level values if there is a finer level for wave fixup
       if (level+1 .le. mxnest) then
          if (lstart(level+1) .ne. null) then
-            call saveqc(level+1,nvar,naux)
+            !call saveqc(level+1,nvar,naux)
          endif
       endif
 c

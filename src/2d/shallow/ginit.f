@@ -33,12 +33,10 @@ c :::::::::::::::::::::::::::::::::::::::;::::::::::::::::::::
               node(store1,mptr)   = loc
               if (naux .gt. 0) then
                 locaux              = igetsp(mitot*mjtot*naux)
-                mx = mitot - 2*nghost
-                my = mjtot - 2*nghost
-                do k = 1, mitot*mjtot  ! only set first component of aux to signal
+                do k = 1, mitot*mjtot*naux,naux  ! only set first component of aux to signal
                    alloc(locaux+k-1) = rinfinity ! new system checks this val before setting
                 end do
-                call setaux(nghost,mx,my,corn1,corn2,hx,hy,
+                call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
      &                    naux,alloc(locaux))
               else 
                 locaux = 1
@@ -60,19 +58,14 @@ c
           locaux  = node(storeaux,mptr)
 c
    30     continue
-          mx = mitot - 2*nghost
-          my = mjtot - 2*nghost
-          call qinit(nvar,nghost,mx,my,corn1,corn2,hx,hy,
+          call qinit(nvar,nghost,nx,ny,corn1,corn2,hx,hy,
      &               alloc(loc),naux,alloc(locaux))
 
 
-c         call qinit(alloc(loc),nvar,mitot,mjtot,
-c    1               corn1-nghost*hx,corn2-nghost*hy,hx,hy,
-c    2               alloc(locaux),naux)
-c
           mptr  = node(levelptr, mptr)
       if (mptr .ne. 0) go to 10
 c
 c
- 99   return
+ 99   continue
+      return
       end

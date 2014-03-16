@@ -86,10 +86,15 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
         endif
     else  
         ! intersect grids and copy all (soln and aux)
+        mitot1 = node(ndihi,1)-node(ndilo,1)+1+2*nghost
+        mjtot1 = node(ndjhi,1)-node(ndjlo,1)+1+2*nghost
+        write(*,*)" grid 1 aux array, from filval"
+        !call dumpaux(alloc(node(storeaux,1)),naux,mitot1,mjtot1)
         if (xperdom .or. yperdom .or. spheredom) then
             call preicall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi, &
                           level-1,fliparray)
         else
+            write(*,*) "calling icall on coarse grid from filval"
             call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,level-1,1,1)
         endif
     endif
@@ -107,16 +112,16 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 !!$                 jhi+nghost,level,1,1)              
 !! also might need preicallCopy???
 
-       write(*,*)" calling icall on fine grid from filval"
+            write(*,*) "calling icall on fine grid from filval"
        call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
                       jlo-nghost,jhi+nghost,level,1,1)   
        setflags = aux(1,:,:)   ! save since will overwrite in setaux when setting all aux vals
+       ! this will tell us where the fine solution has been copied from fine level
 
 !      set remaining aux arrays values not  set by copying from prev existing grids
        call system_clock(clock_start,clock_rate)
        nx = mitot - 2*nghost
        ny = mjtot - 2*nghost
-       write(*,*)"calling setaux from filval for aux"
        call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux)
        call system_clock(clock_finish,clock_rate)
        thisSetauxTime = thisSetauxTime + clock_finish - clock_start
@@ -164,18 +169,16 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                     jfine = (j-2) * refinement_ratio_y + nghost + jco
                     ifine = (i-2) * refinement_ratio_x + nghost + ico
                     if (setflags(ifine,jfine) .eq. rinfinity) then
-                    val(1,ifine,jfine) = (coarseval(2) + xoff * slopex &
-                                                       + yoff * slopey)
-                    val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine) &
-                                            - aux(1,ifine,jfine))
-                    finemass = finemass + val(1,ifine,jfine)
-                    if (val(1,ifine,jfine) <= dry_tolerance) then
-                        fineflag(1) = .true.
-                          if (setflags(ifine,jfine) .eq. rinfinity) then
-                        val(2,ifine,jfine) = 0.d0
-                        val(3,ifine,jfine) = 0.d0
-                    end if
-                    end if
+                      val(1,ifine,jfine) = (coarseval(2) + xoff * slopex &
+                                                         + yoff * slopey)
+                      val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine)  &
+                                              - aux(1,ifine,jfine))
+                      finemass = finemass + val(1,ifine,jfine)
+                      if (val(1,ifine,jfine) <= dry_tolerance) then
+                          fineflag(1) = .true.
+                          val(2,ifine,jfine) = 0.d0
+                          val(3,ifine,jfine) = 0.d0
+                      endif
                     endif
                 end do
             end do
@@ -236,9 +239,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                                 fineflag(ivar) = .true.
                                 exit
                             else
-                               if (setflags(ifine,jfine) .eq. rinfinity) then
                                 val(ivar,ifine,jfine) = hvf
-                            endif
                             endif
                         enddo
                     enddo
@@ -255,9 +256,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                             do ico = 1,refinement_ratio_x
                                 jfine = (j-2) * refinement_ratio_y + nghost + jco
                                 ifine = (i-2) * refinement_ratio_x + nghost + ico
-                                if (setflags(ifine,jfine) .eq. rinfinity) then
                                 val(ivar,ifine,jfine) = Vnew * val(1,ifine,jfine)
-                                endif
                             enddo
                         enddo
                     endif
@@ -274,12 +273,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     ! speeds.
 
 ! CHECK BY CALLING SETAUX AND SETTING ALL, THEN DIFFING
-    !aux2 = rinfinity   ! indicates fine cells not yet set
-    do j = 1, mjtot
-      do i = 1, mitot
-        aux2(1,i,j) = rinfinity   ! indicates fine cells not yet set
-      end do
-    end do
+    aux2(1,:,:) = rinfinity   ! indicates fine cells not yet set
+
     write(*,*)"calling setaux from filval for aux2"
     call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux2)
     maxauxdif = 0.d0
@@ -292,7 +287,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
       endif
     end do
     end do
-    if (maxauxdif .gt. 1.e-14) then
+    if (maxauxdif .gt. 1.e-13) then
        write(*,*)" maxauxdif = ",maxauxdif," with mitot,mjtot ",mitot,mjtot
     endif
     
@@ -302,3 +297,16 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     endif
 
 end subroutine filval
+subroutine dumpaux(aux,naux,mitot,mjtot)
+   implicit none
+   real(kind=8) :: aux(naux,mitot,mjtot)
+   integer :: naux,mitot,mjtot,i,j,iaux
+
+   do j = 1, mjtot 
+   do i = 1, mitot 
+      write(*,444) i,j,(aux(iaux,i,j),iaux=1,naux)
+ 444  format(2i4,5e12.5)
+   end do
+   end do
+
+end subroutine dumpaux

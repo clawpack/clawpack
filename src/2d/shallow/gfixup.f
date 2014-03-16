@@ -17,7 +17,6 @@ c
 
       integer clock_start, clock_finish, clock_rate
       integer wallclock_start, wallclock_finish
-      logical mjb
       integer mbad
 c
 c ::::::::::::::::::::::::: GFIXUP ::::::::::::::::::::::::::::::::;
@@ -33,7 +32,6 @@ c  (if level = mxnest so that error never estimated) don't have
 c  2 copies of solution values at old and new times.
 c
 c
-      mjb = .false. 
       call putsp(lbase,lbase,nvar,naux)
       level = lbase + 1
  1    if (level .gt. lfine) go to 4
@@ -59,6 +57,7 @@ c
 
  4    lcheck = lbase + 1
 
+
       time = rnode(timemult, lstart(lbase))
       if (.not. topo_finalized) then
           call topo_update(time)
@@ -79,18 +78,18 @@ c  interpolate level lcheck
 c   first get space, since cant do that part in parallel
        do  j = 1, newnumgrids(lcheck)
           mptr = listnewgrids(j)
-              nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
-              ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
-              mitot = nx + 2*nghost
-              mjtot = ny + 2*nghost
-              loc    = igetsp(mitot * mjtot * nvar)
-              node(store1, mptr)  = loc
-              if (naux .gt. 0) then
-                locaux = igetsp(mitot * mjtot * naux)
-              else
-                locaux = 1
-              endif
-              node(storeaux, mptr)  = locaux
+            nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
+            ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
+            mitot = nx + 2*nghost
+            mjtot = ny + 2*nghost
+            loc    = igetsp(mitot * mjtot * nvar)
+            node(store1, mptr)  = loc
+            if (naux .gt. 0) then
+              locaux = igetsp(mitot * mjtot * naux)
+             else
+              locaux = 1
+            endif
+            node(storeaux, mptr)  = locaux
        end do
 
 c   
@@ -122,20 +121,10 @@ c  involves changing intcopy to icall and making flag array
               mjtot = ny + 2*nghost
               corn1 = rnode(cornxlo,mptr)
               corn2 = rnode(cornylo,mptr)
-              loc    =  node(store1, mptr)
+              loc   =  node(store1, mptr)
               if (naux .gt. 0) then
                 locaux =  node(storeaux, mptr)
               endif
-c for DEBUGGING SET HERE AND TEST THAT SAME IN ICALL (NO MORE - initialized to rinfinity now in filval)
-c                 would need to initialize to rinfinity if want setaux to set aux arrays now
-c                 call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
-c     &                       naux,alloc(locaux))
-c                 if (mjb) then
-c                     mbad = 14
-c                     call lookataux(mbad,alloc(node(storeaux,mbad)),
-c     &                 node(ndilo,mbad),node(ndihi,mbad),
-c     &                 node(ndjlo,mbad),node(ndjhi,mbad),nghost,mjb)
-c                 endif
 c
 c      We now fill in the values for grid mptr using filval. It uses
 c      piecewise linear interpolation to obtain values from the
@@ -284,23 +273,6 @@ c  so I didnt want to have to deal with it
        if (mptr .ne. 0) then
          write(*,*)" Error in routine setting up grid array "
          stop
-       endif
-
-       return
-       end
-c
-c -------------------------------------------------------------------------------------
-c
-       subroutine lookataux(mptr,aux,ilo,ihi,jlo,jhi,nghost,mjb)
-
-       implicit real*8 (a-h,o-z)
-       dimension aux(7,ilo-nghost:ihi+nghost,jlo-nghost:jhi+nghost)
-       logical mjb
-
-       if (mjb) then
-            i = ilo
-            j = jlo
-           write(*,*) (aux(iaux,i,j),iaux=1,4)
        endif
 
        return

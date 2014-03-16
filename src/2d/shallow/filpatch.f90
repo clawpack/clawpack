@@ -208,8 +208,8 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                 endif
 
             nghost_patch = 0                           
-            lencrse = (ihi-ilo+2) * (jhi-jlo+2) ! only set 1 component, not all naux
-            do k = 1, lencrse
+            lencrse = (ihi-ilo+2)*(jhi-jlo+2)*naux ! set 1 component, not all naux
+            do k = 1, lencrse, naux
               auxcrse(k) = rinfinity  ! new system checks initialization before setting aux vals
             end do
             call setaux(nghost_patch, mx_coarse, my_coarse,       &

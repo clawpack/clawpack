@@ -47,12 +47,12 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     aux(3,:,:) = 1.d0 ! Length ratio for edge
 
     ! Set analytical bathymetry here if requested
-    !if (test_topography > 0) then
-    !    forall (i=1-mbc:mx+mbc,j=1-mbc:my+mbc)
-    !        aux(1,i,j) = test_topo(xlow + (i - 0.5d0) * dx,       &
-    !                               ylow + (j - 0.5d0) * dy)
-    !    end forall
-    !endif
+    if (test_topography > 0) then
+        forall (i=1-mbc:mx+mbc,j=1-mbc:my+mbc)
+            aux(1,i,j) = test_topo(xlow + (i - 0.5d0) * dx,       &
+                                   ylow + (j - 0.5d0) * dy)
+        end forall
+    endif
 
     ! Set bathymetry
     skipcount = 0
@@ -65,6 +65,9 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             xm = xlow + (i - 1.d0) * dx
             x = xlow + (i - 0.5d0) * dx
             xp = xlow + real(i,kind=8) * dx
+
+            !write(*,444)i,j,aux(1,i,j)
+444         format("in setaux ",2i4,e12.5)
 
             ! skip setting aux(1,i,j) in ghost cell if outside physical domain
             ! since topo files may not cover ghost cell, and values
