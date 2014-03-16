@@ -88,13 +88,11 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
         ! intersect grids and copy all (soln and aux)
         mitot1 = node(ndihi,1)-node(ndilo,1)+1+2*nghost
         mjtot1 = node(ndjhi,1)-node(ndjlo,1)+1+2*nghost
-        write(*,*)" grid 1 aux array, from filval"
         !call dumpaux(alloc(node(storeaux,1)),naux,mitot1,mjtot1)
         if (xperdom .or. yperdom .or. spheredom) then
             call preicall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi, &
                           level-1,fliparray)
         else
-            write(*,*) "calling icall on coarse grid from filval"
             call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,level-1,1,1)
         endif
     endif
@@ -112,7 +110,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 !!$                 jhi+nghost,level,1,1)              
 !! also might need preicallCopy???
 
-            write(*,*) "calling icall on fine grid from filval"
        call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
                       jlo-nghost,jhi+nghost,level,1,1)   
        setflags = aux(1,:,:)   ! save since will overwrite in setaux when setting all aux vals
@@ -275,7 +272,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 ! CHECK BY CALLING SETAUX AND SETTING ALL, THEN DIFFING
     aux2(1,:,:) = rinfinity   ! indicates fine cells not yet set
 
-    write(*,*)"calling setaux from filval for aux2"
     call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux2)
     maxauxdif = 0.d0
     do i = 1, mitot
