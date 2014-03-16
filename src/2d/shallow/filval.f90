@@ -19,6 +19,7 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
 
     use geoclaw_module, only: dry_tolerance, sea_level
     use refinement_module, only: varRefTime
+    use topo_module, only: aux_finalized
 
     implicit none
 
@@ -42,6 +43,8 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
 
     ! External function definitions
     real(kind=8) :: get_max_speed
+
+    real(kind=8) :: xl2,yb2
 
     refinement_ratio_x = intratx(level - 1)
     refinement_ratio_y = intraty(level - 1)
@@ -74,6 +77,17 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
                           level - 1,locflip)
         else
             call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,level - 1,1,1)
+        endif
+
+        if (aux_finalized < 2) then
+            xl2 = xlower + iclo*dx_coarse
+            yb2 = ylower + jclo*dy_coarse
+            if ((abs(xl-xl2) > 1.d-13) .or. (abs(yb-yb2) > 1.d-13)) then
+                write(6,*) '*** xl,xl2,yb,by2: '
+                write(6,*) xl,xl2,yb,yb2
+                stop
+            endif
+            call setaux(0,mic,mjc,xl,yb,dx_coarse,dy_coarse,naux,auxc)
         endif
     endif
     call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level - 1,time,xl,xr,yb, &
