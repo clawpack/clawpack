@@ -43,8 +43,14 @@ c
           go to 2
  3        level   = level + 1
           go to 1
-c
+
  4    lcheck = lbase + 1
+
+      time   = rnode(timemult, lstart(lbase))
+      if (.not. topo_finalized) then
+         call topo_update(time)
+         endif
+
  5    if (lcheck .gt. mxnest) go to 89
           hx = hxposs(lcheck)
           hy = hyposs(lcheck)
@@ -54,11 +60,6 @@ c  interpolate level lcheck
 c
           mptr   = newstl(lcheck)
  10       if (mptr .eq. 0) go to 80
-
-              time   = rnode(timemult, mptr)
-              if (.not. topo_finalized) then
-                 call topo_update(time)
-                 endif
 
               nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
               ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
