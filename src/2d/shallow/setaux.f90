@@ -84,6 +84,12 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             !write(*,444)i,j,aux(1,i,j)
 444         format("in setaux ",2i4,e12.5)
 
+            ! Set lat-long cell info
+            if (coordinate_system == 2) then
+                aux(2,i,j) = deg2rad * earth_radius**2 * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
+                aux(3,i,j) = ym * deg2rad
+            endif
+
             ! skip setting aux(1,i,j) in ghost cell if outside physical domain
             ! since topo files may not cover ghost cell, and values
             ! should be extrapolated, which is done in next set of loops.
@@ -94,13 +100,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                skipcount = skipcount + 1
                cycle  ! new system copies bathy where possible
             endif
-
-            ! Set lat-long cell info
-            if (coordinate_system == 2) then
-                aux(2,i,j) = deg2rad * earth_radius**2 * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
-                aux(3,i,j) = ym * deg2rad
-            endif
-            
 
 
             ! Use input topography files if available
