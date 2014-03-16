@@ -29,7 +29,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     integer :: i,j,m, iint,jint
     real(kind=8) :: x,y,xm,ym,xp,yp,topo_integral
     character(len=*), parameter :: aux_format = "(2i4,4d15.3)"
-    integer :: skipcount,iaux
+    integer :: skipcount,iaux,ilo,jlo
 
     ! Lat-Long coordinate system in use, check input variables
     if (coordinate_system == 2) then
@@ -54,17 +54,32 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         end forall
     endif
 
+! test:  compute integer indices based off same corner of domain 
+!        to reduce round off discrepancies
+    ilo = (xlow - xlower + .5*dx)/dx
+    jlo = (ylow - ylower + .5*dy)/dy
+
     ! Set bathymetry
     skipcount = 0
     do j=1-mbc,my+mbc
-        ym = ylow + (j - 1.d0) * dy
-        y = ylow + (j - 0.5d0) * dy
-        yp = ylow + real(j,kind=8) * dy
+        !ym = ylow + (j - 1.d0) * dy
+        !y = ylow + (j - 0.5d0) * dy
+        !yp = ylow + real(j,kind=8) * dy
+
+        ym = ylower + (jlo+j-1.d0) * dy
+        yp = ylower + (jlo+j) * dy
+        y = .5*(ym+yp)
+
 
         do i=1-mbc,mx+mbc
-            xm = xlow + (i - 1.d0) * dx
-            x = xlow + (i - 0.5d0) * dx
-            xp = xlow + real(i,kind=8) * dx
+            !xm = xlow + (i - 1.d0) * dx
+            !x = xlow + (i - 0.5d0) * dx
+            !xp = xlow + real(i,kind=8) * dx
+
+          xm = xlower + (ilo+i-1.d0) * dx
+          xp = xlower + (ilo+i) * dx
+          x = .5*(xm+xp)
+
 
             !write(*,444)i,j,aux(1,i,j)
 444         format("in setaux ",2i4,e12.5)
