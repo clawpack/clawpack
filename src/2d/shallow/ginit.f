@@ -35,6 +35,9 @@ c :::::::::::::::::::::::::::::::::::::::;::::::::::::::::::::
                 locaux              = igetsp(mitot*mjtot*naux)
                 mx = mitot - 2*nghost
                 my = mjtot - 2*nghost
+                do k = 1, mitot*mjtot  ! only set first component of aux to signal
+                   alloc(locaux+k-1) = rinfinity ! new system checks this val before setting
+                end do
                 call setaux(nghost,mx,my,corn1,corn2,hx,hy,
      &                    naux,alloc(locaux))
               else 

@@ -14,7 +14,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: sea_level
-    use amr_module, only: mcapa, xupper, yupper, xlower, ylower
+    use amr_module, only: mcapa, xupper, yupper, xlower, ylower, rinfinity
 
     use topo_module
 
@@ -29,6 +29,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     integer :: i,j,m, iint,jint
     real(kind=8) :: x,y,xm,ym,xp,yp,topo_integral
     character(len=*), parameter :: aux_format = "(2i4,4d15.3)"
+    integer :: skipcount,iaux
 
     ! Lat-Long coordinate system in use, check input variables
     if (coordinate_system == 2) then
@@ -41,27 +42,40 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     endif
 
     ! Set default values for aux variables
-    aux(1,:,:) = 0.d0 ! Bathymetry
+    !aux(1,:,:) = 0.d0 ! Bathymetry
     aux(2,:,:) = 1.d0 ! Grid cell area
     aux(3,:,:) = 1.d0 ! Length ratio for edge
 
     ! Set analytical bathymetry here if requested
-    if (test_topography > 0) then
-        forall (i=1-mbc:mx+mbc,j=1-mbc:my+mbc)
-            aux(1,i,j) = test_topo(xlow + (i - 0.5d0) * dx,       &
-                                   ylow + (j - 0.5d0) * dy)
-        end forall
-    endif
+    !if (test_topography > 0) then
+    !    forall (i=1-mbc:mx+mbc,j=1-mbc:my+mbc)
+    !        aux(1,i,j) = test_topo(xlow + (i - 0.5d0) * dx,       &
+    !                               ylow + (j - 0.5d0) * dy)
+    !    end forall
+    !endif
 
     ! Set bathymetry
+    skipcount = 0
     do j=1-mbc,my+mbc
         ym = ylow + (j - 1.d0) * dy
         y = ylow + (j - 0.5d0) * dy
         yp = ylow + real(j,kind=8) * dy
+
         do i=1-mbc,mx+mbc
             xm = xlow + (i - 1.d0) * dx
             x = xlow + (i - 0.5d0) * dx
             xp = xlow + real(i,kind=8) * dx
+
+            ! skip setting aux(1,i,j) in ghost cell if outside physical domain
+            ! since topo files may not cover ghost cell, and values
+            ! should be extrapolated, which is done in next set of loops.
+            if ((y>yupper) .or. (y<ylower) .or. &
+                (x>xupper) .or. (x<xlower)) cycle
+
+            if (aux(1,i,j) .ne. rinfinity) then
+               skipcount = skipcount + 1
+               cycle  ! new system copies bathy where possible
+            endif
 
             ! Set lat-long cell info
             if (coordinate_system == 2) then
@@ -69,11 +83,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 aux(3,i,j) = ym * deg2rad
             endif
             
-            ! skip setting aux(1,i,j) in ghost cell if outside physical domain
-            ! since topo files may not cover ghost cell, and values
-            ! should be extrapolated, which is done in next set of loops.
-            if ((y>yupper) .or. (y<ylower) .or. &
-                (x>xupper) .or. (x<xlower)) cycle
 
 
             ! Use input topography files if available
@@ -88,6 +97,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             endif
         enddo
     enddo
+    !write(*,*)" skipcount = ",skipcount
 
     ! Copy topo to ghost cells if outside physical domain
 

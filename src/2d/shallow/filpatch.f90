@@ -11,14 +11,14 @@
 !  obtain the remaining values from  coarser levels.
 !
 ! :::::::::::::::::::::::::::::::::::::::;:::::::::::::::::::::::;
-recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
+recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                               nrowst,ncolst,ilo,ihi,jlo,jhi)
 !                              nrowst,ncolst,fill_indices)
 
     use amr_module, only: nghost, xlower, ylower, xupper, yupper, outunit
     use amr_module, only: xperdom, yperdom, spheredom, hxposs, hyposs
     use amr_module, only: intratx, intraty, iregsz, jregsz
-    use amr_module, only: timeSetaux
+    use amr_module, only: timeSetaux, rinfinity
 
     use geoclaw_module, only: sea_level, dry_tolerance
 
@@ -28,14 +28,14 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     implicit none
 
     ! Input
-    integer, intent(in) :: level, num_eqn, num_aux, mx, my, nrowst, ncolst
+    integer, intent(in) :: level, nvar, naux, mx, my, nrowst, ncolst
     integer, intent(in) :: ilo,ihi,jlo,jhi
 !    integer, intent(in) :: fill_indices(4)
     real(kind=8), intent(in) :: t
 
     ! Output
-    real(kind=8), intent(in out) :: valbig(num_eqn,mx,my)
-    real(kind=8), intent(in out) :: aux(num_aux,mx,my)
+    real(kind=8), intent(in out) :: valbig(nvar,mx,my)
+    real(kind=8), intent(in out) :: aux(naux,mx,my)
 
     ! Local storage
     integer  :: clock_start, clock_finish, clock_rate, clock_dif
@@ -43,7 +43,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
     ! Flagging of set cells
     logical :: set
-    integer :: i, i_coarse, j_coarse, i_fine, j_fine, n
+    integer :: i, i_coarse, j_coarse, i_fine, j_fine, n, k
     integer :: mx_coarse, my_coarse, mx_patch, my_patch
     integer :: unset_indices(4), coarse_indices(4)
     integer :: refinement_ratio_x, refinement_ratio_y
@@ -56,8 +56,8 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     integer(kind=1) :: flaguse(ihi-ilo+1, jhi-jlo+1)
 
     ! Scratch arrays for interpolation
-!    logical :: fine_flag(num_eqn, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
-    logical :: fine_flag(num_eqn, ihi-ilo+2,jhi-jlo + 2)
+!    logical :: fine_flag(nvar, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
+    logical :: fine_flag(nvar, ihi-ilo+2,jhi-jlo + 2)
 
     logical :: reloop
 
@@ -76,7 +76,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     real(kind=8) ::   slope(2, ihi-ilo + 2, jhi-jlo + 2)
     integer ::   fine_cell_count(ihi-ilo+2, jhi-jlo + 2)
 
-    integer :: nghost_patch
+    integer :: nghost_patch, lencrse
 
     ! Stack storage
     !  use stack-based scratch arrays instead of alloc, since dont really
@@ -87,10 +87,10 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     !  when pass it in to subroutines they treat it as having di_fineerent
     !  dimensions than the max size need to allocate here
     ! the +2 is to expand on coarse grid to enclose fine
-!!$    real(kind=8) :: valcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_eqn)  
+!!$    real(kind=8) :: valcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * nvar)  
 !!$    real(kind=8) :: auxcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_aux)  
-    real(kind=8) :: valcrse((ihi-ilo+2) * (jhi-jlo+2) * num_eqn)  
-    real(kind=8) :: auxcrse((ihi-ilo+2) * (jhi-jlo+2) * num_aux)  
+    real(kind=8) :: valcrse((ihi-ilo+2) * (jhi-jlo+2) * nvar)  
+    real(kind=8) :: auxcrse((ihi-ilo+2) * (jhi-jlo+2) * naux)  
     ! We begin by filling values for grids at level level.
 !!$    mx_patch = fill_indices(2) - fill_indices(1) + 1 ! nrowp
 !!$    my_patch = fill_indices(4) - fill_indices(3) + 1 ! ncolp
@@ -112,9 +112,9 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
     ! Fill in the patch as much as possible using values at this level
 !!$    call intfil(valbig,mx,my,t,flaguse,nrowst,ncolst,fill_indices(1), &
-!!$                fill_indices(2),fill_indices(3),fill_indices(4),level,num_eqn,num_aux)
+!!$                fill_indices(2),fill_indices(3),fill_indices(4),level,nvar,naux)
     call intfil(valbig,mx,my,t,flaguse,nrowst,ncolst, ilo,  &
-                ihi,jlo,jhi,level,num_eqn,num_aux)
+                ihi,jlo,jhi,level,nvar,naux)
 
     ! Trimbd returns set = true if all of the entries are filled (=1.).
     ! set = false, otherwise. If set = true, then no other levels are
@@ -196,7 +196,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         ! instead in intfil using possibly already available bathy data from the
         ! grids
         
-        if (num_aux > 0) then
+        if (naux > 0) then
             nghost_patch = 0
             call system_clock(clock_start,clock_rate)
   
@@ -208,9 +208,13 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                 endif
 
             nghost_patch = 0                           
+            lencrse = (ihi-ilo+2) * (jhi-jlo+2) ! only set 1 component, not all naux
+            do k = 1, lencrse
+              auxcrse(k) = rinfinity  ! new system checks initialization before setting aux vals
+            end do
             call setaux(nghost_patch, mx_coarse, my_coarse,       &
                         xlow_coarse, ylow_coarse,                 &
-                        dx_coarse,dy_coarse,num_aux,auxcrse)
+                        dx_coarse,dy_coarse,naux,auxcrse)
             call system_clock(clock_finish,clock_rate)
             clock_dif = clock_finish - clock_start
 !$OMP ATOMIC            
@@ -219,10 +223,10 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
         ! Fill in the edges of the coarse grid
         if ((xperdom .or. (yperdom .or. spheredom)) .and. sticksout(iplo,iphi,jplo,jphi)) then
-            call prefilrecur(level-1,num_eqn,valcrse,auxcrse,num_aux,t, &
+            call prefilrecur(level-1,nvar,valcrse,auxcrse,naux,t, &
                              mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi)
         else
-            call filrecur(level-1,num_eqn,valcrse,auxcrse,num_aux,t,  &
+            call filrecur(level-1,nvar,valcrse,auxcrse,naux,t,  &
                           mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi)
         endif
 
@@ -304,7 +308,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         enddo
 
         ! Momentum Interpolation
-        do n = 2, num_eqn
+        do n = 2, nvar
           do j_coarse = 2, my_coarse - 1
             do i_coarse = 2, mx_coarse - 1
 
@@ -436,7 +440,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     ! stuck out
     xhi_fine = xlower + (ihi + 1) * dx_fine
     yhi_fine = ylower + (jhi + 1) * dy_fine
-    call bc2amr(valbig,aux,mx,my,num_eqn,num_aux,dx_fine,dy_fine,level,t,xlow_fine, &
+    call bc2amr(valbig,aux,mx,my,nvar,naux,dx_fine,dy_fine,level,t,xlow_fine, &
                xhi_fine,ylow_fine,yhi_fine,xlower,ylower,xupper, &
                 yupper,xperdom,yperdom,spheredom)
 
@@ -445,14 +449,14 @@ contains
     integer pure function ivalc(n,i,j)
         implicit none
         integer, intent(in) :: n,i,j
-        ivalc = n + num_eqn*(i-1) + num_eqn*mx_coarse*(j-1)
+        ivalc = n + nvar*(i-1) + nvar*mx_coarse*(j-1)
     end function ivalc
 
     ! Index into first component of aux = topo:
     integer pure function iauxc(i,j)
         implicit none
         integer, intent(in) :: i,j
-        iauxc = 1 + num_aux*(i-1) + num_aux*mx_coarse*(j-1)
+        iauxc = 1 + naux*(i-1) + naux*mx_coarse*(j-1)
     end function iauxc
 
     ! logical for checking if this patch sti_coarseks outside of the domain

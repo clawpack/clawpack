@@ -127,6 +127,7 @@ c  involves changing intcopy to icall and making flag array
                 locaux =  node(storeaux, mptr)
               endif
 c for DEBUGGING SET HERE AND TEST THAT SAME IN ICALL (NO MORE - initialized to rinfinity now in filval)
+c                 would need to initialize to rinfinity if want setaux to set aux arrays now
 c                 call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
 c     &                       naux,alloc(locaux))
 c                 if (mjb) then

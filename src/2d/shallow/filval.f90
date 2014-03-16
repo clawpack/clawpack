@@ -17,6 +17,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
     use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
     use amr_module, only: outunit, rinfinity
+    use amr_module
 
     use geoclaw_module, only: dry_tolerance, sea_level
     use refinement_module, only: varRefTime
@@ -42,15 +43,17 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     real(kind=8) :: velmax, velmin, vf, vnew, xoff, yoff
     logical :: fineflag(3)
     real(kind=8) :: fliparray((mitot+mjtot)*(nvar+naux))
+    real(kind=8) :: aux2(naux,1:mitot,1:mjtot)
     integer :: clock_start, clock_finish, clock_rate
     integer :: nx, ny
-    real(kind=8) setflags(mitot,mjtot)
+    real(kind=8) setflags(mitot,mjtot),maxauxdif
+    integer :: mitot1,mjtot1
 
     ! External function definitions
     real(kind=8) :: get_max_speed
 
-    refinement_ratio_x = intratx(level - 1)
-    refinement_ratio_y = intraty(level - 1)
+    refinement_ratio_x = intratx(level-1)
+    refinement_ratio_y = intraty(level-1)
     dx_coarse  = dx * refinement_ratio_x
     dy_coarse  = dy * refinement_ratio_y
     xl      = xleft  - dx_coarse
@@ -58,11 +61,13 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     yb      = ybot   - dy_coarse
     yt      = ytop   + dy_coarse
 
-    do j = 1, mjtot
-      do i = 1, mitot
-        aux(1,i,j) = rinfinity   ! indicates fine cells not yet set
+    if (naux > 0) then
+      do j = 1, mjtot
+        do i = 1, mitot
+          aux(1,i,j) = rinfinity   ! indicates fine cells not yet set
+        end do
       end do
-    end do
+    endif
 
     ! set integer indices for coarser patch enlarged by 1 cell
     ! (can stick out of domain). proper nesting will insure this one
@@ -77,7 +82,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
         if (xperdom .or. yperdom .or. spheredom) then
             call preintcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,level-1,fliparray)
         else
-            call intcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,level - 1,1,1)
+            call intcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,level-1,1,1)
         endif
     else  
         ! intersect grids and copy all (soln and aux)
@@ -85,10 +90,10 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
             call preicall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi, &
                           level-1,fliparray)
         else
-            call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,level - 1,1,1)
+            call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,level-1,1,1)
         endif
     endif
-    call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level - 1,time,xl,xr,yb, &
+    call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level-1,time,xl,xr,yb, &
                 yt,xlower,ylower,xupper,yupper,xperdom,yperdom,spheredom)
 
 
@@ -102,6 +107,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 !!$                 jhi+nghost,level,1,1)              
 !! also might need preicallCopy???
 
+       write(*,*)" calling icall on fine grid from filval"
        call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
                       jlo-nghost,jhi+nghost,level,1,1)   
        setflags = aux(1,:,:)   ! save since will overwrite in setaux when setting all aux vals
@@ -110,6 +116,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
        call system_clock(clock_start,clock_rate)
        nx = mitot - 2*nghost
        ny = mjtot - 2*nghost
+       write(*,*)"calling setaux from filval for aux"
        call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux)
        call system_clock(clock_finish,clock_rate)
        thisSetauxTime = thisSetauxTime + clock_finish - clock_start
@@ -265,6 +272,30 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     ! time step and appropriate refinement in time. For this app not nec to refine by same
     ! amount as refinement in space since refinement at shores where h is shallow has lower
     ! speeds.
+
+! CHECK BY CALLING SETAUX AND SETTING ALL, THEN DIFFING
+    !aux2 = rinfinity   ! indicates fine cells not yet set
+    do j = 1, mjtot
+      do i = 1, mitot
+        aux2(1,i,j) = rinfinity   ! indicates fine cells not yet set
+      end do
+    end do
+    write(*,*)"calling setaux from filval for aux2"
+    call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux2)
+    maxauxdif = 0.d0
+    do i = 1, mitot
+    do j = 1, mjtot
+      if (abs(aux(1,i,j)-aux2(1,i,j)) .gt. maxauxdif) then
+         maxauxdif = abs(aux(1,i,j)-aux2(1,i,j))
+         !write(*,444)i,j,aux(1,i,j),aux2(1,i,j),maxauxdif
+ 444     format("i,j = ",2i4," auxs ",2e12.5," maxauxdif ",e12.5)
+      endif
+    end do
+    end do
+    if (maxauxdif .gt. 1.e-14) then
+       write(*,*)" maxauxdif = ",maxauxdif," with mitot,mjtot ",mitot,mjtot
+    endif
+    
 
     if (varRefTime) then   ! keep consistent with setgrd_geo and qinit_geo
         sp_over_h = get_max_speed(val,mitot,mjtot,nvar,aux,naux,nghost,dx,dy)
