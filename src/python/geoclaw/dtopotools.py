@@ -1,3 +1,5 @@
+# Need to fix matplotlib imports
+
 #!/usr/bin/env python
 # encoding: utf-8
 
@@ -1260,7 +1262,7 @@ class SubFault(object):
        measured in degrees counterclockwise from the strike direction. Between 
        -180 and 180.
      - *slip* (float) Positive distance the hanging block moves relative to the 
-       foot block in the direction specified by the rake. The “hanging block” is
+       foot block in the direction specified by the rake. The "hanging block" is
        the one above the dipping fault plane (or to the right if you move in the 
        strike direction).
 

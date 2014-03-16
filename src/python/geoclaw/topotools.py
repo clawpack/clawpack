@@ -33,10 +33,7 @@ import urllib
 
 import numpy
 
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 
-import clawpack.visclaw.colormaps as colormaps
 
 # Constants
 from data import Rearth
@@ -694,6 +691,10 @@ class Topography(object):
     def plot(self, axes=None, region_extent=None, contours=None, 
              coastlines=True, limits=None, cmap=None):
         r"""Plot the topography."""
+
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
+        import clawpack.visclaw.colormaps as colormaps
 
         # Create axes if needed
         if axes is None:
