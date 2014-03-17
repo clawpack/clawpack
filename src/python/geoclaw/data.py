@@ -220,12 +220,18 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         
         # File name for fgmax points and parameters:
         self.add_attribute('fgmax_files',[])
+        self.add_attribute('num_fgmax_val',1)
 
 
     def write(self,data_source='setrun.py'):
         self.open_data_file('fgmax.data',data_source)
-        num_fgmax = len(self.fgmax_files)
-        self.data_write(value=num_fgmax,alt_name='num_fgmax')
+        num_fgmax_val = self.num_fgmax_val
+        if num_fgmax_val not in [1,2,5]:
+            raise NotImplementedError( \
+                    "Expecting num_fgmax_val in [1,2,5], got %s" % num_fgmax_val)
+        self.data_write(value=num_fgmax_val,alt_name='num_fgmax_val')
+        num_fgmax_grids = len(self.fgmax_files)
+        self.data_write(value=num_fgmax_grids,alt_name='num_fgmax_grids')
         self.data_write()
         for fgmax_file in self.fgmax_files:
             fname = os.path.abspath(fgmax_file)
@@ -244,6 +250,7 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         
         # Moving topograhpy
         self.add_attribute('dtopofiles',[])
+        self.add_attribute('dt_max_dtopo', 1.e99)
 
     def write(self,data_source='setrun.py'):
 
@@ -258,6 +265,8 @@ class DTopoData(clawpack.clawutil.data.ClawData):
                 raise IOError("*** dtopo input file not found: %s" % tfile[-1])
             self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
+        self.data_write()
+        self.data_write(value=self.dt_max_dtopo,alt_name='dt_max_dtopo')
         self.close_data_file()
 
 
