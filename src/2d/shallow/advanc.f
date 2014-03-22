@@ -15,6 +15,7 @@ c
       integer mythread/0/, maxthreads/1/
       integer listgrids(numgrids(level))
       integer clock_start, clock_finish, clock_rate
+      integer clock_startStepgrid, clock_finishBound
 
 c     maxgr is maximum number of grids  many things are
 c     dimensioned at, so this is overall. only 1d array
@@ -64,6 +65,8 @@ c
 
         end do
 !$OMP END PARALLEL DO
+      call system_clock(clock_finishBound,clock_rate)
+      timeBound = timeBound + clock_finishBound - clock_start  
 
 c
 c save coarse level values if there is a finer level for wave fixup
@@ -83,9 +86,14 @@ c      call fgrid_advance(time,delt)
          call topo_update(time)
          endif
 c 
+      call system_clock(clock_startStepgrid,clock_rate)
         
+c  set number of thrad to use. later will base on number of grids
+c     nt = 4
+c   ! $OMP PARALLEL DO num_threads(nt)
 
-!$OMP PARALLEL DO PRIVATE(j,mptr,nx,ny,mitot,mjtot)  
+!$OMP PARALLEL DO 
+!$OMP&            PRIVATE(j,mptr,nx,ny,mitot,mjtot)  
 !$OMP&            PRIVATE(mythread,dtnew)
 !$OMP&            SHARED(rvol,rvoll,level,nvar,mxnest,alloc,intrat)
 !$OMP&            SHARED(nghost,intratx,intraty,hx,hy,naux,listsp)
@@ -109,6 +117,7 @@ c
 c
       call system_clock(clock_finish,clock_rate)
       tvoll(level) = tvoll(level) + clock_finish - clock_start
+      timeStepgrid = timeStepgrid +clock_finish-clock_startStepgrid
 
 c
       return
@@ -242,8 +251,8 @@ c
      5               nghost,delt,hx,hy)
       endif
 c
-         write(outunit,969) mythread,delt, dtnew
- 969     format(" thread ",i4," updated by ",e15.7, " new dt ",e15.7)
+c        write(outunit,969) mythread,delt, dtnew
+c969     format(" thread ",i4," updated by ",e15.7, " new dt ",e15.7)
           rnode(timemult,mptr)  = rnode(timemult,mptr)+delt
 c
       return

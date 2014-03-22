@@ -54,10 +54,10 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
     real(kind=8) :: dtdx1d(1-mbc:maxm+mbc)
     real(kind=8) :: dtdy1d(1-mbc:maxm+mbc)
     
-    real(kind=8) ::  wave(meqn, mwaves, 1-mbc:maxm+mbc)
-    real(kind=8) ::     s(mwaves, 1-mbc:maxm + mbc)
-    real(kind=8) ::  amdq(meqn,1-mbc:maxm + mbc)
-    real(kind=8) ::  apdq(meqn,1-mbc:maxm + mbc)
+ !   real(kind=8) ::  wave(meqn, mwaves, 1-mbc:maxm+mbc)
+ !   real(kind=8) ::     s(mwaves, 1-mbc:maxm + mbc)
+ !   real(kind=8) ::  amdq(meqn,1-mbc:maxm + mbc)
+ !   real(kind=8) ::  apdq(meqn,1-mbc:maxm + mbc)
 !     real(kind=8) ::  cqxx(meqn,1-mbc:maxm + mbc)
 !     real(kind=8) :: bmadq(meqn,1-mbc:maxm + mbc)
 !     real(kind=8) :: bpadq(meqn,1-mbc:maxm + mbc)
@@ -109,7 +109,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
 
         ! Compute modifications fadd and gadd to fluxes along this slice:
         call flux2(1,maxm,meqn,maux,mbc,mx,q1d,dtdx1d,aux1,aux2,aux3, &
-                   faddm,faddp,gaddm,gaddp,cfl1d,wave,s,amdq,apdq,rpn2,rpt2) 
+                   faddm,faddp,gaddm,gaddp,cfl1d,rpn2,rpt2) 
 
         cflgrid = max(cflgrid,cfl1d)
         ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
@@ -152,7 +152,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
         
         ! Compute modifications fadd and gadd to fluxes along this slice
         call flux2(2,maxm,meqn,maux,mbc,my,q1d,dtdy1d,aux1,aux2,aux3, &
-                   faddm,faddp,gaddm,gaddp,cfl1d,wave,s,amdq,apdq,rpn2,rpt2)
+                   faddm,faddp,gaddm,gaddp,cfl1d,rpn2,rpt2)
 
         cflgrid = max(cflgrid,cfl1d)
         ! write(53,*) 'y-sweep: ',cfl1d,cflgrid

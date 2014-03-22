@@ -87,6 +87,7 @@ c       write(26,*) 'MOVETOPO: setting dtopo at time = ',t
 
 
 c     # recreate original topography:
+      auxorig(1,:,:) = rinfinity
       call setaux(mbc,mx,my,xlow,ylow,dx,dy,
      &                  maux,auxorig)
 
