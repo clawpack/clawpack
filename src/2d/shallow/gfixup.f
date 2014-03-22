@@ -90,8 +90,6 @@ c   first get space, since cant do that part in parallel
             node(storeaux, mptr)  = locaux
        end do
 
-<<<<<<< HEAD
-=======
 c   
 c                 other reduction variables initialized in stst1
        this_spoh = 0.d0
@@ -116,7 +114,6 @@ c                 other reduction variables initialized in stst1
 c  changed to move setaux out of this loop. instead, copy aux in filval 
 c  along with soln.involves changing intcopy to icall and making flag array
 c  can only do this after topo stops moving
->>>>>>> auxpar
               nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
               ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
               mitot = nx + 2*nghost
