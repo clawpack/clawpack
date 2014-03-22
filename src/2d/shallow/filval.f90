@@ -276,22 +276,22 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     ! speeds.
 
 ! CHECK BY CALLING SETAUX AND SETTING ALL, THEN DIFFING
-    aux2(1,:,:) = rinfinity   ! indicates fine cells not yet set
-    call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux2)
-    maxauxdif = 1.d-13
-    do i = 1, mitot
-    do j = 1, mjtot
-      if (abs(aux(1,i,j)-aux2(1,i,j)) .gt. maxauxdif) then
-         maxauxdif = abs(aux(1,i,j)-aux2(1,i,j))
-         write(*,444)i,j,aux(1,i,j),aux2(1,i,j),maxauxdif
- 444     format("i,j = ",2i4," auxs ",2e15.7," maxauxdif ",e12.5)
-      endif
-    end do
-    end do
-    if (maxauxdif .gt. 2.d-13) then
-       write(*,*)" maxauxdif = ",maxauxdif," with mitot,mjtot ",mitot,mjtot, &
-                 " on grid ",mptr," level ",level
-    endif
+!   aux2(1,:,:) = rinfinity   ! indicates fine cells not yet set
+!   call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux2)
+!   maxauxdif = 1.d-13
+!   do i = 1, mitot
+!   do j = 1, mjtot
+!     if (abs(aux(1,i,j)-aux2(1,i,j)) .gt. maxauxdif) then
+!        maxauxdif = abs(aux(1,i,j)-aux2(1,i,j))
+!        write(*,444)i,j,aux(1,i,j),aux2(1,i,j),maxauxdif
+!444     format("i,j = ",2i4," auxs ",2e15.7," maxauxdif ",e12.5)
+!     endif
+!   end do
+!   end do
+!   if (maxauxdif .gt. 2.d-13) then
+!      write(*,*)" maxauxdif = ",maxauxdif," with mitot,mjtot ",mitot,mjtot, &
+!                " on grid ",mptr," level ",level
+!   endif
     
 
     if (varRefTime) then   ! keep consistent with setgrd_geo and qinit_geo
