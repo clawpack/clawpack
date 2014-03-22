@@ -56,8 +56,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
 ! test:  compute integer indices based off same corner of domain 
 !        to reduce round off discrepancies
-    ilo = (xlow - xlower + .5*dx)/dx
-    jlo = (ylow - ylower + .5*dy)/dy
+    ilo = floor(xlow - xlower + .05*dx)/dx
+    jlo = floor(ylow - ylower + .05*dy)/dy
 
     ! Set bathymetry
     skipcount = 0
