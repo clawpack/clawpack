@@ -43,6 +43,7 @@ from data import Rearth
 DEG2RAD = numpy.pi / 180.0
 RAD2DEG = 180.0 / numpy.pi
 
+
 # ==============================================================================
 #  Functions
 # ==============================================================================
@@ -692,12 +693,12 @@ class Topography(object):
 
 
     def plot(self, axes=None, region_extent=None, contours=None, 
-             coastlines=True, limits=None, cmap=None):
+             coastlines=True, limits=None, cmap=None, fig_kwargs={}):
         r"""Plot the topography."""
 
         # Create axes if needed
         if axes is None:
-            fig = plt.figure()
+            fig = plt.figure(**fig_kwargs)
             axes = fig.add_subplot(111)
         
         # Turn off annoying offset
@@ -710,21 +711,20 @@ class Topography(object):
         mean_lat = 0.5 * (region_extent[3] - region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
         if limits is None:
-            #depth_extent = (numpy.min(self.Z),numpy.max(self.Z))
-            # The above line gives an extent that's not symmetric about 0 so
-            # colors are not right.
-            Zmax = max(abs(self.Z.max()), abs(self.Z.min()))
-            depth_extent = (-Zmax,Zmax)
+            depth_extent = (numpy.min(self.Z),numpy.max(self.Z))
         else:
             depth_extent = limits
 
         # Create color map
         if cmap is None:
-            cmap = colormaps.make_colormap({-1:[0.3,0.2,0.1],
-                                               -0.00001:[0.95,0.9,0.7],
-                                               0.00001:[.5,.7,0],
-                                               1:[.2,.5,.2]})
-        color_norm = colors.Normalize(depth_extent[0],depth_extent[1],clip=True)
+            land_cmap = topo_cmap = colormaps.make_colormap({ 0.0:[0.1,0.4,0.0],
+                                                 0.25:[0.0,1.0,0.0],
+                                                  0.5:[0.8,1.0,0.5],
+                                                  1.0:[0.8,0.5,0.2]})
+            sea_cmap = plt.get_cmap('Blues_r')
+            cmap = colormaps.add_colormaps((land_cmap, sea_cmap), 
+                                           break_location=1.0 - depth_extent[1] 
+                                       / abs(depth_extent[1] - depth_extent[0]))
 
         # Plot data
         if contours is not None:
@@ -732,8 +732,7 @@ class Topography(object):
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             plot = axes.pcolor(self.X, self.Y, self.Z, vmin=depth_extent[0], 
                                                        vmax=depth_extent[1],
-                                                       cmap=cmap, 
-                                                       norm=color_norm)
+                                                       cmap=cmap)
         else:
             plot = axes.imshow(self.Z, vmin=depth_extent[0], 
                                        vmax=depth_extent[1],
