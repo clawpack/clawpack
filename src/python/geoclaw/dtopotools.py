@@ -18,11 +18,15 @@ dtopo files, and calculating Okada based deformations.
  - Refactor Okada functionality
 """
 
-import os, sys
+import os
+import sys
 import copy
+import re
 
 import numpy
 from numpy import sin,cos,sqrt
+
+import clawpack.geoclaw.topotools as topotools
 
 # Constants
 from data import Rearth
@@ -322,7 +326,6 @@ def make_okada_final_dz(faultparamss, dtopo_params):
             sys.stdout.write("%s.." % k)
             sys.stdout.flush()
             dz = dz + okadamap(subfault, x, y)
-            #import pdb; pdb.set_trace()
             
     sys.stdout.write("\nDone\n")
     return x,y,dz
@@ -1385,11 +1388,12 @@ class SubFault(object):
 
         # Parameters for subfault specification
         self.coordinates = [] # longitude, latitude
-        self.coordiante_specification = 'centroid' # 'centroid', 'top center', 'epicenter'
+        self.coordinate_specification = 'centroid' # 'centroid', 'top center', 'epicenter'
         self.dimensions = [0.0, 0.0] # [length, width]
         self.rake = None
         self.strike = None
         self.dip = None
+        self.depth = None
         self.slip = None
         self.rupture_type = 'static' # 'static', 'dynamic', 'kinetic'
         self.t = numpy.array([0.0, 5.0, 10.0])
@@ -1421,10 +1425,16 @@ class SubFault(object):
 
         conversion_dict = {"km":1e3, "cm":1e-2, "nm":1852.0, "m":1.0}
 
-        dimensions = [self.dimensions[0] * conversion_dict[self.units["dimensions"]],
-                      self.dimensions[1] * conversion_dict[self.units["dimensions"]]]
-        depth = self.depth * conversion_dict[self.units["depth"]]
-        slip = self.slip * conversion_dict[self.units["slip"]]
+        dimensions = None
+        depth = None
+        slip = None
+        if self.dimensions is not None:
+            dimensions = [self.dimensions[0] * conversion_dict[self.units["dimensions"]],
+                          self.dimensions[1] * conversion_dict[self.units["dimensions"]]]
+        if self.depth is not None:
+            depth = self.depth * conversion_dict[self.units["depth"]]
+        if self.slip is not None:
+            slip = self.slip * conversion_dict[self.units["slip"]]
 
         return dimensions, depth, slip
 
@@ -1487,11 +1497,11 @@ class SubFault(object):
            *origin*.
 
         """
-        return (  (point[0] - origin[0]) * cos(-theta) 
-                - (point[1] - origin[1]) * sin(-theta) 
+        return (  (point[0] - origin[0]) * numpy.cos(-theta) 
+                - (point[1] - origin[1]) * numpy.sin(-theta) 
                 + origin[0],
-                  (point[0] - origin[0]) * sin(-theta) 
-                + (point[1] - origin[1]) * cos(-theta) 
+                  (point[0] - origin[0]) * numpy.sin(-theta) 
+                + (point[1] - origin[1]) * numpy.cos(-theta) 
                 + origin[1]) 
 
 
@@ -1676,7 +1686,7 @@ class SubFault(object):
         Currently only calculates the vertical displacement.
 
         """
-
+        import pdb; pdb.set_trace()
         dimensions, depth, slip = self.convert2meters()
 
         # Construct dictionary that okadamap is looking for
@@ -1691,7 +1701,7 @@ class SubFault(object):
         okada_params["longitude"] = self.coordinates[0]
         okada_params["latitude"] = self.coordinates[1]
         okada_params["latlong_location"] = self.coordinate_specification
-        self._dZ = okada.okadamap(okada_params, self.x, self.y)
+        self._dZ = okadamap(okada_params, self.x, self.y)
 
 
     def write(self, path, topo_type=None):
@@ -1758,6 +1768,24 @@ class SubFault(object):
                 raise ValueError("Only topography types 1, 2, and 3 are supported.")
 
 
+    def read(self, path, file_type="usgs"):
+        r"""Read in subfault specification from file at *path*
+
+        :File Types:
+         - USGS Sub-Fault Specification *USGS*.
+         - Comma seperated values *CSV*.
+         - Topography file *TOPOx* where *x* is the type of topography file.
+
+        :Input:
+         - *path* (path) - Path to subfault specification.
+         - *file_type* (string) - String describing type of subfault 
+           specification.  Default is "USGS".
+
+        """
+
+        raise NotImplemented("Subfault file reading not implemented yet.")
+
+
     def plot(self, axes=None, region_extent=None, contours=None, 
                    coastlines=None, limits=None, cmap=None):
         r"""Plot subfault deformation.
@@ -1779,6 +1807,10 @@ class SubFault(object):
            or the same object is passed back.
 
         """
+
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
+        import clawpack.visclaw.colormaps as colormaps
         
         # Create axes object if needed
         if axes is None:
@@ -1920,7 +1952,6 @@ class SubFault(object):
             arrowprops=dict(arrowstyle="->", connectionstyle="arc3") )
 
         return axes
-<<<<<<< HEAD
 
 
 class Fault(object):
