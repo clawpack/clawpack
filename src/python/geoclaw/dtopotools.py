@@ -1956,44 +1956,133 @@ class SubFault(object):
 
 class Fault(object):
 
-    r"""
+    r"""Basic object for representing a fault composed of many subfaults.
 
     """
 
-    def __init__(self):
-        pass
-
-
-
-    def read(self, path, columns={'latlong_location', 'centroid'}, units=None,
-                         skiprows=0, delimiter=None):
-        r"""Read in subfault parameters at path.
+    def __init__(self, path=None, subfaults=None):
+        r"""Fault initialization routine.
+        
+        See :class:`Fault` for more info.
 
         """
 
-        valid_labels = ["latitude", "longitude", "strike", "dip", "rake", 
-                        "slip", "length", "width", "depth", "rupture_time", 
-                        "rise_time", "rise_time_ending", "ignore"]
+        super(Fault, self).__init__()
 
-        self.units.update(units)
+        self.subfaults = subfaults
+        
+        if path is not None:
+            # Read in file at path assuming it is a subfault specification
+            self.read(path)
+        elif subfaults is not None:
+            if not isinstance(subfaults, list):
+                raise ValueError("Input parameter subfaults must be a list.")
+        else:
+            raise ValueError("Must provide either a path to a subfault ",
+                             "specification or a list of subfault objects.")
 
-        usecols = []
-        for (j, label) in enumerate(columns):
-            if label not in valid_labels:
-                raise ValueError("Unrecognized label in column dict: %s" % label)
-            if label != 'ignore':
-                usecols.append(j)
+    def read(self, path, column_map=None, coordinate_specification="centroid",
+                         rupture_type="static"):
+        r"""Read in subfault specification at *path*.
 
-        data = numpy.genfromtxt(path, skiprows=skiprows, delimiter=delimiter,
-                                      usecols=usecols)
+        Creates a list of subfaults from the subfault specification file at
+        *path*.
 
-        try:
-            num_cols = data.shape[1]
-        except IndexError:
-            # If only one row is in data file, convert to 2d array
-            data = array([data])
-            num_cols = data.shape[1]
+        """
 
+        if column_map is None:
+            column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
+                          "strike":5, "dip":6}
+
+        # Read in rest of data
+        data = numpy.loadtxt(path, skiprows=skiprows)
+
+        self.subfaults = []
+        for n in xrange(data.shape[0]):
+
+            new_subfault = SubFault()
+            new_subfault.coordinate_specification = coordinate_specification
+            new_subfault.rupture_type = rupture_type
+            new_subfault.t = numpy.array([0.0, 5.0, 10.0]) 
+            
+            for (var, column) in column_map.iteritems():
+                if isinstance(column, tuple):
+                    for (k, index) in enumerate(column):
+                        getattr(new_subfault, var)[k] = data[n, index]
+                else:
+                    setattr(new_subfault, var) = data[n, column]
+
+            self.subfaults.append(new_subfault)
+        
+        
 
     def write(self):
         pass
+
+
+class UCSBFault(Fault):
+
+    r""""""
+
+    def read(self, path):
+        r"""Read in subfault specification at *path*.
+
+        Creates a list of subfaults from the subfault specification file at
+        *path*.
+
+        """
+
+        # Read header of file
+        regexp_dx = re.compile(r"Dx=[ ]*(?P<dx>[^k]*)")
+        regexp_dy = re.compile(r"Dy=[ ]*(?P<dy>[^k]*)")
+        regexp_nx = re.compile(r"nx[^=]*=[ ]*(?P<nx>[^D]*)")
+        regexp_ny = re.compile(r"ny[^=]*=[ ]*(?P<ny>[^D]*)")
+        found_data = False
+        with open(path, 'r') as subfault_file:
+            for line in subfault_file:
+                result_dx = regexp_dx.search(line)
+                result_dy = regexp_dy.search(line)
+                result_nx = regexp_nx.search(line)
+                result_ny = regexp_ny.search(line)
+
+                if result_dx and result_dy:
+                    i_dxdy = i
+                    dx = float(result_dx.group('dx'))
+                    dy = float(result_dy.group('dy'))
+                    nx = int(result_nx.group('nx'))
+                    ny = int(result_ny.group('ny'))
+                    found_data = True
+                    break
+        if not found_data:
+            raise ValueError("Could not find base fault characteristics in ",
+                             "subfault specification file at %s." % path)
+
+        column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
+                      "strike":5, "dip":6}
+
+        super(UCSBFault, self).read(path, column_map=column_map, units={})
+
+        # Set general data
+        for fault in self.subfaults:
+            fault.dimensions = [dx, dy]
+
+        # Read in rest of data
+        data = numpy.loadtxt(path, skiprows=skiprows)
+
+        self.subfaults = []
+        for n in xrange(data.shape[0]):
+
+            new_subfault = SubFault()
+            new_subfault.coordinate_specification = 'centroid'
+            new_subfault.rupture_type = 'static'
+            new_subfault.t = numpy.array([0.0, 5.0, 10.0]) 
+            new_subfault.dimensions = [dx, dy]
+            
+            for (var, column) in column_map.iteritems():
+                if isinstance(column, tuple):
+                    for (k, index) in enumerate(column):
+                        getattr(new_subfault, var)[k] = data[n, index]
+                else:
+                    setattr(new_subfault, var) = data[n, column]
+
+            self.subfaults.append(new_subfault)
