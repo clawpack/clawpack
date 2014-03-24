@@ -30,6 +30,7 @@ topography (bathymetry) files.
 
 import os
 import urllib
+import types
 
 import numpy
 
@@ -195,6 +196,131 @@ def create_topo_func(loc,verbose=False):
     return eval(cmd_str)
 
 
+def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
+    """
+    Function topo1writer will write out the topofiles by evaluating the
+    function topo on the grid specified by the other parameters.
+
+    Assumes topo can be called on arrays X,Y produced by numpy.meshgrid.
+
+    Output file is of "topotype1," which we use to refer to a file with
+    (x,y,z) values on each line, progressing from upper left corner across
+    rows, then down.
+    """
+    topography = Topography(topo_func=topo)
+
+    topography.x = numpy.linspace(xlower,xupper,nxpoints)
+    topography.y = numpy.linspace(ylower,yupper,nypoints)
+    
+    topography.write(outfile, topo_type=1)
+
+
+def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
+                 nodata_value=-99999):
+    r"""Write out a topo type 2 file by evaluating the function *topo*.
+
+    This routine is here for backwards compatibility and simply creates a new
+    topography object and writes it out.
+
+    """
+
+    topography = Topography(topo_func=topo)
+
+    topography.x = numpy.linspace(xlower,xupper,nxpoints)
+    topography.y = numpy.linspace(ylower,yupper,nypoints)
+
+    topography.write(outfile, topo_type=2)
+
+
+def get_topo(topo_fname, remote_directory, force=None):
+    """
+    Download a topo file from the web, provided the file does not
+    already exist locally.
+
+    remote_directory should be a URL.  For GeoClaw data it may be a
+    subdirectory of  http://kingkong.amath.washington.edu/topo/
+    See that website for a list of archived topo datasets.
+
+    If force==False then prompt the user to make sure it's ok to download,
+    with option to first get small file of metadata.
+
+    If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
+    and if this exists use its value.  This is useful for the script
+    python/run_examples.py that runs all examples so it won't stop to prompt.
+    """
+    import urllib
+
+    if force is None:
+        CTD = os.environ.get('CLAW_TOPO_DOWNLOAD', None)
+        force = (CTD in [True, 'True'])
+    print 'force = ',force
+
+    if os.path.exists(topo_fname):
+        print "*** Not downloading topo file (already exists): %s " % topo_fname
+    else:
+        remote_fname = topo_fname
+        local_fname = topo_fname
+        remote_fname_txt = remote_fname + '.txt'
+        local_fname_txt = local_fname + '.txt'
+
+        print "Require remote file ", remote_fname
+        print "      from ", remote_directory
+        if not force:
+            ans=raw_input("  Ok to download topo file?  \n"  +\
+                          "     Type y[es], n[o] or ? to first retrieve and print metadata  ")
+            if ans.lower() not in ['y','yes','?']:
+                print "*** Aborting!   Missing: ", local_fname
+                return
+            if ans=="?":
+                try:
+                    print "Retrieving remote file ", remote_fname_txt
+                    print "      from ", remote_directory
+                    url = os.path.join(remote_directory, remote_fname_txt)
+                    urllib.urlretrieve(url, local_fname_txt)
+                    os.system("cat %s" % local_fname_txt)
+                except:
+                    print "*** Error retrieving metadata file!"
+                ans=raw_input("  Ok to download topo file?  ")
+                if ans.lower() not in ['y','yes','?']:
+                    print "*** Aborting!   Missing: ", local_fname
+                    return
+
+        if not os.path.exists(local_fname_txt):
+            try:
+                print "Retrieving metadata file ", remote_fname_txt
+                print "      from ", remote_directory
+                url = os.path.join(remote_directory, remote_fname_txt)
+                urllib.urlretrieve(url, local_fname_txt)
+            except:
+                print "*** Error retrieving metadata file!"
+
+        try:
+            print "Retrieving topo file ", remote_fname
+            print "      from ", remote_directory
+            url = os.path.join(remote_directory, remote_fname)
+            urllib.urlretrieve(url, local_fname)
+        except:
+            print "*** Error retrieving file!  Missing: ", local_fname
+            raise Exception("Error from urllib.urlretrieve")
+        try:
+            firstline = open(local_fname,'r').readline()
+            if firstline.find('DOC') > -1:
+                print "*** Possible error -- check the file ", local_fname
+            else:
+                print "Saved to ", local_fname
+        except:
+            raise Exception("Error opening file %s" % local_fname)
+
+
+def swapheader(inputfile, outputfile):
+    r"""Swap the order of key and value in header to value first.
+
+    Note that this is a wrapper around functionality in the Topography class.
+
+    """
+    topo = Topography(inputfile)
+    topo.write(outputfile)
+
 
 # ==============================================================================
 #  Topography class
@@ -331,7 +457,8 @@ class Topography(object):
         return self._delta
 
 
-    def __init__(self, path=None, topo_type=None, unstructured=False, force=False):
+    def __init__(self, path=None, topo_func=None, topo_type=None, 
+                       unstructured=False, force=False):
         r"""Topography initialization routine.
         
         See :class:`Topography` for more info.
@@ -341,8 +468,16 @@ class Topography(object):
         super(Topography, self).__init__()
 
         self.path = path
-        if path is None: 
-            return
+        self.topo_func = topo_func
+        if self.path is None:
+            # We are going to generate the topography via the provided
+            # topo_func function
+            if (topo_func is None or 
+                not isinstance(topo_func, types.FunctionType)):
+                raise ValueError("Must provide either a path to a topography ",
+                                 "file or a generator function.")
+
+            # Do nothing for right now, wait until user fills in data
         if topo_type is not None:
             self.topo_type = topo_type
         else:
@@ -396,21 +531,26 @@ class Topography(object):
                                  + " 2d arrays, first project the data and" \
                                  + " try to perform this operation again.") 
 
-            if self._z is None:
-            # Try to read the data, may not have done this yet
-                self.read(mask=mask)
-                if self._Z is not None:
-                    # We are done, the read function did our work
-                    return
+            if self.path is not None:
+                if self._z is None:
+                # Try to read the data, may not have done this yet
+                    self.read(mask=mask)
+                    if self._Z is not None:
+                        # We are done, the read function did our work
+                        return
 
-            # See if self._X and self._Y are already computed and use them if
-            # available, otherwise just use self._x and self._y
-            if self._X is not None and self._Y is not None:
-                new_shape = self._X.shape
-            else:
-                new_shape = (self._x.shape[0], self._y.shape[0])
-            # Reshape, note that the mask follows along with the new array
-            self._Z = numpy.reshape(self._z, new_shape)
+                # See if self._X and self._Y are already computed and use them if
+                # available, otherwise just use self._x and self._y
+                if self._X is not None and self._Y is not None:
+                    new_shape = self._X.shape
+                else:
+                    new_shape = (self._x.shape[0], self._y.shape[0])
+                # Reshape, note that the mask follows along with the new array
+                self._Z = numpy.reshape(self._z, new_shape)
+
+            elif self.topo_func is not None:
+                # Generate topo via topo_func
+                self._Z = self.topo_func(self.X, self.Y)
 
 
     def generate_2d_coordinates(self, mask=True):
@@ -427,17 +567,24 @@ class Topography(object):
                                  + " 2d coordinates, first project the data" \
                                  + " and try to perform this operation again.")
 
-            if abs(self.topo_type) == 1:
-                # Reading this topo_type should produce the X and Y arrays
-                self.read(mask=mask)
-            elif abs(self.topo_type) in [2,3]:
-                if self._x is None or self._y is None:
-                    # Try to read the data to get these, may not have been done yet
+            if self.path is not None:
+                if abs(self.topo_type) == 1:
+                    # Reading this topo_type should produce the X and Y arrays
                     self.read(mask=mask)
-                # Generate arrays
+                elif abs(self.topo_type) in [2,3]:
+                    if self._x is None or self._y is None:
+                        # Try to read the data to get these, may not have been done yet
+                        self.read(mask=mask)
+                    # Generate arrays
+                    self._X, self._Y = numpy.meshgrid(self._x, self._y)
+                else:
+                    raise Error("Unrecognized topo_type: %s" % self.topo_type)
+
+            elif self.topo_func is not None:
+                if self._x is None or self._y is None:
+                    raise ValueError("The x and y arrays must be set to ",
+                                     "create 2d coordinate arrays.")
                 self._X, self._Y = numpy.meshgrid(self._x, self._y)
-            else:
-                raise Error("Unrecognized topo_type: %s" % self.topo_type)
 
             
             # If masking has been requested try to get the mask first from 
@@ -689,7 +836,7 @@ class Topography(object):
                         del Z_flipped
 
             else:
-                raise NotImplementedError("Output type %s not implemented." % topo_type)
+                raise NotImplemented("Output type %s not implemented." % topo_type)
 
 
     def plot(self, axes=None, region_extent=None, contours=None, 
@@ -881,7 +1028,7 @@ class Topography(object):
            configuration.
 
         """
-        raise NotImplementedError("This function is not quite working yet, please "+\
+        raise NotImplemented("This function is not quite working yet, please "+\
                              "try again later")
 
         TOLERANCE = 1e-6
@@ -920,7 +1067,38 @@ class Topography(object):
                numpy.ma.masked_where(intersect, y, copy=False).reshape(Y.shape)
 
 
-    def replace_no_data_values(self, value=numpy.nan, method='fill'):
+    def replace_values(self, indices, value=numpy.nan, method='fill'):
+        r"""Replace the values at *indices* by the specified method
+
+        :Methods:
+         - "fill"
+         - "nearest"
+        """
+
+        # Average surrounding good data
+        if method == 'fill':
+            for index in indices:
+                r = 0
+                point_replaced = False
+                while not point_replaced and r < max(self.Z.shape):
+                    r = r + 1
+                    i_range = range(max(0, index[0] - r), min(index[0] + r + 1, self.Z.shape[0]))
+                    j_range = range(max(0, index[1] - r), min(index[1] + r + 1, self.Z.shape[1]))
+                    num_points = 0
+                    summation = 0.0
+                    for i in i_range:
+                        for j in j_range:
+                            if (i,j) not in indices:
+                                summation += self.Z[i,j]
+                                num_points += 1
+                    if num_points > 0:
+                        Z[index[0], index[1]] = summation / num_points
+                        point_replaced = True
+
+        elif method == "nearest":
+            pass
+
+    def replace_no_data_values(self, method='fill'):
         r"""Replace *no_data_value* with other values as specified by *method*.
 
         self.no_data_value
@@ -931,15 +1109,9 @@ class Topography(object):
            neighbors.
 
         """
-        raise NotImplementedError("This functionality has not been added yet.")
-
-        if method == 'fill':
-            pass
-            # ind=fixdata.findbadindices(Z,nodata_value)
-            # if size(ind)>0:
-            #     print("Changing %s nodata_value points" % size(ind))
-            # Z=fixdata.fillbaddata(Z,ind)
-            # griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
+        raise NotImplemented("This functionality has not been added yet.")
+        no_data_value_indices = (self.Z == self.no_data_value).nonzero()
+        self.replace_values(no_data_value_indices, method=method)
 
         elif method == 'nearest':
             pass
@@ -968,7 +1140,46 @@ class Topography(object):
 
         # griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
 
+    def smooth_data(self, indices, r=1):
+        r"""Filter depth data at *indices* by averaging surrounding data.
+
+        Surrounding data is considered within the ball of radius *r* in the 
+        inf-norm.  Acts as a low-band pass filter and removes oscillatory data.
+
+        :Input:
+         - *indices* (list)
+         - *r* (int) 
+
+        :Output:
+         None
+        """
+
+        index_range = [None, None]
+        for index in indices:
+            for n in xrange(2):
+                index_range[n] = range(max(0, index[n] - r), 
+                                       min(index[n] + r + 1, self.Z.shape[n]))
+            num_points = 0
+            summation = 0.0
+            for i in index_range[0]:
+                for j in index_range[1]:
+                    summation += self.Z[i,j]
+                    num_points += 1
+            if num_points > 0:
+                self.Z[index[0], index[1]] = summation / num_points
+
     def crop(self,filter_region):
+        r"""Crop region to *filter_region*
+
+        Create a new Topography object that is identical to this one but cropped
+        to the region specified by filter_region
+
+        :TODO:
+         - Currently this does not work for unstructured data, could in principle
+         - This could be a special case of in_poly although that routine could
+           leave the resulting topography as unstructured effectively.
+        """
+
         # Find indices of region
         region_index = [None, None, None, None]
         region_index[0] = (self.x >= filter_region[0]).nonzero()[0][0]
@@ -979,8 +1190,10 @@ class Topography(object):
 
         newtopo._x = self._x[region_index[0]:region_index[1]]
         newtopo._y = self._y[region_index[2]:region_index[3]]
+        if self._z is not None:
+            newtopo._z = self._z[region_index[0]:region_index[1]]
 
-        # Force regeneration of 2d coordinate arrays and extent
+        # Force regeneration of 2d coordinate arrays and extent if needed
         newtopo._X = None
         newtopo._Y = None
         newtopo._extent = None
@@ -989,190 +1202,8 @@ class Topography(object):
         newtopo._Z = self._Z[region_index[2]:region_index[3],
                           region_index[0]:region_index[1]]
 
-        newtopo.unstructured = False
-        newtopo.topo_type = None
+        newtopo.unstructured = self.unstructured
+        newtopo.topo_type = self.topo_type
 
-        print "Cropped to %s by %s array"  % (len(newtopo.x),len(newtopo.y))
+        # print "Cropped to %s by %s array"  % (len(newtopo.x),len(newtopo.y))
         return newtopo
-
-
-#==========================================================================
-# From old topotools.py of Version 5.1 ... need to improve
-#==========================================================================
-def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
-    """
-    Function topo1writer will write out the topofiles by evaluating the
-    function topo on the grid specified by the other parameters.
-
-    Assumes topo can be called on arrays X,Y produced by numpy.meshgrid.
-
-    Output file is of "topotype1," which we use to refer to a file with
-    (x,y,z) values on each line, progressing from upper left corner across
-    rows, then down.
-    """
-
-    fout=open(outfile, 'w')
-    dx = (xupper-xlower)/(nxpoints-1)
-    dy = (yupper-ylower)/(nypoints-1)
-
-    x = numpy.linspace(xlower,xupper,nxpoints)
-    y = numpy.linspace(ylower,yupper,nypoints)
-    X,Y = numpy.meshgrid(x,y)
-    Z = topo(X,Y).T
-
-
-    for jj in xrange(0,nypoints):
-        y = yupper - jj*dy
-        for i in xrange(0,nxpoints):
-            x =  xlower + i*dx
-            j = nypoints - 1 - jj
-            z = Z[i,j]
-            fout.write("%22.15e  %22.15e  %22.15e\n" % (x,y,z))
-
-    fout.close
-    print "Created file ",outfile
-
-
-#==========================================================================
-def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
-                 nodata_value=-99999):
-    """
-    Function topo2writer will write out the topofiles by evaluating the
-    function topo on the grid specified by the other parameters.
-
-    Assumes topo can be called on arrays X,Y produced by numpy.meshgrid.
-
-    Output file is of "topotype2," which we use to refer to a file with a
-    header and one z value of topography per row in the file
-
-    Header is of the form:
-    # ---------------------------
-    # integer   ncols   (= nxpoints)
-    # integer   nrows   (= nypoints)
-    # double    xlower
-    # double    ylower
-    # double    cellsize
-    #integer   nodata_value
-    # -----------------------------
-    """
-
-
-    # note: for topotype2, dx=dy=cellsize
-    dx = (xupper-xlower)/(nxpoints-1)
-    dy = (yupper-ylower)/(nypoints-1)
-    if abs(dx-dy) > 1.e-8:
-        print "*** Error in topo2writer, need dx=dy"
-        print "    dx = %s, dy = %s" % (dx,dy)
-        return
-    cellsize = dx
-
-    nrows = nypoints
-    ncols = nxpoints
-    dx=cellsize
-    dy=cellsize
-
-    fout=open(outfile, 'w')
-    fout.write("%6i                              %s\n" % (ncols,"ncols"))
-    fout.write("%6i                              %s\n" % (nrows,"nrows"))
-    fout.write("%22.15e              %s\n" % (xlower,"xlower"))
-    fout.write("%22.15e              %s\n" % (ylower,"ylower"))
-    fout.write("%22.15e              %s\n" % (cellsize,"cellsize"))
-    fout.write("%10i                 %s\n" % (nodata_value,"nodata_value"))
-
-    x = numpy.linspace(xlower,xupper,nxpoints)
-    y = numpy.linspace(ylower,yupper,nypoints)
-    X,Y = numpy.meshgrid(x,y)
-    Z = topo(X,Y).T
-
-
-    for jj in xrange(0,nrows):
-        for i in xrange(0,ncols):
-            j = nypoints - 1 - jj
-            fout.write("%22.15e\n" % Z[i,j])
-
-    fout.close
-    print "Created file ",outfile
-
-
-#==========================================================================
-
-def get_topo(topo_fname, remote_directory, force=None):
-    """
-    Download a topo file from the web, provided the file does not
-    already exist locally.
-
-    remote_directory should be a URL.  For GeoClaw data it may be a
-    subdirectory of  http://kingkong.amath.washington.edu/topo/
-    See that website for a list of archived topo datasets.
-
-    If force==False then prompt the user to make sure it's ok to download,
-    with option to first get small file of metadata.
-
-    If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
-    and if this exists use its value.  This is useful for the script
-    python/run_examples.py that runs all examples so it won't stop to prompt.
-    """
-    import urllib
-
-    if force is None:
-        CTD = os.environ.get('CLAW_TOPO_DOWNLOAD', None)
-        force = (CTD in [True, 'True'])
-    print 'force = ',force
-
-    if os.path.exists(topo_fname):
-        print "*** Not downloading topo file (already exists): %s " % topo_fname
-    else:
-        remote_fname = topo_fname
-        local_fname = topo_fname
-        remote_fname_txt = remote_fname + '.txt'
-        local_fname_txt = local_fname + '.txt'
-
-        print "Require remote file ", remote_fname
-        print "      from ", remote_directory
-        if not force:
-            ans=raw_input("  Ok to download topo file?  \n"  +\
-                          "     Type y[es], n[o] or ? to first retrieve and print metadata  ")
-            if ans.lower() not in ['y','yes','?']:
-                print "*** Aborting!   Missing: ", local_fname
-                return
-            if ans=="?":
-                try:
-                    print "Retrieving remote file ", remote_fname_txt
-                    print "      from ", remote_directory
-                    url = os.path.join(remote_directory, remote_fname_txt)
-                    urllib.urlretrieve(url, local_fname_txt)
-                    os.system("cat %s" % local_fname_txt)
-                except:
-                    print "*** Error retrieving metadata file!"
-                ans=raw_input("  Ok to download topo file?  ")
-                if ans.lower() not in ['y','yes','?']:
-                    print "*** Aborting!   Missing: ", local_fname
-                    return
-
-        if not os.path.exists(local_fname_txt):
-            try:
-                print "Retrieving metadata file ", remote_fname_txt
-                print "      from ", remote_directory
-                url = os.path.join(remote_directory, remote_fname_txt)
-                urllib.urlretrieve(url, local_fname_txt)
-            except:
-                print "*** Error retrieving metadata file!"
-
-        try:
-            print "Retrieving topo file ", remote_fname
-            print "      from ", remote_directory
-            url = os.path.join(remote_directory, remote_fname)
-            urllib.urlretrieve(url, local_fname)
-        except:
-            print "*** Error retrieving file!  Missing: ", local_fname
-            raise Exception("Error from urllib.urlretrieve")
-        try:
-            firstline = open(local_fname,'r').readline()
-            if firstline.find('DOC') > -1:
-                print "*** Possible error -- check the file ", local_fname
-            else:
-                print "Saved to ", local_fname
-        except:
-            raise Exception("Error opening file %s" % local_fname)
-
-
