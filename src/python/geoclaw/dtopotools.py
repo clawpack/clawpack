@@ -1954,6 +1954,34 @@ class SubFault(object):
         return axes
 
 
+    def plot_subfault_depth(self, axes=None):
+        r"""Plot the depth of each subfault vs. x in one plot and vs. y in a second plot.
+        
+        """
+
+        raise NotImplemented("Subfault depth plots not implemented.")
+
+
+    def plot_contours(self, axes=None, dz_interval=0.5):
+        r"""Plot sea-floor deformation contours
+
+        """"
+
+        dzmax = numpy.max(self.dZ.max(), -self.dZ.min()) + dz_interval
+        clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
+        clines = list(-np.flipud(clines1)) + list(clines1)
+
+        self.plot(axes=axes, contours=clines)
+
+    def plot_seafloor(self, axes=None, cmax_dz=None, dz_interval=None):
+        r"""Plot sea floor deformation dtopo as colormap
+        
+        """
+
+        self.plot(axes=axes)
+
+
+
 class Fault(object):
 
     r"""Basic object for representing a fault composed of many subfaults.
@@ -1981,18 +2009,17 @@ class Fault(object):
             raise ValueError("Must provide either a path to a subfault ",
                              "specification or a list of subfault objects.")
 
-    def read(self, path, column_map=None, coordinate_specification="centroid",
-                         rupture_type="static"):
+    def read(self, path, column_map, coordinate_specification="centroid",
+                         rupture_type="static", t=[0.0, 0.5, 1.0]):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
         *path*.
 
-        """
-
-        if column_map is None:
-            column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
+        column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
                           "strike":5, "dip":6}
+
+        """
 
         # Read in rest of data
         data = numpy.loadtxt(path, skiprows=skiprows)
@@ -2003,26 +2030,43 @@ class Fault(object):
             new_subfault = SubFault()
             new_subfault.coordinate_specification = coordinate_specification
             new_subfault.rupture_type = rupture_type
-            new_subfault.t = numpy.array([0.0, 5.0, 10.0]) 
+            new_subfault.t = numpy.array(t) 
             
             for (var, column) in column_map.iteritems():
-                if isinstance(column, tuple):
+                if isinstance(column, tuple) or isinstance(column, list):
                     for (k, index) in enumerate(column):
                         getattr(new_subfault, var)[k] = data[n, index]
                 else:
                     setattr(new_subfault, var) = data[n, column]
 
             self.subfaults.append(new_subfault)
-        
-        
 
-    def write(self):
-        pass
+
+    def write(self, path, topo_type=3):
+        r"""Write out a dtopo file created by the combination of all subfaults
+
+        """
+
+        raise NotImplemented("Writing of a compound fault not implemneted yet.")
+
+        if topo_type == 1:
+            pass
+        elif topo_type in [2,3]:
+            pass
+        else:
+            raise ValueError("Unknown topography output type %s." % topo_type)
 
 
 class UCSBFault(Fault):
 
-    r""""""
+    r"""Fault subclass for reading in subfault format models from UCSB
+
+    Read in subfault format models produced by Chen Ji's group at UCSB,
+    downloadable from:  
+
+        http://www.geol.ucsb.edu/faculty/ji/big_earthquakes/home.html
+
+    """
 
     def read(self, path):
         r"""Read in subfault specification at *path*.
@@ -2066,23 +2110,35 @@ class UCSBFault(Fault):
         for fault in self.subfaults:
             fault.dimensions = [dx, dy]
 
-        # Read in rest of data
-        data = numpy.loadtxt(path, skiprows=skiprows)
 
-        self.subfaults = []
-        for n in xrange(data.shape[0]):
 
-            new_subfault = SubFault()
-            new_subfault.coordinate_specification = 'centroid'
-            new_subfault.rupture_type = 'static'
-            new_subfault.t = numpy.array([0.0, 5.0, 10.0]) 
-            new_subfault.dimensions = [dx, dy]
-            
-            for (var, column) in column_map.iteritems():
-                if isinstance(column, tuple):
-                    for (k, index) in enumerate(column):
-                        getattr(new_subfault, var)[k] = data[n, index]
-                else:
-                    setattr(new_subfault, var) = data[n, column]
+class CSVFault(Fault):
 
-            self.subfaults.append(new_subfault)
+    r"""Fault subclass for reading in CSV formatted files
+
+    Assumes that the first row gives the column headings
+    """
+
+    def read(self, path):
+        r"""Read in subfault specification at *path*.
+
+        Creates a list of subfaults from the subfault specification file at
+        *path*.
+
+        """
+        valid_column_labels = ()
+
+        # Read header of file
+        with open(path, 'r') as subfault_file:
+            header_line = subfault_file.readline().split()
+            column_map = {'coordinates':[None, None]}
+            for (n,column_heading) in enumerate(header_line):
+                if column_heading in valid_column_labels:
+                    column_map[column_heading] = n
+                elif column_heading == "longitude":
+                    column_map['coordinates'][0] = n
+                elif column_heading == "latitude":
+                    column_map['coordinates'][1] = n
+
+        super(CSVFault, self).read(path, column_map=column_map, units={})
+
