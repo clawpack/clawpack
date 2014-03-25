@@ -109,10 +109,16 @@ subroutine topo_update(t)
                !find indices for bilinear dtopo
                !dtopo arrays are in form of DEM...high y values first
                !note for xy points lying on nodes all indices will be equal
+
+               ! rewritten to avoid roundoff pushing outside of proper range:
+               ! note above is no longer true but interp should be fine
                idtopo1 = int(floor((x-xlowdtopo(m))/dxdtopo(m)))+1
-               idtopo2 = int(ceiling((x-xlowdtopo(m))/dxdtopo(m)))+1
+               idtopo1 = max(1, min(mxdtopo(m)-1, idtopo1))
+               idtopo2 = idtopo1+1
                jdtopo1 = int(floor((yhidtopo(m)-y)/dydtopo(m))) + 1
-               jdtopo2 = int(ceiling((yhidtopo(m)-y)/dydtopo(m))) + 1
+               jdtopo1 = max(1, min(mydtopo(m)-1, jdtopo1))
+               jdtopo2 = jdtopo1+1
+
                !indices for dtopo work array
                ijll = index0_dtopowork1(m) + (jdtopo2-1)*mxdtopo(m) + idtopo1 -1
                ijlr = index0_dtopowork1(m) + (jdtopo2-1)*mxdtopo(m) + idtopo2 -1
