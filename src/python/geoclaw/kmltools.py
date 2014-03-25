@@ -8,6 +8,15 @@ the full 8 digits if you want it transparent).
 
 """
 
+
+def deg2dms(dy):
+    from numpy import floor
+    dy_deg = floor(dy)
+    dy_min = floor((dy-dy_deg)*60.)
+    dy_sec = (dy-dy_deg-dy_min/60.)*3600.
+    return dy_deg,dy_min,dy_sec
+
+
 def regions2kml(fname='regions.kml'):
 
     """
@@ -16,7 +25,7 @@ def regions2kml(fname='regions.kml'):
     for each region (in white).
     """
 
-    from pylab import text
+    from numpy import cos,pi,floor
     try:
         import setrun
         reload(setrun)
@@ -27,8 +36,39 @@ def regions2kml(fname='regions.kml'):
     clawdata = rundata.clawdata
     x1,y1 = clawdata.lower[0:]
     x2,y2 = clawdata.upper[0:]
-    print "Domain:   %10.6f  %10.6f  %10.6f  %10.6f" % (x1,x2,y1,y2)
+    description = "  x1 = %g, x2 = %g\n" % (x1,x2) \
+            + "  y1 = %g, y2 = %g\n" % (y1,y2) 
 
+    mx,my = clawdata.num_cells[0:]
+    dx = (x2-x1)/float(mx)
+    dx_meters = dx*111e3*cos(pi*0.5*(y1+y2)/180.)
+    dy = (y2-y1)/float(my)
+    dy_meters = dy*111e3
+    print "Domain:   %10.6f  %10.6f  %10.6f  %10.6f" % (x1,x2,y1,y2)
+    dx_deg,dx_min,dx_sec = deg2dms(dx)
+    dy_deg,dy_min,dy_sec = deg2dms(dy)
+    #print "Level 1 resolution:  dx = %g deg, %g min, %g sec = %g meters" \
+    #   % (dx_deg,dx_min,dx_sec,dx_meters)
+    levtext = "Level 1 resolution:  dy = %g deg, %g min, %g sec = %g meters\n" \
+        % (dy_deg,dy_min,dy_sec,dy_meters)
+    print levtext
+    description = description + levtext
+
+    amr_levels_max = rundata.amrdata.amr_levels_max
+    refinement_ratios_y = rundata.amrdata.refinement_ratios_y
+    dy_levels = amr_levels_max * [dy]
+    for k,r in enumerate(refinement_ratios_y):
+        level = k+2
+        dy = dy_levels[k] / r
+        dy_levels[k+1] = dy
+        dy_meters = dy*111e3
+        dy_deg,dy_min,dy_sec = deg2dms(dy)
+        levtext = "Level %s resolution:  dy = %g deg, %g min, %g sec = %g meters  (refined by %i)\n" \
+                % (level,dy_deg,dy_min,dy_sec,dy_meters,r)
+        print levtext
+        description = description + levtext
+
+    print "+++ dy_levels: ", dy_levels
 
     elev = 0.
     kml_text = kml_header()
@@ -40,8 +80,7 @@ def regions2kml(fname='regions.kml'):
     mapping['y2'] = y2
     mapping['elev'] = elev
     mapping['name'] = 'Computational Domain'
-    mapping['desc'] = "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g" % (y1,y2) 
+    mapping['desc'] = description
     mapping['color'] = "0000FF"  # red
 
     region_text = kml_region(mapping)
@@ -70,10 +109,24 @@ def regions2kml(fname='regions.kml'):
         mapping['y2'] = y2
         mapping['elev'] = elev
         mapping['name'] = 'Region %i' % rnum
-        mapping['desc'] = "minlevel = %i, maxlevel = %i\n" % (minlevel,maxlevel) \
+        description = "minlevel = %i, maxlevel = %i\n" % (minlevel,maxlevel) \
             + "  t1 = %g, t2 = %g\n" % (t1,t2) \
             + "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g" % (y1,y2) 
+            + "  y1 = %g, y2 = %g\n\n" % (y1,y2) 
+        dy = dy_levels[minlevel-1]
+        dy_deg,dy_min,dy_sec = deg2dms(dy)
+        dy_meters = dy*111e3
+        levtext = "Level %s resolution:  \ndy = %g deg, %g min, %g sec \n= %g meters\n" \
+                % (minlevel,dy_deg,dy_min,dy_sec,dy_meters)
+        description = description + levtext
+        if maxlevel > minlevel:
+            dy = dy_levels[maxlevel-1]
+            dy_deg,dy_min,dy_sec = deg2dms(dy)
+            dy_meters = dy*111e3
+            levtext = "\nLevel %s resolution:  \ndy = %g deg, %g min, %g sec \n= %g meters\n" \
+                    % (maxlevel,dy_deg,dy_min,dy_sec,dy_meters)
+            description = description + levtext
+        mapping['desc'] = description
         mapping['color'] = "FFFFFF"  # white
 
         region_text = kml_region(mapping)
