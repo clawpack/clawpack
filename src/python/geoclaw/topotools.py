@@ -1113,8 +1113,6 @@ class Topography(object):
         no_data_value_indices = (self.Z == self.no_data_value).nonzero()
         self.replace_values(no_data_value_indices, method=method)
 
-        elif method == 'nearest':
-            pass
         # nrows= shape(Z)[0]
         # ncols= shape(Z)[1]
         # npts = nrows*ncols

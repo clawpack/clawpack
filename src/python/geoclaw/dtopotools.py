@@ -1965,7 +1965,7 @@ class SubFault(object):
     def plot_contours(self, axes=None, dz_interval=0.5):
         r"""Plot sea-floor deformation contours
 
-        """"
+        """
 
         dzmax = numpy.max(self.dZ.max(), -self.dZ.min()) + dz_interval
         clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
@@ -2009,6 +2009,7 @@ class Fault(object):
             raise ValueError("Must provide either a path to a subfault ",
                              "specification or a list of subfault objects.")
 
+
     def read(self, path, column_map, coordinate_specification="centroid",
                          rupture_type="static", t=[0.0, 0.5, 1.0]):
         r"""Read in subfault specification at *path*.
@@ -2037,7 +2038,7 @@ class Fault(object):
                     for (k, index) in enumerate(column):
                         getattr(new_subfault, var)[k] = data[n, index]
                 else:
-                    setattr(new_subfault, var) = data[n, column]
+                    setattr(new_subfault, var, data[n, column])
 
             self.subfaults.append(new_subfault)
 
