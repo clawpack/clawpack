@@ -56,7 +56,11 @@ def regions2kml(fname='regions.kml'):
 
     amr_levels_max = rundata.amrdata.amr_levels_max
     refinement_ratios_y = rundata.amrdata.refinement_ratios_y
-    dy_levels = amr_levels_max * [dy]
+    num_ref_ratios = len(refinement_ratios_y)
+    if amr_levels_max > num_ref_ratios+1:
+        raise IOError("*** Too few refinement ratios specified for " \
+            + "amr_levels_max = %i" % amr_levels_max)
+    dy_levels = (num_ref_ratios+1) * [dy]
     for k,r in enumerate(refinement_ratios_y):
         level = k+2
         dy = dy_levels[k] / r
@@ -68,7 +72,7 @@ def regions2kml(fname='regions.kml'):
         print levtext
         description = description + levtext
 
-    print "+++ dy_levels: ", dy_levels
+    print "Allowing maximum of %i levels" % amr_levels_max
 
     elev = 0.
     kml_text = kml_header()
@@ -113,13 +117,14 @@ def regions2kml(fname='regions.kml'):
             + "  t1 = %g, t2 = %g\n" % (t1,t2) \
             + "  x1 = %g, x2 = %g\n" % (x1,x2) \
             + "  y1 = %g, y2 = %g\n\n" % (y1,y2) 
-        dy = dy_levels[minlevel-1]
-        dy_deg,dy_min,dy_sec = deg2dms(dy)
-        dy_meters = dy*111e3
-        levtext = "Level %s resolution:  \ndy = %g deg, %g min, %g sec \n= %g meters\n" \
-                % (minlevel,dy_deg,dy_min,dy_sec,dy_meters)
-        description = description + levtext
-        if maxlevel > minlevel:
+        if len(dy_levels) >= minlevel:
+            dy = dy_levels[minlevel-1]
+            dy_deg,dy_min,dy_sec = deg2dms(dy)
+            dy_meters = dy*111e3
+            levtext = "Level %s resolution:  \ndy = %g deg, %g min, %g sec \n= %g meters\n" \
+                    % (minlevel,dy_deg,dy_min,dy_sec,dy_meters)
+            description = description + levtext
+        if (maxlevel > minlevel) and (len(dy_levels) >= maxlevel):
             dy = dy_levels[maxlevel-1]
             dy_deg,dy_min,dy_sec = deg2dms(dy)
             dy_meters = dy*111e3
