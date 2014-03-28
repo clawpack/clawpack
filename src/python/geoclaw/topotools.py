@@ -446,11 +446,11 @@ class Topography(object):
             else:
                 # All other topography types should have equally spaced grid
                 # points in each direction
-                begin_delta = [abs(self.x[1] - self.x[0]), 
-                               abs(self.y[1] - self.y[0])]
-                end_delta =   [abs(self.x[-2] - self.x[-1]), 
-                               abs(self.y[-2] - self.y[-1])]
-                assert begin_delta == end_delta,                  \
+                begin_delta = numpy.array([abs(self.x[1] - self.x[0]), 
+                                           abs(self.y[1] - self.y[0])])
+                end_delta =   numpy.array([abs(self.x[-2] - self.x[-1]), 
+                                           abs(self.y[-2] - self.y[-1])])
+                assert numpy.allclose(begin_delta, end_delta, 1e-8),   \
                        "Grid spacing delta not constant, %s != %s." %  \
                        (begin_delta, end_delta)
                 self._delta = begin_delta[0] 
