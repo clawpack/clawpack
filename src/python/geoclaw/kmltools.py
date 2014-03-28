@@ -176,6 +176,57 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000'):
     print "Created ",fname
         
 
+def gauges2kml(fname='gauges.kml'):
+
+    """
+    Read in the gauge locations from setrun.py and create a kml point for each.
+    """
+
+    try:
+        import setrun
+        reload(setrun)
+        rundata = setrun.setrun()
+    except:
+        raise IOError("*** cannot execute setrun file")
+
+
+    elev = 0.
+    kml_text = kml_header()
+    
+
+    gauges = rundata.gaugedata.gauges
+    if len(gauges)==0:
+        print "No gauges found in setrun.py"
+
+
+    for rnum,gauge in enumerate(gauges):
+        t1,t2 = gauge[3:5]
+        x1,y1 = gauge[1:3]
+        gaugeno = gauge[0]
+        print "Gauge %i: %10.6f  %10.6f  \n" % (gaugeno,x1,y1) \
+                + "  t1 = %10.1f,  t2 = %10.1f" % (t1,t2)
+        mapping = {}
+        mapping['gaugeno'] = gaugeno
+        mapping['t1'] = t1
+        mapping['t2'] = t2
+        mapping['x1'] = x1
+        mapping['y1'] = y1
+        mapping['elev'] = elev
+        mapping['name'] = 'Gauge %i' % rnum
+        description = "  t1 = %g, t2 = %g\n" % (t1,t2) \
+            + "  x1 = %g, y1 = %g\n" % (x1,y1)
+        mapping['desc'] = description
+
+        gauge_text = kml_gauge(mapping)
+        kml_text = kml_text + gauge_text
+    kml_text = kml_text + kml_footer()
+    kml_file = open(fname,'w')
+    kml_file.write(kml_text)
+    kml_file.close()
+    print "Created ",fname
+        
+
+
 def kml_header():
     """
     Color is a BGR hex string used to set color of lines.
@@ -223,6 +274,25 @@ def kml_region(mapping):
 {region:s}
 </coordinates></LinearRing></outerBoundaryIs>
 </Polygon>
+</Placemark>
+""".format(**mapping)
+
+    return kml_text
+
+def kml_gauge(mapping):
+    gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
+    
+    mapping['gauge'] = gauge_text
+
+    kml_text = """
+<Placemark><name>Gauge {gaugeno:d}</name>
+<description>{desc:s}</description>
+<styleUrl>#markerstyle</styleUrl>
+<Point>
+<coordinates>
+{gauge:s}
+</coordinates>
+</Point>
 </Placemark>
 """.format(**mapping)
 
