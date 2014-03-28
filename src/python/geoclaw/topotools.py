@@ -453,7 +453,7 @@ class Topography(object):
                 assert numpy.allclose(begin_delta, end_delta, 1e-8),   \
                        "Grid spacing delta not constant, %s != %s." %  \
                        (begin_delta, end_delta)
-                self._delta = begin_delta[0] 
+                self._delta = numpy.round(begin_delta[0], 15) 
         return self._delta
 
 
@@ -552,7 +552,7 @@ class Topography(object):
 
             elif self.topo_func is not None:
                 # Generate topo via topo_func
-                self._Z = self.topo_func(self.X, self.Y)
+                self._Z = numpy.flipud(self.topo_func(self.X, self.Y))
 
 
     def generate_2d_coordinates(self, mask=True):
@@ -805,12 +805,12 @@ class Topography(object):
 
             elif topo_type == 2 or topo_type == 3:
                 # Write out header
-                outfile.write('%s ncols\n' % self.Z.shape[1])
-                outfile.write('%s nrows\n' % self.Z.shape[0])
-                outfile.write('%s xll\n' % self.extent[0])
-                outfile.write('%s yll\n' % self.extent[2])
-                outfile.write('%s cellsize\n' % self.delta)
-                outfile.write('%s nodata_value\n' % no_data_value)
+                outfile.write('%6i                              ncols\n' % self.Z.shape[1])
+                outfile.write('%6i                              nrows\n' % self.Z.shape[0])
+                outfile.write('%22.15e              xlower\n' % self.extent[0])
+                outfile.write('%22.15e              ylower\n' % self.extent[2])
+                outfile.write('%22.15e              cellsize\n' % self.delta)
+                outfile.write('%10i                          nodata_value\n' % no_data_value)
 
                 masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
 
@@ -822,7 +822,7 @@ class Topography(object):
                         Z_filled = self.Z
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
-                            outfile.write("%s\n" % Z_filled[i,j])
+                            outfile.write("%22.15e\n" % Z_filled[i,j])
                     if masked_Z:
                         del Z_filled
                 elif topo_type == 3:
@@ -832,7 +832,7 @@ class Topography(object):
                         Z_flipped = self.Z
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
-                            outfile.write("%s   " % (Z_flipped[i,j]))
+                            outfile.write("%22.15e   " % (Z_flipped[i,j]))
                         outfile.write("\n")
                     if masked_Z:
                         del Z_flipped
