@@ -1,3 +1,5 @@
+# Need to fix matplotlib imports
+
 #!/usr/bin/env python
 # encoding: utf-8
 
@@ -24,6 +26,7 @@ import copy
 import re
 
 import numpy
+import numpy as np   # Need to unify: numpy and np both used below
 from numpy import sin,cos,sqrt
 
 import clawpack.geoclaw.topotools as topotools
@@ -658,11 +661,11 @@ def read_dtopo(fname, dtopotype):
         y=numpy.linspace(ylower,yupper,my)
         times = numpy.linspace(t0, t0+(mt-1)*dt, mt)
 
-        dZvals = loadtxt(fname, skiprows=9)
+        dZvals = np.loadtxt(fname, skiprows=9)
         dz_list = []
         for k,t in enumerate(times):
-            dZk = reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
-            dZk = flipud(dZk)
+            dZk = np.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
+            dZk = np.flipud(dZk)
             dz_list.append(dZk)
             
         dtopo = DTopo()
@@ -1281,7 +1284,7 @@ class SubFault(object):
        measured in degrees counterclockwise from the strike direction. Between 
        -180 and 180.
      - *slip* (float) Positive distance the hanging block moves relative to the 
-       foot block in the direction specified by the rake. The “hanging block” is
+       foot block in the direction specified by the rake. The "hanging block" is
        the one above the dipping fault plane (or to the right if you move in the 
        strike direction).
 
