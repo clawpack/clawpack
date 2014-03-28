@@ -1251,14 +1251,13 @@ def filtermask (dZ,faultparams):
 #     else:
 #         raise ValueError("Invalid component %s requested.  Valid range = [1,3]" % i)
 
-
-
 # ==============================================================================
-#  Sub-Fault Class 
+#  Fault Class 
 # ==============================================================================
-class SubFault(object):
+class Fault(object):
 
-    r"""Class representing a single subfault.
+
+    r"""Generic class representing a fault.
 
     :TODO:
      - Support something other than lat-long
@@ -1266,33 +1265,13 @@ class SubFault(object):
      - Provide detailed documentation
 
 
-    Subfault Parameters
+    Fault Parameters
     -------------------
-     - *dimensions* (list) - Dimensions of the fault plane.
-     - *coordinates* (list) - Longitude-latitude of some point on the fault 
-       plane.  Point is specified by *coordinate_specification*.
-     - *coordinate_specification* (string) - Specifies location relative to the
-       fault of the *coordinates* values.  Valid options include "top center",
-       "bottom center", and "centroid".
-     - *depth* (float) - Depth of the specified point below the sea-floor.
-     - *strike* (float) - Orientation of the top edge, measured in degrees 
-       clockwise from North.  Between 0 and 360. The fault plane dips downward 
-       to the right when moving along the top edge in the strike direction.
-     - *dip* (float) - Angle at which the plane dips downward from the top edge,
-       a positive angle between 0 and 90 degrees.
-     - *rake* (float) - Angle in the fault plane in which the slip occurs,
-       measured in degrees counterclockwise from the strike direction. Between 
-       -180 and 180.
-     - *slip* (float) Positive distance the hanging block moves relative to the 
-       foot block in the direction specified by the rake. The "hanging block" is
-       the one above the dipping fault plane (or to the right if you move in the 
-       strike direction).
+
 
     Attributes
     ----------
      - *units* (dict) - Dictionary containing unit specifications for the 
-       *coordinates*, *dimenstions*, *slip*, and *depth* subfault parameters.  
-       Defaults to "lat-long", "m", "m", "m" respectively.
 
     Properties
     ----------
@@ -1302,7 +1281,7 @@ class SubFault(object):
 
     @property
     def x(self):
-        r"""Coordinate array (x) for subfault."""
+        r"""Coordinate array (x) for fault."""
         if self._x is None:
             self.create_coordinate_arrays()
         return self._x
@@ -1324,7 +1303,7 @@ class SubFault(object):
 
     @property
     def y(self):
-        r"""Coordinate array (y) for subfault."""
+        r"""Coordinate array (y) for fault."""
         if self._y is None:
             self.create_coordinate_arrays()
         return self._y
@@ -1346,7 +1325,7 @@ class SubFault(object):
 
     @property
     def dZ(self):
-        r"""Deformation dZ of subfault."""
+        r"""Deformation dZ of fault."""
         if self._dZ is None:
             self.create_deformation_array()
         return self._dZ
@@ -1371,14 +1350,14 @@ class SubFault(object):
             self.calculate_geometry()
         return self._fault_plane_centers
 
-    def __init__(self, path=None, units={}):
-        r"""SubFault initialization routine.
+    def __init__(self, path=None, subfaults=None, units={}):
+        r"""Fault initialization routine.
         
-        See :class:`SubFault` for more info.
+        See :class:`Fault` for more info.
 
         """
 
-        super(SubFault, self).__init__()
+        super(Fault, self).__init__()
 
         # Object defered storage
         self._x = None
@@ -1390,82 +1369,94 @@ class SubFault(object):
         self._fault_plane_centers = None
 
         # Parameters for subfault specification
-        self.coordinates = [] # longitude, latitude
-        self.coordinate_specification = 'centroid' # 'centroid', 'top center', 'epicenter'
-        self.dimensions = [0.0, 0.0] # [length, width]
-        self.rake = None
-        self.strike = None
-        self.dip = None
-        self.depth = None
-        self.slip = None
         self.rupture_type = 'static' # 'static', 'dynamic', 'kinetic'
         self.t = numpy.array([0.0, 5.0, 10.0])
 
         # Default units of each parameter type
-        self.units = {'coordinates':'lat-long', 'dimensions':'m', 'slip':'m',
-                      'depth':"km"}
+        self.units = {}
         self.units.update(units)
-
-        # Read in file at path if provided
+        
         if path is not None:
+            # Read in file at path assuming it is a subfault specification
             self.read(path)
+        elif subfaults is not None:
+            if not isinstance(subfaults, list):
+                raise ValueError("Input parameter subfaults must be a list.")
+            self.subfaults = subfaults
+
+
+    def read(self, path, column_map, coordinate_specification="centroid",
+                         rupture_type="static", t=[0.0, 0.5, 1.0], skiprows=0):
+        r"""Read in subfault specification at *path*.
+
+        Creates a list of subfaults from the subfault specification file at
+        *path*.
+
+        column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
+                          "strike":5, "dip":6}
+
+        """
+
+        # Read in rest of data
+        data = numpy.loadtxt(path, skiprows=skiprows)
+
+        self.subfaults = []
+        for n in xrange(data.shape[0]):
+
+            new_subfault = SubFault()
+            new_subfault.coordinate_specification = coordinate_specification
+            new_subfault.rupture_type = rupture_type
+            new_subfault.t = numpy.array(t) 
+
+            for (var, column) in column_map.iteritems():
+                if isinstance(column, tuple) or isinstance(column, list):
+                    setattr(new_subfault, var, [None for k in column])
+                    for (k, index) in enumerate(column):
+                        getattr(new_subfault, var)[k] = data[n, index]
+                else:
+                    setattr(new_subfault, var, data[n, column])
+
+            self.subfaults.append(new_subfault)
 
 
     def __str__(self):
-        output = "Subfault Characteristics:\n"
+        output = "Fault Characteristics:\n"
         return output
 
 
-    def convert2meters(self): 
+    def convert2meters(self, parameters): 
         r"""Convert relevant lengths to correct units.
 
         Returns converted (dimensions, depth, slip) 
 
         """
-        dimensions = [0.0, 0.0]
-        depth = 0.0
-        slip = 0.0
 
         conversion_dict = {"km":1e3, "cm":1e-2, "nm":1852.0, "m":1.0}
+        converted_lengths = []
+        for (n, parameter) in enumerate(parameters):
+            if isinstance(getattr(self, parameter), list) or \
+               isinstance(getattr(self, parameter), tuple):
+                converted_lengths.append(list())
+                for k in xrange(len(getattr(self, parameter))):
+                    converted_lengths[n].append(getattr(self, parameter)[k] * conversion_dict[self.units[parameter]])
+            else:
+                converted_lengths.append(getattr(self, parameter) * conversion_dict[self.units[parameter]])
 
-        dimensions = None
-        depth = None
-        slip = None
-        if self.dimensions is not None:
-            dimensions = [self.dimensions[0] * conversion_dict[self.units["dimensions"]],
-                          self.dimensions[1] * conversion_dict[self.units["dimensions"]]]
-        if self.depth is not None:
-            depth = self.depth * conversion_dict[self.units["depth"]]
-        if self.slip is not None:
-            slip = self.slip * conversion_dict[self.units["slip"]]
-
-        return dimensions, depth, slip
+        return converted_lengths
 
 
     def Mw(self, mu=5e11):
-        r"""Calculate the effective moment magnitude of subfault."""
+        r"""Calculate the effective moment magnitude of all subfaults.
 
-        dimensions, depth, slip = self.convert2meters()
-        total_slip = dimensions[0] * dimensions[1] * slip
-        Mo = 0.1 * mu * total_slip
-        return 2.0 / 3.0 * (numpy.log10(Mo) - 9.0)
+        :TODO:
+         - Need to check that this does the right thing
 
+        """
 
-    def calculate_slip(self, Mw, mu=5e11):
-        r"""Set slip based on a moment magnitude *Mw*."""
-
-        Mo = 10.**(Mw * 3.0 / 2.0 + 9.1)
-
-        dimensions, depth, slip = self.convert2meters()
-        subfault_area = dimensions[0] * dimensions[1]
-        
-        self.slip = Mo / (0.1 * mu * subfault_area)
-
-        # Convert back to requested units
-        if self.units['slip'] == 'cm':
-            self.slip *= 1e2
-        elif self.units["slip"] == 'km':
-            self.slip *= 1e-3
+        total_Mw = 0.0
+        for subfault in self.subfaults:
+            total_Mw = subfault.Mw()
+        return total_Mw
 
 
     def containing_rect(self):
@@ -1515,6 +1506,422 @@ class SubFault(object):
         *fault_plane_centers* which are the corners of the fault plane and 
         points along the centerline respecitvely in 3D space.
 
+        Note that these are simply the largest containing rectangle and the
+        average location of the centers.  Really this should be overridden in a
+        subclass by a particular type of Fault.
+
+        """
+
+        # Attempt to find some enclosing rect of all subfaults
+        self._fault_plane_corners = [[None, None, None], # a 
+                                     [None, None, None], # b
+                                     [None, None, None], # c
+                                     [None, None, None]] # d
+        self._fault_plane_centers = [[None, None, None], # 1
+                                     [None, None, None], # 2 
+                                     [None, None, None]] # 3
+
+        raise NotImplemented("Geometry of non-specific fault not implemented.")
+
+
+    def create_coordinate_arrays(self, resolution=60, buffer_size=0.5):
+        r"""Create coordinate arrays containing subfault.
+
+        Input
+        -----
+         - *resolution* (int) - Number of grid points per degree.  Defaults to
+           1" resolution.
+         - *buffer_size* (float) - Buffer distance around edge of fault in 
+           degrees, defaults to 0.5 degrees.
+
+        """
+
+        rect = self.containing_rect()
+        rect[0] -= buffer_size
+        rect[1] += buffer_size
+        rect[2] -= buffer_size
+        rect[3] += buffer_size
+
+        self.delta = float(1.0 / resolution)
+        N = [int((rect[1] - rect[0]) * resolution),
+             int((rect[3] - rect[2]) * resolution)]
+
+        self._x = numpy.linspace(rect[0],rect[1],N[0])
+        self._y = numpy.linspace(rect[2],rect[3],N[1])
+
+
+    def create_2d_coordinate_arrays(self):
+        r"""Create 2d-coodrinate arrays."""
+        
+        self._X, self._Y = numpy.meshgrid(self.x, self.y)
+
+
+    def create_deformation_array(self):
+        r"""Create deformation array dZ.
+
+        Use subfaults' `create_deformation_array` routine and add all 
+        deformations together.
+
+        """
+
+        self._dZ = numpy.zeros(self.X.shape)
+        for subfault in self.subfaults:
+            subfault_dZ = subfault.create_deformation_array(domain=(self.x, self.y))
+            self._dZ += subfault_dZ
+
+        return self._dZ
+
+    def write(self, path, topo_type=None):
+        r"""Write out subfault characterization file to *path*.
+
+        input
+        -----
+         - *path* (path) - Path to the output file to written to.
+         - *topo_type* (int) - Type of topography file to write out.  Default is 1.
+
+        """
+
+        if topo_type is None:
+            # Try to look at suffix for type
+            extension = os.path.splitext(path)[1][1:]
+            if extension[:2] == "tt":
+                topo_type = int(extension[2])
+            elif extension == 'xyz':
+                topo_type = 1
+            else:
+                # Default to 3
+                topo_type = 3
+
+        if self.rupture_type != "static":
+            raise NotImplemented("Only the 'static' rupture type is supported.")
+
+        # Construct each interpolating function and evaluate at new grid
+        with open(path, 'w') as data_file:
+
+            if topo_type == 1:
+                # Topography file with 4 columns, t, x, y, dz written from the upper
+                # left corner of the region
+                Y_flipped = numpy.flipud(self.Y)
+                for (n, time) in enumerate(self.t):
+                    alpha = (time - self.t[0]) / self.t[-1]
+                    dZ_flipped = numpy.flipud(alpha * self.dZ[:,:])
+                    for j in xrange(self.Y.shape[0]):
+                        for i in xrange(self.X.shape[1]):
+                            data_file.write("%s %s %s %s\n" % (self.t[n], self.X[j,i], Y_flipped[j,i], dZ_flipped[j,i]))
+        
+            elif topo_type == 2 or topo_type == 3:
+                # Write out header
+                data_file.write("%7i       mx \n" % self.x.shape[0])
+                data_file.write("%7i       my \n" % self.y.shape[0])
+                data_file.write("%7i       mt \n" % self.t.shape[0])
+                data_file.write("%20.14e   xlower\n" % self.x[0])
+                data_file.write("%20.14e   ylower\n" % self.y[0])
+                data_file.write("%20.14e   t0\n" % self.t[0])
+                data_file.write("%20.14e   dx\n" % self.delta)
+                data_file.write("%20.14e   dy\n" % self.delta)
+                data_file.write("%20.14e   dt\n" % float(self.t[1] - self.t[0]))
+
+                if topo_type == 2:
+                    raise ValueError("Topography type 2 is not yet supported.")
+                elif topo_type == 3:
+                    for (n, time) in enumerate(self.t):
+                        alpha = (time - self.t[0]) / (self.t[-1])
+                        for j in range(self.Y.shape[0]-1, -1, -1):
+                            data_file.write(self.X.shape[1] * '%012.6e  ' 
+                                                  % tuple(alpha * self.dZ[j,:]))
+                            data_file.write("\n")
+
+            else:
+                raise ValueError("Only topography types 1, 2, and 3 are supported.")
+
+
+    def plot(self, axes=None, region_extent=None, contours=None, 
+                   coastlines=None, limits=None, cmap=None):
+        r"""Plot subfault deformation.
+
+
+        Input
+        -----
+         - *axes* (`matplotlib.axes.Axes`) -
+         - *region_extent* (list) - 
+         - *contours* (list) -
+         - *coastlines* (path) -
+         - *limits* (list) -
+         - *cmap* (`matplotlib.colors.Colormap`) -
+
+        Output
+        ------
+         - *axes* (`matplotlib.axes.Axes`) - Axes used for plot, either
+           this is created in this method if the input argument *axes* is None
+           or the same object is passed back.
+
+        """
+
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
+        import clawpack.visclaw.colormaps as colormaps
+        
+        # Create axes object if needed
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(1,1,1)
+
+        # Calculate plot extent and limits if not provided
+        if region_extent is None:
+            region_extent = ( numpy.min(self.x), numpy.max(self.x),
+                              numpy.min(self.y), numpy.max(self.y) )
+        if limits is None:
+            depth_extent = [numpy.min(self.dZ),numpy.max(self.dZ)]
+        else:
+            depth_extent = limits
+
+        # Setup axes labels, ticks and aspect
+        axes.ticklabel_format(format="plain", useOffset=False)
+        mean_lat = 0.5 * (region_extent[3] - region_extent[2])
+        axes.set_aspect(1.0 / cos(numpy.pi / 180.0 * mean_lat))
+        axes.set_title("Subfault Deformation")
+        axes.set_xlabel("Longitude")
+        axes.set_ylabel("Latitude")
+
+        # Colormap and color norm
+        if cmap is None:
+            if depth_extent[0] >= 0.0:
+                cmap = colormaps.make_colormap({0.0:'w', 1.0:'r'})
+                extend = 'top'
+            elif depth_extent[1] <= 0.0:
+                cmap = colormaps.make_colormap({0.0:'b', 1.0:'w'})
+                extend = 'bottom'
+            else:
+                cmap = colormaps.make_colormap({0.0:'b', 0.5:'w', 1.0:'r'})
+                extend = 'both'
+        # Equalize color extents
+        if depth_extent[0] >= 0.0:
+            depth_extent[0] = 0.0
+        elif depth_extent[1] <= 0.0:
+            depth_extent[1] = 0.0
+        else:
+            depth_extent[1] = max(-depth_extent[0], depth_extent[1])
+            depth_extent[0] = -depth_extent[1]
+        color_norm = colors.Normalize(depth_extent[0], depth_extent[1], clip=True)
+
+        # Plot data
+        if contours is not None:
+            plot = axes.contourf(self.x, self.y, self.dZ, contours, cmap=cmap,
+                                 extend=extend)
+        else:
+            plot = axes.imshow(numpy.flipud(self.dZ), vmin=depth_extent[0], 
+                                                      vmax=depth_extent[1],
+                                                      extent=region_extent,
+                                                      cmap=cmap,
+                                                      norm=color_norm)
+
+        cbar = plt.colorbar(plot, ax=axes)
+        cbar.set_label("Deformation (m)")
+
+        # Plot coastlines
+        if coastlines is not None:
+            coastline_data = topotools.Topography(coastlines)
+            axes.contour(coastline_data.X, coastline_data.Y, 
+                         coastline_data.Z, levels=[0.0],colors='r')
+
+        axes.set_xlim(region_extent[0:2])
+        axes.set_ylim(region_extent[2:])
+
+        return axes
+
+
+    def plot_fault_rect(self, axes=None, color='r', markerstyle="o", 
+                                         linestyle='-'):
+        r"""Plot fault rectangle.
+
+        Input
+        -----
+         - *axes* (`matplotlib.axes.Axes`) - 
+
+        Output
+        ------
+         - (`matplotlib.axes.Axes`) - 
+
+        """
+
+        import matplotlib.pyplot as plt
+        
+        # Create axes object if needed
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(1,1,1)
+
+        # Plot corners
+        style = color + markerstyle
+        for (n,corner) in enumerate(self.fault_plane_corners):
+            axes.plot(corner[0], corner[1], style)
+            axes.text(corner[0], corner[1], str(n+1))
+
+        # Plot edges
+        style = color + linestyle
+        edges = []
+        for edge in xrange(len(self.fault_plane_corners) - 1):
+            edges.append([self.fault_plane_corners[edge][:2], 
+                          self.fault_plane_corners[edge+1][:2]])
+        edges.append([self.fault_plane_corners[-1][:2], 
+                      self.fault_plane_corners[0][:2]])
+        for edge in edges:
+            axes.plot([edge[0][0], edge[1][0]], [edge[0][1], edge[1][1]], style)
+
+        return axes
+
+
+    def plot_contours(self, axes=None, dz_interval=0.5):
+        r"""Plot sea-floor deformation contours
+
+        """
+
+        dzmax = numpy.max(self.dZ.max(), -self.dZ.min()) + dz_interval
+        clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
+        clines = list(-numpy.flipud(clines1)) + list(clines1)
+
+        self.plot(axes=axes, contours=clines)
+
+    def plot_seafloor(self, axes=None, cmax_dz=None, dz_interval=None):
+        r"""Plot sea floor deformation dtopo as colormap
+        
+        """
+
+        self.plot(axes=axes)
+
+
+
+# ==============================================================================
+#  Sub-Fault Class 
+# ==============================================================================
+class SubFault(Fault):
+
+    r"""Class representing a single subfault.
+
+    :TODO:
+     - Support something other than lat-long
+     - Provide plots (and other plot types)
+     - Provide detailed documentation
+
+
+    Subfault Parameters
+    -------------------
+     - *dimensions* (list) - Dimensions of the fault plane.
+     - *coordinates* (list) - Longitude-latitude of some point on the fault 
+       plane.  Point is specified by *coordinate_specification*.
+     - *coordinate_specification* (string) - Specifies location relative to the
+       fault of the *coordinates* values.  Valid options include "top center",
+       "bottom center", and "centroid".
+     - *depth* (float) - Depth of the specified point below the sea-floor.
+     - *strike* (float) - Orientation of the top edge, measured in degrees 
+       clockwise from North.  Between 0 and 360. The fault plane dips downward 
+       to the right when moving along the top edge in the strike direction.
+     - *dip* (float) - Angle at which the plane dips downward from the top edge,
+       a positive angle between 0 and 90 degrees.
+     - *rake* (float) - Angle in the fault plane in which the slip occurs,
+       measured in degrees counterclockwise from the strike direction. Between 
+       -180 and 180.
+     - *slip* (float) Positive distance the hanging block moves relative to the 
+       foot block in the direction specified by the rake. The "hanging block" is
+       the one above the dipping fault plane (or to the right if you move in the 
+       strike direction).
+
+    Attributes
+    ----------
+     - *units* (dict) - Dictionary containing unit specifications for the 
+       *coordinates*, *dimenstions*, *slip*, and *depth* subfault parameters.  
+       Defaults to "lat-long", "m", "m", "m" respectively.
+
+    Properties
+    ----------
+     :Note: All properties are in meters and do not match the units dictionary.
+
+    """
+
+    def __init__(self, path=None, units={}):
+        r"""SubFault initialization routine.
+        
+        See :class:`SubFault` for more info.
+
+        """
+
+        super(SubFault, self).__init__()
+
+        # Parameters for subfault specification
+        self.coordinates = [] # longitude, latitude
+        self.coordinate_specification = 'centroid' # 'centroid', 'top center', 'epicenter'
+        self.dimensions = [0.0, 0.0] # [length, width]
+        self.rake = None
+        self.strike = None
+        self.dip = None
+        self.depth = None
+        self.slip = None
+        self.mu = 5e11
+        self.t = numpy.array([0.0, 5.0, 10.0])
+
+        # Default units of each parameter type
+        self.units = {'coordinates':'lat-long', 'dimensions':'m', 'slip':'m',
+                      'depth':"km", "mu":"dyne/cm^2"}
+        self.units.update(units)
+
+        # Read in file at path if provided
+        if path is not None:
+            self.read(path)
+
+
+    def __str__(self):
+        output = "Subfault Characteristics:\n"
+        output += "  Coordinates: %s (%s)\n" % (self.coordinates, self.coordinate_specification)
+        output += "  Dimensions (L,W): %s %s\n" % (self.dimensions, self.units['dimensions'])
+        output += "  Depth: %s %s\n" % (self.depth, self.units["depth"])
+        output += "  Rake, Strike, Dip: %s, %s, %s\n" % (self.rake, self.strike, self.dip)
+        output += "  Slip, Mw: %s %s, %s\n" % (self.slip, self.units['slip'], self.Mw())
+        return output
+
+
+    def Mw(self):
+        r"""Calculate the effective moment magnitude of subfault."""
+        
+        if self.units["mu"] == "dyne/cm^2":
+            mu = self.mu
+        elif self.units["mu"] == 'dyne/m^2':
+            mu = self.mu / 1e2**2
+        else:
+            raise ValueError("Unknown unit for rigidity %s." % self.units['mu'])
+
+        dimensions, slip = self.convert2meters(["dimensions", "slip"])
+        total_slip = dimensions[0] * dimensions[1] * slip
+        Mo = 0.1 * mu * total_slip
+        return 2.0 / 3.0 * (numpy.log10(Mo) - 9.0)
+
+
+    def calculate_slip(self, Mw, mu=5e11):
+        r"""Set slip based on a moment magnitude *Mw*."""
+
+        if self.units["mu"] == "dyne/cm^2":
+            mu = self.mu * 100.0**2
+
+        Mo = 10.**(Mw * 3.0 / 2.0 + 9.1)
+
+        dimensions = self.convert2meters("dimensions")
+        subfault_area = dimensions[0] * dimensions[1]
+        
+        self.slip = Mo / (0.1 * mu * subfault_area)
+
+        # Convert back to requested units
+        if self.units['slip'] == 'cm':
+            self.slip *= 1e2
+        elif self.units["slip"] == 'km':
+            self.slip *= 1e-3
+
+
+    def calculate_geometry(self):
+        r"""Calculate the fault geometry.
+
+        Routine calculates the class attributes *fault_plane_corners* and 
+        *fault_plane_centers* which are the corners of the fault plane and 
+        points along the centerline respecitvely in 3D space.
+
         """
 
         # Simple conversion factor of latitude to meters
@@ -1530,7 +1937,7 @@ class SubFault(object):
                                      [None, None, None]] # 3
 
         # Convert values to meters
-        dimensions, depth, slip = self.convert2meters()
+        dimensions, depth = self.convert2meters(["dimensions", "slip"])
 
         # Depths (in meters)
         if self.coordinate_specification == 'top center':
@@ -1675,12 +2082,7 @@ class SubFault(object):
         self._y = numpy.linspace(rect[2],rect[3],N[1])
 
 
-    def create_2d_coordinate_arrays(self):
-        r"""Create 2d-coodrinate arrays."""
-        self._X, self._Y = numpy.meshgrid(self.x, self.y)
-
-
-    def create_deformation_array(self):
+    def create_deformation_array(self, domain=None):
         r"""Create deformation array dZ.
 
         Use Okada model to calculate deformation from subfault parameters 
@@ -1689,8 +2091,7 @@ class SubFault(object):
         Currently only calculates the vertical displacement.
 
         """
-        import pdb; pdb.set_trace()
-        dimensions, depth, slip = self.convert2meters()
+        dimensions, depth, slip = self.convert2meters(["dimensions", "depth", "slip"])
 
         # Construct dictionary that okadamap is looking for
         okada_params = {}
@@ -1704,223 +2105,14 @@ class SubFault(object):
         okada_params["longitude"] = self.coordinates[0]
         okada_params["latitude"] = self.coordinates[1]
         okada_params["latlong_location"] = self.coordinate_specification
+        
         self._dZ = okadamap(okada_params, self.x, self.y)
 
-
-    def write(self, path, topo_type=None):
-        r"""Write out subfault characterization file to *path*.
-
-        input
-        -----
-         - *path* (path) - Path to the output file to written to.
-         - *topo_type* (int) - Type of topography file to write out.  Default is 1.
-
-        """
-
-        if topo_type is None:
-            # Try to look at suffix for type
-            extension = os.path.splitext(path)[1][1:]
-            if extension[:2] == "tt":
-                topo_type = int(extension[2])
-            elif extension == 'xyz':
-                topo_type = 1
-            else:
-                # Default to 3
-                topo_type = 3
-
-        if self.rupture_type != "static":
-            raise NotImplemented("Only the 'static' rupture type is supported.")
-
-        # Construct each interpolating function and evaluate at new grid
-        with open(path, 'w') as data_file:
-
-            if topo_type == 1:
-                # Topography file with 4 columns, t, x, y, dz written from the upper
-                # left corner of the region
-                Y_flipped = numpy.flipud(self.Y)
-                for (n, time) in enumerate(self.t):
-                    alpha = (time - self.t[0]) / self.t[-1]
-                    dZ_flipped = numpy.flipud(alpha * self.dZ[:,:])
-                    for j in xrange(self.Y.shape[0]):
-                        for i in xrange(self.X.shape[1]):
-                            data_file.write("%s %s %s %s\n" % (self.t[n], self.X[j,i], Y_flipped[j,i], dZ_flipped[j,i]))
-        
-            elif topo_type == 2 or topo_type == 3:
-                # Write out header
-                data_file.write("%7i       mx \n" % self.x.shape[0])
-                data_file.write("%7i       my \n" % self.y.shape[0])
-                data_file.write("%7i       mt \n" % self.t.shape[0])
-                data_file.write("%20.14e   xlower\n" % self.x[0])
-                data_file.write("%20.14e   ylower\n" % self.y[0])
-                data_file.write("%20.14e   t0\n" % self.t[0])
-                data_file.write("%20.14e   dx\n" % self.delta)
-                data_file.write("%20.14e   dy\n" % self.delta)
-                data_file.write("%20.14e   dt\n" % float(self.t[1] - self.t[0]))
-
-                if topo_type == 2:
-                    raise ValueError("Topography type 2 is not yet supported.")
-                elif topo_type == 3:
-                    for (n, time) in enumerate(self.t):
-                        alpha = (time - self.t[0]) / (self.t[-1])
-                        for j in range(self.Y.shape[0]-1, -1, -1):
-                            data_file.write(self.X.shape[1] * '%012.6e  ' 
-                                                  % tuple(alpha * self.dZ[j,:]))
-                            data_file.write("\n")
-
-            else:
-                raise ValueError("Only topography types 1, 2, and 3 are supported.")
-
-
-    def read(self, path, file_type="usgs"):
-        r"""Read in subfault specification from file at *path*
-
-        :File Types:
-         - USGS Sub-Fault Specification *USGS*.
-         - Comma seperated values *CSV*.
-         - Topography file *TOPOx* where *x* is the type of topography file.
-
-        :Input:
-         - *path* (path) - Path to subfault specification.
-         - *file_type* (string) - String describing type of subfault 
-           specification.  Default is "USGS".
-
-        """
-
-        raise NotImplemented("Subfault file reading not implemented yet.")
-
-
-    def plot(self, axes=None, region_extent=None, contours=None, 
-                   coastlines=None, limits=None, cmap=None):
-        r"""Plot subfault deformation.
-
-
-        Input
-        -----
-         - *axes* (`matplotlib.axes.Axes`) -
-         - *region_extent* (list) - 
-         - *contours* (list) -
-         - *coastlines* (path) -
-         - *limits* (list) -
-         - *cmap* (`matplotlib.colors.Colormap`) -
-
-        Output
-        ------
-         - *axes* (`matplotlib.axes.Axes`) - Axes used for plot, either
-           this is created in this method if the input argument *axes* is None
-           or the same object is passed back.
-
-        """
-
-        import matplotlib.pyplot as plt
-        import matplotlib.colors as colors
-        import clawpack.visclaw.colormaps as colormaps
-        
-        # Create axes object if needed
-        if axes is None:
-            fig = plt.figure()
-            axes = fig.add_subplot(1,1,1)
-
-        # Calculate plot extent and limits if not provided
-        if region_extent is None:
-            region_extent = ( numpy.min(self.x), numpy.max(self.x),
-                              numpy.min(self.y), numpy.max(self.y) )
-        if limits is None:
-            depth_extent = [numpy.min(self.dZ),numpy.max(self.dZ)]
+        # Calculate fault on different domain if requested
+        if domain is not None:
+            return okadamap(okada_params, domain[0], domain[1])
         else:
-            depth_extent = limits
-
-        # Setup axes labels, ticks and aspect
-        axes.ticklabel_format(format="plain", useOffset=False)
-        mean_lat = 0.5 * (region_extent[3] - region_extent[2])
-        axes.set_aspect(1.0 / cos(numpy.pi / 180.0 * mean_lat))
-        axes.set_title("Subfault Deformation")
-        axes.set_xlabel("Longitude")
-        axes.set_ylabel("Latitude")
-
-        # Colormap and color norm
-        if cmap is None:
-            if depth_extent[0] >= 0.0:
-                cmap = colormaps.make_colormap({0.0:'w', 1.0:'r'})
-                extend = 'top'
-            elif depth_extent[1] <= 0.0:
-                cmap = colormaps.make_colormap({0.0:'b', 1.0:'w'})
-                extend = 'bottom'
-            else:
-                cmap = colormaps.make_colormap({0.0:'b', 0.5:'w', 1.0:'r'})
-                extend = 'both'
-        # Equalize color extents
-        if depth_extent[0] >= 0.0:
-            depth_extent[0] = 0.0
-        elif depth_extent[1] <= 0.0:
-            depth_extent[1] = 0.0
-        else:
-            depth_extent[1] = max(-depth_extent[0], depth_extent[1])
-            depth_extent[0] = -depth_extent[1]
-        color_norm = colors.Normalize(depth_extent[0], depth_extent[1], clip=True)
-
-        # Plot data
-        if contours is not None:
-            plot = axes.contourf(self.x, self.y, self.dZ, contours, cmap=cmap,
-                                 extend=extend)
-        else:
-            plot = axes.imshow(numpy.flipud(self.dZ), vmin=depth_extent[0], 
-                                                      vmax=depth_extent[1],
-                                                      extent=region_extent,
-                                                      cmap=cmap,
-                                                      norm=color_norm)
-
-        cbar = plt.colorbar(plot, ax=axes)
-        cbar.set_label("Deformation (m)")
-
-        # Plot coastlines
-        if coastlines is not None:
-            coastline_data = Topography(coastlines)
-            axes.contour(coastline_data.X, coastline_data.Y, 
-                         coastline_data.Z, levels=[0.0],colors='r')
-
-        axes.set_xlim(region_extent[0:2])
-        axes.set_ylim(region_extent[2:])
-
-        return axes
-
-
-    def plot_fault_rect(self, axes=None, color='r', markerstyle="o", 
-                                         linestyle='-'):
-        r"""Plot fault rectangle.
-
-        Input
-        -----
-         - *axes* (`matplotlib.axes.Axes`) - 
-
-        Output
-        ------
-         - (`matplotlib.axes.Axes`) - 
-
-        """
-        
-        # Create axes object if needed
-        if axes is None:
-            fig = plt.figure()
-            axes = fig.add_subplot(1,1,1)
-
-        # Plot corners
-        style = color + markerstyle
-        for (n,corner) in enumerate(self.fault_plane_corners):
-            axes.plot(corner[0], corner[1], style)
-            axes.text(corner[0], corner[1], str(n+1))
-
-        # Plot edges
-        style = color + linestyle
-        edges = []
-        for edge in xrange(len(self.fault_plane_corners) - 1):
-            edges.append([self.fault_plane_corners[edge][:2], 
-                          self.fault_plane_corners[edge+1][:2]])
-        edges.append([self.fault_plane_corners[-1][:2], 
-                      self.fault_plane_corners[0][:2]])
-        for edge in edges:
-            axes.plot([edge[0][0], edge[1][0]], [edge[0][1], edge[1][1]], style)
-
-        return axes
+            return self._dZ
 
 
     def plot_rake(self, axes=None, color='r', markerstyle="o", linestyle='-'):
@@ -1965,102 +2157,6 @@ class SubFault(object):
         raise NotImplemented("Subfault depth plots not implemented.")
 
 
-    def plot_contours(self, axes=None, dz_interval=0.5):
-        r"""Plot sea-floor deformation contours
-
-        """
-
-        dzmax = numpy.max(self.dZ.max(), -self.dZ.min()) + dz_interval
-        clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
-        clines = list(-np.flipud(clines1)) + list(clines1)
-
-        self.plot(axes=axes, contours=clines)
-
-    def plot_seafloor(self, axes=None, cmax_dz=None, dz_interval=None):
-        r"""Plot sea floor deformation dtopo as colormap
-        
-        """
-
-        self.plot(axes=axes)
-
-
-
-class Fault(object):
-
-    r"""Basic object for representing a fault composed of many subfaults.
-
-    """
-
-    def __init__(self, path=None, subfaults=None):
-        r"""Fault initialization routine.
-        
-        See :class:`Fault` for more info.
-
-        """
-
-        super(Fault, self).__init__()
-
-        self.subfaults = subfaults
-        
-        if path is not None:
-            # Read in file at path assuming it is a subfault specification
-            self.read(path)
-        elif subfaults is not None:
-            if not isinstance(subfaults, list):
-                raise ValueError("Input parameter subfaults must be a list.")
-        else:
-            raise ValueError("Must provide either a path to a subfault ",
-                             "specification or a list of subfault objects.")
-
-
-    def read(self, path, column_map, coordinate_specification="centroid",
-                         rupture_type="static", t=[0.0, 0.5, 1.0]):
-        r"""Read in subfault specification at *path*.
-
-        Creates a list of subfaults from the subfault specification file at
-        *path*.
-
-        column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
-                          "strike":5, "dip":6}
-
-        """
-
-        # Read in rest of data
-        data = numpy.loadtxt(path, skiprows=skiprows)
-
-        self.subfaults = []
-        for n in xrange(data.shape[0]):
-
-            new_subfault = SubFault()
-            new_subfault.coordinate_specification = coordinate_specification
-            new_subfault.rupture_type = rupture_type
-            new_subfault.t = numpy.array(t) 
-            
-            for (var, column) in column_map.iteritems():
-                if isinstance(column, tuple) or isinstance(column, list):
-                    for (k, index) in enumerate(column):
-                        getattr(new_subfault, var)[k] = data[n, index]
-                else:
-                    setattr(new_subfault, var, data[n, column])
-
-            self.subfaults.append(new_subfault)
-
-
-    def write(self, path, topo_type=3):
-        r"""Write out a dtopo file created by the combination of all subfaults
-
-        """
-
-        raise NotImplemented("Writing of a compound fault not implemneted yet.")
-
-        if topo_type == 1:
-            pass
-        elif topo_type in [2,3]:
-            pass
-        else:
-            raise ValueError("Unknown topography output type %s." % topo_type)
-
-
 class UCSBFault(Fault):
 
     r"""Fault subclass for reading in subfault format models from UCSB
@@ -2071,6 +2167,16 @@ class UCSBFault(Fault):
         http://www.geol.ucsb.edu/faculty/ji/big_earthquakes/home.html
 
     """
+
+    def __init__(self, path=None):
+        r"""UCSBFault initialization routine.
+        
+        See :class:`UCSBFault` for more info.
+
+        """
+
+        super(UCSBFault, self).__init__(path=path)
+
 
     def read(self, path):
         r"""Read in subfault specification at *path*.
@@ -2085,34 +2191,89 @@ class UCSBFault(Fault):
         regexp_dy = re.compile(r"Dy=[ ]*(?P<dy>[^k]*)")
         regexp_nx = re.compile(r"nx[^=]*=[ ]*(?P<nx>[^D]*)")
         regexp_ny = re.compile(r"ny[^=]*=[ ]*(?P<ny>[^D]*)")
-        found_data = False
+        found_subfault_discretization = False
+        found_subfault_boundary = False
+        header_lines = 0
         with open(path, 'r') as subfault_file:
-            for line in subfault_file:
+            # Find fault secgment discretization
+            for (n,line) in enumerate(subfault_file):
                 result_dx = regexp_dx.search(line)
                 result_dy = regexp_dy.search(line)
                 result_nx = regexp_nx.search(line)
                 result_ny = regexp_ny.search(line)
 
                 if result_dx and result_dy:
-                    i_dxdy = i
                     dx = float(result_dx.group('dx'))
                     dy = float(result_dy.group('dy'))
                     nx = int(result_nx.group('nx'))
                     ny = int(result_ny.group('ny'))
-                    found_data = True
+                    found_subfault_discretization = True
                     break
-        if not found_data:
+            header_lines += n
+
+            # Parse boundary
+            in_boundary_block = False
+            boundary_data = []
+            for (n,line) in enumerate(subfault_file):
+                if line[0].strip() == "#":
+                    if in_boundary_block and len(boundary_data) == 5:
+                        found_subfault_boundary = True
+                        break
+                else:
+                    in_boundary_block = True
+                    boundary_data.append([float(value) for value in line.split()])
+
+        # Assume that there is a column label right underneath the boundary
+        # specification
+        header_lines += n + 1
+
+        # Check to make sure last boundary point matches, then throw away
+        if boundary_data[0] != boundary_data[4]:
+            raise ValueError("Boundary specified incomplete: ",
+                             "%s" % boundary_data)
+
+        # Locate fault plane in 3D space - see SubFault `calculate_geometry` for
+        # a schematic of where these points are
+        self._fault_plane_corners = [None, # a 
+                                     None, # b
+                                     None, # c
+                                     None] # d
+        self._fault_plane_centers = [[0.0, 0.0, 0.0], # 1
+                                     [0.0, 0.0, 0.0], # 2 
+                                     [0.0, 0.0, 0.0]] # 3
+        # :TODO: Is the order of this a good assumption?
+        self._fault_plane_corners[0] = boundary_data[0]
+        self._fault_plane_corners[3] = boundary_data[1]
+        self._fault_plane_corners[2] = boundary_data[2]
+        self._fault_plane_corners[1] = boundary_data[3]
+        
+        # Calculate center by averaging position of appropriate corners
+        for (n, corner) in enumerate(self._fault_plane_corners):
+            for i in xrange(3):
+                self._fault_plane_centers[1][i] += corner[i] / 4
+            if n == 0 or n == 4:
+                for i in xrange(3):
+                    self._fault_plane_centers[0][i] += corner[i] / 2
+            else:
+                for i in xrange(3):
+                    self._fault_plane_centers[2][i] += corner[i] / 2
+
+
+        if not (found_subfault_boundary and found_subfault_discretization):
             raise ValueError("Could not find base fault characteristics in ",
                              "subfault specification file at %s." % path)
 
-        column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
-                      "strike":5, "dip":6}
+        # Calculate center of fault
 
-        super(UCSBFault, self).read(path, column_map=column_map, units={})
+        column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
+                      "strike":5, "dip":6, 'mu':10}
+
+        super(UCSBFault, self).read(path, column_map, skiprows=header_lines)
 
         # Set general data
-        for fault in self.subfaults:
-            fault.dimensions = [dx, dy]
+        for subfault in self.subfaults:
+            subfault.dimensions = [dx*2, dy*2]
+            subfault.units.update({"slip":"m", "depth":"km", 'mu':"dyne/cm^2"})
 
 
 
@@ -2146,3 +2307,18 @@ class CSVFault(Fault):
 
         super(CSVFault, self).read(path, column_map=column_map, units={})
 
+
+def test_Fault_class():
+    pass
+
+def test_UCSB_fault():
+    pass
+
+def test_CSV_fault():
+    pass
+
+def test_subfault():
+    pass
+
+if __name__ == "__main__":
+    pass
