@@ -449,11 +449,14 @@ class Topography(object):
             else:
                 # All other topography types should have equally spaced grid
                 # points in each direction
-                self._delta = [self.x[1] - self.x[0], self.y[1] - self.y[0]]
-                check_delta = [self.x[-2] - self.x[-1], self.y[-2] - self.y[-1]]
-                assert self._delta[0] == check_delta,                  \
+                begin_delta = [abs(self.x[1] - self.x[0]), 
+                               abs(self.y[1] - self.y[0])]
+                end_delta =   [abs(self.x[-2] - self.x[-1]), 
+                               abs(self.y[-2] - self.y[-1])]
+                assert begin_delta == end_delta,                  \
                        "Grid spacing delta not constant, %s != %s." %  \
-                       (self._delta, check_delta)
+                       (begin_delta, end_delta)
+                self._delta = begin_delta[0] 
         return self._delta
 
 
@@ -478,31 +481,33 @@ class Topography(object):
                                  "file or a generator function.")
 
             # Do nothing for right now, wait until user fills in data
-        if topo_type is not None:
-            self.topo_type = topo_type
         else:
-            # Try to look at suffix for type
-            extension = os.path.splitext(path)[1][1:]
-            if extension[:2] == "tt":
-                self.topo_type = int(extension[2])
-            elif extension == 'xyz':
-                self.topo_type = 1
-            elif extension == 'asc':
-                self.topo_type = 3
+            if topo_type is not None:
+                self.topo_type = topo_type
             else:
-                # Default to 3
-                self.topo_type = 3
+                # Try to look at suffix for type
+                extension = os.path.splitext(path)[1][1:]
+                if extension[:2] == "tt":
+                    self.topo_type = int(extension[2])
+                elif extension == 'xyz':
+                    self.topo_type = 1
+                elif extension == 'asc':
+                    self.topo_type = 3
+                else:
+                    # Default to 3
+                    self.topo_type = 3
+
+            # Check if the path is a URL and fetch data if needed or forced
+            if "http" in self.path:
+                new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
+                if not os.path.exists(new_path) or force:
+                    urllib.urlretrieve(self.path)
+
+                # Change path to be local
+                self.path = new_path
+
         self.unstructured = unstructured
         self.no_data_value = -9999
-
-        # Check if the path is a URL and fetch data if needed or forced
-        if "http" in self.path:
-            new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
-            if not os.path.exists(new_path) or force:
-                urllib.urlretrieve(self.path)
-
-            # Change path to be local
-            self.path = new_path
 
         # Data storage for only calculating array shapes when needed
         self._z = None
