@@ -56,7 +56,11 @@ def regions2kml(fname='regions.kml'):
 
     amr_levels_max = rundata.amrdata.amr_levels_max
     refinement_ratios_y = rundata.amrdata.refinement_ratios_y
-    dy_levels = amr_levels_max * [dy]
+    num_ref_ratios = len(refinement_ratios_y)
+    if amr_levels_max > num_ref_ratios+1:
+        raise IOError("*** Too few refinement ratios specified for " \
+            + "amr_levels_max = %i" % amr_levels_max)
+    dy_levels = (num_ref_ratios+1) * [dy]
     for k,r in enumerate(refinement_ratios_y):
         level = k+2
         dy = dy_levels[k] / r
@@ -68,7 +72,7 @@ def regions2kml(fname='regions.kml'):
         print levtext
         description = description + levtext
 
-    print "+++ dy_levels: ", dy_levels
+    print "Allowing maximum of %i levels" % amr_levels_max
 
     elev = 0.
     kml_text = kml_header()
@@ -113,13 +117,14 @@ def regions2kml(fname='regions.kml'):
             + "  t1 = %g, t2 = %g\n" % (t1,t2) \
             + "  x1 = %g, x2 = %g\n" % (x1,x2) \
             + "  y1 = %g, y2 = %g\n\n" % (y1,y2) 
-        dy = dy_levels[minlevel-1]
-        dy_deg,dy_min,dy_sec = deg2dms(dy)
-        dy_meters = dy*111e3
-        levtext = "Level %s resolution:  \ndy = %g deg, %g min, %g sec \n= %g meters\n" \
-                % (minlevel,dy_deg,dy_min,dy_sec,dy_meters)
-        description = description + levtext
-        if maxlevel > minlevel:
+        if len(dy_levels) >= minlevel:
+            dy = dy_levels[minlevel-1]
+            dy_deg,dy_min,dy_sec = deg2dms(dy)
+            dy_meters = dy*111e3
+            levtext = "Level %s resolution:  \ndy = %g deg, %g min, %g sec \n= %g meters\n" \
+                    % (minlevel,dy_deg,dy_min,dy_sec,dy_meters)
+            description = description + levtext
+        if (maxlevel > minlevel) and (len(dy_levels) >= maxlevel):
             dy = dy_levels[maxlevel-1]
             dy_deg,dy_min,dy_sec = deg2dms(dy)
             dy_meters = dy*111e3
@@ -171,6 +176,57 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000'):
     print "Created ",fname
         
 
+def gauges2kml(fname='gauges.kml'):
+
+    """
+    Read in the gauge locations from setrun.py and create a kml point for each.
+    """
+
+    try:
+        import setrun
+        reload(setrun)
+        rundata = setrun.setrun()
+    except:
+        raise IOError("*** cannot execute setrun file")
+
+
+    elev = 0.
+    kml_text = kml_header()
+    
+
+    gauges = rundata.gaugedata.gauges
+    if len(gauges)==0:
+        print "No gauges found in setrun.py"
+
+
+    for rnum,gauge in enumerate(gauges):
+        t1,t2 = gauge[3:5]
+        x1,y1 = gauge[1:3]
+        gaugeno = gauge[0]
+        print "Gauge %i: %10.6f  %10.6f  \n" % (gaugeno,x1,y1) \
+                + "  t1 = %10.1f,  t2 = %10.1f" % (t1,t2)
+        mapping = {}
+        mapping['gaugeno'] = gaugeno
+        mapping['t1'] = t1
+        mapping['t2'] = t2
+        mapping['x1'] = x1
+        mapping['y1'] = y1
+        mapping['elev'] = elev
+        mapping['name'] = 'Gauge %i' % rnum
+        description = "  t1 = %g, t2 = %g\n" % (t1,t2) \
+            + "  x1 = %g, y1 = %g\n" % (x1,y1)
+        mapping['desc'] = description
+
+        gauge_text = kml_gauge(mapping)
+        kml_text = kml_text + gauge_text
+    kml_text = kml_text + kml_footer()
+    kml_file = open(fname,'w')
+    kml_file.write(kml_text)
+    kml_file.close()
+    print "Created ",fname
+        
+
+
 def kml_header():
     """
     Color is a BGR hex string used to set color of lines.
@@ -218,6 +274,25 @@ def kml_region(mapping):
 {region:s}
 </coordinates></LinearRing></outerBoundaryIs>
 </Polygon>
+</Placemark>
+""".format(**mapping)
+
+    return kml_text
+
+def kml_gauge(mapping):
+    gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
+    
+    mapping['gauge'] = gauge_text
+
+    kml_text = """
+<Placemark><name>Gauge {gaugeno:d}</name>
+<description>{desc:s}</description>
+<styleUrl>#markerstyle</styleUrl>
+<Point>
+<coordinates>
+{gauge:s}
+</coordinates>
+</Point>
 </Placemark>
 """.format(**mapping)
 
