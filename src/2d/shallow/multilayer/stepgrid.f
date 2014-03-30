@@ -26,37 +26,35 @@ c      This version of stepgrid, stepgrid_geo.f allows output on
 c      fixed grids specified in setfixedgrids.data
 c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-      use geoclaw_module
       use amr_module
+
+      use geoclaw_module, only: grav
+      use multilayer_module, only: num_layers, dry_tolerance, rho
+      
       use fixedgrids_module
+
       implicit double precision (a-h,o-z)
 
       external rpn2,rpt2
 
-      common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
-      parameter (msize=max1d+4)
-      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
+c      parameter (msize=max1d+4)
+c      parameter (mwork=msize*(maxvar*maxvar + 13*maxvar + 3*maxaux +2))
 
       dimension q(nvar,mitot,mjtot)
       dimension fp(nvar,mitot,mjtot),gp(nvar,mitot,mjtot)
       dimension fm(nvar,mitot,mjtot),gm(nvar,mitot,mjtot)
       dimension aux(maux,mitot,mjtot)
-      dimension work(mwork)
+c      dimension work(mwork)
 
-      logical    debug,  dump
-      data       debug/.false./,  dump/.false./
+      logical :: debug = .false.
+      logical :: dump = .false.
 c
-c     # set tcom = time.  This is in the common block comxyt that could
-c     # be included in the Riemann solver, for example, if t is explicitly
-c     # needed there.
-
-      tcom = time
       
       level = node(nestlevel,mptr)
 
       if (dump) then
-         write(*,*)" dumping grid ",mptr
+         write(outunit,*)" at start of stepgrid: dumping grid ",mptr
          do i = 1, mitot
          do j = 1, mjtot
             write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar)
@@ -158,9 +156,9 @@ c               # test if arrival times should be output
 !$OMP END CRITICAL (FixedGrids)
 c::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-       call b4step2(mx,my,mbc,mx,my,nvar,q,
+       call b4step2(mbc,mx,my,nvar,q,
      &             xlowmbc,ylowmbc,dx,dy,time,dt,maux,aux)
-
+      
 c::::::::::::::::::::::::FIXED GRID DATA before step:::::::::::::::::::::::
 c     # fill in values at fixed grid points effected at time tc0
 !$OMP CRITICAL (FixedGrids)
@@ -209,9 +207,14 @@ c        # levelcheck > 0.
       tcfmax=max(tcfmax,tcf)
 
 !$OMP END CRITICAL (FixedGrids)
+
 c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+c     New fixed grid stuff: Update fixed grid info from this patch...
 
+      call fgmax_frompatch(mx,my,nvar,mbc,maux,q,aux,
+     &     dx,dy,xlowmbc,ylowmbc,level,time,time+dt)
+c:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 c
 c     # take one step on the conservation law:
 c
@@ -222,8 +225,9 @@ c
 c
 c            
         mptr_level = node(nestlevel,mptr)
-c       write(outunit,811) mptr, mptr_level, cflgrid
-c811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
+
+        write(outunit,811) mptr, mptr_level, cflgrid
+ 811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
 c
 
 !$OMP  CRITICAL (cflm)
@@ -234,6 +238,7 @@ c
 !$OMP END CRITICAL (cflm)
 
 c
+!        write(outunit,*)" updating grid ", mptr
 c       # update q
         dtdx = dt/dx
         dtdy = dt/dy
@@ -252,23 +257,21 @@ c            # with capa array.
            q(m,i,j) = q(m,i,j)
      &           - (dtdx * (fm(m,i+1,j) - fp(m,i,j))
      &           +  dtdy * (gm(m,i,j+1) - gp(m,i,j))) / aux(mcapa,i,j)
+!           write(outunit,543) m,i,j,q(m,i,j),fm(m,i+1,j),fp(m,i,j),
+!     .        gm(m,i,j+1), gp(m,i,j)
+543       format(3i4,5e25.16)
+
          endif
 
  50      continue
 c
 c     # Copied here from b4step2 since need to do before saving to qc1d:
-      do i=1,mitot
-        do j=1,mjtot
-          do k=1,num_layers
-          if (q(3*(k-1)+1,i,j)/rho(k).lt.dry_tolerance(k)) then
-             q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j),0.d0)
-             do m=3*(k-1) + 2,3*(k-1) + 3
-                q(m,i,j)=0.d0
-                enddo
-             endif
-         enddo
-        enddo
-      enddo
+      forall(i=1:mitot, j=1:mjtot, k=1:num_layers,
+     &       q(3*(k-1)+1,i,j) / rho(k) < dry_tolerance(k))
+        q(3*(k-1)+1,i,j) = max(q(3*(k-1)+1,i,j), 0.d0)
+        q(3*(k-1)+2,i,j) = 0.d0
+        q(3*(k-1)+3,i,j) = 0.d0
+      end forall
 c
       if (method(5).eq.1) then
 c        # with source term:   use Godunov splitting
@@ -379,9 +382,9 @@ c
             endif
 c
       if (dump) then
-         write(*,*)" at end of stepgrid: dumping grid ",mptr
-         do i = 1, mitot
-         do j = 1, mjtot
+         write(outunit,*)" at end of stepgrid: dumping grid ",mptr
+         do i = mbc+1, mitot-mbc
+         do j = mbc+1, mjtot-mbc
             write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar)
 c            write(*,545) i,j,(q(i,j,ivar),ivar=1,nvar)
          end do
@@ -390,5 +393,3 @@ c            write(*,545) i,j,(q(i,j,ivar),ivar=1,nvar)
 c
       return
       end
-
-

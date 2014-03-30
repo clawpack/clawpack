@@ -20,9 +20,6 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
     use geoclaw_module, only: sea_level, dry_tolerance
 
-    use topo_module, only: num_dtopo,topotime
-    use topo_module, only: tfdtopo,t0dtopo,topo_finalized,aux_finalized
-
     implicit none
 
     ! Input

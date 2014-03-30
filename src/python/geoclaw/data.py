@@ -270,13 +270,6 @@ class QinitData(clawpack.clawutil.data.ClawData):
         self.add_attribute('qinit_type',0)
         self.add_attribute('qinitfiles',[])   
 
-        # Test qinit data > 4
-        self.add_attribute("init_location")
-        self.add_attribute("wave_family")
-        self.add_attribute("epsilon")
-        self.add_attribute("angle")
-        self.add_attribute("sigma") 
-
     def write(self,data_source='setrun.py'):
         # Initial perturbation
         self.open_data_file('qinit.data',data_source)
@@ -295,10 +288,6 @@ class QinitData(clawpack.clawutil.data.ClawData):
                     # raise MissingFile("file not found")
                 self._out_file.write("\n%s  \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
-        elif self.qinit_type == 5:
-            raise NotImplementedError("Qinit type 5 has not been implemented.")
-        elif self.qinit_type == 6:
-            raise NotImplementedError("Qinit type 6 has not been implemented.")
         else:
             raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
         self.close_data_file()

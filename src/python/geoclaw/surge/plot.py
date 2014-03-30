@@ -7,8 +7,6 @@ Plotting routines for storm surge simulations with GeoClaw
     Kyle Mandli (2012-10-23) Initial version
 """
 # ==============================================================================
-#          Copyright (C) Kyle T. Mandli <kyle@ices.utexas.edu>
-#
 #  Distributed under the terms of the Berkeley Software Distribution (BSD) 
 #  license
 #                     http://www.opensource.org/licenses/
