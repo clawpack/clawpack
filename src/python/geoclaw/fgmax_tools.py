@@ -65,30 +65,33 @@ def make_fgmax(FG):
             if FG.dy is not None:
                 print "*** Warning: dy specified over-ridden by: ",dy
     
-        print "Creating 2d fixed grid: %s by %s " % (nx,ny)
-        print "   dx = %g,  dy = %g" % (dx,dy)
     
         npts = nx*ny
     
         fid = open(FG.fname,'w')
-        fid.write("%g                 # tstart_max\n"  % FG.tstart_max)
-        fid.write("%g                 # tend_max\n"  % FG.tend_max)
-        fid.write("%g                 # dt_check\n" % FG.dt_check)
-        fid.write("%i                 # min_level_check\n" % FG.min_level_check)
-        fid.write("%g                 # arrival_tol\n" % FG.arrival_tol)
-        fid.write("%g                 # point_style\n" % FG.point_style)
+        fid.write("%16.10e            # tstart_max\n"  % FG.tstart_max)
+        fid.write("%16.10e            # tend_max\n"  % FG.tend_max)
+        fid.write("%16.10e            # dt_check\n" % FG.dt_check)
+        fid.write("%i %s              # min_level_check\n" \
+                            % (FG.min_level_check,16*" "))
+
+        fid.write("%16.10e            # arrival_tol\n" % FG.arrival_tol)
+        fid.write("%i %s              # point_style\n" \
+                            % (FG.point_style,16*" "))
     
-        fid.write("%i  %i             # nx,ny\n" % (nx,ny))
-        fid.write("%g   %g            # x1, y1\n" % (x1,y1))
-        fid.write("%g   %g            # x2, y2\n" % (x2,y2))
+        fid.write("%i  %i %s          # nx,ny\n" \
+                            % (nx,ny,10*" "))
+        fid.write("%16.10e   %20.10e            # x1, y1\n" % (x1,y1))
+        fid.write("%16.10e   %20.10e            # x2, y2\n" % (x2,y2))
         fid.close()
         
     
         print "Created file ", FG.fname
         print "   specifying fixed grid with shape %i by %i, with  %i points" \
                 % (nx,ny,npts)
-        print "   lower left = (%g,%g)  upper right = (%g,%g)" \
-                % (x1,y1,x2,y2)
+        print "   lower left  = (%15.10f,%15.10f)" % (x1,y1)
+        print "   upper right = (%15.10f,%15.10f)" % (x2,y2)
+        print "   dx = %15.10e,  dy = %15.10e" % (dx,dy)
     
         xy = [x1,x2,y1,y2]
         fname_root = os.path.splitext(FG.fname)[0]
