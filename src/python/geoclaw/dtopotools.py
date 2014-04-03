@@ -26,8 +26,6 @@ import copy
 import re
 
 import numpy
-import numpy as np   # Need to unify: numpy and np both used below
-from numpy import sin,cos,sqrt
 
 import clawpack.geoclaw.topotools as topotools
 
@@ -105,7 +103,6 @@ def read_subfault_model(fname, columns, units=None, \
         data = numpy.genfromtxt(fname, skiprows=skiprows, delimiter=delimiter,\
                                 usecols=usecols)
     except:
-        import os
         raise Exception("Unable to load file %s" % fname)
         
     try:
@@ -153,10 +150,10 @@ def read_subfault_model(fname, columns, units=None, \
         #import pdb; pdb.set_trace()
 
     print "Total slip*length*width = ",total_slip
-    if 0:
+    if 1:
         for mu in [3e11, 4e11, 6e11]:
             Mo = 0.1*mu*total_slip  # 0.1 factor to convert to Nm
-            Mw = 2./3. * (log10(Mo) - 9.1)
+            Mw = 2./3. * (numpy.log10(Mo) - 9.1)
             print "With mu = %6.1e, moment magnitude is Mw = %5.2f" % (mu,Mw)
     return subfaults
     
@@ -186,7 +183,7 @@ def read_subfault_model_csv(path, delimiter=","):
 
 
 
-    fid = open(fname)
+    fid = open(path)
     c1 = fid.readline().split(',')
     columns = [c.strip() for c in c1]
     u1 = fid.readline().split(',')
@@ -195,7 +192,7 @@ def read_subfault_model_csv(path, delimiter=","):
     for i,c in enumerate(columns):
         units[c] = units_list[i]
     fid.close()
-    subfaults = read_subfault_model(fname, columns, units, delimiter=',', \
+    subfaults = read_subfault_model(path, columns, units, delimiter=',', \
                  skiprows=2)
     return subfaults
 
@@ -263,12 +260,12 @@ def set_fault_xy(faultparams):
     if location == "top center":
 
         depth_top = depth
-        depth_centroid = depth + 0.5*width*sin(ang_dip)
-        depth_bottom = depth + width*sin(ang_dip)
+        depth_centroid = depth + 0.5*width*numpy.sin(ang_dip)
+        depth_bottom = depth + width*numpy.sin(ang_dip)
 
         # Convert fault origin from top of fault plane to bottom:
-        del_x = width*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
-        del_y = -width*cos(ang_dip)*sin(ang_strike) / lat2meter
+        del_x = width*numpy.cos(ang_dip)*numpy.cos(ang_strike) / (lat2meter*numpy.cos(y0*DEG2RAD))
+        del_y = -width*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
         
         x_top = x0
         y_top = y0 
@@ -279,12 +276,12 @@ def set_fault_xy(faultparams):
 
     elif location == "centroid":
 
-        depth_top = depth - 0.5*width*sin(ang_dip)
+        depth_top = depth - 0.5*width*numpy.sin(ang_dip)
         depth_centroid = depth 
-        depth_bottom = depth + 0.5*width*sin(ang_dip)
+        depth_bottom = depth + 0.5*width*numpy.sin(ang_dip)
 
-        del_x = 0.5*width*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
-        del_y = -0.5*width*cos(ang_dip)*sin(ang_strike) / lat2meter
+        del_x = 0.5*width*numpy.cos(ang_dip)*numpy.cos(ang_strike) / (lat2meter*numpy.cos(y0*DEG2RAD))
+        del_y = -0.5*width*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
 
         x_centroid = x0
         y_centroid = y0
@@ -297,8 +294,8 @@ def set_fault_xy(faultparams):
         raise ValueError("Unrecognized latlong_location %s " % location)
 
     # distance along strike from center of an edge to corner:
-    dx2 = 0.5*length*sin(ang_strike) / (lat2meter*cos(y_bottom*DEG2RAD))
-    dy2 = 0.5*length*cos(ang_strike) / lat2meter
+    dx2 = 0.5*length*numpy.sin(ang_strike) / (lat2meter*numpy.cos(y_bottom*DEG2RAD))
+    dy2 = 0.5*length*numpy.cos(ang_strike) / lat2meter
     x_corners = [x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2]
     y_corners = [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2]
 
@@ -592,7 +589,7 @@ def read_dtopo_old(fname, deftype=None, only_last=True):
             return
 
     if deftype == 'dynamic':
-        d = np.loadtxt(fname)
+        d = numpy.loadtxt(fname)
         print "Loaded file %s with %s lines" %(fname,d.shape[0])
         t = list(set(d[:,0]))
         t.sort()
@@ -610,20 +607,20 @@ def read_dtopo_old(fname, deftype=None, only_last=True):
             if mx*my != len(lastlines):
                 raise Exception("*** Error in determining mx and my!\nlen(lastlines)=%s" \
                                   % len(lastlines))      
-            X = np.reshape(lastlines[:,1],(my,mx))
-            Y = np.reshape(lastlines[:,2],(my,mx))
-            dZ = np.reshape(lastlines[:,3],(my,mx))
+            X = numpy.reshape(lastlines[:,1],(my,mx))
+            Y = numpy.reshape(lastlines[:,2],(my,mx))
+            dZ = numpy.reshape(lastlines[:,3],(my,mx))
         else:
-            X = np.reshape(lastlines[:,1],(my,mx))
-            Y = np.reshape(lastlines[:,2],(my,mx))
+            X = numpy.reshape(lastlines[:,1],(my,mx))
+            Y = numpy.reshape(lastlines[:,2],(my,mx))
             dZ = []
             print "Returning dZ as a list of mx*my arrays"
             for n in range(ntimes):
                 i1 = n*mx*my
                 i2 = (n+1)*mx*my
-                dZ.append(np.reshape(d[i1:i2,3],(my,mx)))
+                dZ.append(numpy.reshape(d[i1:i2,3],(my,mx)))
     elif deftype == 'static':  
-        d = np.loadtxt(fname)  
+        d = numpy.loadtxt(fname)  
         xvals = list(set(d[:,1]))
         xvals.sort()
         mx = len(xvals)
@@ -632,9 +629,9 @@ def read_dtopo_old(fname, deftype=None, only_last=True):
         if mx*my != len(d):
             raise Exception("*** Error in determining mx and my!\nlen(d)=%s" \
                               % len(d))
-        X = np.reshape(d[:,0],(my,mx))
-        Y = np.reshape(d[:,1],(my,mx))
-        dZ = np.reshape(d[:,2],(my,mx))
+        X = numpy.reshape(d[:,0],(my,mx))
+        Y = numpy.reshape(d[:,1],(my,mx))
+        dZ = numpy.reshape(d[:,2],(my,mx))
     else:
         print "*** Unrecognized deftype: ",deftype
         raise
@@ -661,11 +658,11 @@ def read_dtopo(fname, dtopotype):
         y=numpy.linspace(ylower,yupper,my)
         times = numpy.linspace(t0, t0+(mt-1)*dt, mt)
 
-        dZvals = np.loadtxt(fname, skiprows=9)
+        dZvals = numpy.loadtxt(fname, skiprows=9)
         dz_list = []
         for k,t in enumerate(times):
-            dZk = np.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
-            dZk = np.flipud(dZk)
+            dZk = numpy.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
+            dZk = numpy.flipud(dZk)
             dz_list.append(dZk)
             
         dtopo = DTopo()
@@ -690,6 +687,9 @@ def plot_subfaults(subfaults, plot_centerline=False, slip_color=False, \
     Describe parameters...
     """
 
+    import matplotlib
+    import matplotlib.pyplot as plt
+
     #figure(44,(6,12)) # For CSZe01
     #clf()
 
@@ -701,7 +701,7 @@ def plot_subfaults(subfaults, plot_centerline=False, slip_color=False, \
     min_slip = 0.
     for subfault in subfaults:
         if test_random:
-            subfault['slip'] = 10.*rand()  # for testing
+            subfault['slip'] = 10.*numpy.rand()  # for testing
             #subfault['slip'] = 8.  # uniform
         slip = subfault['slip']
         max_slip = max(abs(slip), max_slip)
@@ -738,50 +738,52 @@ def plot_subfaults(subfaults, plot_centerline=False, slip_color=False, \
 
         # Plot projection of planes to x-y surface:
         if plot_centerline:
-            plot([x_top],[y_top],'bo',label="Top center")
-            plot([x_centroid],[y_centroid],'ro',label="Centroid")
-            plot([x_top,x_centroid],[y_top,y_centroid],'r-')
+            plt.plot([x_top],[y_top],'bo',label="Top center")
+            plt.plot([x_centroid],[y_centroid],'ro',label="Centroid")
+            plt.plot([x_top,x_centroid],[y_top,y_centroid],'r-')
         if plot_rake:
             if test_random:
                 subfault['rake'] = 90. + 30.*(rand()-0.5)  # for testing
             tau = (subfault['rake'] - 90) * pi/180.
-            plot([x_centroid],[y_centroid],'go',markersize=5,label="Centroid")
+            plt.plot([x_centroid],[y_centroid],'go',markersize=5,label="Centroid")
             dxr = x_top - x_centroid
             dyr = y_top - y_centroid
-            x_rake = x_centroid + cos(tau)*dxr - sin(tau)*dyr
-            y_rake = y_centroid + sin(tau)*dxr + cos(tau)*dyr
-            plot([x_rake,x_centroid],[y_rake,y_centroid],'g-',linewidth=1)
+            x_rake = x_centroid + cos(tau)*dxr - numpy.sin(tau)*dyr
+            y_rake = y_centroid + numpy.sin(tau)*dxr + cos(tau)*dyr
+            plt.plot([x_rake,x_centroid],[y_rake,y_centroid],'g-',linewidth=1)
         if slip_color:
             slip = subfault['slip']
             #c = cmap_slip(0.5*(cmax_slip + slip)/cmax_slip)
             #c = cmap_slip(slip/cmax_slip)
             s = min(1, max(0, (slip-cmin_slip)/(cmax_slip-cmin_slip)))
             c = cmap_slip(s*.99)  # since 1 does not map properly with jet
-            fill(x_corners,y_corners,color=c,edgecolor='none')
+            plt.fill(x_corners,y_corners,color=c,edgecolor='none')
         if plot_box:
-            plot(x_corners, y_corners, 'k-')
+            plt.plot(x_corners, y_corners, 'k-')
 
-    slipax = gca()
+    slipax = plt.gca()
         
     y_ave = y_ave / len(subfaults)
-    slipax.set_aspect(1./cos(y_ave*pi/180.))
-    ticklabel_format(format='plain',useOffset=False)
-    xticks(rotation=80)
+    slipax.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
+    plt.ticklabel_format(format='plain',useOffset=False)
+    plt.xticks(rotation=80)
     if xylim is not None:
-        axis(xylim)
-    title('Fault planes')
+        plt.axis(xylim)
+    plt.title('Fault planes')
     if slip_color:
-        cax,kw = mpl.colorbar.make_axes(slipax)
-        norm = mpl.colors.Normalize(vmin=cmin_slip,vmax=cmax_slip)
-        cb1 = mpl.colorbar.ColorbarBase(cax, cmap=cmap_slip, norm=norm)
+        cax,kw = matplotlib.colorbar.make_axes(slipax)
+        norm = matplotlib.colors.Normalize(vmin=cmin_slip,vmax=cmax_slip)
+        cb1 = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap_slip, norm=norm)
         #import pdb; pdb.set_trace()
-    sca(slipax) # reset the current axis to the main figure
+    plt.sca(slipax) # reset the current axis to the main figure
 
 
 def plot_subfaults_depth(subfaults):
     """
     Plot the depth of each subfault vs. x in one plot and vs. y in a second plot.
     """
+
+    import matplotlib.pyplot as plt
 
     for subfault in subfaults:
 
@@ -796,23 +798,23 @@ def plot_subfaults_depth(subfaults):
             exec(cmd)
 
         # Plot planes in x-z and y-z to see depths:
-        subplot(211)
-        plot([x_top,x_bottom],[-depth_top,-depth_bottom])
-        subplot(212)
-        plot([y_top,y_bottom],[-depth_top,-depth_bottom])
+        plt.subplot(211)
+        plt.plot([x_top,x_bottom],[-depth_top,-depth_bottom])
+        plt.subplot(212)
+        plt.plot([y_top,y_bottom],[-depth_top,-depth_bottom])
 
-    subplot(211)
-    title('depth vs. x')
-    subplot(212)
-    title('depth vs. y')
+    plt.subplot(211)
+    plt.title('depth vs. x')
+    plt.subplot(212)
+    plt.title('depth vs. y')
 
 def plot_dz_contours(x,y,dz,dz_interval=0.5):
     dzmax = max(dz.max(), -dz.min()) + dz_interval
-    clines1 = np.arange(dz_interval, dzmax, dz_interval)
-    clines = list(-np.flipud(clines1)) + list(clines1)
+    clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
+    clines = list(-numpy.flipud(clines1)) + list(clines1)
 
     print "Plotting contour lines at: ",clines
-    contour(x,y,dz,clines,colors='k')
+    plt.contour(x,y,dz,clines,colors='k')
 
 def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
     """
@@ -820,27 +822,28 @@ def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
     """
 
     from clawpack.visclaw import colormaps
+    import matplotlib.pyplot as plt
 
     dzmax = abs(dz).max()
     if cmax_dz is None:
         cmax_dz = dzmax
     cmap = colormaps.blue_white_red
-    pcolor(x, y, dz, cmap=cmap)
-    clim(-cmax_dz,cmax_dz)
-    cb2 = colorbar(shrink=1.0)
+    plt.pcolor(x, y, dz, cmap=cmap)
+    plt.clim(-cmax_dz,cmax_dz)
+    cb2 = plt.colorbar(shrink=1.0)
     
     if dz_interval is None:
         dz_interval = cmax_dz/10.
-    clines1 = np.arange(dz_interval, dzmax + dz_interval, dz_interval)
-    clines = list(-np.flipud(clines1)) + list(clines1)
+    clines1 = numpy.arange(dz_interval, dzmax + dz_interval, dz_interval)
+    clines = list(-numpy.flipud(clines1)) + list(clines1)
     print "Plotting contour lines at: ",clines
-    contour(x,y,dz,clines,colors='k',linestyles='solid')
+    # plt.contour(x,y,dz,clines,colors='k',linestyles='solid')
     y_ave = 0.5*(y.min() + y.max())
-    gca().set_aspect(1./cos(y_ave*pi/180.))
+    plt.gca().set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
 
-    ticklabel_format(format='plain',useOffset=False)
-    xticks(rotation=80)
-    title('Seafloor deformation')
+    plt.ticklabel_format(format='plain',useOffset=False)
+    plt.xticks(rotation=80)
+    plt.title('Seafloor deformation')
 
 
 def strike_direction(x1,y1,x2,y2):
@@ -851,15 +854,14 @@ def strike_direction(x1,y1,x2,y2):
         http://www.movable-type.co.uk/scripts/latlong.html
     """
 
-    from numpy import pi,sin,cos,arctan2
-    x1 = x1*pi/180.
-    y1 = y1*pi/180.
-    x2 = x2*pi/180.
-    y2 = y2*pi/180.
+    x1 = x1*numpy.pi/180.
+    y1 = y1*numpy.pi/180.
+    x2 = x2*numpy.pi/180.
+    y2 = y2*numpy.pi/180.
     dx = x2-x1
-    theta = arctan2(sin(dx)*cos(y2), \
-             cos(y1)*sin(y2) - sin(y1)*cos(y2)*cos(dx))
-    s = theta*180./pi
+    theta = numpy.arctan2(numpy.sin(dx)*numpy.cos(y2), \
+             numpy.cos(y1)*numpy.sin(y2) - numpy.sin(y1)*numpy.cos(y2)*numpy.cos(dx))
+    s = theta*180./numpy.pi
     if s<0:
         s = 360+s
     return s
@@ -917,7 +919,8 @@ def okadamap(okadaparams,X,Y):
     print_xy = False
 
     if plot_plane:
-        figure(202)
+        import matplotlib.pyplot as plt
+        plt.figure(202)
         #clf()
 
     if print_xy:
@@ -930,12 +933,12 @@ def okadamap(okadaparams,X,Y):
         # from top of fault plane to bottom:
 
         depth_top = hh
-        hh = hh + w*sin(ang_dip)
+        hh = hh + w*numpy.sin(ang_dip)
         depth_bottom = hh
 
         # Convert fault origin from top of fault plane to bottom:
-        del_x = w*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
-        del_y = -w*cos(ang_dip)*sin(ang_strike) / lat2meter
+        del_x = w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / (lat2meter*numpy.cos(y0*DEG2RAD))
+        del_y = -w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
         
         x_top = x0
         y_top = y0 
@@ -949,13 +952,13 @@ def okadamap(okadaparams,X,Y):
 
         # Convert focal depth used for Okada's model
         # from middle of fault plane to bottom:
-        depth_top = hh - 0.5*w*sin(ang_dip)
-        hh = hh + 0.5*w*sin(ang_dip)
+        depth_top = hh - 0.5*w*numpy.sin(ang_dip)
+        hh = hh + 0.5*w*numpy.sin(ang_dip)
         depth_bottom = hh
 
         # Convert fault origin from middle of fault plane to bottom:
-        del_x = 0.5*w*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
-        del_y = -0.5*w*cos(ang_dip)*sin(ang_strike) / lat2meter
+        del_x = 0.5*w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / (lat2meter*numpy.cos(y0*DEG2RAD))
+        del_y = -0.5*w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
 
         x_centroid = x0
         y_centroid = y0
@@ -972,8 +975,8 @@ def okadamap(okadaparams,X,Y):
     y0 = y0 + del_y
 
     # distance along strike from center of an edge to corner:
-    dx2 = 0.5*L*sin(ang_strike) / (lat2meter*cos(y_bottom*DEG2RAD))
-    dy2 = 0.5*L*cos(ang_strike) / lat2meter
+    dx2 = 0.5*L*numpy.sin(ang_strike) / (lat2meter*numpy.cos(y_bottom*DEG2RAD))
+    dy2 = 0.5*L*numpy.cos(ang_strike) / lat2meter
 
     if print_xy:
         print "del_x, del_y: ",del_x,del_y
@@ -983,50 +986,50 @@ def okadamap(okadaparams,X,Y):
         print "top: ",x_top, y_top
         print "dx2,dy2: ",dx2,dy2
     if plot_plane:
-        figure(203)
-        subplot(211)
-        plot([x_top,x_bottom],[-depth_top,-depth_bottom])
-        title('depth vs. x')
-        subplot(212)
-        plot([y_top,y_bottom],[-depth_top,-depth_bottom])
-        title('depth vs. y')
-        #ylim([-100,0])
-        figure(202)
-        plot([x_top],[y_top],'bo',label="Top center")
-        plot([x_centroid],[y_centroid],'ro',label="Centroid")
-        plot([x_top,x_centroid],[y_top,y_centroid],'r-')
-        plot([x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2],\
+        plt.figure(203)
+        plt.subplot(211)
+        plt.plot([x_top,x_bottom],[-depth_top,-depth_bottom])
+        plt.title('depth vs. x')
+        plt.subplot(212)
+        plt.plot([y_top,y_bottom],[-depth_top,-depth_bottom])
+        plt.title('depth vs. y')
+        #plt.ylim([-100,0])
+        plt.figure(202)
+        plt.plot([x_top],[y_top],'bo',label="Top center")
+        plt.plot([x_centroid],[y_centroid],'ro',label="Centroid")
+        plt.plot([x_top,x_centroid],[y_top,y_centroid],'r-')
+        plt.plot([x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2],\
              [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2],'b-')
-        axis('scaled')
-        axis([X[0],X[-1],Y[0],Y[-1]])
-        title("Blue: top center, Red: centroid of subfault")
+        plt.axis('scaled')
+        plt.axis([X[0],X[-1],Y[0],Y[-1]])
+        plt.title("Blue: top center, Red: centroid of subfault")
 
 
     x,y = numpy.meshgrid(X,Y)
 
     # Convert distance from (x,y) to (x_bottom,y_bottom) from degrees to meters:
-    xx = lat2meter*cos(DEG2RAD*y)*(x-x_bottom)   
+    xx = lat2meter*numpy.cos(DEG2RAD*y)*(x-x_bottom)   
     yy = lat2meter*(y-y_bottom)
 
 
     # Convert to distance along strike (x1) and dip (x2):
-    x1 = xx*sin(ang_strike) + yy*cos(ang_strike) 
-    x2 = xx*cos(ang_strike) - yy*sin(ang_strike) 
+    x1 = xx*numpy.sin(ang_strike) + yy*numpy.cos(ang_strike) 
+    x2 = xx*numpy.cos(ang_strike) - yy*numpy.sin(ang_strike) 
 
     # In Okada's paper, x2 is distance up the fault plane, not down dip:
     x2 = -x2
 
     if 0:
-        figure(203)
-        clf()
-        plot([xx[0,0],xx[0,-1],xx[-1,-1],xx[-1,0],xx[0,0]], \
+        plt.figure(203)
+        plt.clf()
+        plt.plot([xx[0,0],xx[0,-1],xx[-1,-1],xx[-1,0],xx[0,0]], \
              [yy[0,0],yy[0,-1],yy[-1,-1],yy[-1,0],yy[0,0]], 'k-')
         
-        plot([x1[0,0],x1[0,-1],x1[-1,-1],x1[-1,0],x1[0,0]], \
+        plt.plot([x1[0,0],x1[0,-1],x1[-1,-1],x1[-1,0],x1[0,0]], \
              [x2[0,0],x2[0,-1],x2[-1,-1],x2[-1,0],x2[0,0]], 'b-')
         
-    p = x2*cos(ang_dip) + hh*sin(ang_dip)
-    q = x2*sin(ang_dip) - hh*cos(ang_dip)
+    p = x2*numpy.cos(ang_dip) + hh*numpy.sin(ang_dip)
+    q = x2*numpy.sin(ang_dip) - hh*numpy.cos(ang_dip)
 
     f1=strike_slip (x1+halfL,p,  ang_dip,q)
     f2=strike_slip (x1+halfL,p-w,ang_dip,q)
@@ -1039,8 +1042,8 @@ def okadamap(okadaparams,X,Y):
     g4=dip_slip (x1-halfL,p-w,ang_dip,q)
 
     # Displacement in direction of strike and dip:
-    ds = d*cos(ang_slip)
-    dd = d*sin(ang_slip)
+    ds = d*numpy.cos(ang_slip)
+    dd = d*numpy.sin(ang_slip)
 
     us = (f1-f2-f3+f4)*ds
     ud = (g1-g2-g3+g4)*dd
@@ -1048,7 +1051,7 @@ def okadamap(okadaparams,X,Y):
     dZ = (us+ud)
 
     if 0:
-        contour(x,y,dZ,numpy.linspace(-8,8,17),colors='k')
+        plt.contour(x,y,dZ,numpy.linspace(-8,8,17),colors='k')
 
     return dZ
 
@@ -1060,11 +1063,11 @@ def strike_slip (y1,y2,ang_dip,q):
     !.. ..Methods from Yoshimitsu Okada (1985)
     !-----------------------------------------------------------------------
     """
-    sn = sin(ang_dip)
-    cs = cos(ang_dip)
+    sn = numpy.sin(ang_dip)
+    cs = numpy.cos(ang_dip)
     d_bar = y2*sn - q*cs
-    r = sqrt(y1**2 + y2**2 + q**2)
-    xx = sqrt(y1**2 + q**2)
+    r = numpy.sqrt(y1**2 + y2**2 + q**2)
+    xx = numpy.sqrt(y1**2 + q**2)
     a4 = 2.0*poisson/cs*(numpy.log(r+d_bar) - sn*numpy.log(r+y2))
     f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*3.14159)
 
@@ -1078,12 +1081,12 @@ def dip_slip (y1,y2,ang_dip,q):
     !.....Added by Xiaoming Wang
     !-----------------------------------------------------------------------
     """
-    sn = sin(ang_dip)
-    cs = cos(ang_dip)
+    sn = numpy.sin(ang_dip)
+    cs = numpy.cos(ang_dip)
 
     d_bar = y2*sn - q*cs;
-    r = sqrt(y1**2 + y2**2 + q**2)
-    xx = sqrt(y1**2 + q**2)
+    r = numpy.sqrt(y1**2 + y2**2 + q**2)
+    xx = numpy.sqrt(y1**2 + q**2)
     a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
     f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
 
@@ -1138,7 +1141,7 @@ def filtermask (dZ,faultparams):
     #!----- for larger dip angles, use only the length ------
 
     if dl<30.0:
-        drange = 1.5 * cos(ang_dip)*sqrt(npix_x*npix_x+npix_y*npix_y)
+        drange = 1.5 * numpy.cos(ang_dip)*numpy.sqrt(npix_x*npix_x+npix_y*npix_y)
     else:
         drange = 1.2 * npix_x
 
@@ -1147,7 +1150,7 @@ def filtermask (dZ,faultparams):
     #!-- Create the filtering mask ----------
     for i in xrange(nx):
         for j in xrange(ny) :
-            dist = sqrt((i+1-xpix)**2+(j+1-ypix)**2)
+            dist = numpy.sqrt((i+1-xpix)**2+(j+1-ypix)**2)
             if dist > drange :
                 filterindices.append((j,i))
 
@@ -1350,6 +1353,55 @@ class Fault(object):
             self.calculate_geometry()
         return self._fault_plane_centers
 
+    # Earthquake calculated properties
+    @property
+    def slip(self):
+        r"""Total slip accumulated over all subfaults."""
+        if self._slip is None:
+            self._slip = 0.0
+            for subfault in self.subfaults:
+                slip = subfault.convert2meters(['slip'])
+                self._slip += slip
+            # Convert back to units of this object if available
+            # import pdb; pdb.set_trace()
+            if self.units.has_key('slip'):
+                self._slip = self.convert2meters(['slip'])
+            else:
+                self.units['slip'] = self.subfaults[0].units['slip']
+        return self._slip
+
+    @property
+    def Mw(self):
+        r"""Calculate the effective moment magnitude of all subfaults.
+
+        :TODO:
+         - Need to check that this does the right thing
+         - Need to check mu units
+
+        """
+        total_Mo = 0.0
+        for subfault in self.subfaults:
+            dimensions, slip = subfault.convert2meters(["dimensions", "slip"])
+            if subfault.units['mu'] in ['dyne/cm^2', "dyne/cm^2"]:
+                mu = subfault.mu * 100.0**2
+            else:
+                mu = subfault.mu
+            # All units should be terms of meters
+            total_Mo += dimensions[0] * dimensions[1] * slip * mu
+
+        return 2.0 / 3.0 * (numpy.log10(total_Mo) - 9.1)
+
+    @property
+    def dimensions(self):
+        if self._dimensions is None:
+            self._dimensions = [0.0, 0.0]
+            for subfault in self.subfaults:
+                local_dimensions = subfault.convert2meters(["dimensions"])
+                self._dimensions[0] += local_dimensions[0]
+                self._dimensions[1] += local_dimensions[1]
+        return self._dimensions
+
+
     def __init__(self, path=None, subfaults=None, units={}):
         r"""Fault initialization routine.
         
@@ -1365,8 +1417,10 @@ class Fault(object):
         self._y = None
         self._Y = None
         self._dZ = None
+        self._slip = None
         self._fault_plane_corners = None
         self._fault_plane_centers = None
+        self._dimensions = None
 
         # Parameters for subfault specification
         self.rupture_type = 'static' # 'static', 'dynamic', 'kinetic'
@@ -1383,6 +1437,24 @@ class Fault(object):
             if not isinstance(subfaults, list):
                 raise ValueError("Input parameter subfaults must be a list.")
             self.subfaults = subfaults
+
+
+    def __str__(self):
+        output =  "Fault Characteristics:\n"
+        output += "  Mw = %s\n" % self.Mw
+        max_slip = 0.0
+        min_slip = numpy.infty
+        for subfault in self.subfaults:
+            slip = subfault.convert2meters(["slip"])
+            max_slip = max(max_slip, slip)
+            min_slip = min(min_slip, slip)
+        slip_unit = self.units.get('slip', self.subfaults[0].units['slip'])
+        output += "  Slip (Max, Min, Total) %s = (%s, %s, %s)" % (
+                                                             slip_unit,
+                                                             max_slip, 
+                                                             min_slip,
+                                                             self.slip)
+        return output
 
 
     def read(self, path, column_map, coordinate_specification="centroid",
@@ -1419,11 +1491,6 @@ class Fault(object):
             self.subfaults.append(new_subfault)
 
 
-    def __str__(self):
-        output = "Fault Characteristics:\n"
-        return output
-
-
     def convert2meters(self, parameters): 
         r"""Convert relevant lengths to correct units.
 
@@ -1432,6 +1499,7 @@ class Fault(object):
         """
 
         conversion_dict = {"km":1e3, "cm":1e-2, "nm":1852.0, "m":1.0}
+        
         converted_lengths = []
         for (n, parameter) in enumerate(parameters):
             if isinstance(getattr(self, parameter), list) or \
@@ -1442,21 +1510,10 @@ class Fault(object):
             else:
                 converted_lengths.append(getattr(self, parameter) * conversion_dict[self.units[parameter]])
 
+        if len(converted_lengths) == 1:
+            return converted_lengths[0]
+
         return converted_lengths
-
-
-    def Mw(self, mu=5e11):
-        r"""Calculate the effective moment magnitude of all subfaults.
-
-        :TODO:
-         - Need to check that this does the right thing
-
-        """
-
-        total_Mw = 0.0
-        for subfault in self.subfaults:
-            total_Mw = subfault.Mw()
-        return total_Mw
 
 
     def containing_rect(self):
@@ -1678,7 +1735,7 @@ class Fault(object):
         # Setup axes labels, ticks and aspect
         axes.ticklabel_format(format="plain", useOffset=False)
         mean_lat = 0.5 * (region_extent[3] - region_extent[2])
-        axes.set_aspect(1.0 / cos(numpy.pi / 180.0 * mean_lat))
+        axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
         axes.set_title("Subfault Deformation")
         axes.set_xlabel("Longitude")
         axes.set_ylabel("Latitude")
@@ -1838,6 +1895,45 @@ class SubFault(Fault):
 
     """
 
+    @property
+    def slip(self):
+        r"""Amount of slip on this subfault."""
+        return self._slip
+    @slip.setter
+    def slip(self, value):
+        self._slip = value
+    @slip.deleter
+    def slip(self):
+        del self._slip
+
+    @property
+    def Mw(self):
+        r"""Calculate the effective moment magnitude of subfault."""
+        
+        if self.units["mu"] == "dyne/cm^2":
+            mu = self.mu
+        elif self.units["mu"] == 'dyne/m^2':
+            mu = self.mu / 1e2**2
+        else:
+            raise ValueError("Unknown unit for rigidity %s." % self.units['mu'])
+
+        dimensions, slip = self.convert2meters(["dimensions", "slip"])
+        total_slip = dimensions[0] * dimensions[1] * slip
+        Mo = 0.1 * mu * total_slip
+        return 2.0 / 3.0 * (numpy.log10(Mo) - 9.0)
+
+    @property
+    def dimensions(self):
+        r"""Amount of slip on this subfault."""
+        return self._dimensions
+    @dimensions.setter
+    def dimensions(self, value):
+        self._dimensions = value
+    @dimensions.deleter
+    def dimensions(self):
+        del self._dimensions
+
+
     def __init__(self, path=None, units={}):
         r"""SubFault initialization routine.
         
@@ -1850,12 +1946,12 @@ class SubFault(Fault):
         # Parameters for subfault specification
         self.coordinates = [] # longitude, latitude
         self.coordinate_specification = 'centroid' # 'centroid', 'top center', 'epicenter'
-        self.dimensions = [0.0, 0.0] # [length, width]
+        self._dimensions = [0.0, 0.0] # [length, width]
         self.rake = None
         self.strike = None
         self.dip = None
         self.depth = None
-        self.slip = None
+        self._slip = None
         self.mu = 5e11
         self.t = numpy.array([0.0, 5.0, 10.0])
 
@@ -1875,29 +1971,12 @@ class SubFault(Fault):
         output += "  Dimensions (L,W): %s %s\n" % (self.dimensions, self.units['dimensions'])
         output += "  Depth: %s %s\n" % (self.depth, self.units["depth"])
         output += "  Rake, Strike, Dip: %s, %s, %s\n" % (self.rake, self.strike, self.dip)
-        output += "  Slip, Mw: %s %s, %s\n" % (self.slip, self.units['slip'], self.Mw())
+        output += "  Slip, Mw: %s %s, %s\n" % (self.slip, self.units['slip'], self.Mw)
         return output
 
 
-    def Mw(self):
-        r"""Calculate the effective moment magnitude of subfault."""
-        
-        if self.units["mu"] == "dyne/cm^2":
-            mu = self.mu
-        elif self.units["mu"] == 'dyne/m^2':
-            mu = self.mu / 1e2**2
-        else:
-            raise ValueError("Unknown unit for rigidity %s." % self.units['mu'])
-
-        dimensions, slip = self.convert2meters(["dimensions", "slip"])
-        total_slip = dimensions[0] * dimensions[1] * slip
-        Mo = 0.1 * mu * total_slip
-        return 2.0 / 3.0 * (numpy.log10(Mo) - 9.0)
-
-
-    def calculate_slip(self, Mw, mu=5e11):
+    def calculate_slip(self, Mw):
         r"""Set slip based on a moment magnitude *Mw*."""
-
         if self.units["mu"] == "dyne/cm^2":
             mu = self.mu * 100.0**2
 
@@ -1943,21 +2022,21 @@ class SubFault(Fault):
         if self.coordinate_specification == 'top center':
             self._fault_plane_corners[0][2] = depth
             self._fault_plane_corners[1][2] = depth     \
-                                 + dimensions[1] * sin(self.dip * DEG2RAD)
+                                 + dimensions[1] * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = depth      \
-                           + 0.5 * dimensions[1] * sin(self.dip * DEG2RAD)
+                           + 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
         elif self.coordinate_specification == 'centroid':
             self._fault_plane_corners[0][2] = depth     \
-                                 - dimensions[1] * sin(self.dip * DEG2RAD)
+                                 - dimensions[1] * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_corners[1][2] = depth     \
-                                 + dimensions[1] * sin(self.dip * DEG2RAD)
+                                 + dimensions[1] * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = depth
         elif self.coordinate_specification == 'bottom center':
             self._fault_plane_corners[0][2] = depth
             self._fault_plane_corners[1][2] = depth     \
-                                 - dimensions[1] * sin(self.dip * DEG2RAD)
+                                 - dimensions[1] * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = depth      \
-                           - 0.5 * dimensions[1] * sin(self.dip * DEG2RAD)
+                           - 0.5 * dimensions[1] * numpy.sin(self.dip * DEG2RAD)
         self._fault_plane_corners[2][2] = self._fault_plane_corners[0][2]
         self._fault_plane_corners[3][2] = self._fault_plane_corners[1][2]
         self._fault_plane_centers[0][2] = self._fault_plane_corners[0][2]
@@ -1968,7 +2047,7 @@ class SubFault(Fault):
         dimensions[1] *= 1.0 / lat2meter
 
         # Calculate xy-plane projected width
-        xy_width = dimensions[1] * cos(self.dip * DEG2RAD)
+        xy_width = dimensions[1] * numpy.cos(self.dip * DEG2RAD)
         
         # Locate fault plane in 3D space
         # Note that the coodinate specification is in reference to the fault 
@@ -2168,12 +2247,39 @@ class UCSBFault(Fault):
 
     """
 
+    # @property
+    # def slip(self):
+    #     r"""Array of subfault slips
+
+    #     :TODO:
+    #      - This function needs to be checked to see if it works still
+    #     """
+    #     if self._slip is None and       \
+    #        self.num_cells[0] is not None and self.num_cells[1] is not None:
+    #         self._slip = numpy.ndarray(self.num_cells)
+    #         for (n,subfault) in enumerate(self.subfaults):
+    #             slip = subfault.convert2meters(['slip'])
+    #             # We assume here that the units should be in cm
+    #             j = (n+1) % self.num_cells[1]
+    #             i = int(j / (n+1))
+    #             self._slip[i,j] = slip / 100.0 
+    #     return self._slip
+    # @slip.setter
+    # def slip(self, value):
+    #     self._slip = value
+    # @slip.deleter
+    # def slip(self):
+    #     del self._slip
+
+
     def __init__(self, path=None):
         r"""UCSBFault initialization routine.
         
         See :class:`UCSBFault` for more info.
 
         """
+
+        self.num_cells = [None, None]
 
         super(UCSBFault, self).__init__(path=path)
 
@@ -2205,8 +2311,8 @@ class UCSBFault(Fault):
                 if result_dx and result_dy:
                     dx = float(result_dx.group('dx'))
                     dy = float(result_dy.group('dy'))
-                    nx = int(result_nx.group('nx'))
-                    ny = int(result_ny.group('ny'))
+                    self.num_cells[0] = int(result_nx.group('nx'))
+                    self.num_cells[1] = int(result_ny.group('ny'))
                     found_subfault_discretization = True
                     break
             header_lines += n
@@ -2272,8 +2378,14 @@ class UCSBFault(Fault):
 
         # Set general data
         for subfault in self.subfaults:
-            subfault.dimensions = [dx*2, dy*2]
-            subfault.units.update({"slip":"m", "depth":"km", 'mu':"dyne/cm^2"})
+            subfault.dimensions = [dx, dy]
+            subfault.units.update({"slip":"cm", "depth":"km", 'mu':"dyne/cm^2",
+                                   "dimensions":"km"})
+
+
+    def plot_slip(self, axes=None):
+        r"""Plot each subfault with color based on slip magnitude."""
+        raise NotImplemented("")
 
 
 
