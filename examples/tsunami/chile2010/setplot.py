@@ -34,6 +34,7 @@ def setplot(plotdata):
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
+    plotdata.verbose = False
 
     # To plot gauge locations on pcolor or contour plot, use this as
     # an afteraxis function:
@@ -112,6 +113,7 @@ def setplot(plotdata):
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
 
+
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('kml')
     plotaxes.scaled = True
@@ -125,17 +127,17 @@ def setplot(plotdata):
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 0
 
-#     # add contour lines of bathy if desired:
-#     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-#     plotitem.show = False
-#     plotitem.plot_var = geoplot.topo
-#     plotitem.contour_levels = linspace(-3000,-3000,1)
-#     plotitem.amr_contour_colors = ['y']  # color on each level
-#     plotitem.kwargs = {'linestyles':'solid','linewidths':2}
-#     plotitem.amr_contour_show = [1,0,0]
-#     plotitem.celledges_show = 0
-#     plotitem.patchedges_show = [1,1,1]
-#
+    # add contour lines of bathy if desired:
+    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+    plotitem.show = False
+    plotitem.plot_var = geoplot.topo
+    plotitem.contour_levels = linspace(-3000,-3000,1)
+    plotitem.amr_contour_colors = ['y']  # color on each level
+    plotitem.kwargs = {'linestyles':'solid','linewidths':2}
+    plotitem.amr_contour_show = [1,0,0]
+    plotitem.celledges_show = 0
+    plotitem.patchedges_show = [1,1,1]
+
     #-----------------------------------------
     # Figures for gauges
     #-----------------------------------------
