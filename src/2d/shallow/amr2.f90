@@ -585,11 +585,11 @@ program amr2
 
 
     call system_clock(clock_finish,clock_rate)
-    format_string = "('Total time to solution = ',1f16.8,' s')"
+    format_string = "('Total time to solution = ',1f16.8,' s, using', i3,' threads')"
     write(outunit,format_string) &
-            real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8)
+            real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8), maxthreads
     write(*,format_string) &
-            real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8)
+            real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8), maxthreads
 
     do level = 1, mxnest            
       format_string = "('Total advanc time on level ',i3,' = ',1f16.8,' s')"

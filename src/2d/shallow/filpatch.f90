@@ -18,7 +18,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     use amr_module, only: nghost, xlower, ylower, xupper, yupper, outunit
     use amr_module, only: xperdom, yperdom, spheredom, hxposs, hyposs
     use amr_module, only: intratx, intraty, iregsz, jregsz
-    use amr_module, only: timeSetaux, rinfinity
+    use amr_module, only: timeSetaux, NEEDS_TO_BE_SET
 
     use geoclaw_module, only: sea_level, dry_tolerance
 
@@ -210,7 +210,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
             nghost_patch = 0                           
             lencrse = (ihi-ilo+2)*(jhi-jlo+2)*naux ! set 1 component, not all naux
             do k = 1, lencrse, naux
-              auxcrse(k) = rinfinity  ! new system checks initialization before setting aux vals
+              auxcrse(k) = NEEDS_TO_BE_SET  ! new system checks initialization before setting aux vals
             end do
             call setaux(nghost_patch, mx_coarse, my_coarse,       &
                         xlow_coarse, ylow_coarse,                 &

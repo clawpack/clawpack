@@ -21,7 +21,7 @@ c :::::::::::::::::::::::::::::::::::::::;::::::::::::::::::::
       hx    = hxposs(level)
       hy    = hyposs(level)
       mptr  = msave
-
+ 
  10       nx      = node(ndihi,mptr) - node(ndilo,mptr) + 1
           ny      = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
           mitot   = nx + 2*nghost
@@ -33,8 +33,8 @@ c :::::::::::::::::::::::::::::::::::::::;::::::::::::::::::::
               node(store1,mptr)   = loc
               if (naux .gt. 0) then
                 locaux              = igetsp(mitot*mjtot*naux)
-                do k = 1, mitot*mjtot*naux,naux  ! only set first component of aux to signal
-                   alloc(locaux+k-1) = rinfinity ! new system checks this val before setting
+                do k = 1, mitot*mjtot*naux, naux  ! only set first component of aux to signal
+                   alloc(locaux+k-1) = NEEDS_TO_BE_SET ! new system checks this val before setting
                 end do
                 call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
      &                    naux,alloc(locaux))
