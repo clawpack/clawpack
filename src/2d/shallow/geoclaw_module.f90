@@ -124,8 +124,13 @@ contains
         write(GEO_PARM_UNIT,*) '   coriolis_forcing:',coriolis_forcing
         write(GEO_PARM_UNIT,*) '   theta_0:',theta_0
         write(GEO_PARM_UNIT,*) '   friction_forcing:',friction_forcing
-        write(GEO_PARM_UNIT,*) '   manning_coefficient:', manning_coefficient
-        write(GEO_PARM_UNIT,*) '   friction_depth:',friction_depth
+        if (friction_forcing) then
+            write(GEO_PARM_UNIT,*) '   manning_coefficient:', manning_coefficient
+            write(GEO_PARM_UNIT,*) '   friction_depth:',friction_depth
+        else
+            write(GEO_PARM_UNIT,*) '   manning_coefficient: not used'
+            write(GEO_PARM_UNIT,*) '   friction_depth: not used'
+        end if
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
 
