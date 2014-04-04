@@ -16,9 +16,9 @@ class SurgeData(clawdata.ClawData):
         self.add_attribute('ambient_pressure',101.3e3) # Nominal atmos pressure
 
         # Source term controls
-        self.add_attribute('wind_forcing',True)
+        self.add_attribute('wind_forcing',False)
         self.add_attribute('drag_law',1)
-        self.add_attribute('pressure_forcing',True)
+        self.add_attribute('pressure_forcing',False)
         
         # Source term algorithm parameters
         # self.add_attribute('wind_tolerance',1e-6)
@@ -29,7 +29,7 @@ class SurgeData(clawdata.ClawData):
         self.add_attribute('R_refine',[60.0e3,40e3,20e3])
         
         # Storm parameters
-        self.add_attribute("storm_type",1) # Type of storm
+        self.add_attribute("storm_type",0) # Type of storm
         self.add_attribute("landfall",0.0)
 
         # Storm type 1 - Read in file track

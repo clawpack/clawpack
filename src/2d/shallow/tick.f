@@ -7,9 +7,10 @@ c
       use geoclaw_module
       use refinement_module, only: varRefTime
       use amr_module
+      use topo_module, only: dt_max_dtopo, num_dtopo, topo_finalized,
+     &                       aux_finalized, topo0work
 
       implicit double precision (a-h,o-z)
-c     include  "call.i"
 
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
@@ -156,6 +157,22 @@ c
       do i = 1, maxlv
          dtnew(i)  = rinfinity
       enddo
+
+c     We should take at least one step on all levels after any
+c     moving topography (dtopo) has been finalized to insure that
+c     all aux arrays are consistent with the final topography.
+c     The variable aux_finalized is incremented so that we can check
+c     if this is true by checking if aux_finalized == 2 elsewhere in code.
+
+	  if (aux_finalized .eq. 1) then
+c         # this is only true once, and only if there was moving topo
+          deallocate(topo0work)
+          endif 
+      if (topo_finalized .and. (aux_finalized .lt. 2)) then
+          aux_finalized = aux_finalized + 1
+          endif
+
+    
 c
 c     ------------- regridding  time?  ---------
 c
@@ -290,6 +307,9 @@ c                   adjust time steps for this and finer levels
                  if (ntogo(level) .gt. 100) then
                      write(6,*) "**** Too many dt reductions ****"
                      write(6,*) "**** Stopping calculation   ****"
+                     write(6,*) "**** ntogo = ",ntogo(level)
+                     write(6,1006) intratx(level-1),intraty(level-1),
+     &                             kratio(level-1),level
                      write(6,*) "Writing checkpoint file at t = ",time
                      call check(ncycle,time,nvar,naux)
                      stop
@@ -338,6 +358,10 @@ c
         else  ! since refinement ratio in time can change need to set new timesteps in different order
 c             ! use same alg. as when setting refinement when first make new fine grids
           dtnew(1) = min(dtnew(1),dt_max)
+          if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
+              dtnew(1) = min(dtnew(1),dt_max_dtopo)
+          endif
+
           possk(1) = dtnew(1)
           do 125 i = 2, lfine
              if (dtnew(i)  .gt. possk(i-1)) then

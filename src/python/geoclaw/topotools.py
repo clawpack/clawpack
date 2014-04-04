@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-file: topotools.py 
+file: topotools.py
 
    Provides several useful functions
    for manipulating topography data.
@@ -28,7 +28,7 @@ Contains:
    swapheader
 
 Authors: Dave George and Randy LeVeque
- 
+
 """
 
 import numpy as np
@@ -51,18 +51,18 @@ Rearth = 6367.5e3  # average of polar and equatorial radii
 
 def get_topo(topo_fname, remote_directory, force=None):
     """
-    Download a topo file from the web, provided the file does not 
+    Download a topo file from the web, provided the file does not
     already exist locally.
 
     remote_directory should be a URL.  For GeoClaw data it may be a
     subdirectory of  http://kingkong.amath.washington.edu/topo/
     See that website for a list of archived topo datasets.
-    
+
     If force==False then prompt the user to make sure it's ok to download,
     with option to first get small file of metadata.
 
     If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
-    and if this exists use its value.  This is useful for the script 
+    and if this exists use its value.  This is useful for the script
     python/run_examples.py that runs all examples so it won't stop to prompt.
     """
     import urllib
@@ -132,17 +132,17 @@ def get_topo(topo_fname, remote_directory, force=None):
 
 #==========================================================================
 def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
-    """ 
+    """
     Function topo1writer will write out the topofiles by evaluating the
     function topo on the grid specified by the other parameters.
 
     Assumes topo can be called on arrays X,Y produced by np.meshgrid.
 
-    Output file is of "topotype1," which we use to refer to a file with 
+    Output file is of "topotype1," which we use to refer to a file with
     (x,y,z) values on each line, progressing from upper left corner across
     rows, then down.
     """
- 
+
     fout=open(outfile, 'w')
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
@@ -151,7 +151,7 @@ def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
     y = np.linspace(ylower,yupper,nypoints)
     X,Y = np.meshgrid(x,y)
     Z = topo(X,Y).T
-    
+
 
     for jj in xrange(0,nypoints):
         y = yupper - jj*dy
@@ -159,7 +159,7 @@ def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
             x =  xlower + i*dx
             j = nypoints - 1 - jj
             z = Z[i,j]
-            fout.write("%22.15e  %22.15e  %22.15e\n" % (x,y,z)) 
+            fout.write("%22.15e  %22.15e  %22.15e\n" % (x,y,z))
 
     fout.close
     print "Created file ",outfile
@@ -168,15 +168,15 @@ def topo1writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints):
 #==========================================================================
 def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
                  nodata_value=-99999):
-    """ 
+    """
     Function topo2writer will write out the topofiles by evaluating the
     function topo on the grid specified by the other parameters.
 
     Assumes topo can be called on arrays X,Y produced by np.meshgrid.
 
-    Output file is of "topotype2," which we use to refer to a file with a 
+    Output file is of "topotype2," which we use to refer to a file with a
     header and one z value of topography per row in the file
-    
+
     Header is of the form:
     # ---------------------------
     # integer   ncols   (= nxpoints)
@@ -188,7 +188,7 @@ def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
     # -----------------------------
     """
 
- 
+
     # note: for topotype2, dx=dy=cellsize
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
@@ -215,12 +215,12 @@ def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
     y = np.linspace(ylower,yupper,nypoints)
     X,Y = np.meshgrid(x,y)
     Z = topo(X,Y).T
-    
+
 
     for jj in xrange(0,nrows):
         for i in xrange(0,ncols):
             j = nypoints - 1 - jj
-            fout.write("%22.15e\n" % Z[i,j]) 
+            fout.write("%22.15e\n" % Z[i,j])
 
     fout.close
     print "Created file ",outfile
@@ -231,7 +231,7 @@ def gcdist(x1,y1,x2,y2,Rsphere=Rearth,units='degrees'):
     """
     Compute the great circle distance on the earth between points
     (x1,y1) and (x2,y2), where:
-    x = longitude, y = latitude 
+    x = longitude, y = latitude
     """
     from numpy import pi,sin,cos,arccos,arcsin,sqrt
     if units=='degrees':
@@ -255,7 +255,7 @@ def gcdist(x1,y1,x2,y2,Rsphere=Rearth,units='degrees'):
 
     d = Rsphere * dsigma
     return d
-    
+
 #==========================================================
 def dx_from_gcdist(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
     """
@@ -604,7 +604,7 @@ def griddatasubset (X,Y,Z,xlow=-1.e6,xhi=1.e6,ylow=-1.e6,yhi=1.0e6):
 def topofilefindz (pts,inputfile,topotypein=2):
     """
     topofilefindz takes an inputfile, and the coordinates of multiple points, as a list of pairs,
-    pts=[(x1,y1),...,(xn,yn)] or a numpy array of shape (n,2) [[x1,x2],...[xn,yn]], etc.
+    pts=[(x1,y1),...,(xn,yn)] or a numpy array of shape (n,2) [[x1,y1],...[xn,yn]], etc.
     and returns the topo z values as a numpy list z = [z1,...,zn].
     at those coordinates. It interpolates a bilinear function between the 4 nodes surrounding (x,y).
 
@@ -904,38 +904,38 @@ def swapheader (inputfile,outputfile):
 #==============================================================================
 def create_topo_func(loc,verbose=False):
     """Given a set of (x,z) locations, create a lambda function
-    
-    Create a lambda function that when evaluated will give the topgraphy 
+
+    Create a lambda function that when evaluated will give the topgraphy
     height at the point (x,y).
-    
-    :Example: 
+
+    :Example:
     >>> f = create_topo_profile_func(loc)
     >>> b = f(x,y)
-    
+
     :Input:
      - *loc* (list) - Create a topography file with the profile denoted by the
-       tuples inside of loc.  A sample set of points are shown below.  Note 
-       that the first value of the list is the x location and the second is 
+       tuples inside of loc.  A sample set of points are shown below.  Note
+       that the first value of the list is the x location and the second is
        the height of the topography.
-        
+
         z (m)
         ^                                                  o loc[5]  o
-        |                                                    
-        |                                          loc[4]   
+        |
+        |                                          loc[4]
         |--------------------------------------------o-----> x (m) (sea level)
-        |                                            
+        |
         |                                o loc[2] o loc[3]
-        |                         
-        |                         
+        |
+        |
         |                           o loc[1]
-        |           
-        |                               
+        |
+        |
         |__________________o loc[0]
-        0.0               
-        
-        
+        0.0
+
+
     """
-    
+
     cmd_str = "lambda x,y: (x <= %s) * %s" % (loc[0][0],loc[0][1])
     for i in xrange(0,len(loc)-1):
         loc_str = " + (%s < x) * (x <= %s)" % (loc[i][0],loc[i+1][0])
@@ -944,7 +944,7 @@ def create_topo_func(loc,verbose=False):
         loc_str = "".join((loc_str," * (x - %s) + %s)" % (loc[i][0],loc[i][1])))
         cmd_str = "".join((cmd_str,loc_str))
     cmd_str = "".join((cmd_str," + (%s < x) * %s" % (loc[-1][0],loc[-1][1])))
-    
+
     if verbose:
         print cmd_str
     return eval(cmd_str)
@@ -988,6 +988,6 @@ def calculate_resolution(ratios,base_resolutions=[0.25,0.25],
     resolutions = {}
     for level in xrange(1,num_levels):
         resolutions[level] = (degree_resolutions,meter_resolutions)
-    return [(degree_resolutions,meter_resolutions) 
+    return [(degree_resolutions,meter_resolutions)
                         for level in xrange(1,num_levels)]
 

@@ -1,6 +1,6 @@
 
 c===========================================================================
-       function topointegral(xim,xcell,xip,yjm,ycell,yjp,
+       function topointegral(xim,xip,yjm,yjp,
      &                   xxlow,yylow,dxx,dyy,mxx,myy,zz,intmethod)
 c===========================================================================
 
@@ -11,7 +11,7 @@ c     the surface integrated is defined by a piecewise bilinear through the
 c     nodes of the Cartesian grid.
 
 c      The rectangular intersection has coords:
-c      xim <= x <= xip, yjm <= y <= yjp, with center (x,y) = (xcell, ycell)
+c      xim <= x <= xip, yjm <= y <= yjp
 c
 c      The Cartesian grid has coords:
 c      xxlow <= x <= xxhi, yylow <= y <= yyhi, with grid cell size dxx by dyy

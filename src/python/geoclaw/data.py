@@ -239,6 +239,7 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         
         # Moving topograhpy
         self.add_attribute('dtopofiles',[])
+        self.add_attribute('dt_max_dtopo', 1.e99)
 
     def write(self,data_source='setrun.py'):
 
@@ -253,6 +254,8 @@ class DTopoData(clawpack.clawutil.data.ClawData):
                 raise IOError("*** dtopo input file not found: %s" % tfile[-1])
             self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
+        self.data_write()
+        self.data_write(value=self.dt_max_dtopo,alt_name='dt_max_dtopo')
         self.close_data_file()
 
 
@@ -266,13 +269,6 @@ class QinitData(clawpack.clawutil.data.ClawData):
         # Qinit data
         self.add_attribute('qinit_type',0)
         self.add_attribute('qinitfiles',[])   
-
-        # Test qinit data > 4
-        self.add_attribute("init_location")
-        self.add_attribute("wave_family")
-        self.add_attribute("epsilon")
-        self.add_attribute("angle")
-        self.add_attribute("sigma") 
 
     def write(self,data_source='setrun.py'):
         # Initial perturbation
@@ -292,10 +288,6 @@ class QinitData(clawpack.clawutil.data.ClawData):
                     # raise MissingFile("file not found")
                 self._out_file.write("\n%s  \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
-        elif self.qinit_type == 5:
-            raise NotImplementedError("Qinit type 5 has not been implemented.")
-        elif self.qinit_type == 6:
-            raise NotImplementedError("Qinit type 6 has not been implemented.")
         else:
             raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
         self.close_data_file()

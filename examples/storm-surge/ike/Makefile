@@ -20,10 +20,7 @@ SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-
-# Compiler flags can be specified here or set as an environment variable
-FFLAGS ?=
-
+FFLAGS ?= -W -Wall -fbounds-check -pedantic-errors -Wunderflow -ffpe-trap=zero,overflow -g
 
 # ---------------------------------
 # List of sources for this program:
@@ -31,6 +28,7 @@ FFLAGS ?=
 
 AMRLIB = $(CLAW)/amrclaw/src/2d
 GEOLIB = $(CLAW)/geoclaw/src/2d/shallow
+RIEMANN = $(CLAW)/riemann/src
 
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
@@ -42,47 +40,51 @@ MODULES = \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/surge/holland_storm_module.f90 \
+ $(GEOLIB)/surge/constant_storm_module.f90 \
+ $(GEOLIB)/surge/stommel_storm_module.f90 \
+ $(GEOLIB)/surge/storm_module.f90 \
+ $(GEOLIB)/surge/friction_module.f90 \
  $(GEOLIB)/fgmax_module.f90
 
 SOURCES = \
-  $(GEOLIB)/setprob.f90 \
-  $(GEOLIB)/qinit.f90 \
+  $(GEOLIB)/surge/src2.f90 \
+  $(GEOLIB)/surge/src1d.f90 \
+  $(GEOLIB)/surge/setaux.f90 \
+  $(GEOLIB)/surge/setprob.f90 \
   $(GEOLIB)/topo_update.f90 \
+  $(GEOLIB)/surge/flag2refine2.f90 \
+  $(GEOLIB)/surge/b4step2.f90 \
+  $(GEOLIB)/surge/tick.f \
+  $(GEOLIB)/valout.f \
+  $(GEOLIB)/qinit.f90 \
+  $(GEOLIB)/bc2amr.f \
+  $(GEOLIB)/allowflag.f90 \
   $(GEOLIB)/cellgridintegrate2.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
   $(GEOLIB)/stepgrid.f \
-  $(CLAW)/riemann/src/rpn2_geoclaw.f \
-  $(CLAW)/riemann/src/rpt2_geoclaw.f \
-  $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
-  $(GEOLIB)/src2.f90 \
-  $(GEOLIB)/src1d.f90 \
-  $(GEOLIB)/step2.f90 \
+  $(RIEMANN)/rpn2_geoclaw.f \
+  $(RIEMANN)/rpt2_geoclaw.f \
+  $(RIEMANN)/geoclaw_riemann_utils.f \
+  $(GEOLIB)/step2.f \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
-  $(GEOLIB)/valout.f \
-  $(GEOLIB)/filval.f90 \
-  $(GEOLIB)/filpatch.f90 \
-  $(AMRLIB)/prefilp.f90 \
-  $(AMRLIB)/trimbd.f \
-  $(AMRLIB)/bound.f \
-  $(AMRLIB)/intfil.f \
-  $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/setaux.f90 \
-  $(GEOLIB)/flag2refine2.f90  \
-  $(GEOLIB)/allowflag.f90  \
-  $(AMRLIB)/flagregions2.f90  \
-  $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
-  $(GEOLIB)/tick.f \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
   $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
-  $(GEOLIB)/amr2.f90 \
+  $(GEOLIB)/filval.f90 \
+  $(GEOLIB)/filpatch.f90 \
+  $(AMRLIB)/prefilp.f90 \
+  $(AMRLIB)/trimbd.f90 \
+  $(AMRLIB)/bound.f90 \
+  $(AMRLIB)/intfil.f90 \
+  $(AMRLIB)/amr2.f90 \
   $(GEOLIB)/fgmax_read.f90 \
   $(GEOLIB)/fgmax_frompatch.f90 \
   $(GEOLIB)/fgmax_interpolate.f90 \
@@ -90,7 +92,7 @@ SOURCES = \
   $(GEOLIB)/fgmax_finalize.f90 \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
-  $(AMRLIB)/check4nans.f90 \
+  $(AMRLIB)/check4nans.f \
   $(AMRLIB)/spest2.f  \
   $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
@@ -98,12 +100,12 @@ SOURCES = \
   $(AMRLIB)/birect.f \
   $(AMRLIB)/cleanup.f \
   $(AMRLIB)/colate2.f \
+  $(AMRLIB)/flagregions2.f90  \
   $(AMRLIB)/errest.f \
   $(AMRLIB)/prepregstep.f \
   $(AMRLIB)/prepbigstep.f \
   $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/flagger.f \
-  $(AMRLIB)/flagregions.f \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl2.f \
@@ -142,19 +144,19 @@ SOURCES = \
   $(AMRLIB)/domprep.f \
   $(AMRLIB)/domup.f \
   $(AMRLIB)/domcopy.f \
+  $(AMRLIB)/coarsen.f \
   $(AMRLIB)/setdomflags.f \
   $(AMRLIB)/setIndices.f \
   $(AMRLIB)/coarseGridFlagSet.f \
-  $(AMRLIB)/addflags.f \
-  $(AMRLIB)/baseCheck.f \
-  $(AMRLIB)/drivesort.f \
-  $(AMRLIB)/flagcheck.f \
-  $(AMRLIB)/domgrid.f \
   $(AMRLIB)/setPhysBndryFlags.f \
   $(AMRLIB)/griddomup.f \
   $(AMRLIB)/griddomcopy.f \
   $(AMRLIB)/griddomshrink.f \
-  $(AMRLIB)/coarsen.f \
+  $(AMRLIB)/domgrid.f \
+  $(AMRLIB)/addflags.f \
+  $(AMRLIB)/baseCheck.f \
+  $(AMRLIB)/drivesort.f \
+  $(AMRLIB)/flagcheck.f \
   $(AMRLIB)/auxcoarsen.f \
   $(AMRLIB)/intcopy.f \
   $(AMRLIB)/preintcopy.f \
@@ -174,13 +176,20 @@ SOURCES = \
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
 
+
 # Construct the topography data
 .PHONY: topo all
-topo:
-	python maketopo.py
+
+gulf_caribbean.tt3:
+	python get_bathy.py
+
+topo: gulf_caribbean.tt3
 
 all: 
 	$(MAKE) topo
 	$(MAKE) .plots
 	$(MAKE) .htmls
+
+
+### DO NOT remove this line - make depends on it ###
 

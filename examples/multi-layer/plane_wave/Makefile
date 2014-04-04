@@ -1,4 +1,3 @@
-
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
@@ -19,11 +18,37 @@ OUTDIR = _output               # Directory for output
 SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
+RESTART = False
+
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
 FFLAGS ?=
 
+# Include flags for LAPACK linking
+UNAME = $(shell uname)
+ifeq ($(UNAME), Darwin)
+	ifndef LFLAGS
+		LFLAGS = -framework accelerate $(FFLAGS)
+	else
+		LFLAGS += -framework accelerate $(FFLAGS)
+	endif
+else ifeq ($(shell hostname), sandy.ices.utexas.edu)
+	# Created using Intel MKL Link Line Advisor
+	# http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
+	FFLAGS += -I$(MKLROOT)/include
+	ifndef LFLAGS                                                                                                                                    
+	    LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+	else
+	    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+	endif
+else ifeq ($(UNAME), Linux)
+	ifndef LFLAGS
+		LFLAGS = -llapack $(FFLAGS)
+	else
+		LFLAGS += -llapack $(FFLAGS)
+	endif
+endif
 
 # ---------------------------------
 # List of sources for this program:
@@ -35,32 +60,44 @@ GEOLIB = $(CLAW)/geoclaw/src/2d/shallow
 MODULES = \
  $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
+ $(GEOLIB)/geoclaw_module.f90 \
  $(AMRLIB)/regions_module.f90 \
  $(AMRLIB)/gauges_module.f90 \
- $(GEOLIB)/geoclaw_module.f90 \
  $(GEOLIB)/topo_module.f90 \
- $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
- $(GEOLIB)/fgmax_module.f90
+ $(GEOLIB)/fgmax_module.f90 \
+ $(GEOLIB)/surge/holland_storm_module.f90 \
+ $(GEOLIB)/surge/constant_storm_module.f90 \
+ $(GEOLIB)/surge/stommel_storm_module.f90 \
+ $(GEOLIB)/surge/storm_module.f90 \
+ $(GEOLIB)/surge/friction_module.f90 \
+ $(GEOLIB)/multilayer/multilayer_module.f90 \
+ $(GEOLIB)/multilayer/qinit_module.f90 \
+ $(CLAW)/riemann/src/multilayer_eigen_module.f90
 
 SOURCES = \
-  $(GEOLIB)/setprob.f90 \
-  $(GEOLIB)/qinit.f90 \
+  $(GEOLIB)/multilayer/setprob.f90 \
+  $(GEOLIB)/multilayer/qinit.f90 \
+  $(GEOLIB)/multilayer/setaux.f90 \
+  $(GEOLIB)/multilayer/b4step2.f90 \
+  $(GEOLIB)/multilayer/dumpgauge.f \
   $(GEOLIB)/topo_update.f90 \
+  $(GEOLIB)/multilayer/getmaxspeed.f90 \
+  $(GEOLIB)/multilayer/stepgrid.f \
+  $(GEOLIB)/multilayer/valout.f \
+  $(GEOLIB)/multilayer/src2.f90 \
+  $(GEOLIB)/movetopo.f \
   $(GEOLIB)/cellgridintegrate2.f \
   $(GEOLIB)/topointegral.f \
   $(GEOLIB)/bilinearintegral.f \
-  $(GEOLIB)/stepgrid.f \
-  $(CLAW)/riemann/src/rpn2_geoclaw.f \
-  $(CLAW)/riemann/src/rpt2_geoclaw.f \
+  $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \
+  $(CLAW)/riemann/src/rpt2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
-  $(GEOLIB)/src2.f90 \
   $(GEOLIB)/src1d.f90 \
   $(GEOLIB)/step2.f90 \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
-  $(GEOLIB)/valout.f \
   $(GEOLIB)/filval.f90 \
   $(GEOLIB)/filpatch.f90 \
   $(AMRLIB)/prefilp.f90 \
@@ -69,18 +106,14 @@ SOURCES = \
   $(AMRLIB)/intfil.f \
   $(GEOLIB)/bc2amr.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine2.f90  \
-  $(GEOLIB)/allowflag.f90  \
   $(AMRLIB)/flagregions2.f90  \
-  $(GEOLIB)/b4step2.f90 \
-  $(GEOLIB)/dumpgauge.f \
+  $(GEOLIB)/allowflag.f90  \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
   $(GEOLIB)/ginit.f \
-  $(GEOLIB)/getmaxspeed.f90 \
   $(GEOLIB)/advanc.f \
   $(GEOLIB)/amr2.f90 \
   $(GEOLIB)/fgmax_read.f90 \
@@ -173,14 +206,3 @@ SOURCES = \
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
-
-# Construct the topography data
-.PHONY: topo all
-topo:
-	python maketopo.py
-
-all: 
-	$(MAKE) topo
-	$(MAKE) .plots
-	$(MAKE) .htmls
-
