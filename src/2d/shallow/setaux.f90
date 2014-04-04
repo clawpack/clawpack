@@ -121,10 +121,10 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     ! Copy topo to ghost cells if outside physical domain
 
     do jj=1-mbc,my+mbc
-        y = ylow + (jj-0.5d0) * dy
+        y = ylower + (jlo+jj-.5d0) * dy
         if ((y < ylower) .or. (y>yupper)) then
             do ii=1-mbc,mx+mbc
-                x = xlow + (ii-0.5d0) * dx 
+                x = xlower + (ilo+ii-.5d0) * dx
                 iint = ii + max(0, ceiling((xlower-x)/dx)) &
                           - max(0, ceiling((x-xupper)/dx))
                 jint = jj + max(0, ceiling((ylower-y)/dy)) &
@@ -136,10 +136,10 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
 
     do ii=1-mbc,mx+mbc
-        x = xlow + (ii-0.5d0) * dx
+        x =  xlower + (ilo+ii-.5d0) * dx
         if ((x < xlower) .or. (x > xupper)) then
             do jj=1-mbc,my+mbc
-                y = ylow + (jj-0.5d0) * dy 
+                y = ylower + (jlo+jj-.5d0) * dy
                 iint = ii + max(0, ceiling((xlower-x)/dx)) &
                           - max(0, ceiling((x-xupper)/dx))
                 jint = jj + max(0, ceiling((ylower-y)/dy)) &

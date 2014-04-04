@@ -68,13 +68,13 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
 !!$    real(kind=8) :: slope(2, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
 !!$    integer :: fine_cell_count(fill_indices(2)-fill_indices(1)+2, fill_indices(4)-fill_indices(3)+2)
 
-
-    real(kind=8) :: fine_mass(ihi-ilo + 2,  jhi-jlo + 2)
-    real(kind=8) :: eta_coarse(ihi-ilo + 2, jhi-jlo + 2)
-    real(kind=8) ::    vel_max(ihi-ilo + 2, jhi-jlo + 2)
-    real(kind=8) ::    vel_min(ihi-ilo + 2, jhi-jlo + 2)
-    real(kind=8) ::   slope(2, ihi-ilo + 2, jhi-jlo + 2)
-    integer ::   fine_cell_count(ihi-ilo+2, jhi-jlo + 2)
+    ! these are dimensioned at fine size since coarse grid size cant be larger (incl. the +3 that is )
+    real(kind=8) ::  fine_mass(ihi-ilo + 3, jhi-jlo + 3)
+    real(kind=8) :: eta_coarse(ihi-ilo + 3, jhi-jlo + 3)
+    real(kind=8) ::    vel_max(ihi-ilo + 3, jhi-jlo + 3)
+    real(kind=8) ::    vel_min(ihi-ilo + 3, jhi-jlo + 3)
+    real(kind=8) ::   slope(2, ihi-ilo + 3, jhi-jlo + 3)
+    integer ::   fine_cell_count(ihi-ilo+3, jhi-jlo + 3)
 
     integer :: nghost_patch, lencrse
 
@@ -89,8 +89,8 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     ! the +2 is to expand on coarse grid to enclose fine
 !!$    real(kind=8) :: valcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * nvar)  
 !!$    real(kind=8) :: auxcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_aux)  
-    real(kind=8) :: valcrse((ihi-ilo+2) * (jhi-jlo+2) * nvar)  
-    real(kind=8) :: auxcrse((ihi-ilo+2) * (jhi-jlo+2) * naux)  
+    real(kind=8) :: valcrse((ihi-ilo+3) * (jhi-jlo+3) * nvar)  
+    real(kind=8) :: auxcrse((ihi-ilo+3) * (jhi-jlo+3) * naux)  
     ! We begin by filling values for grids at level level.
 !!$    mx_patch = fill_indices(2) - fill_indices(1) + 1 ! nrowp
 !!$    my_patch = fill_indices(4) - fill_indices(3) + 1 ! ncolp
@@ -208,7 +208,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                 endif
 
             nghost_patch = 0                           
-            lencrse = (ihi-ilo+2)*(jhi-jlo+2)*naux ! set 1 component, not all naux
+            lencrse = (ihi-ilo+3)*(jhi-jlo+3)*naux ! set 1 component, not all naux
             do k = 1, lencrse, naux
               auxcrse(k) = NEEDS_TO_BE_SET  ! new system checks initialization before setting aux vals
             end do
@@ -434,7 +434,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                 enddo
             endif
         enddo
-    endif
+    endif   ! end if patch not set
 
     ! set bcs, whether or not recursive calls needed. set any part of patch that
     ! stuck out
@@ -459,7 +459,7 @@ contains
         iauxc = 1 + naux*(i-1) + naux*mx_coarse*(j-1)
     end function iauxc
 
-    ! logical for checking if this patch sti_coarseks outside of the domain
+    ! logical for checking if this patch sticks outside of the domain
     logical pure function sticksout(iplo,iphi,jplo,jphi)
         implicit none
         integer, intent(in) :: iplo,iphi,jplo,jphi
