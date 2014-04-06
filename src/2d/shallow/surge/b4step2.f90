@@ -11,10 +11,17 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
 ! 
 ! Also calls movetopo if topography might be moving.
 
-    use geoclaw_module, only: dry_tolerance, g => grav
+    use geoclaw_module, only: dry_tolerance
+    use geoclaw_module, only: g => grav
+    use topo_module, only: num_dtopo,topotime
+    use topo_module, only: aux_finalized
+    use topo_module, only: xlowdtopo, xhidtopo, ylowdtopo, yhidtopo
 
-    use topo_module
-    use dtopo_module
+    use amr_module, only: xlowdomain => xlower
+    use amr_module, only: ylowdomain => ylower
+    use amr_module, only: xhidomain => xupper
+    use amr_module, only: yhidomain => yupper
+    use amr_module, only: xperdom, yperdom, spheredom
 
     use storm_module, only: set_storm_fields
     
@@ -42,16 +49,11 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
     end forall
 
     ! Move the topography if needed
-    ! write(26,*) 'B4STEP2: t, num_dtopo: ', t,num_dtopo
-    do i=1,num_dtopo
-        call movetopo(mbc,mx,my,                                  &
-                      xlower,ylower,dx,dy,t,dt,maux,aux,                      &
-                      dtopowork(i0dtopo(i):i0dtopo(i)+mdtopo(i)-1),           &
-                      xlowdtopo(i),ylowdtopo(i),xhidtopo(i),yhidtopo(i),      &
-                      t0dtopo(i),tfdtopo(i),dxdtopo(i),dydtopo(i),dtdtopo(i), &
-                      mxdtopo(i),mydtopo(i),mtdtopo(i),mdtopo(i),             &
-                      minleveldtopo(i),maxleveldtopo(i),topoaltered(i))
-    enddo
+    if (aux_finalized < 2) then
+        ! topo arrays might have been updated by dtopo more recently than
+        ! aux arrays were set unless at least 1 step taken on all levels
+        call setaux(mbc,mx,my,xlower,ylower,dx,dy,maux,aux)
+    endif
 
 
     ! Set wind and pressure aux variables for this grid
