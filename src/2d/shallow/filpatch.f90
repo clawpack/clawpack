@@ -21,6 +21,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     use amr_module, only: timeSetaux, rinfinity
 
     use geoclaw_module, only: sea_level, dry_tolerance
+    use topo_module, only: topo_finalized
 
     implicit none
 
