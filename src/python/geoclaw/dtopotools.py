@@ -1975,6 +1975,13 @@ class SubFault(Fault):
         return output
 
 
+    def read(self, path):
+        r"""Read in subfault specification in from file at *path*
+
+        """
+        raise NotImplementedError("Reading of subfaults not implemented yet.")
+        
+
     def calculate_slip(self, Mw):
         r"""Set slip based on a moment magnitude *Mw*."""
         if self.units["mu"] == "dyne/cm^2":
@@ -2419,18 +2426,3 @@ class CSVFault(Fault):
 
         super(CSVFault, self).read(path, column_map=column_map, units={})
 
-
-def test_Fault_class():
-    pass
-
-def test_UCSB_fault():
-    pass
-
-def test_CSV_fault():
-    pass
-
-def test_subfault():
-    pass
-
-if __name__ == "__main__":
-    pass
