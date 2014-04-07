@@ -48,7 +48,6 @@ def make_dtopo_tohoku_ucsb():
     Create dtopo data file for deformation of sea floor due to 
     11 March 2011 Tohoku event, using the UCSB model.
     """
-    from clawpack.geoclaw import okada2
 
     subfault_fname = 'tohoku-ucsb.txt'
     subfaults = dtopotools.read_subfault_model_ucsb(subfault_fname)
@@ -153,7 +152,6 @@ def make_dtopo_dtopo1():
     """
     Test data.
     """
-    from clawpack.geoclaw import okada2
 
     subfaults = read_subfaults_dtopo1()
 
