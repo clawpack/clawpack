@@ -744,12 +744,12 @@ def plot_subfaults(subfaults, plot_centerline=False, slip_color=False, \
         if plot_rake:
             if test_random:
                 subfault['rake'] = 90. + 30.*(rand()-0.5)  # for testing
-            tau = (subfault['rake'] - 90) * pi/180.
+            tau = (subfault['rake'] - 90) * numpy.pi/180.
             plt.plot([x_centroid],[y_centroid],'go',markersize=5,label="Centroid")
             dxr = x_top - x_centroid
             dyr = y_top - y_centroid
-            x_rake = x_centroid + cos(tau)*dxr - numpy.sin(tau)*dyr
-            y_rake = y_centroid + numpy.sin(tau)*dxr + cos(tau)*dyr
+            x_rake = x_centroid + numpy.cos(tau)*dxr - numpy.sin(tau)*dyr
+            y_rake = y_centroid + numpy.sin(tau)*dxr + numpy.cos(tau)*dyr
             plt.plot([x_rake,x_centroid],[y_rake,y_centroid],'g-',linewidth=1)
         if slip_color:
             slip = subfault['slip']
@@ -837,7 +837,7 @@ def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
     clines1 = numpy.arange(dz_interval, dzmax + dz_interval, dz_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
     print "Plotting contour lines at: ",clines
-    # plt.contour(x,y,dz,clines,colors='k',linestyles='solid')
+    plt.contour(x,y,dz,clines,colors='k',linestyles='solid')
     y_ave = 0.5*(y.min() + y.max())
     plt.gca().set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
 
