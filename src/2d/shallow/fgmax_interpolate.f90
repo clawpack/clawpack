@@ -92,6 +92,7 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     forall (i=1-mbc:mx+mbc, j=1-mbc:my+mbc)
         mask_patch(i,j) = ((i >= i1) .and. (i <= i2) .and. &
                            (j >= j1) .and. (j <= j2))
+        mask_patch(i,j) = .true.  ! for debugging
         end forall
 
     ! Create a mask that is .true. only in part of fgrid intersecting patch:
@@ -118,7 +119,7 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
  
 
     ! Set the array values to be the values that we want to update:
-    ! Note that values will be set properly only where mask == .true.
+    ! Note that values will be set properly only where mask_patch == .true.
     values = FG_NOTSET
     call fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                    xlower,ylower,mask_patch,values)
@@ -180,13 +181,33 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
 
         do k=1,fg%npts 
             if (mask_fgrid(k)) then
-                fg_values(mv,k) = values(mv,ik(k),jk(k)) &
+    
+                i = ik(k)
+                j = jk(k)
+                if ((values(mv,i,j)==FG_NOTSET) .or. &
+                        (values(mv,i+1,j)==FG_NOTSET) .or. &
+                        (values(mv,i,j+1)==FG_NOTSET) .or. &
+                        (values(mv,i+1,j+1)==FG_NOTSET)) then
+                    fg_values(mv,k) = FG_NOTSET
+                else
+                    fg_values(mv,k) = values(mv,ik(k),jk(k)) &
                        + a(ik(k),jk(k))*dxk(k) &
                        + b(ik(k),jk(k))*dyk(k) &
                        + c(ik(k),jk(k))*dxk(k)*dyk(k)
+                    endif
+
 !               write(6,64) mv,values(mv,ik(k),jk(k)),a(ik(k),jk(k)), &
 !                  b(ik(k),jk(k)),c(ik(k),jk(k))
 !64             format('mv,v,a,b,c: ',i2,4d16.6)
+                if (fg_values(mv,k) > 1.d8) then
+                    write(6,*) '****** fg_values(mv,k): ',fg_values(mv,k)
+                    write(6,*) 'ik(k),jk(k),mx,my: ',ik(k),jk(k),mx,my
+                    write(6,*) 'a,b,c: ',a(ik(k),jk(k)),b(ik(k),jk(k)),c(ik(k),jk(k))
+                    write(6,*) 'values: ',values(mv,ik(k),jk(k)), &
+    values(mv,ik(k)+1,jk(k)),values(mv,ik(k),jk(k)+1),values(mv,ik(k)+1,jk(k)+1)
+                    write(6,*) 'dx,dy,dxk,dyk: ',dx,dy,dxk(k),dyk(k)
+                    stop
+                    endif
                 endif
             enddo
 
