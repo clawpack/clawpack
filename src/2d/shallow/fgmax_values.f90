@@ -55,7 +55,7 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     endwhere
 
     where (mask_patch .and. (h < dry_tolerance))
-        values(1,:,:) = -1.d90   !# to indicate dry region
+        values(1,:,:) = FG_NOTSET   !# to indicate dry region
     endwhere
 
     if (FG_NUM_VAL == 1) then
