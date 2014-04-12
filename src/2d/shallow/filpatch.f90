@@ -18,7 +18,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     use amr_module, only: nghost, xlower, ylower, xupper, yupper, outunit
     use amr_module, only: xperdom, yperdom, spheredom, hxposs, hyposs
     use amr_module, only: intratx, intraty, iregsz, jregsz
-    use amr_module, only: timeSetaux, rinfinity
+    use amr_module, only: timeSetaux, NEEDS_TO_BE_SET
 
     use geoclaw_module, only: sea_level, dry_tolerance
 
@@ -68,13 +68,13 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
 !!$    real(kind=8) :: slope(2, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
 !!$    integer :: fine_cell_count(fill_indices(2)-fill_indices(1)+2, fill_indices(4)-fill_indices(3)+2)
 
-
-    real(kind=8) :: fine_mass(ihi-ilo + 2,  jhi-jlo + 2)
-    real(kind=8) :: eta_coarse(ihi-ilo + 2, jhi-jlo + 2)
-    real(kind=8) ::    vel_max(ihi-ilo + 2, jhi-jlo + 2)
-    real(kind=8) ::    vel_min(ihi-ilo + 2, jhi-jlo + 2)
-    real(kind=8) ::   slope(2, ihi-ilo + 2, jhi-jlo + 2)
-    integer ::   fine_cell_count(ihi-ilo+2, jhi-jlo + 2)
+    ! these are dimensioned at fine size since coarse grid size cant be larger (incl. the +3 that is )
+    real(kind=8) ::  fine_mass(ihi-ilo + 3, jhi-jlo + 3)
+    real(kind=8) :: eta_coarse(ihi-ilo + 3, jhi-jlo + 3)
+    real(kind=8) ::    vel_max(ihi-ilo + 3, jhi-jlo + 3)
+    real(kind=8) ::    vel_min(ihi-ilo + 3, jhi-jlo + 3)
+    real(kind=8) ::   slope(2, ihi-ilo + 3, jhi-jlo + 3)
+    integer ::   fine_cell_count(ihi-ilo+3, jhi-jlo + 3)
 
     integer :: nghost_patch, lencrse
 
@@ -89,8 +89,8 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     ! the +2 is to expand on coarse grid to enclose fine
 !!$    real(kind=8) :: valcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * nvar)  
 !!$    real(kind=8) :: auxcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_aux)  
-    real(kind=8) :: valcrse((ihi-ilo+2) * (jhi-jlo+2) * nvar)  
-    real(kind=8) :: auxcrse((ihi-ilo+2) * (jhi-jlo+2) * naux)  
+    real(kind=8) :: valcrse((ihi-ilo+3) * (jhi-jlo+3) * nvar)  
+    real(kind=8) :: auxcrse((ihi-ilo+3) * (jhi-jlo+3) * naux)  
     ! We begin by filling values for grids at level level.
 !!$    mx_patch = fill_indices(2) - fill_indices(1) + 1 ! nrowp
 !!$    my_patch = fill_indices(4) - fill_indices(3) + 1 ! ncolp
@@ -208,9 +208,9 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                 endif
 
             nghost_patch = 0                           
-            lencrse = (ihi-ilo+2)*(jhi-jlo+2)*naux ! set 1 component, not all naux
+            lencrse = (ihi-ilo+3)*(jhi-jlo+3)*naux ! set 1 component, not all naux
             do k = 1, lencrse, naux
-              auxcrse(k) = rinfinity  ! new system checks initialization before setting aux vals
+              auxcrse(k) = NEEDS_TO_BE_SET  ! new system checks initialization before setting aux vals
             end do
             call setaux(nghost_patch, mx_coarse, my_coarse,       &
                         xlow_coarse, ylow_coarse,                 &
@@ -419,7 +419,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                                     h_coarse = valcrse(ivalc(1,i_coarse,j_coarse))
                                     h_count = real(fine_cell_count(i_coarse,j_coarse),kind=8)
                                     h_fine_average = fine_mass(i_coarse,j_coarse) / h_count
-                                    divide_mass = max(h_count, h_fine_average)
+                                    divide_mass = max(h_coarse, h_fine_average)
                                     h_fine = valbig(1, i_fine + nrowst - 1, j_fine + ncolst - 1)
                                     v_new = valcrse(ivalc(n,i_coarse,j_coarse)) / (divide_mass)
 
@@ -434,7 +434,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                 enddo
             endif
         enddo
-    endif
+    endif   ! end if patch not set
 
     ! set bcs, whether or not recursive calls needed. set any part of patch that
     ! stuck out
@@ -459,7 +459,7 @@ contains
         iauxc = 1 + naux*(i-1) + naux*mx_coarse*(j-1)
     end function iauxc
 
-    ! logical for checking if this patch sti_coarseks outside of the domain
+    ! logical for checking if this patch sticks outside of the domain
     logical pure function sticksout(iplo,iphi,jplo,jphi)
         implicit none
         integer, intent(in) :: iplo,iphi,jplo,jphi
