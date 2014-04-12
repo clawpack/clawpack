@@ -126,6 +126,7 @@ c  can only do this after topo stops moving
               else
                 locaux = 1
               endif
+
 c
 c      We now fill in the values for grid mptr using filval. It uses
 c      piecewise linear interpolation to obtain values from the
@@ -151,10 +152,6 @@ c          # "interior" of coarser patch to fill fine grid.
            jlo   = node(ndjlo, mptr)
            jhi   = node(ndjhi, mptr)
  
-c         ## need to get scratch space here, since passing ins
-c         ## variables indexed into alloc. This is in case dynamic
-c         ## memory would have changed the alloc location
-
            call system_clock(clock_start,clock_rate)
            call filval(alloc(loc),mitot,mjtot,hx,hy,lcheck,time,
      1                 mic,mjc,
