@@ -768,15 +768,18 @@ class Topography(object):
 
         # Determine topo type if not specified
         if topo_type is None:
-            # Try to look at suffix for type
-            extension = os.path.splitext(path)[1][1:]
-            if extension[:2] == "tt":
-                topo_type = int(extension[2])
-            elif extension == 'xyz':
-                topo_type = 1
+            if self.topo_type is not None:
+                topo_type = self.topo_type
             else:
-                # Default to 3
-                topo_type = 3
+                # Try to look at suffix for type
+                extension = os.path.splitext(path)[1][1:]
+                if extension[:2] == "tt" or extension[:2] == 'topotype':
+                    topo_type = int(extension[2])
+                elif extension == 'xyz':
+                    topo_type = 1
+                else:
+                    # Default to 3
+                    topo_type = 3
 
         # Default to this object's no_data_value if the passed is None, 
         # otherwise the argument will override the object's value or it will 
