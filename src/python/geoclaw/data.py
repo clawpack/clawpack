@@ -137,11 +137,7 @@ class TopographyData(clawpack.clawutil.data.ClawData):
             ntopofiles = len(self.topofiles)
             self.data_write(value=ntopofiles,alt_name='ntopofiles')
             for tfile in self.topofiles:
-                try:
-                    fname = os.path.abspath(tfile[-1])
-                except:
-                    print "*** Error: file not found: ",tfile[-1]
-                    raise ("file not found")
+                fname = os.path.abspath(tfile[-1])
                 self._out_file.write("\n'%s' \n " % fname)
                 self._out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
         elif self.test_topography == 1:
@@ -235,8 +231,6 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         self.data_write()
         for fgmax_file in self.fgmax_files:
             fname = os.path.abspath(fgmax_file)
-            if not os.path.isfile(fname):
-                raise IOError("***fgmax input file not found: %s" % fgmax_file)
             self._out_file.write("\n'%s' \n" % fname)
         self.close_data_file()
 
@@ -261,8 +255,6 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.data_write()
         for tfile in self.dtopofiles:
             fname = os.path.abspath(tfile[-1])
-            if not os.path.isfile(fname):
-                raise IOError("*** dtopo input file not found: %s" % tfile[-1])
             self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.data_write()
@@ -299,11 +291,7 @@ class QinitData(clawpack.clawutil.data.ClawData):
         elif 0 < self.qinit_type < 5:
             # Check to see if each qinit file is present and then write the data
             for tfile in self.qinitfiles:
-                try:
-                    fname = "'%s'" % os.path.abspath(tfile[-1])
-                except:
-                    raise Warning("File %s was not found." % fname)
-                    # raise MissingFile("file not found")
+                fname = "'%s'" % os.path.abspath(tfile[-1])
                 self._out_file.write("\n%s  \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         elif self.qinit_type == 5:

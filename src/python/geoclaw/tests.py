@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 r"""
 Execute nosetests in all subdirectories, to run a series of quick
 regression tests.
@@ -18,6 +16,23 @@ import inspect
 import urllib
 import tarfile
 import time
+import glob
+
+# Clean library files whenever this module is used
+if os.environ.has_key("CLAW"):
+    CLAW = os.environ["CLAW"]
+else:
+    raise ValueError("Need to set CLAW environment variable.")
+
+for lib_path in [os.path.join(CLAW,"amrclaw","src","2d"),
+                 os.path.join(CLAW,"geoclaw","src","2d","shallow"),
+                 os.path.join(CLAW,"geoclaw","src","2d","shallow","multilayer"),
+                 os.path.join(CLAW,"geoclaw","src","2d","shallow","surge")]:
+    for path in glob.glob(os.path.join(lib_path,"*.o")):
+        os.remove(path)
+    for path in glob.glob(os.path.join(lib_path,"*.mod")):
+        os.remove(path)
+
 
 class GeoClawTest(unittest.TestCase):
 
@@ -27,18 +42,17 @@ class GeoClawTest(unittest.TestCase):
     :TODO:
     """
 
-    def __init__(self):
+    def __init__(self, methodName="runTest"):
 
-        super(GeoClawTest, self).__init__()
+        super(GeoClawTest, self).__init__(methodName=methodName)
 
-        self.temp_path = None
         self.stdout = None
         self.stderr = None
-
-        self.remote_files = []
         self.success = False
-
+        self.temp_path = None
         self.test_path = os.path.dirname(inspect.getfile(self.__class__))
+        if len(self.test_path) == 0:
+             self.test_path = "./"
 
     def get_remote_file(self, url, force=False, verbose=False):
         r"""Fetch file located at *url* and store in object's *temp_path*
@@ -99,6 +113,10 @@ class GeoClawTest(unittest.TestCase):
         self.stdout.flush()
         self.stderr.flush()
 
+        self.stdout.write("Paths:")
+        self.stdout.write("  %s" % self.temp_path)
+        self.stdout.write("  %s" % self.test_path)
+        self.stdout.flush()
         self.build_executable()
 
 
@@ -127,6 +145,8 @@ class GeoClawTest(unittest.TestCase):
         subprocess.check_call(runclaw_cmd, stdout=self.stdout, 
                                            stderr=self.stderr,
                                            shell=True)
+        self.stdout.flush()
+        self.stderr.flush()
 
 
     def tearDown(self):
@@ -153,11 +173,17 @@ class GeoClawTest(unittest.TestCase):
 
         Moves the resulting executable to the temporary directory.
 
+
         """
+
+        # subprocess.check_call("echo '%s'" % str(self.__class__), shell=True)
+        # subprocess.check_call("echo '%s'" % inspect.getfile(self.__class__), shell=True)
+        # subprocess.check_call("echo '%s'" % self.test_path, shell=True)
+        # subprocess.check_call("echo '%s'" % self.temp_path, shell=True)
         subprocess.check_call("cd %s ; make .exe" % self.test_path, 
-                                                        stdout=self.stdout, 
-                                                        stderr=self.stderr, 
-                                                        shell=True)
+                                                    stdout=self.stdout, 
+                                                    stderr=self.stderr, 
+                                                    shell=True)
         shutil.move(os.path.join(self.test_path, executable_name),  
                     self.temp_path)
 

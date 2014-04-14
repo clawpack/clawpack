@@ -20,12 +20,6 @@ class BowlSloshTest(tests.GeoClawTest):
 
     r"""Bowl-Slosh regression test for GeoClaw"""
 
-    def __init__(self, save=False):
-
-        super(BowlSloshTest, self).__init__()
-        self.save_regression_data = save
-
-
     def setUp(self):
 
         super(BowlSloshTest, self).setUp()
@@ -42,23 +36,29 @@ class BowlSloshTest(tests.GeoClawTest):
         topo.write(os.path.join(self.temp_path, "bowl.topotype2"))
 
 
-    def runTest(self):
+    def runTest(self, save=False):
 
+        # Run code
         super(BowlSloshTest, self).runTest()
 
         # Get gauge data
-        data = numpy.loadtxt(os.path.join(self.temp_path, "fort.gauge"))
+        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
+        data_sum = [data[:,2].sum(), data[:,3].sum()]
 
         # Get (and save) regression comparison data
-        regression_data_file = os.path.join(os.getcwd(), "regression_data.txt")
-        if self.save_regression_data:
+        regression_data_file = os.path.join(self.test_path, "regression_data.txt")
+        if save:
             numpy.savetxt(regression_data_file, data)
         regression_data = numpy.loadtxt(regression_data_file)
+        # regression_sum = [regression_data[:,2].sum(), regression_data[:,3].sum()]
+        regression_sum = regression_data
 
         # Compare data
         tolerance = 1e-14
+        assert numpy.allclose(data_sum, regression_sum, tolerance), \
+                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
         assert numpy.allclose(data, regression_data, tolerance), \
-                "\n data: %s, \n  expected: %s" % (data, regression_data)
+                "Full gauge match failed."
 
         # If we have gotten here then we do not need to copy the run results
         self.success = True
@@ -66,15 +66,14 @@ class BowlSloshTest(tests.GeoClawTest):
 
 
 if __name__=="__main__":
-    save_regression_data = False
     if len(sys.argv) > 1:
         if bool(sys.argv[1]):
             # Fake the setup and save out output
-            test = BowlSloshTest(save=True)
+            test = BowlSloshTest()
             try:
                 test.setUp()
-                test.test_gauge_output()
+                test.runTest(save=True)
             finally:
                 test.tearDown()
-
+            sys.exit(0)
     unittest.main()

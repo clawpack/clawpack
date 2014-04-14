@@ -1458,7 +1458,8 @@ class Fault(object):
 
 
     def read(self, path, column_map, coordinate_specification="centroid",
-                         rupture_type="static", t=[0.0, 0.5, 1.0], skiprows=0):
+                         rupture_type="static", t=[0.0, 0.5, 1.0], skiprows=0,
+                         delimiter=" "):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
@@ -1470,7 +1471,9 @@ class Fault(object):
         """
 
         # Read in rest of data
-        data = numpy.loadtxt(path, skiprows=skiprows)
+        data = numpy.loadtxt(path, skiprows=skiprows, delimiter=delimiter)
+        if len(data.shape) == 1:
+            data = numpy.array([data])
 
         self.subfaults = []
         for n in xrange(data.shape[0]):
@@ -1569,17 +1572,15 @@ class Fault(object):
 
         """
 
-        # Attempt to find some enclosing rect of all subfaults
-        self._fault_plane_corners = [[None, None, None], # a 
-                                     [None, None, None], # b
-                                     [None, None, None], # c
-                                     [None, None, None]] # d
-        self._fault_plane_centers = [[None, None, None], # 1
-                                     [None, None, None], # 2 
-                                     [None, None, None]] # 3
+        # Initialize corners with first subfault
+        self._fault_plane_corners = self.subfaults[0].fault_plane_corners
+        self._fault_plane_centers = self.subfaults[0].fault_plane_centers
 
-        raise NotImplemented("Geometry of non-specific fault not implemented.")
-
+        # If there's only one subfault we are done, otherwise continue
+        if len(self.subfaults) > 1:
+            raise NotImplementedError("Calculating fault geometry not ",
+                                      "implemented.")
+    
 
     def create_coordinate_arrays(self, resolution=60, buffer_size=0.5):
         r"""Create coordinate arrays containing subfault.
@@ -2410,19 +2411,34 @@ class CSVFault(Fault):
         *path*.
 
         """
-        valid_column_labels = ()
 
         # Read header of file
         with open(path, 'r') as subfault_file:
-            header_line = subfault_file.readline().split()
-            column_map = {'coordinates':[None, None]}
+            header_line = subfault_file.readline().split(",")
+            column_map = {'coordinates':[None, None], 'dimensions':[None, None]}
             for (n,column_heading) in enumerate(header_line):
-                if column_heading in valid_column_labels:
-                    column_map[column_heading] = n
-                elif column_heading == "longitude":
+                if "(" in column_heading:
+                    # Strip out units if present
+                    unit_start = column_heading.find("(")
+                    unit_end = column_heading.find(")")
+                    column_key = column_heading[:unit_start].lower()
+                    self.units[column_key] = column_heading[unit_start:unit_end]
+                else:
+                    column_key = column_heading.lower()
+                column_key = column_key.strip()
+                if column_key in ("depth", "strike", "dip", "rake", "slip"):
+                    column_map[column_key] = n
+                elif column_key == "longitude":
                     column_map['coordinates'][0] = n
-                elif column_heading == "latitude":
+                elif column_key == "latitude":
                     column_map['coordinates'][1] = n
+                elif column_key == "length":
+                    column_map['dimensions'][0] = n
+                elif column_key == "width":
+                    column_map['dimensions'][1] = n
 
-        super(CSVFault, self).read(path, column_map=column_map, units={})
+        super(CSVFault, self).read(path, column_map=column_map, skiprows=1,
+                                         delimiter=",")
 
+# path, column_map, coordinate_specification="centroid",
+#                          rupture_type="static", t=[0.0, 0.5, 1.0], skiprows=0
