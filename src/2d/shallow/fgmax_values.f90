@@ -10,11 +10,12 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     ! Only the elements for which mask_patch(i,j) == .true. need be set.
 
     ! This library routine expects FG_NUM_VAL to be 1, 2, or 5 and sets:
-    !   values(1,i,j) = depth          (if FG_NUM_VAL >= 1)
+    !   values(1,i,j) = eta_tilde      (if FG_NUM_VAL >= 1)
     !   values(2,i,j) = speed          (if FG_NUM_VAL >= 2)
     !   values(1,i,j) = momentum       (if FG_NUM_VAL == 5)
     !   values(1,i,j) = momentum flux  (if FG_NUM_VAL == 5)
     !   values(1,i,j) = -depth         (if FG_NUM_VAL == 5)
+    ! See below for definition of eta_tilde
     ! The max of -depth can be used to determin the minimum depth of water
     ! at a point over the computation, useful in harbors where ships may be
     ! grounded if the depth goes too low.
@@ -40,7 +41,7 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
         endif
 
     ! This version sets only 1 value to monitor, the value eta_tilde
-    ! defined to be h+B where wet and sea_level where dry
+    ! defined to be h+B where wet and FG_NOTSET where dry (large neg value)
 
     !if (FG_NUM_VAL .ne. 1) then
     !    write(6,*) '*** Error FG_NUM_VAL in fgmax_module is ',FG_NUM_VAL
