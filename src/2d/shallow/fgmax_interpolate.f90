@@ -87,9 +87,9 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
 
     ! Create a mask that is .true. only in part of patch intersecting fgrid:
     i1 = max(int((x1 - xlower + 0.5d0*dx) / dx), 0)
-    i2 = min(int((x2 - xlower + 0.5d0*dx) / dx) + 1, mx)
+    i2 = min(int((x2 - xlower + 0.5d0*dx) / dx) + 1, mx+1)
     j1 = max(int((y1 - ylower + 0.5d0*dy) / dy), 0)
-    j2 = min(int((y2 - ylower + 0.5d0*dy) / dy) + 1, my)
+    j2 = min(int((y2 - ylower + 0.5d0*dy) / dy) + 1, my+1)
 
     if (debug) then
         write(61,*) 'patch intersecting fgrid: i1,i2: ',i1,i2
