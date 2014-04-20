@@ -10,12 +10,11 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     ! Only the elements for which mask_patch(i,j) == .true. need be set.
 
     ! This library routine expects FG_NUM_VAL to be 1, 2, or 5 and sets:
-    !   values(1,i,j) = eta_tilde      (if FG_NUM_VAL >= 1)
+    !   values(1,i,j) = h              (if FG_NUM_VAL >= 1)
     !   values(2,i,j) = speed          (if FG_NUM_VAL >= 2)
     !   values(1,i,j) = momentum       (if FG_NUM_VAL == 5)
     !   values(1,i,j) = momentum flux  (if FG_NUM_VAL == 5)
     !   values(1,i,j) = -depth         (if FG_NUM_VAL == 5)
-    ! See below for definition of eta_tilde
     ! The max of -depth can be used to determin the minimum depth of water
     ! at a point over the computation, useful in harbors where ships may be
     ! grounded if the depth goes too low.
@@ -40,23 +39,10 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
         allocate(u(1-mbc:mx+mbc, 1-mbc:my+mbc), v(1-mbc:mx+mbc, 1-mbc:my+mbc))
         endif
 
-    ! This version sets only 1 value to monitor, the value eta_tilde
-    ! defined to be h+B where wet and FG_NOTSET where dry (large neg value)
-
-    !if (FG_NUM_VAL .ne. 1) then
-    !    write(6,*) '*** Error FG_NUM_VAL in fgmax_module is ',FG_NUM_VAL
-    !    write(6,*) '*** Does not agree with number expected in fgmax_values: 1'
-    !    stop
-    !    endif 
-
     h = q(1,:,:)
 
-    where (mask_patch .and. (h >= dry_tolerance))
-        values(1,:,:) = h + aux(1,:,:)
-    endwhere
-
-    where (mask_patch .and. (h < dry_tolerance))
-        values(1,:,:) = FG_NOTSET   !# to indicate dry region
+    where (mask_patch)
+        values(1,:,:) = h
     endwhere
 
     if (FG_NUM_VAL == 1) then
