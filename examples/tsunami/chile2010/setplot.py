@@ -109,7 +109,7 @@ def setplot(plotdata):
     plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
     plotfigure.show = True   # Don't show this file in the html version
     plotfigure.use_for_kml = True
-    plotfigure.kml_dpi = 200
+    plotfigure.kml_dpi = 500
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
 
@@ -120,7 +120,7 @@ def setplot(plotdata):
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = geoplot.surface
+    plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
