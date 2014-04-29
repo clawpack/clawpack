@@ -1459,7 +1459,7 @@ class Fault(object):
 
     def read(self, path, column_map, coordinate_specification="centroid",
                          rupture_type="static", t=[0.0, 0.5, 1.0], skiprows=0,
-                         delimiter=" "):
+                         delimiter=None):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
@@ -2339,7 +2339,7 @@ class UCSBFault(Fault):
 
         # Assume that there is a column label right underneath the boundary
         # specification
-        header_lines += n + 1
+        header_lines += n + 2
 
         # Check to make sure last boundary point matches, then throw away
         if boundary_data[0] != boundary_data[4]:
