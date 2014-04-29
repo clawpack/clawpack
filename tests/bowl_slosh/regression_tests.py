@@ -50,8 +50,8 @@ class BowlSloshTest(tests.GeoClawTest):
         if save:
             numpy.savetxt(regression_data_file, data)
         regression_data = numpy.loadtxt(regression_data_file)
-        # regression_sum = [regression_data[:,2].sum(), regression_data[:,3].sum()]
-        regression_sum = regression_data
+        regression_sum = [regression_data[:,2].sum(), regression_data[:,3].sum()]
+        # regression_sum = regression_data
 
         # Compare data
         tolerance = 1e-14

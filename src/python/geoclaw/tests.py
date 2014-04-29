@@ -78,7 +78,7 @@ class GeoClawTest(unittest.TestCase):
 
         if tarfile.is_tarfile(output_path):
             with tarfile.open(output_path, mode="r:*") as tar_file:
-                tar_file.extractall(path=self.temp_file)
+                tar_file.extractall(path=self.temp_path)
 
         self.remote_files.append(output_path)
 

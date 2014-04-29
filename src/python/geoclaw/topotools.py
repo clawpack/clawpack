@@ -580,7 +580,7 @@ class Topography(object):
                     # Generate arrays
                     self._X, self._Y = numpy.meshgrid(self._x, self._y)
                 else:
-                    raise Error("Unrecognized topo_type: %s" % self.topo_type)
+                    raise ValueError("Unrecognized topo_type: %s" % self.topo_type)
 
             elif self.topo_func is not None:
                 if self._x is None or self._y is None:
