@@ -20,9 +20,6 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
 
     use geoclaw_module, only: sea_level, dry_tolerance
 
-    use topo_module, only: num_dtopo,topotime
-    use topo_module, only: tfdtopo,t0dtopo,topo_finalized,aux_finalized
-
     implicit none
 
     ! Input
@@ -365,7 +362,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                                     h_coarse = valcrse(ivalc(1,i_coarse,j_coarse))
                                     h_count = real(fine_cell_count(i_coarse,j_coarse),kind=8)
                                     h_fine_average = fine_mass(i_coarse,j_coarse) / h_count
-                                    divide_mass = max(h_count, h_fine_average)
+                                    divide_mass = max(h_coarse, h_fine_average)
                                     h_fine = valbig(1, i_fine + nrowst - 1, j_fine + ncolst - 1)
                                     v_new = valcrse(ivalc(n,i_coarse,j_coarse)) / (divide_mass)
 

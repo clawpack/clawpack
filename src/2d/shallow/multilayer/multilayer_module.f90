@@ -9,6 +9,9 @@
 module multilayer_module
 
     implicit none
+
+    ! Storage parameters
+    integer :: aux_layer_index
     
     ! Physical parameters
     integer :: num_layers
@@ -19,7 +22,7 @@ module multilayer_module
     integer :: eigen_method,inundation_method
     logical :: check_richardson
     real(kind=8) :: richardson_tolerance
-    real(kind=8), allocatable :: wave_tol(:)
+    real(kind=8), allocatable :: wave_tol(:), dry_tolerance(:)
     
     ! Output files
     integer, parameter :: KAPPA_UNIT = 42
@@ -31,7 +34,8 @@ contains
     ! ========================================================================
     subroutine set_multilayer(data_file)
 
-        use geoclaw_module, only: GEO_PARM_UNIT
+        use geoclaw_module, only: GEO_PARM_UNIT, geo_dry_tolerance => dry_tolerance
+        use storm_module, only: storm_type
 
         implicit none
         character(len=*), optional, intent(in) :: data_file
@@ -56,6 +60,7 @@ contains
         allocate(rho(num_layers))
         allocate(eta_init(num_layers))
         allocate(wave_tol(num_layers))
+        allocate(dry_tolerance(num_layers))
 
         read(IOUNIT,*) rho
         if (num_layers > 1) then
@@ -76,6 +81,16 @@ contains
         
         close(IOUNIT) 
 
+        ! Set layer index - depends on whether a storm surge is being modeled
+        if (storm_type == 0) then
+            aux_layer_index = 5
+        else
+            aux_layer_index = 8
+        end if
+
+        ! Currently just set dry_tolerance(:) = dry_tolerance
+        dry_tolerance = geo_dry_tolerance
+
         ! Open Kappa output file if num_layers > 1
         ! Open file for writing hyperbolicity warnings if multiple layers
         if (num_layers > 1 .and. check_richardson) then
@@ -88,6 +103,7 @@ contains
         write(GEO_PARM_UNIT,*) '   richardson_tolerance:',richardson_tolerance
         write(GEO_PARM_UNIT,*) '   eigen_method:',eigen_method
         write(GEO_PARM_UNIT,*) '   inundation_method:',inundation_method
+        write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
         
     end subroutine set_multilayer
 

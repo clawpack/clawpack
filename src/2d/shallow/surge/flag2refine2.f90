@@ -27,12 +27,12 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
 
     use geoclaw_module, only: dry_tolerance, sea_level
     use geoclaw_module, only: spherical_distance, coordinate_system
-    
+
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
     use topo_module, only: minleveltopo,mtopofiles
-    
-    use dtopo_module, only: tfdtopo,xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
-    use dtopo_module, only: minleveldtopo,num_dtopo
+
+    use topo_module, only: tfdtopo,xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
+    use topo_module, only: minleveldtopo,num_dtopo
     
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
     use qinit_module, only: min_level_qinit, qinit_type
@@ -40,7 +40,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     use storm_module, only: wind_refine, R_refine, storm_location, wind_index
     use storm_module, only: wind_forcing
     
-    use regions_module
+    use regions_module, only: num_regions, regions
     use refinement_module
  
     implicit none
@@ -120,7 +120,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                 if (level < minleveltopo(m) .and. t >= tlowtopo(m) .and. t <= thitopo(m)) then
                     if (  x_hi > xlowtopo(m) .and. x_low < xhitopo(m) .and. &
                           y_hi > ylowtopo(m) .and. y_low < yhitopo(m) ) then
-                        
+
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
                     endif
@@ -133,7 +133,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                     t >= regions(m)%t_low .and. t <= regions(m)%t_hi) then
                     if (x_hi > regions(m)%x_low .and. x_low < regions(m)%x_hi .and. &
                         y_hi > regions(m)%y_low .and. y_low < regions(m)%y_hi ) then
-                    
+
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
                     endif
@@ -147,19 +147,21 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                     t <= tfdtopo(m) .and. & !t.ge.t0dtopo(m).and.
                     x_hi > xlowdtopo(m) .and. x_low < xhidtopo(m).and. &
                     y_hi > ylowdtopo(m) .and. y_low < yhidtopo(m)) then
-                    
-                    amrflags(i,j) = DOFLAG    
+
+                    amrflags(i,j) = DOFLAG
                     cycle x_loop
                 endif
             enddo
 
             ! Check if we're in the region where initial perturbation is
             ! specified and need to force refinement:
-            if (qinit_type > 0 .and. t == t0) then 
-                if (level < min_level_qinit .and. & 
+            ! This assumes that t0 = 0.d0, should really be t0 but we do
+            ! not have access to that parameter in this routine
+            if (qinit_type > 0 .and. t == t0) then
+                if (level < min_level_qinit .and. &
                     x_hi > x_low_qinit .and. x_low < x_hi_qinit .and. &
                     y_hi > y_low_qinit .and. y_low < y_hi_qinit) then
-                    
+
                     amrflags(i,j) = DOFLAG
                     cycle x_loop
                 endif

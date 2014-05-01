@@ -56,6 +56,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     real(kind=8) :: vel_min(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
     real(kind=8) :: slope(2, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
     integer :: fine_cell_count(fill_indices(2)-fill_indices(1)+2, fill_indices(4)-fill_indices(3)+2)
+    integer :: nghost_patch
 
     ! Stack storage
     !  use stack-based scratch arrays instead of alloc, since dont really
@@ -161,8 +162,9 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
         ! instead in intfil using possibly already available bathy data from the
         ! grids
         if (num_aux > 0) then
-            call setaux(nghost, mx_coarse - 2*nghost,my_coarse - 2*nghost, &
-                        coarse_rect(1) + nghost * dx_coarse,coarse_rect(3) + nghost * dy_coarse, &
+            nghost_patch = 0
+            call setaux(nghost_patch, mx_coarse, my_coarse, &
+                        coarse_rect(1), coarse_rect(3), &
                         dx_coarse,dy_coarse,num_aux,auxcrse)
         endif
 
@@ -358,7 +360,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
                                     h_coarse = valcrse(ivalc(1,i_coarse,j_coarse)) / rho(1)
                                     h_count = real(fine_cell_count(i_coarse,j_coarse),kind=8)
                                     h_fine_average = fine_mass(i_coarse,j_coarse) / h_count
-                                    divide_mass = max(h_count, h_fine_average)
+                                    divide_mass = max(h_coarse, h_fine_average)
                                     h_fine = valbig(1, i_fine + nrowst - 1, j_fine + ncolst - 1) / rho(1)
                                     v_new = valcrse(ivalc(n,i_coarse,j_coarse)) / (rho(1) * divide_mass)
                                     
