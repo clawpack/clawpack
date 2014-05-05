@@ -33,13 +33,14 @@ for lib_path in [os.path.join(CLAW,"amrclaw","src","2d"),
     for path in glob.glob(os.path.join(lib_path,"*.mod")):
         os.remove(path)
 
-
+# TODO: Maybe rename this to `GeoClawRegressionTest`
 class GeoClawTest(unittest.TestCase):
 
     r"""Base GeoClaw regression test setup
 
 
     :TODO:
+     - Should we keep track of remote files?  Nothing is done with them now.
     """
 
     def __init__(self, methodName="runTest"):
@@ -49,6 +50,7 @@ class GeoClawTest(unittest.TestCase):
         self.stdout = None
         self.stderr = None
         self.success = False
+        self.remote_files = []
         self.temp_path = None
         self.test_path = os.path.dirname(inspect.getfile(self.__class__))
         if len(self.test_path) == 0:

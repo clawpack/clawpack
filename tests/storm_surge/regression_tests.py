@@ -5,6 +5,7 @@
 import sys
 import os
 import unittest
+import glob
 
 import numpy
 
@@ -19,6 +20,8 @@ class IkeTest(tests.GeoClawTest):
         super(IkeTest, self).setUp()
 
         # Download topography
+        self.get_remote_file("http://users.ices.utexas.edu/~kyle/bathy/" + \
+                                     "gulf_caribbean.tt3.tar.bz2")
 
 
     def runTest(self, save=False):
@@ -26,8 +29,39 @@ class IkeTest(tests.GeoClawTest):
         # Run code
         super(IkeTest, self).runTest()
 
+        # Could compare AMR behavior...
+        num_levels = 2
+        file_list = glob.glob(os.path.join(self.temp_path,
+                                                "_output", 
+                                                "fort.q*"))
+
+        time = numpy.empty(len(file_list), dtype=float)
+        num_grids = numpy.zeros((time.shape[0], num_levels), dtype=int)
+        num_cells = numpy.zeros((time.shape[0], num_levels), dtype=int)
+
+        for (n,path) in enumerate(file_list):
+            # Read t file
+            t_path = path[:-5] + "t" + path[-4:]
+            with open(t_path, 'r') as t_file:
+                time[n] = seconds2days(float(t_file.readline().split()[0]) - landfall)
+                t_file.readline()
+                t_file_num_grids = int(t_file.readline().split()[0])
+
+            # Read q_file
+            with open(path, 'r') as q_file:
+                line = "\n"
+                while line != "":
+                    line = q_file.readline()
+                    if "grid_number" in line:
+                        # print "grid number:", int(line.split()[0])
+                        level = int(q_file.readline().split()[0])
+                        num_grids[n,level - 1] += 1 
+                        mx = int(q_file.readline().split()[0])
+                        my = int(q_file.readline().split()[0])
+                        num_cells[n,level - 1] += mx * my
+
         # Compare gauge data
-        data = numpy.loadtxt(os.path.join(self.temp_path), 'fort.gauge')
+        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
 
         regression_data_file = os.path.join(self.test_path, "regression_data.txt")
         if save:
