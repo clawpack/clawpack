@@ -17,7 +17,7 @@ def deg2dms(dy):
     return dy_deg,dy_min,dy_sec
 
 
-def regions2kml(fname='regions.kml'):
+def regions2kml(rundata=None,fname='regions.kml'):
 
     """
     Read in the AMR regions from setrun.py and create a kml box for each.
@@ -26,12 +26,14 @@ def regions2kml(fname='regions.kml'):
     """
 
     from numpy import cos,pi,floor
-    try:
-        import setrun
-        reload(setrun)
-        rundata = setrun.setrun()
-    except:
-        raise IOError("*** cannot execute setrun file")
+
+    if rundata is None:
+        try:
+            import setrun
+            reload(setrun)
+            rundata = setrun.setrun()
+        except:
+            raise IOError("*** cannot execute setrun file")
 
     clawdata = rundata.clawdata
     x1,y1 = clawdata.lower[0:]
@@ -176,19 +178,20 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000'):
     print "Created ",fname
         
 
-def gauges2kml(fname='gauges.kml'):
+def gauges2kml(rundata=None, fname='gauges.kml'):
 
     """
     Read in the gauge locations from setrun.py and create a kml point for each.
     """
 
-    try:
-        import setrun
-        reload(setrun)
-        rundata = setrun.setrun()
-    except:
-        raise IOError("*** cannot execute setrun file")
 
+    if rundata is None:
+        try:
+            import setrun
+            reload(setrun)
+            rundata = setrun.setrun()
+        except:
+            raise IOError("*** cannot execute setrun file")
 
     elev = 0.
     kml_text = kml_header()
