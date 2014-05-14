@@ -270,6 +270,26 @@ def set_fault_xy(faultparams):
         x_bottom = x0+del_x
         y_bottom = y0+del_y
 
+    elif location == "noaa sift":
+
+        # The NOAA PMEL SIFT database uses the following mixed convention:
+        #    depth is specified to the top of the fault plane
+        #    lat-long is specified at the center of the bottom of the fault plane
+
+        depth_top = depth
+        depth_centroid = depth + 0.5*width*sin(ang_dip)
+        depth_bottom = depth + width*sin(ang_dip)
+
+        del_x = width*cos(ang_dip)*cos(ang_strike) / (lat2meter*cos(y0*DEG2RAD))
+        del_y = -width*cos(ang_dip)*sin(ang_strike) / lat2meter
+
+        x_bottom = x0
+        y_bottom = y0
+        x_centroid = x0 - 0.5*del_x
+        y_centroid = y0 - 0.5*del_y
+        x_top = x0-del_x
+        y_top = y0-del_y
+
     else:
         raise ValueError("Unrecognized latlong_location %s " % location)
 
