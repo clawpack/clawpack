@@ -92,7 +92,7 @@ def dist_meters2latlong(dx, dy, latitude=0.0):
 
     """
 
-    dxd = dx / (Rearth * np.cos(latitude * DEG2RAD)) * RAD2DEG
+    dxd = dx / (Rearth * numpy.cos(latitude * DEG2RAD)) * RAD2DEG
     dyd = dy * RAD2DEG / Rearth
 
     return dxd, dyd
@@ -820,9 +820,9 @@ class Topography(object):
                 # Write out bathy data
                 if topo_type == 2:
                     if masked_Z:
-                        Z_filled = self.Z.filled()
+                        Z_filled = numpy.flipud(self.Z.filled())
                     else:
-                        Z_filled = self.Z
+                        Z_filled = numpy.flipud(self.Z)
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
                             outfile.write("%22.15e\n" % Z_filled[i,j])
@@ -832,7 +832,7 @@ class Topography(object):
                     if masked_Z:
                         Z_flipped = numpy.flipud(self.Z.filled())
                     else:
-                        Z_flipped = self.Z
+                        Z_flipped = numpy.flipud(self.Z)
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
                             outfile.write("%22.15e   " % (Z_flipped[i,j]))
@@ -849,7 +849,6 @@ class Topography(object):
         r"""Plot the topography."""
 
         import matplotlib.pyplot as plt
-        import matplotlib.colors as colors
         import clawpack.visclaw.colormaps as colormaps
 
         # Create axes if needed
@@ -953,10 +952,10 @@ class Topography(object):
 
         # Convert meter inputs to degrees
         mean_latitude = numpy.mean(self.y)
-        buffer_degrees = topotools.dist_meters2latlong(buffer_length, 0.0, mean_latitude)[0]
-        delta_degrees = topotools.dist_meters2latlong(delta_limit, 0.0, mean_latitude)[0]
+        buffer_degrees = dist_meters2latlong(buffer_length, 0.0, mean_latitude)[0]
+        delta_degrees = dist_meters2latlong(delta_limit, 0.0, mean_latitude)[0]
         if proximity_radius > 0.0:
-            proximity_radius_deg = topotools.dist_meters2latlong(proximity_radius, 0.0,
+            proximity_radius_deg = dist_meters2latlong(proximity_radius, 0.0,
                                                         mean_latitude)[0]
             
         # Calculate new grid coordinates

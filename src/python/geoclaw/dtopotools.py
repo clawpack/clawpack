@@ -1383,13 +1383,14 @@ class Fault(object):
         for subfault in self.subfaults:
             dimensions, slip = subfault.convert2meters(["dimensions", "slip"])
             if subfault.units['mu'] in ['dyne/cm^2', "dyne/cm^2"]:
-                mu = subfault.mu * 100.0**2
+                mu = subfault.mu * 0.1
+                # mu = subfault.mu * 100.0**2
             else:
                 mu = subfault.mu
             # All units should be terms of meters
             total_Mo += dimensions[0] * dimensions[1] * slip * mu
 
-        return 2.0 / 3.0 * (numpy.log10(total_Mo) - 9.1)
+        return 2.0 / 3.0 * (numpy.log10(total_Mo) - 9.05)
 
     @property
     def dimensions(self):
@@ -1455,6 +1456,89 @@ class Fault(object):
                                                              min_slip,
                                                              self.slip)
         return output
+
+
+    def read_dtopo(self, path, topo_type=3):
+        r"""Read in dtopo file at *path*.
+
+        """
+
+        if topo_type == 1:    
+            # Load raw data
+            data = numpy.loadtxt(path)
+
+            # Parse data
+            t = data[:,0]
+            x = data[:,1]
+            y = data[:,2]
+
+            # Initialize extents
+            t0 = t[0]
+            lower = [x[0], y[0]]
+            upper = [None, None]
+            num_cells = [0,0]
+
+            # Count total x-values
+            for row in xrange(1,data.shape[0]):
+                if x[row] == x[0]:
+                    num_cells[0] = row
+                    break
+
+            # Count total y-values
+            for row in xrange(num_cells[0], data.shape[0]):
+                if t[row] != t0:
+                    num_cells[1] = row / num_cells[0]
+                    num_times = data.shape[0] / row
+                    break
+
+            # Check extents
+            assert(t[0] != t[num_cells[0] * num_cells[1] + 1])
+            # assert(t[0] == t[num_cells[0] * num_cells[1]])
+
+            # Fill in rest of pertinent data
+            self.t = data[::num_cells[0] * num_cells[1], 0]
+            self._x = data[:num_cells[0], 1]
+            self._yy = data[:num_cells[0] * num_cells[1]:num_cells[0], 2]
+            upper = [x[-1], y[-1]]
+            self._X, self._Y = numpy.meshgrid(x, y)
+            self._dZ = numpy.empty( (num_times, num_cells[0], num_cells[1]) )
+
+            for (n,time) in enumerate(t):
+                self._dZ[n,:,:] = data[num_cells[0] * num_cells[1] * n:
+                                num_cells[0] * num_cells[1] * (n+1), 3].reshape(
+                                        (num_cells[0], num_cells[1]))
+
+        elif topo_type == 2 or topo_type == 3:
+        
+            # Read header
+            mx = int(dtopo_file.readline().split()[0])
+            my = int(dtopo_file.readline().split()[0])
+            mt = int(dtopo_file.readline().split()[0])
+            xlower = float(dtopo_file.readline().split()[0])
+            ylower = float(dtopo_file.readline().split()[0])
+            t0 = float(dtopo_file.readline().split()[0])
+            dx = float(dtopo_file.readline().split()[0])
+            dy = float(dtopo_file.readline().split()[0])
+            dt = float(dtopo_file.readline().split()[0])
+
+            # Construct coordinate arrays
+            self._x = numpy.linspace(xlower, xlower + (mx - 1) * dx, mx)
+            self._y = numpy.linspace(ylower, ylower + (my - 1) * dy, my) 
+            self._dZ = numpy.empty((mx,my,mt))
+            times = numpy.linspace(t0, t0+(mt-1)*dt, mt)
+
+            raise NotImplementedError("Reading dtopo type 2 or 3 files not implemented.")
+
+            # Read data
+            if topo_type == 2:
+                pass
+
+            elif topo_type == 3:
+                pass
+
+        else:
+            raise ValueError("Topo type %s is invalid." % topo_type)
+
 
 
     def read(self, path, column_map, coordinate_specification="centroid",
@@ -1630,7 +1714,7 @@ class Fault(object):
         return self._dZ
 
     def write(self, path, topo_type=None):
-        r"""Write out subfault characterization file to *path*.
+        r"""Write out subfault resulting dtopo to file at *path*.
 
         input
         -----
@@ -2189,9 +2273,15 @@ class SubFault(Fault):
         okada_params["strike"] = self.strike
         okada_params["dip"] = self.dip
         okada_params["rake"] = self.rake
-        okada_params["longitude"] = self.coordinates[0]
-        okada_params["latitude"] = self.coordinates[1]
-        okada_params["latlong_location"] = self.coordinate_specification
+        if self.coordinate_specification == 'bottom center':
+            # okada_map does not support the bottom center specification
+            okada_params["longitude"] = self.fault_plane_centers[1][0]
+            okada_params["latitude"] = self.fault_plane_centers[1][1]
+            okada_params["latlong_location"] = 'centroid'
+        else:
+            okada_params["longitude"] = self.coordinates[0]
+            okada_params["latitude"] = self.coordinates[1]
+            okada_params["latlong_location"] = self.coordinate_specification
         
         self._dZ = okadamap(okada_params, self.x, self.y)
 
@@ -2214,6 +2304,8 @@ class SubFault(Fault):
          - (`matplotlib.axes.Axes`) - 
 
         """
+
+        import matplotlib.pyplot as plt
         
         # Create axes object if needed
         if axes is None:
@@ -2225,8 +2317,8 @@ class SubFault(Fault):
         r = numpy.sqrt((top_edge[0] - self.fault_plane_corners[0][0])**2 +
                        (top_edge[1] - self.fault_plane_corners[0][1])**2 )
         theta = (self.strike + self.rake) * DEG2RAD
-        xy_rake = (r * cos(-theta + 1.5 * numpy.pi) + centroid[0], 
-                   r * sin(-theta + 1.5 * numpy.pi) + centroid[1])
+        xy_rake = (r * numpy.cos(-theta + 1.5 * numpy.pi) + centroid[0], 
+                   r * numpy.sin(-theta + 1.5 * numpy.pi) + centroid[1])
 
         axes.annotate("",
             xy=xy_rake, xycoords='data',
