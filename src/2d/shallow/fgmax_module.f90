@@ -92,8 +92,13 @@ contains
         ! Local storage
         integer, parameter :: unit = 7
         integer :: ifg
-        character*150 :: fname_fg
+        character(len=150) :: fname_fg
         integer :: num_fgmax_grids, num_fgmax_val
+
+        write(parmunit,*) ' '
+        write(parmunit,*) '--------------------------------------------'
+        write(parmunit,*) 'SETFGMAX:'
+        write(parmunit,*) '-----------'
 
         ! Open data file
         call opendatafile(unit,fname)
