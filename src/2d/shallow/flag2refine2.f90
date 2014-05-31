@@ -25,6 +25,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
 
     use amr_module, only: mxnest, t0
     use geoclaw_module, only:dry_tolerance, sea_level
+    use geoclaw_module, only: spherical_distance, coordinate_system
 
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
     use topo_module, only: minleveltopo,mtopofiles
@@ -34,6 +35,9 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
 
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
     use qinit_module, only: min_level_qinit,qinit_type
+
+    use storm_module, only: storm_type, wind_refine, R_refine, storm_location
+    use storm_module, only: wind_forcing, wind_index, wind_refine
 
     use regions_module, only: num_regions, regions
     use refinement_module
@@ -58,7 +62,10 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     ! Generic locals
     integer :: i,j,m
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
-    real(kind=8) :: speed, eta
+    real(kind=8) :: speed, eta, ds
+
+    ! Storm specific variables
+    real(kind=8) :: R_eye(2), wind_speed
 
     ! Initialize flags
     amrflags = DONTFLAG
@@ -77,6 +84,37 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
 
             ! The following conditions are only checked in the horizontal and
             ! override the allowflag routine
+
+            ! ************* Storm Based Refinement ****************
+            ! Check to see if we are some specified distance from the eye of
+            ! the storm and refine if we are
+            if (storm_type > 0) then
+                R_eye = storm_location(t)
+                do m=1,size(R_refine,1)
+                    if (coordinate_system == 2) then
+                        ds = spherical_distance(x_c, y_c, R_eye(1), R_eye(2))
+                    else
+                        ds = sqrt((x_c - R_eye(1))**2 + (y_c - R_eye(2))**2)
+                    end if
+                    
+                    if ( ds < R_refine(m) .and. level <= m ) then
+                        amrflags(i,j) = DOFLAG
+                        cycle x_loop
+                    endif
+                enddo
+                
+                ! Refine based on wind speed
+                if (wind_forcing) then
+                    wind_speed = sqrt(aux(wind_index,i,j)**2 + aux(wind_index+1,i,j)**2)
+                    do m=1,size(wind_refine,1)
+                        if ((wind_speed > wind_refine(m)) .and. (level <= m)) then
+                            amrflags(i,j) = DOFLAG
+                            cycle x_loop
+                        endif
+                    enddo
+                endif
+            endif
+            ! *****************************************************
 
             ! Check to see if refinement is forced in any topography file region:
             do m=1,mtopofiles

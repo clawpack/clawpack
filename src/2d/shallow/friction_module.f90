@@ -121,7 +121,7 @@ contains
     subroutine set_friction_field(mx, my, num_ghost, num_aux, xlower, ylower, &
                                   dx, dy, aux)
 
-        use geoclaw_module, only: manning_coefficient, sea_level
+        use geoclaw_module, only: sea_level
 
         implicit none
 
@@ -136,10 +136,7 @@ contains
         integer :: m,i,j,k
         real(kind=8) :: x, y
 
-        if (.not.variable_friction) then
-            ! No variable friction
-            aux(friction_index,:,:) = manning_coefficient(1)
-        else
+        if (variable_friction) then
             ! Set region based coefficients
             do m=1, num_friction_regions
                 do i=1 - num_ghost, mx + num_ghost
@@ -188,8 +185,8 @@ contains
 
         ! Locals
         integer, parameter :: unit = 24
-        real(kind=8), parameter :: missing_value = huge(1.d0)
-        integer :: ios, missing, i
+!         real(kind=8), parameter :: missing_value = huge(1.d0)
+        integer :: ios, missing
         
         ! Open file for reading
         open(unit=unit, file=path, iostat=ios, status="unknown",   &
