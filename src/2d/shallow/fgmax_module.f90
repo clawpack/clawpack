@@ -106,7 +106,7 @@ contains
 
         if (FG_num_fgrids > FG_MAXNUM_FGRIDS) then
            write(6,601) FG_num_fgrids
- 601       format('*** Too many fixed grids specified: FG_num_fgrids = i3',/, &
+ 601       format('*** Too many fixed grids specified: FG_num_fgrids = ',i3,/, &
                '*** Increase FG_MAXNUM_FGRIDS in fgmax_module.f90')
            stop
            endif
