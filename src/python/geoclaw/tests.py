@@ -33,6 +33,7 @@ for lib_path in [os.path.join(CLAW,"amrclaw","src","2d"),
     for path in glob.glob(os.path.join(lib_path,"*.mod")):
         os.remove(path)
 
+
 # TODO: Maybe rename this to `GeoClawRegressionTest`
 class GeoClawTest(unittest.TestCase):
 
@@ -126,13 +127,15 @@ class GeoClawTest(unittest.TestCase):
 
         # Write out data files
         orig_path = os.getcwd()
-        os.chdir(self.test_path)
-        sys.path.append("./")
+        if sys.modules.has_key('setrun'):
+            del(sys.modules['setrun'])
+        sys.path.insert(0, self.test_path)
         import setrun
         rundata = setrun.setrun()
         os.chdir(self.temp_path)
         rundata.write()
         os.chdir(orig_path)
+        sys.path.pop(0)
 
         # Run code
         runclaw_cmd = " ".join((
