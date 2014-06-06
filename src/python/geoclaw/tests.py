@@ -58,7 +58,9 @@ class GeoClawTest(unittest.TestCase):
              self.test_path = "./"
 
     def get_remote_file(self, url, force=False, verbose=False):
-        r"""Fetch file located at *url* and store in object's *temp_path*
+        r"""Fetch file located at *url* and store in object's *temp_path*.
+
+        
 
         """
 
@@ -82,6 +84,7 @@ class GeoClawTest(unittest.TestCase):
         if tarfile.is_tarfile(output_path):
             with tarfile.open(output_path, mode="r:*") as tar_file:
                 tar_file.extractall(path=self.temp_path)
+        # TODO: Should check here if a file is a bare compressed file (no tar)
 
         self.remote_files.append(output_path)
 
