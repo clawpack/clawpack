@@ -62,14 +62,20 @@ class IkeTest(tests.GeoClawTest):
 
         # Compare gauge data
         data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
+        data_sum = [data[:,2].sum(), data[:,3].sum()]
 
         regression_data_file = os.path.join(self.test_path, "regression_data.txt")
         if save:
             numpy.savetxt(regression_data_file, data)
         regression_data = numpy.loadtxt(regression_data_file)
+        regression_sum = [regression_data[:,2].sum(), regression_data[:,3].sum()]
 
         # Compare data
-        assert True, "\n data: %s, \n expected: %s" % (data, regression_data)
+        tolerance = 1e-14
+        assert numpy.allclose(datasum, regression_sum, tolerance), \
+                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
+        assert numpy.allclose(data, regression_data, tolerance), \
+                "Full gauge match failed."
 
         # If we have gotten here then we do not need to copy the run results
         self.success = True

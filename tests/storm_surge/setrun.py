@@ -343,6 +343,11 @@ def setrun(claw_pkg='geoclaw'):
     #------------------------------------------------------------------
     rundata = setgeo(rundata)
 
+    rundata.add_data(surge.data.SurgeData(),'stormdata')
+    set_storm(rundata)
+    rundata.add_data(surge.data.FrictionData(),'frictiondata')
+    set_friction(rundata)
+
     return rundata
     # end of function setrun
     # ----------------------
@@ -473,10 +478,5 @@ if __name__ == '__main__':
         rundata = setrun(sys.argv[1])
     else:
         rundata = setrun()
-
-    rundata.add_data(surge.data.SurgeData(),'stormdata')
-    set_storm(rundata)
-    rundata.add_data(surge.data.FrictionData(),'frictiondata')
-    set_friction(rundata)
 
     rundata.write()
