@@ -444,7 +444,7 @@ def set_storm(rundata):
     data.landfall = days2seconds(ike_landfall.days) + ike_landfall.seconds
 
     # Storm type 2 - Idealized storm track
-    data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),'ike.storm'))
+    data.storm_file = 'ike.storm'
 
     return data
 
