@@ -34,6 +34,21 @@ for lib_path in [os.path.join(CLAW,"amrclaw","src","2d"),
         os.remove(path)
 
 
+def strip_archive_extensions(path, extensions=["tar", "tgz", "bz2", "gz"]):
+    r"""
+    Strip off archive extensions defined in *extensions* list.
+
+    Return stripped path calling this function recursively until all splitext
+    does not provide an extension in the *extensions* list.
+
+    """
+
+    if os.path.splitext(path)[-1][1:] in extensions:
+        return strip_archive_extensions(os.path.splitext(path)[0])
+    else:
+        return path
+
+
 # TODO: Maybe rename this to `GeoClawRegressionTest`
 class GeoClawTest(unittest.TestCase):
 
@@ -60,7 +75,8 @@ class GeoClawTest(unittest.TestCase):
     def get_remote_file(self, url, force=False, verbose=False):
         r"""Fetch file located at *url* and store in object's *temp_path*.
 
-        
+        Will check downloaded file's suffix to see if the file needs to be
+        un-archived.
 
         """
 
@@ -71,20 +87,27 @@ class GeoClawTest(unittest.TestCase):
 
         file_name = os.path.basename(url)
         output_path = os.path.join(self.temp_path, file_name)
-        if not os.path.exists(output_path) or force:
-            if verbose:
-                print "Downloading %s to %s..." % (url, output_path)
-            urllib.urlretrieve(url, output_path)
-            if verbose:
-                print "Finished downloading."
+        unarchived_output_path = strip_archive_extensions(output_path)
+
+        if not os.path.exists(unarchived_output_path) or force:
+            if not os.path.exists(output_path):
+                if verbose:
+                    print "Downloading %s to %s..." % (url, output_path)
+                urllib.urlretrieve(url, output_path)
+                if verbose:
+                    print "Done downloading."
+
+            if tarfile.is_tarfile(output_path):
+                if verbose:
+                    print "Un-archiving %s to %s..." % (output_path, unarchived_output_path)
+                with tarfile.open(output_path, mode="r:*") as tar_file:
+                    tar_file.extractall(path=self.temp_path)
+                if verbose:
+                    print "Done un-archiving."
+            # TODO: Should check here if a file is a bare compressed file (no tar)
         else:
             if verbose:
-                print "Skipping %s, file already exists." % file_name
-
-        if tarfile.is_tarfile(output_path):
-            with tarfile.open(output_path, mode="r:*") as tar_file:
-                tar_file.extractall(path=self.temp_path)
-        # TODO: Should check here if a file is a bare compressed file (no tar)
+                print "Skipping %s because it already exists locally." % url
 
         self.remote_files.append(output_path)
 
