@@ -142,7 +142,7 @@ c                 # output in 1d format if ny=1:
                 enddo
                 write(matunit1,*) ' '
              enddo
-  109        format(4e26.16)
+  109        format(50e26.16)
          endif
 
          if (output_format == 3) then
