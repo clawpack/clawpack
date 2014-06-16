@@ -872,14 +872,14 @@ class Topography(object):
 
         # Create color map
         if cmap is None:
-            land_cmap = topo_cmap = colormaps.make_colormap({ 0.0:[0.1,0.4,0.0],
+            land_cmap = colormaps.make_colormap({ 0.0:[0.1,0.4,0.0],
                                                  0.25:[0.0,1.0,0.0],
                                                   0.5:[0.8,1.0,0.5],
                                                   1.0:[0.8,0.5,0.2]})
             sea_cmap = plt.get_cmap('Blues_r')
             cmap = colormaps.add_colormaps((land_cmap, sea_cmap), 
-                                           break_location=1.0 - depth_extent[1] 
-                                       / abs(depth_extent[1] - depth_extent[0]))
+                                           data_limits=depth_extent,
+                                           data_break=0.0)
 
         # Plot data
         if contours is not None:
@@ -892,8 +892,7 @@ class Topography(object):
             plot = axes.imshow(self.Z, vmin=depth_extent[0], 
                                        vmax=depth_extent[1],
                                        extent=region_extent, 
-                                       cmap=cmap, 
-                                       norm=color_norm,
+                                       cmap=cmap,
                                        origin='lower')
         cbar = plt.colorbar(plot, ax=axes)
         cbar.set_label("Depth (m)")
