@@ -40,12 +40,12 @@ MODULES = \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
+ $(GEOLIB)/fgmax_module.f90 \
  $(GEOLIB)/surge/holland_storm_module.f90 \
  $(GEOLIB)/surge/constant_storm_module.f90 \
  $(GEOLIB)/surge/stommel_storm_module.f90 \
  $(GEOLIB)/surge/storm_module.f90 \
- $(GEOLIB)/surge/friction_module.f90 \
- $(GEOLIB)/fgmax_module.f90
+ $(GEOLIB)/surge/friction_module.f90
 
 SOURCES = \
   $(GEOLIB)/surge/src2.f90 \
@@ -175,21 +175,6 @@ SOURCES = \
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
-
-
-# Construct the topography data
-.PHONY: topo all
-
-gulf_caribbean.tt3:
-	python get_bathy.py
-
-topo: gulf_caribbean.tt3
-
-all: 
-	$(MAKE) topo
-	$(MAKE) .plots
-	$(MAKE) .htmls
-
 
 ### DO NOT remove this line - make depends on it ###
 
