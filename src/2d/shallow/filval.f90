@@ -17,7 +17,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
     use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
     use amr_module, only: outunit, NEEDS_TO_BE_SET
-    use amr_module
 
     use topo_module, only: aux_finalized
     use geoclaw_module, only: dry_tolerance, sea_level
