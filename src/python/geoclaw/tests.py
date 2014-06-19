@@ -207,14 +207,17 @@ class GeoClawTest(unittest.TestCase):
 
         """
 
-        # subprocess.check_call("echo '%s'" % str(self.__class__), shell=True)
-        # subprocess.check_call("echo '%s'" % inspect.getfile(self.__class__), shell=True)
-        # subprocess.check_call("echo '%s'" % self.test_path, shell=True)
-        # subprocess.check_call("echo '%s'" % self.temp_path, shell=True)
-        subprocess.check_call("cd %s ; make .exe" % self.test_path, 
+        try:
+            subprocess.check_call("echo '%s'" % str(self.__class__), shell=True)
+            subprocess.check_call("echo '%s'" % inspect.getfile(self.__class__), shell=True)
+            subprocess.check_call("echo '%s'" % self.test_path, shell=True)
+            subprocess.check_call("echo '%s'" % self.temp_path, shell=True)
+            subprocess.check_call("cd %s ; make .exe" % self.test_path, 
                                                     stdout=self.stdout, 
                                                     stderr=self.stderr, 
                                                     shell=True)
+        except subprocess.CalledProcessError as e:
+            self.tearDown()
         shutil.move(os.path.join(self.test_path, executable_name),  
                     self.temp_path)
 

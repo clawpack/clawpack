@@ -33,6 +33,7 @@ before_script:
 script:
   - cd $CLAW/geoclaw/tests
   - nosetests */
+  - if [ -d *_output ] ; then cat *_output/run_output.txt ; *_output/error_output.txt ; fi
   
 notifications:
   email: false
