@@ -34,8 +34,6 @@ script:
   - cd $CLAW/geoclaw/
   - nosetests
   - for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
-  - cat src/2d/shallow/filval.f90
-  - cat $CLAW/amrclaw/src/2d/amr_module.f90
   
 notifications:
   email: false
