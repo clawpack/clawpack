@@ -12,6 +12,8 @@ before_install:
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - python setup.py symlink-only
+  # Grab latest versions of linked repositories
+  - for repos in amrclaw clawutil riemann ; do cd $repos ; git pull ; cd ../ ; done
   - rm -rf geoclaw
   - ln -s ../ geoclaw
   
