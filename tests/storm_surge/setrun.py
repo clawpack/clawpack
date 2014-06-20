@@ -125,8 +125,11 @@ def setrun(claw_pkg='geoclaw'):
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
         # clawdata.tfinal = days2seconds(date2days('2008091400'))
-        clawdata.tfinal = days2seconds(ike_landfall.days + 0.75) + ike_landfall.seconds
-        recurrence = 24
+        # Full test
+        # clawdata.tfinal = days2seconds(ike_landfall.days + 0.75) + ike_landfall.seconds
+        # Short test - Do 12 hours of simulation
+        clawdata.tfinal = days2seconds(ike_landfall.days - 2.75) + ike_landfall.seconds
+        recurrence = 2
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) 
                                             * recurrence / (60**2 * 24))
 
