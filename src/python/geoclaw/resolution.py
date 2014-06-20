@@ -3,21 +3,15 @@
 
 r"""Calculate refinement resolutions given ratios provided"""
 
-import sys
 import argparse
 
 import numpy as np
 
-# Generic, spheriod based conversion
-R_earth = 6378.1 * 1000.0
-deg2meters = lambda theta,lat:R_earth * theta * np.pi / 180.0 * np.cos(lat * np.pi / 180.0)
-meters2deg = lambda d,lat:d / (R_earth * np.pi / 180.0 * np.cos(lat * np.pi / 180.0))
+import topotools
 
-# Based at lat = 24º
-long2meters = lambda degree_resolution:degree_resolution * 100950.05720513177
-lat2meters = lambda degree_resolution:degree_resolution * 110772.87259559495
-
-def calculate_resolution(ratios, base_resolutions=[0.25,0.25], lat_long=True):
+def calculate_resolution(ratios, base_resolutions=[0.25,0.25], 
+                                 lat_long=True,
+                                 latitude=24.0):
     r"""Given *ratios* and starting resolutions, calculate level resolutions"""
     num_levels = len(ratios) + 1
 
@@ -31,8 +25,10 @@ def calculate_resolution(ratios, base_resolutions=[0.25,0.25], lat_long=True):
     if lat_long:
         meter_resolutions = np.empty((num_levels,2))
         for level in xrange(num_levels):
-            meter_resolutions[level,0] = long2meters(natural_resolutions[level,0])
-            meter_resolutions[level,1] = lat2meters(natural_resolutions[level,1])
+            meter_resolutions[level,:] = topotools.dist_latlong2meters(
+                                                   natural_resolutions[level,0],
+                                                   natural_resolutions[level,1],
+                                                   latitude)
 
 
     print "Resolutions:"
@@ -56,7 +52,9 @@ if __name__ == "__main__":
     parser.add_argument('--base', metavar="resolution", dest='base_resolutions', 
                         action='store', nargs=2, default=[0.25,0.25], 
                         help="Base resolutions")
+    parser.add_argument('--lat', dest='latitude', action='store', default=24.0,
+                        help="Latitude to use in degrees to meters conversion")
     args = parser.parse_args()
     
     calculate_resolution(args.ratios, base_resolutions=args.base_resolutions,
-                         lat_long=args.lat_long)
+                         lat_long=args.lat_long, latitude=args.latitude)

@@ -6,6 +6,11 @@ import os
 
 import clawpack.clawutil.data
 
+# Radius of earth in meters.  
+# For consistency, should always use this value when needed, e.g.
+# in setrun.py or topotools:
+Rearth = 6367.5e3  # average of polar and equatorial radii
+
 class GeoClawData(clawpack.clawutil.data.ClawData):
     r"""
     Object containing the basic .
@@ -17,7 +22,7 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
 
         # GeoClaw physics parameters
         self.add_attribute('gravity',9.8)
-        self.add_attribute('earth_radius',6367500.0)
+        self.add_attribute('earth_radius',Rearth)
         self.add_attribute('coordinate_system',1)
         self.add_attribute('coriolis_forcing',True)
         self.add_attribute('theta_0',45.0)
@@ -132,11 +137,7 @@ class TopographyData(clawpack.clawutil.data.ClawData):
             ntopofiles = len(self.topofiles)
             self.data_write(value=ntopofiles,alt_name='ntopofiles')
             for tfile in self.topofiles:
-                try:
-                    fname = os.path.abspath(tfile[-1])
-                except:
-                    print "*** Error: file not found: ",tfile[-1]
-                    raise ("file not found")
+                fname = os.path.abspath(tfile[-1])
                 self._out_file.write("\n'%s' \n " % fname)
                 self._out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
         elif self.test_topography == 1:
@@ -215,17 +216,21 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         
         # File name for fgmax points and parameters:
         self.add_attribute('fgmax_files',[])
+        self.add_attribute('num_fgmax_val',1)
 
 
     def write(self,data_source='setrun.py'):
         self.open_data_file('fgmax.data',data_source)
-        num_fgmax = len(self.fgmax_files)
-        self.data_write(value=num_fgmax,alt_name='num_fgmax')
+        num_fgmax_val = self.num_fgmax_val
+        if num_fgmax_val not in [1,2,5]:
+            raise NotImplementedError( \
+                    "Expecting num_fgmax_val in [1,2,5], got %s" % num_fgmax_val)
+        self.data_write(value=num_fgmax_val,alt_name='num_fgmax_val')
+        num_fgmax_grids = len(self.fgmax_files)
+        self.data_write(value=num_fgmax_grids,alt_name='num_fgmax_grids')
         self.data_write()
         for fgmax_file in self.fgmax_files:
             fname = os.path.abspath(fgmax_file)
-            if not os.path.isfile(fname):
-                raise IOError("***fgmax input file not found: %s" % fgmax_file)
             self._out_file.write("\n'%s' \n" % fname)
         self.close_data_file()
 
@@ -250,8 +255,6 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.data_write()
         for tfile in self.dtopofiles:
             fname = os.path.abspath(tfile[-1])
-            if not os.path.isfile(fname):
-                raise IOError("*** dtopo input file not found: %s" % tfile[-1])
             self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.data_write()
@@ -281,11 +284,7 @@ class QinitData(clawpack.clawutil.data.ClawData):
         elif 0 < self.qinit_type < 5:
             # Check to see if each qinit file is present and then write the data
             for tfile in self.qinitfiles:
-                try:
-                    fname = "'%s'" % os.path.abspath(tfile[-1])
-                except:
-                    raise Warning("File %s was not found." % fname)
-                    # raise MissingFile("file not found")
+                fname = "'%s'" % os.path.abspath(tfile[-1])
                 self._out_file.write("\n%s  \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         else:

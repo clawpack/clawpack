@@ -31,9 +31,9 @@ before_script:
   - echo "FC="$FC
   
 script:
-  - cd $CLAW/geoclaw/tests
-  - nosetests */
-  - for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
+  - cd $CLAW/geoclaw/
+  - nosetests
+  - if [ -d *_output ] ; then for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done ; fi
   
 notifications:
   email: false

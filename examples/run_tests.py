@@ -3,6 +3,9 @@ Run all examples and then compare to gallery versions, if available.
 """
 
 from clawpack.clawutil import regression_tests, make_all
+import os
+
+os.environ['GIT_STATUS'] = 'True'
 
 make_all.make_all(make_clean_first=True)
 

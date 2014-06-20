@@ -131,6 +131,7 @@ contains
             write(GEO_PARM_UNIT,*) '   manning_coefficient: not used'
             write(GEO_PARM_UNIT,*) '   friction_depth: not used'
         end if
+
         write(GEO_PARM_UNIT,*) ' '
         write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
 

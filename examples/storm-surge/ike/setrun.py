@@ -12,7 +12,7 @@ import datetime
 
 import numpy as np
 
-import clawpack.geoclaw.surge as surge
+import clawpack.geoclaw.surge.data as surge
 
 # Need to adjust the date a bit due to weirdness with leap year (I think)
 ike_landfall = datetime.datetime(2008,9,13 - 1,7) - datetime.datetime(2008,1,1,0)
@@ -474,9 +474,9 @@ if __name__ == '__main__':
     else:
         rundata = setrun()
 
-    rundata.add_data(surge.data.SurgeData(),'stormdata')
+    rundata.add_data(surge.SurgeData(),'stormdata')
     set_storm(rundata)
-    rundata.add_data(surge.data.FrictionData(),'frictiondata')
+    rundata.add_data(surge.FrictionData(),'frictiondata')
     set_friction(rundata)
 
     rundata.write()

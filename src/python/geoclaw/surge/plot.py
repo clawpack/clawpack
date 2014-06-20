@@ -16,7 +16,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
-from clawpack.visclaw import colormaps, geoplot, gaugetools
+import clawpack.visclaw.colormaps as colormaps
+import clawpack.visclaw.gaugetools as gaugetools
+
+import clawpack.geoclaw.geoplot as geoplot
 
 # Default location of storm fields in aux array output
 # Note that selective output can move these around, when importing the module

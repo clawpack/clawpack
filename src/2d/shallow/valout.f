@@ -19,11 +19,16 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
       real(kind=8) :: h, hu, hv, eta
       real(kind=8), allocatable :: qeta(:)
 
+      integer :: clock_start, clock_finish, clock_rate
+
       iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
      .                                      naux*mitot*(j-1)
       iaddqeta(ivar,i,j)  = 1 + ivar - 1 + 4*((j-1)*mitot+i-1)
 c
+      call system_clock(clock_start,clock_rate)
+
+
       if (nvar /= 3) then
           write(6,*) '*** Error: valout assumes nvar==3 for geoclaw'
           stop
@@ -282,6 +287,9 @@ c
       if (output_format == 3) then
           close(unit=matunit4)
           endif
+
+       call system_clock(clock_finish,clock_rate)
+       timeValout = timeValout + clock_finish - clock_start
 
       return
       end

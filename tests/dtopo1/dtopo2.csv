@@ -1,0 +1,2 @@
+Longitude, Latitude, Depth(km), Length(km), Width(km), Strike, Dip, Rake, Slip(m)
+-0.5,          0.0,       10.,         25.,        20.,     0.,    10.,  90.,  20.

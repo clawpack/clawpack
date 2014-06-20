@@ -9,7 +9,7 @@ that will be read in by the Fortran code.
 import numpy as numpy
 
 import clawpack.geoclaw.multilayer as multilayer
-import clawpack.geoclaw.surge as surge
+import clawpack.geoclaw.surge.data as surge
 import clawpack.geoclaw.topotools as tt
 
 # Rotation transformations
@@ -51,9 +51,9 @@ def setrun(claw_pkg='geoclaw'):
 
     rundata.add_data(multilayer.data.MultilayerData(), 'multilayer_data')
     set_multilayer(rundata)
-    rundata.add_data(surge.data.FrictionData(),'frictiondata')
+    rundata.add_data(surge.FrictionData(),'frictiondata')
     set_friction(rundata)
-    rundata.add_data(surge.data.SurgeData(),'stormdata')
+    rundata.add_data(surge.SurgeData(),'stormdata')
     set_storm(rundata)
 
     #------------------------------------------------------------------

@@ -80,11 +80,17 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     allocate(ik(1:fg%npts))
     allocate(jk(1:fg%npts))
 
+    if (mbc < 1) then
+        write(6,*) '*** mbc >= 1 required by fgmax_interpolate'
+        stop
+        endif
+
     ! Create a mask that is .true. only in part of patch intersecting fgrid:
-    i1 = int((x1 - xlower + 0.5d0*dx) / dx)
-    i2 = int((x2 - xlower + 0.5d0*dx) / dx) + 1
-    j1 = int((y1 - ylower + 0.5d0*dy) / dy)
-    j2 = int((y2 - ylower + 0.5d0*dy) / dy) + 1
+    i1 = max(int((x1 - xlower + 0.5d0*dx) / dx), 0)
+    i2 = min(int((x2 - xlower + 0.5d0*dx) / dx) + 1, mx+1)
+    j1 = max(int((y1 - ylower + 0.5d0*dy) / dy), 0)
+    j2 = min(int((y2 - ylower + 0.5d0*dy) / dy) + 1, my+1)
+
     if (debug) then
         write(61,*) 'patch intersecting fgrid: i1,i2: ',i1,i2
         write(61,*) 'patch intersecting fgrid: j1,j2: ',j1,j2
@@ -118,7 +124,7 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
  
 
     ! Set the array values to be the values that we want to update:
-    ! Note that values will be set properly only where mask == .true.
+    ! Note that values will be set properly only where mask_patch == .true.
     values = FG_NOTSET
     call fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                    xlower,ylower,mask_patch,values)
@@ -171,7 +177,7 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
 
         ! Compute coefficients needed for bilinear interpolation at all patch
         ! points in the intersection with the fgrid bounding box:
-        forall (i=1-mbc:mx+mbc, j=1-mbc:my+mbc, mask_patch(i,j))
+        forall (i=0:mx, j=0:my, mask_patch(i,j))
             a(i,j) = (values(mv,i+1,j) - values(mv,i,j)) / dx
             b(i,j) = (values(mv,i,j+1) - values(mv,i,j)) / dy
             c(i,j) = (values(mv,i+1,j+1) + values(mv,i,j) &
@@ -180,10 +186,26 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
 
         do k=1,fg%npts 
             if (mask_fgrid(k)) then
-                fg_values(mv,k) = values(mv,ik(k),jk(k)) &
+    
+                i = ik(k)
+                j = jk(k)
+                if ((i==mx+1) .or. (j==my+1)) then
+                    write(6,*) '**** Warning from fgmax_interpolate:'
+                    write(6,*) '**** Expected i <= mx, j<= my'
+                    write(6,*) 'i,j,mx,my: ',i,j,mx,my
+                    endif
+                if ((values(mv,i,j)==FG_NOTSET) .or. &
+                        (values(mv,i+1,j)==FG_NOTSET) .or. &
+                        (values(mv,i,j+1)==FG_NOTSET) .or. &
+                        (values(mv,i+1,j+1)==FG_NOTSET)) then
+                    fg_values(mv,k) = FG_NOTSET
+                else
+                    fg_values(mv,k) = values(mv,ik(k),jk(k)) &
                        + a(ik(k),jk(k))*dxk(k) &
                        + b(ik(k),jk(k))*dyk(k) &
                        + c(ik(k),jk(k))*dxk(k)*dyk(k)
+                    endif
+
 !               write(6,64) mv,values(mv,ik(k),jk(k)),a(ik(k),jk(k)), &
 !                  b(ik(k),jk(k)),c(ik(k),jk(k))
 !64             format('mv,v,a,b,c: ',i2,4d16.6)
@@ -201,7 +223,7 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     
             ! Compute coefficients needed for bilinear interpolation at all 
             ! patch points in the intersection with the fgrid bounding box:
-            forall (i=1-mbc:mx+mbc, j=1-mbc:my+mbc, mask_patch(i,j))
+            forall (i=0:mx, j=0:my, mask_patch(i,j))
                 a(i,j) = (aux(ma,i+1,j) - aux(ma,i,j)) / dx
                 b(i,j) = (aux(ma,i,j+1) - aux(ma,i,j)) / dy
                 c(i,j) = (aux(ma,i+1,j+1) + aux(ma,i,j) &

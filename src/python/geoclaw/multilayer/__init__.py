@@ -1,3 +1,3 @@
 # encoding: utf-8
 
-import data
+__all__ = ['data', 'plot']
