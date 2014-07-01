@@ -153,7 +153,7 @@ def read_subfault_model(fname, columns, units=None, \
     if 1:
         for mu in [3e11, 4e11, 6e11]:
             Mo = 0.1*mu*total_slip  # 0.1 factor to convert to Nm
-            Mw = 2./3. * (numpy.log10(Mo) - 9.1)
+            Mw = 2./3. * (numpy.log10(Mo) - 9.05)
             print "With mu = %6.1e, moment magnitude is Mw = %5.2f" % (mu,Mw)
     return subfaults
     
@@ -2025,7 +2025,7 @@ class SubFault(Fault):
         dimensions, slip = self.convert2meters(["dimensions", "slip"])
         total_slip = dimensions[0] * dimensions[1] * slip
         Mo = 0.1 * mu * total_slip
-        return 2.0 / 3.0 * (numpy.log10(Mo) - 9.0)
+        return 2.0 / 3.0 * (numpy.log10(Mo) - 9.05)
 
     @property
     def dimensions(self):
@@ -2092,7 +2092,7 @@ class SubFault(Fault):
         if self.units["mu"] == "dyne/cm^2":
             mu = self.mu * 100.0**2
 
-        Mo = 10.**(Mw * 3.0 / 2.0 + 9.1)
+        Mo = 10.**(Mw * 3.0 / 2.0 + 9.05)
 
         dimensions = self.convert2meters("dimensions")
         subfault_area = dimensions[0] * dimensions[1]
