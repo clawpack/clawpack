@@ -229,6 +229,23 @@ def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
     topography.write(outfile, topo_type=2)
 
 
+def topo3writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
+                 nodata_value=-99999):
+    r"""Write out a topo type 3 file by evaluating the function *topo*.
+
+    This routine is here for backwards compatibility and simply creates a new
+    topography object and writes it out.
+
+    """
+
+    topography = Topography(topo_func=topo)
+
+    topography.x = numpy.linspace(xlower,xupper,nxpoints)
+    topography.y = numpy.linspace(ylower,yupper,nypoints)
+
+    topography.write(outfile, topo_type=3)
+
+
 def get_topo(topo_fname, remote_directory, force=None):
     """
     Download a topo file from the web, provided the file does not
@@ -552,7 +569,10 @@ class Topography(object):
 
             elif self.topo_func is not None:
                 # Generate topo via topo_func
-                self._Z = numpy.flipud(self.topo_func(self.X, self.Y))
+                ## self._Z = numpy.flipud(self.topo_func(self.X, self.Y))
+                ## RJL:  Don't flip -- leave so Z[i,j] has same dimensions as X,Y
+                ## Othewise does not plot properly.
+                self._Z = self.topo_func(self.X, self.Y)
 
 
     def generate_2d_coordinates(self, mask=True):
@@ -662,7 +682,8 @@ class Topography(object):
                 self._x = data[:N[0],0]
                 self._Y = data[:,1].reshape(N)
                 self._y = data[::N[0],1]
-                self._Z = data[:,2].reshape(N)
+                ## RJL: need to flip since read in from NW corner
+                self._Z = numpy.flipud(data[:,2].reshape(N))
                 self._delta = self.X[0,1] - self.X[0,0]
 
             elif abs(self.topo_type) in [2,3]:
@@ -802,7 +823,9 @@ class Topography(object):
             elif topo_type == 1:
                 # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
                 # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
-                for (j, latitude) in enumerate(self.y):
+                ## RJL:  need to start at NW corner and work downward
+                for j in range(len(self.y)-1, -1, -1):
+                    latitude = self.y[j]
                     for (i, longitude) in enumerate(self.x):
                         outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
 
