@@ -39,6 +39,7 @@ from data import Rearth
 DEG2RAD = numpy.pi / 180.0
 RAD2DEG = 180.0 / numpy.pi
 lat2meter = Rearth * DEG2RAD
+poisson = 0.25  # Poisson ratio for Okada 
 
 # ==============================================================================
 #  General utility functions
@@ -137,312 +138,12 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
 
 
 # ==============================================================================
-#  Okada Functionality
-#
-#  Okada model is a mapping from several fault parameters
-#  to a surface deformation.
-#  See Okada 1985, or Okada 1992, Bull. Seism. Soc. Am.
-#  
-#  Some routines adapted from fortran routines written by
-#  Xiaoming Wang.
-#  
-#  okadamap function riginally written in Python by Dave George in okada.py.
-#  Rewritten and made more flexible by Randy LeVeque:
-#  Location can be specified as "top center" or "centroid".
-#  
-#  The main function is okadamap(okadaparams,X,Y).
-#
-# ==============================================================================
-# Constants:
-
-poisson = 0.25
-# ==============================================================================
-
-def okadamap(okadaparams,X,Y):
-
-    """
-    create displacement matrix dZ for a surface displacement
-    over gridded region defined by X,Y, vectors of length nx,ny
-    given okadaparams
-    """
-
-    # rad = pi/180.       # conversion factor from degrees to radians
-    # rr = 6.378e6       # radius of earth -- original code
-    #rr = Rearth         # should use this instead!   
-    # lat2meter = rr*rad  # conversion factor from degrees latitude to meters
-
-    hh =  okadaparams["depth"]
-    L  =  okadaparams["length"]
-    w  =  okadaparams["width"]
-    d  =  okadaparams["slip"]
-    th =  okadaparams["strike"]
-    dl =  okadaparams["dip"]
-    rd =  okadaparams["rake"]
-    y0 =  okadaparams["latitude"]
-    x0 =  okadaparams["longitude"]
-    location =  okadaparams.get("latlong_location", "top center")
-
-    ang_dip = DEG2RAD*dl
-    ang_slip = DEG2RAD*rd
-    ang_strike = DEG2RAD*th
-    halfL = 0.5*L
-
-    plot_plane = False
-    print_xy = False
-
-    if plot_plane:
-        import matplotlib.pyplot as plt
-        plt.figure(202)
-        #clf()
-
-    if print_xy:
-        print "x0,y0: ",x0,y0
-
-
-    if location == "top center":
-
-        # Convert focal depth used for Okada's model
-        # from top of fault plane to bottom:
-
-        depth_top = hh
-        hh = hh + w*numpy.sin(ang_dip)
-        depth_bottom = hh
-
-        # Convert fault origin from top of fault plane to bottom:
-        del_x = w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
-                (lat2meter*numpy.cos(y0*DEG2RAD))
-        del_y = -w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
-        
-        x_top = x0
-        y_top = y0 
-        x_bottom = x0+del_x
-        y_bottom = y0+del_y
-        x_centroid = x0+0.5*del_x
-        y_centroid = y0+0.5*del_y
-
-
-    elif location == "centroid":
-
-        # Convert focal depth used for Okada's model
-        # from middle of fault plane to bottom:
-        depth_top = hh - 0.5*w*numpy.sin(ang_dip)
-        hh = hh + 0.5*w*numpy.sin(ang_dip)
-        depth_bottom = hh
-
-        # Convert fault origin from middle of fault plane to bottom:
-        del_x = 0.5*w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
-                (lat2meter*numpy.cos(y0*DEG2RAD))
-        del_y = -0.5*w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
-
-        x_centroid = x0
-        y_centroid = y0
-        x_top = x0-del_x
-        y_top = y0-del_y
-        x_bottom = x0+del_x
-        y_bottom = y0+del_y
-
-    else:
-        raise ValueError("Unrecognized latlong_location" % location)
-
-    # adjust x0,y0 to bottom center of fault plane:
-    x0 = x0 + del_x
-    y0 = y0 + del_y
-
-    # distance along strike from center of an edge to corner:
-    dx2 = 0.5*L*numpy.sin(ang_strike) / \
-            (lat2meter*numpy.cos(y_bottom*DEG2RAD))
-    dy2 = 0.5*L*numpy.cos(ang_strike) / lat2meter
-
-    if print_xy:
-        print "del_x, del_y: ",del_x,del_y
-        print "original x0,y0: ",x0,y0
-        print "bottom: ",x_bottom, y_bottom
-        print "centroid: ",x_centroid, y_centroid
-        print "top: ",x_top, y_top
-        print "dx2,dy2: ",dx2,dy2
-    if plot_plane:
-        plt.figure(203)
-        plt.subplot(211)
-        plt.plot([x_top,x_bottom],[-depth_top,-depth_bottom])
-        plt.title('depth vs. x')
-        plt.subplot(212)
-        plt.plot([y_top,y_bottom],[-depth_top,-depth_bottom])
-        plt.title('depth vs. y')
-        #plt.ylim([-100,0])
-        plt.figure(202)
-        plt.plot([x_top],[y_top],'bo',label="Top center")
-        plt.plot([x_centroid],[y_centroid],'ro',label="Centroid")
-        plt.plot([x_top,x_centroid],[y_top,y_centroid],'r-')
-        plt.plot([x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2],\
-             [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2],'b-')
-        plt.axis('scaled')
-        plt.axis([X[0],X[-1],Y[0],Y[-1]])
-        plt.title("Blue: top center, Red: centroid of subfault")
-
-
-    x,y = numpy.meshgrid(X,Y)
-
-    # Convert distance from (x,y) to (x_bottom,y_bottom) from degrees to
-    # meters:
-    xx = lat2meter*numpy.cos(DEG2RAD*y)*(x-x_bottom)   
-    yy = lat2meter*(y-y_bottom)
-
-
-    # Convert to distance along strike (x1) and dip (x2):
-    x1 = xx*numpy.sin(ang_strike) + yy*numpy.cos(ang_strike) 
-    x2 = xx*numpy.cos(ang_strike) - yy*numpy.sin(ang_strike) 
-
-    # In Okada's paper, x2 is distance up the fault plane, not down dip:
-    x2 = -x2
-
-    if 0:
-        plt.figure(203)
-        plt.clf()
-        plt.plot([xx[0,0],xx[0,-1],xx[-1,-1],xx[-1,0],xx[0,0]], \
-             [yy[0,0],yy[0,-1],yy[-1,-1],yy[-1,0],yy[0,0]], 'k-')
-        
-        plt.plot([x1[0,0],x1[0,-1],x1[-1,-1],x1[-1,0],x1[0,0]], \
-             [x2[0,0],x2[0,-1],x2[-1,-1],x2[-1,0],x2[0,0]], 'b-')
-        
-    p = x2*numpy.cos(ang_dip) + hh*numpy.sin(ang_dip)
-    q = x2*numpy.sin(ang_dip) - hh*numpy.cos(ang_dip)
-
-    f1=strike_slip (x1+halfL,p,  ang_dip,q)
-    f2=strike_slip (x1+halfL,p-w,ang_dip,q)
-    f3=strike_slip (x1-halfL,p,  ang_dip,q)
-    f4=strike_slip (x1-halfL,p-w,ang_dip,q)
-
-    g1=dip_slip (x1+halfL,p,  ang_dip,q)
-    g2=dip_slip (x1+halfL,p-w,ang_dip,q)
-    g3=dip_slip (x1-halfL,p,  ang_dip,q)
-    g4=dip_slip (x1-halfL,p-w,ang_dip,q)
-
-    # Displacement in direction of strike and dip:
-    ds = d*numpy.cos(ang_slip)
-    dd = d*numpy.sin(ang_slip)
-
-    us = (f1-f2-f3+f4)*ds
-    ud = (g1-g2-g3+g4)*dd
-
-    dZ = (us+ud)
-
-    if 0:
-        plt.contour(x,y,dZ,numpy.linspace(-8,8,17),colors='k')
-
-    return dZ
-
-
-#===========================================================================
-def strike_slip (y1,y2,ang_dip,q):
-    """
-    !.....Used for Okada's model
-    !.. ..Methods from Yoshimitsu Okada (1985)
-    !-----------------------------------------------------------------------
-    """
-    sn = numpy.sin(ang_dip)
-    cs = numpy.cos(ang_dip)
-    d_bar = y2*sn - q*cs
-    r = numpy.sqrt(y1**2 + y2**2 + q**2)
-    xx = numpy.sqrt(y1**2 + q**2)
-    a4 = 2.0*poisson/cs*(numpy.log(r+d_bar) - sn*numpy.log(r+y2))
-    f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*3.14159)
-
-    return f
-
-
-#============================================================================
-def dip_slip (y1,y2,ang_dip,q):
-    """
-    !.....Based on Okada's paper (1985)
-    !.....Added by Xiaoming Wang
-    !-----------------------------------------------------------------------
-    """
-    sn = numpy.sin(ang_dip)
-    cs = numpy.cos(ang_dip)
-
-    d_bar = y2*sn - q*cs;
-    r = numpy.sqrt(y1**2 + y2**2 + q**2)
-    xx = numpy.sqrt(y1**2 + q**2)
-    a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
-    f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
-
-    return f
-
-
-#============================================================================
-def filtermask (dZ,faultparams):
-    """
-    borrowed from code written by Xiaoming Wang and Tom Logan at ARSC
-
-    !.....Filter the deformation using a circular mask centered
-    !.....at the epicenter using a calculated radius
-    !.....Removes small numerical artifacts away from the epicenter
-    """
-    filterindices=[]
-
-    osixty = 0.016666666667
-    #rad = 0.01745329252
-    #rr = 6.378e6       # original code
-    #rr = Rearth         # should use this instead!   
-
-    xo = faultparams['xlower']
-    yo = faultparams['ylower']
-    nx = faultparams['mx']
-    ny = faultparams['my']
-    spacing = faultparams['dx']
-
-    x0 = faultparams['longitude']
-    y0 = faultparams['latitude']
-    l =  faultparams['length']
-    w =  faultparams['width']
-    dl = faultparams['dip']
-
-
-    ang_dip = DEG2RAD*dl # convert degree to radian
-
-    #!-- fault origin in pixels -----------
-    ypix = (y0-yo)/spacing
-    xpix = (x0-xo)/spacing
-
-    #!-- conversion from meters to pixels ---
-    tmpd=spacing*DEG2RAD
-    xdist = tmpd*Rearth
-
-    #!-- size of the fault in pixels --------
-    npix_x = l/xdist
-    npix_y = w/xdist
-
-    #!-- set the range (radius) of the filter circle --------
-    #!----- for small dip angles, use the length and width --
-    #!----- for larger dip angles, use only the length ------
-
-    if dl<30.0:
-        drange = 1.5 * numpy.cos(ang_dip)*numpy.sqrt(npix_x*npix_x+npix_y*npix_y)
-    else:
-        drange = 1.2 * npix_x
-
-    print("Filtering deformation using a circle of radius %s" % (drange))
-
-    #!-- Create the filtering mask ----------
-    for i in xrange(nx):
-        for j in xrange(ny) :
-            dist = numpy.sqrt((i+1-xpix)**2+(j+1-ypix)**2)
-            if dist > drange :
-                filterindices.append((j,i))
-
-    #!-- apply the filter to the actual deformation ------
-    dZ = filterdata(dZ,filterindices,radius=2)
-
-    return dZ
-
-
-# ==============================================================================
 #  Classes: 
 # ==============================================================================
 
 class DTopography(object):
 
-    def __init__(self, dtopo_params={}):
+    def __init__(self, path=None, topo_type=None):
         self.dz_list = []
         self.times = []
         self.x = None
@@ -450,6 +151,8 @@ class DTopography(object):
         self.X = None
         self.Y = None
         self.delta = None
+        if path:
+            self.read(path, topo_type)
 
     def read(self, path, topo_type):
         r"""
@@ -461,7 +164,7 @@ class DTopography(object):
          - *topo_type* (int) - Type of topography file to write out.  Default
            is 1.
         """
-        if topo_type==3:
+        if topo_type == 2 or topo_type == 3:
             fid = open(path)
             mx = int(fid.readline().split()[0])
             my = int(fid.readline().split()[0])
@@ -482,18 +185,56 @@ class DTopography(object):
     
             dZvals = numpy.loadtxt(path, skiprows=9)
             dz_list = []
-            for k,t in enumerate(times):
-                dZk = numpy.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
-                dZk = numpy.flipud(dZk)
-                dz_list.append(dZk)
-                
+            if topo_type==3:
+                # my lines with mx values on each
+                for k,t in enumerate(times):
+                    dZk = numpy.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
+                    dZk = numpy.flipud(dZk)
+                    dz_list.append(dZk)
+            else:
+                # topo_type==2 ==> mx*my lines with 1 values on each
+                for k,t in enumerate(times):
+                    dZk = numpy.reshape(dZvals[k*mx*my:(k+1)*mx*my], (my,mx))
+                    dZk = numpy.flipud(dZk)
+                    dz_list.append(dZk)
+                    
             self.x = x
             self.y = y
-            self.X, self.Y = meshgrid(x,y)
+            self.X, self.Y = numpy.meshgrid(x,y)
             self.times = times
             self.dz_list = dz_list
+
+        elif topo_type==1:
+            d = numpy.loadtxt(path)
+            print "Loaded file %s with %s lines" %(path,d.shape[0])
+            t = list(set(d[:,0]))
+            t.sort()
+            print "times found: ",t
+            ntimes = len(t)
+            tlast = t[-1]
+            lastlines = d[d[:,0]==tlast]
+            xvals = list(set(lastlines[:,1]))
+            xvals.sort()
+            mx = len(xvals)
+            my = len(lastlines) / mx
+            print "Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes)
+            X = numpy.reshape(lastlines[:,1],(my,mx))
+            Y = numpy.reshape(lastlines[:,2],(my,mx))
+            dz_list = []
+            print "Returning dZ as a list of mx*my arrays"
+            for n in range(ntimes):
+                i1 = n*mx*my
+                i2 = (n+1)*mx*my
+                dz_list.append(numpy.reshape(d[i1:i2,3],(my,mx)))
+            self.X = X
+            self.Y = Y
+            self.x = X[0,:]
+            self.y = Y[:,0]
+            self.times = t
+            self.dz_list = dz_list
+
         else:
-            raise NotImplemented("*** Not implemented for topo_type: %s" % topo_type)
+            raise NotImplementedError("*** Not implemented for topo_type: %s" % topo_type)
 
 
     def write(self, path, topo_type=None):
@@ -556,8 +297,6 @@ class DTopography(object):
                 data_file.write("%20.14e   dy\n" % dy)
                 data_file.write("%20.14e   dt\n" % float(self.times[1] - self.times[0]))
 
-
-
                 if topo_type == 2:
                     raise ValueError("Topography type 2 is not yet supported.")
                 elif topo_type == 3:
@@ -572,20 +311,20 @@ class DTopography(object):
                 raise ValueError("Only topography types 1, 2, and 3 are supported.")
 
 
-    def dz(t):
+    def dz(self,t):
         """
         Interpolate dz_list to specified time t and return deformation dz.
         """
         from matplotlib.mlab import find
-        if t <= times[0]:
-            return dz_list[0]
-        elif t >= times[-1]:
-            return dz_list[-1]
+        if t <= self.times[0]:
+            return self.dz_list[0]
+        elif t >= self.times[-1]:
+            return self.dz_list[-1]
         else:
-            n = max(find(times <= t))
-            t1 = times[n]
-            t2 = times[n+1]
-            dz = (t2-t)/(t2-t1) * dz_list[n] + (t-t1)/(t2-t1) * dz_list[n+1]
+            n = max(find(self.times <= t))
+            t1 = self.times[n]
+            t2 = self.times[n+1]
+            dz = (t2-t)/(t2-t1) * self.dz_list[n] + (t-t1)/(t2-t1) * self.dz_list[n+1]
             return dz
 
 
@@ -684,15 +423,18 @@ class Fault(object):
         return Mw(self.Mo())
 
     
-    def create_deformation_array(self, X, Y, times=[0.,1.]):
+    def create_deformation_array(self, x, y, times=[0.,1.]):
         r"""Create deformation array dZ.
 
-        Use subfaults' `okadamap` routine and add all 
+        Use subfaults' `okada` routine and add all 
         deformations together.
 
         """
 
         dtopo = DTopography()
+        dtopo.x = x
+        dtopo.y = y
+        X,Y = numpy.meshgrid(x,y)
         dtopo.X = X
         dtopo.Y = Y
         dtopo.times = times
@@ -703,7 +445,7 @@ class Fault(object):
         for k,subfault in enumerate(self.subfaults):
                 sys.stdout.write("%s.." % k)
                 sys.stdout.flush()
-                subfault.create_deformation_array(X,Y)
+                subfault.okada(x,y)
         sys.stdout.write("\nDone\n")
 
         if self.rupture_type == 'static':
@@ -747,14 +489,14 @@ class Fault(object):
             plot_rake=False, xylim=None, plot_box=True):
 
         r"""Plot subfault rectangle and slip for all subfaults"""
-        raise NotImplemented("To appear.")
+        raise NotImplementedError("To appear.")
 
 
     def plot_subfaults_depth(self):
         """
         Plot the depth of each subfault vs. x in one plot and vs. y in a second plot.
         """
-        raise NotImplemented("To appear.")
+        raise NotImplementedError("To appear.")
 
 
 class SubFault(object):
@@ -823,40 +565,146 @@ class SubFault(object):
         return Mo
 
 
-    def create_deformation_array(self, X, Y):
+    def okada(self, x, y):
         r"""
         Apply Okada to this subfault and return a DTopography object.
 
+        Input:
+            x,y are 1d arrays
+        Output:
+            DTopography object with dz_list = [dz] being a list with 
+                single static displacement and times = [0.].
+
         Currently only calculates the vertical displacement.
 
-        Adapted from create_deformation_array(self, domain=None)
+        Okada model is a mapping from several fault parameters
+        to a surface deformation.
+        See Okada 1985, or Okada 1992, Bull. Seism. Soc. Am.
+        
+        Some routines adapted from fortran routines written by
+        Xiaoming Wang.
+        
+        okadamap function riginally written in Python by Dave George for
+        Clawpack 4.6 okada.py routine.
+        Rewritten and made more flexible by Randy LeVeque:
+        coordinate_specification can be specified as "top center" or "centroid".
 
         """
+
+        # Convert to meters if necessary:
         dimensions, depth, slip = self.convert2meters(["dimensions", "depth",
                                     "slip"])
 
-        # Construct dictionary that okadamap is looking for
-        okada_params = {}
-        okada_params["depth"] = depth
-        okada_params["length"] = dimensions[0]
-        okada_params["width"] = dimensions[1]
-        okada_params["slip"] = slip
-        okada_params["strike"] = self.strike
-        okada_params["dip"] = self.dip
-        okada_params["rake"] = self.rake
-        if self.coordinate_specification == 'bottom center':
-            # okada_map does not support the bottom center specification
-            okada_params["longitude"] = self.fault_plane_centers[1][0]
-            okada_params["latitude"] = self.fault_plane_centers[1][1]
-            okada_params["latlong_location"] = 'centroid'
+        hh =  depth
+        L  =  dimensions[0]
+        w  =  dimensions[1]
+        d  =  slip
+        th =  self.strike
+        dl =  self.dip
+        rd =  self.rake
+        x0 =  self.coordinates[0]
+        y0 =  self.coordinates[1]
+        location =  self.coordinate_specification
+
+    
+        ang_dip = DEG2RAD*dl
+        ang_slip = DEG2RAD*rd
+        ang_strike = DEG2RAD*th
+        halfL = 0.5*L
+    
+    
+        if location == "top center":
+    
+            # Convert focal depth used for Okada's model
+            # from top of fault plane to bottom:
+    
+            depth_top = hh
+            hh = hh + w*numpy.sin(ang_dip)
+            depth_bottom = hh
+    
+            # Convert fault origin from top of fault plane to bottom:
+            del_x = w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
+                    (lat2meter*numpy.cos(y0*DEG2RAD))
+            del_y = -w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
+            
+            x_top = x0
+            y_top = y0 
+            x_bottom = x0+del_x
+            y_bottom = y0+del_y
+            x_centroid = x0+0.5*del_x
+            y_centroid = y0+0.5*del_y
+    
+    
+        elif location == "centroid":
+    
+            # Convert focal depth used for Okada's model
+            # from middle of fault plane to bottom:
+            depth_top = hh - 0.5*w*numpy.sin(ang_dip)
+            hh = hh + 0.5*w*numpy.sin(ang_dip)
+            depth_bottom = hh
+    
+            # Convert fault origin from middle of fault plane to bottom:
+            del_x = 0.5*w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
+                    (lat2meter*numpy.cos(y0*DEG2RAD))
+            del_y = -0.5*w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
+    
+            x_centroid = x0
+            y_centroid = y0
+            x_top = x0-del_x
+            y_top = y0-del_y
+            x_bottom = x0+del_x
+            y_bottom = y0+del_y
+    
         else:
-            okada_params["longitude"] = self.coordinates[0]
-            okada_params["latitude"] = self.coordinates[1]
-            okada_params["latlong_location"] = self.coordinate_specification
-        
-        x = X[0,:]
-        y = Y[:,0]
-        dz = okadamap(okada_params, x, y)
+            raise ValueError("Unrecognized coordinate_specification" \
+                    % coordinate_specification)
+    
+        # adjust x0,y0 to bottom center of fault plane:
+        x0 = x0 + del_x
+        y0 = y0 + del_y
+    
+        # distance along strike from center of an edge to corner:
+        dx2 = 0.5*L*numpy.sin(ang_strike) / \
+                (lat2meter*numpy.cos(y_bottom*DEG2RAD))
+        dy2 = 0.5*L*numpy.cos(ang_strike) / lat2meter
+    
+        X,Y = numpy.meshgrid(x,y)   # use convention of upper case for 2d
+    
+        # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
+        # meters:
+        xx = lat2meter*numpy.cos(DEG2RAD*Y)*(X-x_bottom)   
+        yy = lat2meter*(Y-y_bottom)
+    
+    
+        # Convert to distance along strike (x1) and dip (x2):
+        x1 = xx*numpy.sin(ang_strike) + yy*numpy.cos(ang_strike) 
+        x2 = xx*numpy.cos(ang_strike) - yy*numpy.sin(ang_strike) 
+    
+        # In Okada's paper, x2 is distance up the fault plane, not down dip:
+        x2 = -x2
+    
+        p = x2*numpy.cos(ang_dip) + hh*numpy.sin(ang_dip)
+        q = x2*numpy.sin(ang_dip) - hh*numpy.cos(ang_dip)
+    
+        f1=strike_slip (x1+halfL,p,  ang_dip,q)
+        f2=strike_slip (x1+halfL,p-w,ang_dip,q)
+        f3=strike_slip (x1-halfL,p,  ang_dip,q)
+        f4=strike_slip (x1-halfL,p-w,ang_dip,q)
+    
+        g1=dip_slip (x1+halfL,p,  ang_dip,q)
+        g2=dip_slip (x1+halfL,p-w,ang_dip,q)
+        g3=dip_slip (x1-halfL,p,  ang_dip,q)
+        g4=dip_slip (x1-halfL,p-w,ang_dip,q)
+    
+        # Displacement in direction of strike and dip:
+        ds = d*numpy.cos(ang_slip)
+        dd = d*numpy.sin(ang_slip)
+    
+        us = (f1-f2-f3+f4)*ds
+        ud = (g1-g2-g3+g4)*dd
+    
+        dz = (us+ud)
+
         dtopo = DTopography()
         dtopo.X = X
         dtopo.Y = Y
@@ -878,16 +726,19 @@ class UCSBFault(Fault):
 
     """
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, rupture_type='static'):
         r"""UCSBFault initialization routine.
         
         See :class:`UCSBFault` for more info.
+        Subfault format contains info for dynamic rupture, so can specify 
+        rupture_type = 'static' or 'dynamic'
 
         """
 
         self.num_cells = [None, None]
 
         super(UCSBFault, self).__init__(path=path)
+        self.rupture_type = rupture_type
 
 
     def read(self, path):
@@ -981,7 +832,8 @@ class UCSBFault(Fault):
         column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
                       "strike":5, "dip":6, 'mu':10}
 
-        super(UCSBFault, self).read(path, column_map, skiprows=header_lines)
+        super(UCSBFault, self).read(path, column_map, skiprows=header_lines,
+                                coordinate_specification="centroid")
 
         # Set general data
         for subfault in self.subfaults:
@@ -997,7 +849,8 @@ class CSVFault(Fault):
     Assumes that the first row gives the column headings
     """
 
-    def read(self, path, units={}):
+    def read(self, path, units={}, coordinate_specification="top center",
+                         rupture_type="static"):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
@@ -1032,4 +885,6 @@ None]}
                     column_map['dimensions'][1] = n
 
         super(CSVFault, self).read(path, column_map=column_map, skiprows=1,
-                                         delimiter=",", units=units)
+                                delimiter=",", units=units,
+                                coordinate_specification=coordinate_specification,
+                                rupture_type=rupture_type)
