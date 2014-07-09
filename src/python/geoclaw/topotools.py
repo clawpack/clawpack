@@ -543,11 +543,11 @@ class Topography(object):
         if self._Z is None:
 
             if self.unstructured:
-                # Really no way to do this here with performing a projection via
-                # extract.  Note that if the projection is performed these
+                # Really no way to do this here with performing interpolation via
+                # extract.  Note that if the interpolation is performed these
                 # arrays are already stored in self._X and self._Y
                 raise ValueError("Unstructured data does not allow for use of" \
-                                 + " 2d arrays, first project the data and" \
+                                 + " 2d arrays, first interpolate the data and" \
                                  + " try to perform this operation again.") 
 
             if self.path is not None:
@@ -582,11 +582,11 @@ class Topography(object):
         if self._X is None and self._Y is None:
 
             if self.unstructured:
-                # Really no way to do this here with performing a projection via
-                # extract.  Note that if the projection is performed these
+                # Really no way to do this here with performing interpolation via
+                # extract.  Note that if the interpolation is performed these
                 # arrays are already stored in self._X and self._Y
                 raise ValueError("Unstructured data does not allow for use of" \
-                                 + " 2d coordinates, first project the data" \
+                                 + " 2d coordinates, first interpolate the data" \
                                  + " and try to perform this operation again.")
 
             if self.path is not None:
@@ -932,14 +932,14 @@ class Topography(object):
         return axes
 
 
-    def project_unstructured(self, X_fill, Y_fill, Z_fill, extent=None,
+    def interp_unstructured(self, X_fill, Y_fill, Z_fill, extent=None,
                                    method='nearest', delta_limit=20.0, 
                                    no_data_value=-9999, buffer_length=100.0,
                                    proximity_radius=100.0, 
                                    resolution_limit=2000):
-        r"""Project unstructured data on to regular grid.
+        r"""Interpolate unstructured data on to regular grid.
 
-        Function to project the unstructured data in the topo object onto a 
+        Function to interpolate the unstructured data in the topo object onto a 
         structured grid.  Utilized a bounding box plus a buffer of size 
         *buffer_length* (meters) containing all data unless *extent* is not 
         None.  Then uses the fill data provided (*X_fill*, *Y_fill* and 
