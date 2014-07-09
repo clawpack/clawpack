@@ -375,7 +375,7 @@ class Topography(object):
     def Z(self):
         r"""A representation of the data as a 2d array."""
         if self._Z is None:
-            self.generate_2d_depths(mask=True)
+            self.generate_2d_topo(mask=True)
         return self._Z
     @Z.setter
     def Z(self, value):
@@ -536,8 +536,8 @@ class Topography(object):
         self.coordinate_transform = lambda x,y: (x,y)
 
 
-    def generate_2d_depths(self, mask=True):
-        r"""Generate a 2d array of the depths."""
+    def generate_2d_topo(self, mask=True):
+        r"""Generate a 2d array of the topo."""
 
         # Check to see if we need to generate these
         if self._Z is None:
@@ -616,7 +616,7 @@ class Topography(object):
                     # Check to see if we really need to do anything here
                     if isinstance(self._z, numpy.ma.MaskedArray):
                         # Try to create self._Z
-                        self.generate_2d_depths(mask=mask)
+                        self.generate_2d_topo(mask=mask)
 
                 if isinstance(self._Z, numpy.ma.MaskedArray):
                     # Use Z's mask for the X and Y coordinates
@@ -707,7 +707,8 @@ class Topography(object):
                 raise IOError("Unrecognized topo_type: %s" % self.topo_type)
                 
             if self.topo_type < 0:
-                # positive Z is depth below sea level, so negate:
+                # positive Z means distance below sea level for these
+                # topo_type's, contrary to our convention, so negate:
                 self._Z = -self._Z
                 
                 
@@ -817,8 +818,8 @@ class Topography(object):
 
         with open(path, 'w') as outfile:
             if self.unstructured:
-                for (i, depth) in enumerate(self.z):
-                    outfile.write("%s %s %s\n" % (self.x[i], self.y[i], depth))
+                for (i, topo) in enumerate(self.z):
+                    outfile.write("%s %s %s\n" % (self.x[i], self.y[i], topo))
 
             elif topo_type == 1:
                 # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
@@ -889,9 +890,9 @@ class Topography(object):
         mean_lat = 0.5 * (region_extent[3] - region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
         if limits is None:
-            depth_extent = (numpy.min(self.Z),numpy.max(self.Z))
+            topo_extent = (numpy.min(self.Z),numpy.max(self.Z))
         else:
-            depth_extent = limits
+            topo_extent = limits
 
         # Create color map
         if cmap is None:
@@ -901,19 +902,19 @@ class Topography(object):
                                                   1.0:[0.8,0.5,0.2]})
             sea_cmap = plt.get_cmap('Blues_r')
             cmap = colormaps.add_colormaps((land_cmap, sea_cmap), 
-                                           data_limits=depth_extent,
+                                           data_limits=topo_extent,
                                            data_break=0.0)
 
         # Plot data
         if contours is not None:
             plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
         elif isinstance(self.Z, numpy.ma.MaskedArray):
-            plot = axes.pcolor(self.X, self.Y, self.Z, vmin=depth_extent[0], 
-                                                       vmax=depth_extent[1],
+            plot = axes.pcolor(self.X, self.Y, self.Z, vmin=topo_extent[0], 
+                                                       vmax=topo_extent[1],
                                                        cmap=cmap)
         else:
-            plot = axes.imshow(self.Z, vmin=depth_extent[0], 
-                                       vmax=depth_extent[1],
+            plot = axes.imshow(self.Z, vmin=topo_extent[0], 
+                                       vmax=topo_extent[1],
                                        extent=region_extent, 
                                        cmap=cmap,
                                        origin='lower')
@@ -1169,7 +1170,7 @@ class Topography(object):
         # griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
 
     def smooth_data(self, indices, r=1):
-        r"""Filter depth data at *indices* by averaging surrounding data.
+        r"""Filter topo data at *indices* by averaging surrounding data.
 
         Surrounding data is considered within the ball of radius *r* in the 
         inf-norm.  Acts as a low-band pass filter and removes oscillatory data.
