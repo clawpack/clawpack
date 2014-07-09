@@ -752,9 +752,9 @@ class Topography(object):
             self._extent = [numpy.nan,numpy.nan,numpy.nan,numpy.nan]
             self._delta = numpy.nan
 
-            with open(self.path, 'r') as bathy_file:
+            with open(self.path, 'r') as topo_file:
                 # Check to see if we need to flip the header values
-                first_line = bathy_file.readline()
+                first_line = topo_file.readline()
                 try:
                     num_cells[0] = int(first_line.split()[0])
                 except ValueError:
@@ -764,11 +764,11 @@ class Topography(object):
                 else:
                     value_index = 0
 
-                num_cells[1] = int(bathy_file.readline().split()[value_index])
-                self._extent[0] = float(bathy_file.readline().split()[value_index])
-                self._extent[2] = float(bathy_file.readline().split()[value_index])
-                self._delta = float(bathy_file.readline().split()[value_index])
-                self.no_data_value = float(bathy_file.readline().split()[value_index])
+                num_cells[1] = int(topo_file.readline().split()[value_index])
+                self._extent[0] = float(topo_file.readline().split()[value_index])
+                self._extent[2] = float(topo_file.readline().split()[value_index])
+                self._delta = float(topo_file.readline().split()[value_index])
+                self.no_data_value = float(topo_file.readline().split()[value_index])
                 
                 self._extent[1] = self._extent[0] + num_cells[0] * self.delta
                 self._extent[3] = self._extent[2] + num_cells[1] * self.delta
@@ -781,7 +781,7 @@ class Topography(object):
     def write(self, path, no_data_value=None, topo_type=None, masked=True):
         r"""Write out a topography file to path of type *topo_type*.
 
-        Writes out a bathymetry file of topo type specified with *topo_type* or
+        Writes out a topography file of topo type specified with *topo_type* or
         inferred from the output file's extension, defaulting to 3, to path
         from data in Z.  The rest of the arguments are used to write the header
         data.
@@ -809,7 +809,7 @@ class Topography(object):
         if no_data_value is None:
             no_data_value = self.no_data_value
 
-        # Check to see if masks have been applied to bathymetry, if so use them
+        # Check to see if masks have been applied to topography, if so use them
         # if masked is True
         if isinstance(self.Z, numpy.ma.MaskedArray) and masked:
             pass
@@ -841,7 +841,7 @@ class Topography(object):
 
                 masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
 
-                # Write out bathy data
+                # Write out topography data
                 if topo_type == 2:
                     if masked_Z:
                         Z_filled = numpy.flipud(self.Z.filled())
