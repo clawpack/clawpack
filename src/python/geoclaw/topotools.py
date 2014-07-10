@@ -556,6 +556,12 @@ class Topography(object):
         # Check to see if we need to generate these
         if self._X is None and self._Y is None:
 
+            # RJL: Added this to generate from _x and _y if available.
+            # Correct?
+            if (self._x is not None) and (self._y is not None):
+                self._X,self._Y = numpy.meshgrid(self._x, self._y)
+
+        if self._X is None and self._Y is None:
             if self.unstructured:
                 # Really no way to do this here with performing interpolation via
                 # extract.  Note that if the interpolation is performed these

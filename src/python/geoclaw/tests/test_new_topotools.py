@@ -137,9 +137,14 @@ def test_plot_topo_bowl_hill():
     Note that center of bowl should be at (0,0).
     """
 
+    import matplotlib.pyplot as plt
     make_topo_bowl_hill()
     fname = 'bowl_hill.tt2'
     topo = topotools.Topography(fname,topo_type=2)
 
     topo.plot()
+
+    topo2 = topo.crop([0.5, 1.5, 0., 2.])
+    topo2.plot()
+    plt.title("Cropped topography")
 
