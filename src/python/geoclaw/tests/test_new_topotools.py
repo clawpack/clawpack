@@ -24,6 +24,29 @@ def test_read_write_topo_bowl():
     topo.x = numpy.linspace(xlower,xupper,nxpoints)
     topo.y = numpy.linspace(ylower,yupper,nypoints)
 
+    assert numpy.allclose(topo.x, numpy.array([-1.,  0.,  1.,  2., 3.])), \
+        "*** topo.x does not match"
+    assert numpy.allclose(topo.X, \
+        numpy.array([[-1.,  0.,  1.,  2.,  3.],
+                   [-1.,  0.,  1.,  2.,  3.],
+                   [-1.,  0.,  1.,  2.,  3.],
+                   [-1.,  0.,  1.,  2.,  3.]])), \
+        "*** topo.X does not match"
+    assert numpy.allclose(topo.y, numpy.array([ 0.,  1.,  2.,  3.])), \
+        "*** topo.y does not match"
+    assert numpy.allclose(topo.Y, \
+        numpy.array([[ 0.,  0.,  0.,  0.,  0.],
+                   [ 1.,  1.,  1.,  1.,  1.],
+                   [ 2.,  2.,  2.,  2.,  2.],
+                   [ 3.,  3.,  3.,  3.,  3.]])), \
+        "*** topo.Y does not match"
+    assert numpy.allclose(topo.Z, \
+        numpy.array([[     0.,  -1000.,      0.,   3000., 8000.],
+                   [  1000.,      0.,   1000.,   4000.,   9000.],
+                   [  4000.,   3000.,   4000.,   7000.,  12000.],
+                   [  9000.,   8000.,   9000.,  12000.,  17000.]])), \
+        "*** topo.Z does not match"
+
     for ttype in [1,2,3]:
         fname = 'bowl.tt%s' % ttype
         if ttype==1:
@@ -42,6 +65,44 @@ def test_read_write_topo_bowl():
         topo_in = topotools.Topography()
         topo_in.read(path=fname)  # should figure out topo_type properly
         print "Read back in second way and max difference in z is ",abs(topo.Z - topo_in.Z).max()
+    return topo
+
+def test_crop_topo_bowl():
+    """
+    Test cropping a topo file.
+    """
+
+    nxpoints = 5
+    nypoints = 4
+    xlower = -1.
+    xupper = 3.
+    ylower = 0.
+    yupper = 3.
+    topo = topotools.Topography(topo_func=topo_bowl)
+    topo.x = numpy.linspace(xlower,xupper,nxpoints)
+    topo.y = numpy.linspace(ylower,yupper,nypoints)
+
+    # topo.Z should be created automatically when referenced below:
+    assert numpy.allclose(topo.Z, \
+        numpy.array([[     0.,  -1000.,      0.,   3000., 8000.],
+                   [  1000.,      0.,   1000.,   4000.,   9000.],
+                   [  4000.,   3000.,   4000.,   7000.,  12000.],
+                   [  9000.,   8000.,   9000.,  12000.,  17000.]])), \
+        "*** topo.Z does not match"
+
+    topo2 = topo.crop([0,1,0,2])
+
+    assert numpy.allclose(topo2.x, numpy.array([0.,  1.])), \
+        "*** topo.x does not match"
+    assert numpy.allclose(topo2.y, numpy.array([ 0.,  1.,  2.])), \
+        "*** topo.y does not match"
+    assert numpy.allclose(topo2.Z, \
+        numpy.array([[-1000.,     0.],
+                   [    0.,  1000.],
+                   [ 3000.,  4000.]])), \
+        "*** topo.Z does not match"
+
+    return topo2
 
 
 def test_against_old():
