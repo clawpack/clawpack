@@ -486,39 +486,7 @@ class Topography(object):
 
         self.path = path
         self.topo_func = topo_func
-        if self.path is None:
-            # We are going to generate the topography via the provided
-            # topo_func function
-            if (topo_func is None or 
-                not isinstance(topo_func, types.FunctionType)):
-                raise ValueError("Must provide either a path to a topography ",
-                                 "file or a generator function.")
-
-            # Do nothing for right now, wait until user fills in data
-        else:
-            if topo_type is not None:
-                self.topo_type = topo_type
-            else:
-                # Try to look at suffix for type
-                extension = os.path.splitext(path)[1][1:]
-                if extension[:2] == "tt":
-                    self.topo_type = int(extension[2])
-                elif extension == 'xyz':
-                    self.topo_type = 1
-                elif extension == 'asc':
-                    self.topo_type = 3
-                else:
-                    # Default to 3
-                    self.topo_type = 3
-
-            # Check if the path is a URL and fetch data if needed or forced
-            if "http" in self.path:
-                new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
-                if not os.path.exists(new_path) or force:
-                    urllib.urlretrieve(self.path)
-
-                # Change path to be local
-                self.path = new_path
+        self.topo_type = topo_type
 
         self.unstructured = unstructured
         self.no_data_value = -9999
@@ -553,7 +521,7 @@ class Topography(object):
             if self.path is not None:
                 if self._z is None:
                 # Try to read the data, may not have done this yet
-                    self.read(mask=mask)
+                    self.read(path=self.path, mask=mask)
                     if self._Z is not None:
                         # We are done, the read function did our work
                         return
@@ -626,17 +594,57 @@ class Topography(object):
                                                                      copy=False)
 
 
-    def read(self, mask=True, filter_region=None):
+    def read(self, path=None, topo_type=None, unstructured=False, 
+             mask=True, filter_region=None):
         r"""Read in the data from the object's *path* attribute.
 
         Stores the resulting data in one of the sets of *x*, *y*, and *z* or 
         *X*, *Y*, and *Z*.  
 
         :Input:
+         - *path* (str)  file to read, or url
+         - *topo_type* (int)
+         - *unstructured* (bool)
          - *mask* (bool)
          - *filter_region* (tuple)
+        The first three might have already been set when instatiating object.
 
         """
+
+        if (path is None) and (self.path is None):
+            raise ValueError("*** Need to set path for file to read")
+
+        if path:
+            self.path = path   # set or perhaps reset
+            self.topo_type = None  # force resetting below
+
+        if unstructured:
+            self.unstructured = unstructured
+
+        if self.topo_type is None:
+            if topo_type is not None:
+                self.topo_type = topo_type
+            else:
+                # Try to look at suffix for type
+                extension = os.path.splitext(path)[1][1:]
+                if extension[:2] == "tt":
+                    self.topo_type = int(extension[2])
+                elif extension == 'xyz':
+                    self.topo_type = 1
+                elif extension == 'asc':
+                    self.topo_type = 3
+                else:
+                    # Default to 3
+                    self.topo_type = 3
+
+        # Check if the path is a URL and fetch data if needed or forced
+        if "http" in self.path:
+            new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
+            if not os.path.exists(new_path) or force:
+                urllib.urlretrieve(self.path)
+
+            # Change path to be local
+            self.path = new_path
 
         if self.unstructured:
             # Read in the data as series of tuples
