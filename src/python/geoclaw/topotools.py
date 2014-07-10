@@ -361,6 +361,7 @@ class Topography(object):
     @property
     def z(self):
         r"""A representation of the data as an 1d array."""
+        # RJL: Why should there be a 1-d version of Z??
         if self._z is None:
             self.read(mask=True)
         return self._z
@@ -475,7 +476,7 @@ class Topography(object):
 
 
     def __init__(self, path=None, topo_func=None, topo_type=None, 
-                       unstructured=False, force=False):
+                       unstructured=False):
         r"""Topography initialization routine.
         
         See :class:`Topography` for more info.
@@ -502,6 +503,12 @@ class Topography(object):
         self._delta = None
 
         self.coordinate_transform = lambda x,y: (x,y)
+
+        # RJL: should we read in by default if path is specified?
+        #      If not, why include all these parameters in __init__?
+        #if path:
+        #    self.read(path=path, topo_type=topo_type, unstructured=unstructured,
+        #     mask=mask, filter_region=filter_region)
 
 
     def generate_2d_topo(self, mask=True):
@@ -595,7 +602,7 @@ class Topography(object):
 
 
     def read(self, path=None, topo_type=None, unstructured=False, 
-             mask=True, filter_region=None):
+             mask=True, filter_region=None, force=False):
         r"""Read in the data from the object's *path* attribute.
 
         Stores the resulting data in one of the sets of *x*, *y*, and *z* or 
@@ -626,7 +633,7 @@ class Topography(object):
                 self.topo_type = topo_type
             else:
                 # Try to look at suffix for type
-                extension = os.path.splitext(path)[1][1:]
+                extension = os.path.splitext(self.path)[1][1:]
                 if extension[:2] == "tt":
                     self.topo_type = int(extension[2])
                 elif extension == 'xyz':
@@ -1220,9 +1227,9 @@ class Topography(object):
         # Find indices of region
         region_index = [None, None, None, None]
         region_index[0] = (self.x >= filter_region[0]).nonzero()[0][0]
-        region_index[1] = (self.x <= filter_region[1]).nonzero()[0][-1]
+        region_index[1] = (self.x <= filter_region[1]).nonzero()[0][-1] + 1
         region_index[2] = (self.y >= filter_region[2]).nonzero()[0][0]
-        region_index[3] = (self.y <= filter_region[3]).nonzero()[0][-1]
+        region_index[3] = (self.y <= filter_region[3]).nonzero()[0][-1] + 1
         newtopo = Topography()
 
         newtopo._x = self._x[region_index[0]:region_index[1]]

@@ -36,8 +36,12 @@ def test_read_write_topo_bowl():
             topotools.topo3writer(fname,topo_bowl,xlower,xupper,ylower,yupper,\
                               nxpoints,nypoints)
         print "Created ",fname
-        topo_in = topotools.Topography(fname,topo_type=ttype)
+        topo_in = topotools.Topography(fname)
         print "Read back in and max difference in z is ",abs(topo.Z - topo_in.Z).max()
+        
+        topo_in = topotools.Topography()
+        topo_in.read(path=fname)  # should figure out topo_type properly
+        print "Read back in second way and max difference in z is ",abs(topo.Z - topo_in.Z).max()
 
 
 def test_against_old():
