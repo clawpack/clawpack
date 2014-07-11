@@ -1,23 +1,24 @@
-Citing Clawpack
-===============
+# Citing Clawpack
 
 If you use Clawpack in publications, please cite the following:
 
-@misc{clawpack,
-      title={Clawpack software}, 
-      author={Clawpack Development Team}, 
-      url={http://www.clawpack.org}, 
-      note={Version 5.1},
-      year={2014}}
+    @misc{clawpack,
+          title={Clawpack software}, 
+          author={Clawpack Development Team}, 
+          url={http://www.clawpack.org}, 
+          note={Version 5.1},
+          year={2014}}
 
 If you are using a version of the software other than the one above, please make
 sure to cite that instead.  Please also cite at least one of the following 
 regarding the algorithms used in Clawpack:
 
- - Basic algorithms in 1D and 2D:
+
+#### Basic algorithms in 1D and 2D
 
     R. J. LeVeque, 1997. Wave propagation algorithms for multi-dimensional 
     hyperbolic systems. J. Comput. Phys. 131, 327–353.
+
 
     @article{rjl:wpalg,
         Author = {R. J. LeVeque},
@@ -40,7 +41,7 @@ regarding the algorithms used in Clawpack:
           Url = {http://www.clawpack.org/book.html}
     }
 
- - 3D algorithms:
+#### 3D algorithms
     
     J. O. Langseth and R. J. LeVeque. 2000. A wave-propagation method for 
     three-dimensional hyperbolic conservation laws. J. Comput. Phys. 165, 
@@ -56,7 +57,7 @@ regarding the algorithms used in Clawpack:
              Year = {2000}
     }
 
- - Adaptive Mesh Refinement (AMR): 
+#### Adaptive Mesh Refinement (AMR)
 
     M. J. Berger and R. J. LeVeque. 1998. Adaptive Mesh Refinement using Wave-Propagation Algorithms for Hyperbolic Systems. SIAM J. Numer. Anal. 35, 2298–2316.
 
@@ -70,7 +71,7 @@ regarding the algorithms used in Clawpack:
              Year = {1998}
     }
  
- - f-wave algorithms:
+#### F-wave Algorithms
 
     D. S. Bale, R. J. LeVeque, S. Mitran, and J. A. Rossmanith. A wave-propagation 
     method for conservation laws with spatially varying flux functions, SIAM J. 
@@ -86,7 +87,7 @@ regarding the algorithms used in Clawpack:
         Year = {2002}
     }
 
- - GeoClaw:
+#### GeoClaw
 
     M. J. Berger, D. L. George, R. J. LeVeque and K. M. Mandli, The GeoClaw 
     software for depth-averaged flows with adaptive refinement, Advances in Water 
@@ -116,8 +117,9 @@ regarding the algorithms used in Clawpack:
              Year = {2011}
     }
 
-- PyClaw (please change the version number and year to the version you
-  have used):
+#### PyClaw
+
+Please change the version number and year to the version you have used.
 
     @misc{pyclaw,
           title={PyClaw software}, 
@@ -146,7 +148,7 @@ regarding the algorithms used in Clawpack:
              Year = {2012}
     }
 
- - SharpClaw (high order WENO):
+#### SharpClaw (High Order WENO)
 
     D. I. Ketcheson, Matteo Parsani, and R J LeVeque, 2013, High-order Wave 
     Propagation Algorithms for Hyperbolic Systems, SIAM Journal on Scientific 
