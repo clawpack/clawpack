@@ -229,6 +229,23 @@ def topo2writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
     topography.write(outfile, topo_type=2)
 
 
+def topo3writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
+                 nodata_value=-99999):
+    r"""Write out a topo type 3 file by evaluating the function *topo*.
+
+    This routine is here for backwards compatibility and simply creates a new
+    topography object and writes it out.
+
+    """
+
+    topography = Topography(topo_func=topo)
+
+    topography.x = numpy.linspace(xlower,xupper,nxpoints)
+    topography.y = numpy.linspace(ylower,yupper,nypoints)
+
+    topography.write(outfile, topo_type=3)
+
+
 def get_topo(topo_fname, remote_directory, force=None):
     """
     Download a topo file from the web, provided the file does not
@@ -344,6 +361,7 @@ class Topography(object):
     @property
     def z(self):
         r"""A representation of the data as an 1d array."""
+        # RJL: Why should there be a 1-d version of Z??
         if self._z is None:
             self.read(mask=True)
         return self._z
@@ -358,7 +376,7 @@ class Topography(object):
     def Z(self):
         r"""A representation of the data as a 2d array."""
         if self._Z is None:
-            self.generate_2d_depths(mask=True)
+            self.generate_2d_topo(mask=True)
         return self._Z
     @Z.setter
     def Z(self, value):
@@ -458,7 +476,7 @@ class Topography(object):
 
 
     def __init__(self, path=None, topo_func=None, topo_type=None, 
-                       unstructured=False, force=False):
+                       unstructured=False):
         r"""Topography initialization routine.
         
         See :class:`Topography` for more info.
@@ -469,39 +487,7 @@ class Topography(object):
 
         self.path = path
         self.topo_func = topo_func
-        if self.path is None:
-            # We are going to generate the topography via the provided
-            # topo_func function
-            if (topo_func is None or 
-                not isinstance(topo_func, types.FunctionType)):
-                raise ValueError("Must provide either a path to a topography ",
-                                 "file or a generator function.")
-
-            # Do nothing for right now, wait until user fills in data
-        else:
-            if topo_type is not None:
-                self.topo_type = topo_type
-            else:
-                # Try to look at suffix for type
-                extension = os.path.splitext(path)[1][1:]
-                if extension[:2] == "tt":
-                    self.topo_type = int(extension[2])
-                elif extension == 'xyz':
-                    self.topo_type = 1
-                elif extension == 'asc':
-                    self.topo_type = 3
-                else:
-                    # Default to 3
-                    self.topo_type = 3
-
-            # Check if the path is a URL and fetch data if needed or forced
-            if "http" in self.path:
-                new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
-                if not os.path.exists(new_path) or force:
-                    urllib.urlretrieve(self.path)
-
-                # Change path to be local
-                self.path = new_path
+        self.topo_type = topo_type
 
         self.unstructured = unstructured
         self.no_data_value = -9999
@@ -518,25 +504,31 @@ class Topography(object):
 
         self.coordinate_transform = lambda x,y: (x,y)
 
+        # RJL: should we read in by default if path is specified?
+        #      If not, why include all these parameters in __init__?
+        #if path:
+        #    self.read(path=path, topo_type=topo_type, unstructured=unstructured,
+        #     mask=mask, filter_region=filter_region)
 
-    def generate_2d_depths(self, mask=True):
-        r"""Generate a 2d array of the depths."""
+
+    def generate_2d_topo(self, mask=True):
+        r"""Generate a 2d array of the topo."""
 
         # Check to see if we need to generate these
         if self._Z is None:
 
             if self.unstructured:
-                # Really no way to do this here with performing a projection via
-                # extract.  Note that if the projection is performed these
+                # Really no way to do this here with performing interpolation via
+                # extract.  Note that if the interpolation is performed these
                 # arrays are already stored in self._X and self._Y
                 raise ValueError("Unstructured data does not allow for use of" \
-                                 + " 2d arrays, first project the data and" \
+                                 + " 2d arrays, first interpolate the data and" \
                                  + " try to perform this operation again.") 
 
             if self.path is not None:
                 if self._z is None:
                 # Try to read the data, may not have done this yet
-                    self.read(mask=mask)
+                    self.read(path=self.path, mask=mask)
                     if self._Z is not None:
                         # We are done, the read function did our work
                         return
@@ -552,7 +544,10 @@ class Topography(object):
 
             elif self.topo_func is not None:
                 # Generate topo via topo_func
-                self._Z = numpy.flipud(self.topo_func(self.X, self.Y))
+                ## self._Z = numpy.flipud(self.topo_func(self.X, self.Y))
+                ## RJL:  Don't flip -- leave so Z[i,j] has same dimensions as X,Y
+                ## Othewise does not plot properly.
+                self._Z = self.topo_func(self.X, self.Y)
 
 
     def generate_2d_coordinates(self, mask=True):
@@ -561,12 +556,18 @@ class Topography(object):
         # Check to see if we need to generate these
         if self._X is None and self._Y is None:
 
+            # RJL: Added this to generate from _x and _y if available.
+            # Correct?
+            if (self._x is not None) and (self._y is not None):
+                self._X,self._Y = numpy.meshgrid(self._x, self._y)
+
+        if self._X is None and self._Y is None:
             if self.unstructured:
-                # Really no way to do this here with performing a projection via
-                # extract.  Note that if the projection is performed these
+                # Really no way to do this here with performing interpolation via
+                # extract.  Note that if the interpolation is performed these
                 # arrays are already stored in self._X and self._Y
                 raise ValueError("Unstructured data does not allow for use of" \
-                                 + " 2d coordinates, first project the data" \
+                                 + " 2d coordinates, first interpolate the data" \
                                  + " and try to perform this operation again.")
 
             if self.path is not None:
@@ -596,7 +597,7 @@ class Topography(object):
                     # Check to see if we really need to do anything here
                     if isinstance(self._z, numpy.ma.MaskedArray):
                         # Try to create self._Z
-                        self.generate_2d_depths(mask=mask)
+                        self.generate_2d_topo(mask=mask)
 
                 if isinstance(self._Z, numpy.ma.MaskedArray):
                     # Use Z's mask for the X and Y coordinates
@@ -606,17 +607,57 @@ class Topography(object):
                                                                      copy=False)
 
 
-    def read(self, mask=True, filter_region=None):
+    def read(self, path=None, topo_type=None, unstructured=False, 
+             mask=True, filter_region=None, force=False):
         r"""Read in the data from the object's *path* attribute.
 
         Stores the resulting data in one of the sets of *x*, *y*, and *z* or 
         *X*, *Y*, and *Z*.  
 
         :Input:
+         - *path* (str)  file to read, or url
+         - *topo_type* (int)
+         - *unstructured* (bool)
          - *mask* (bool)
          - *filter_region* (tuple)
+        The first three might have already been set when instatiating object.
 
         """
+
+        if (path is None) and (self.path is None):
+            raise ValueError("*** Need to set path for file to read")
+
+        if path:
+            self.path = path   # set or perhaps reset
+            self.topo_type = None  # force resetting below
+
+        if unstructured:
+            self.unstructured = unstructured
+
+        if self.topo_type is None:
+            if topo_type is not None:
+                self.topo_type = topo_type
+            else:
+                # Try to look at suffix for type
+                extension = os.path.splitext(self.path)[1][1:]
+                if extension[:2] == "tt":
+                    self.topo_type = int(extension[2])
+                elif extension == 'xyz':
+                    self.topo_type = 1
+                elif extension == 'asc':
+                    self.topo_type = 3
+                else:
+                    # Default to 3
+                    self.topo_type = 3
+
+        # Check if the path is a URL and fetch data if needed or forced
+        if "http" in self.path:
+            new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
+            if not os.path.exists(new_path) or force:
+                urllib.urlretrieve(self.path)
+
+            # Change path to be local
+            self.path = new_path
 
         if self.unstructured:
             # Read in the data as series of tuples
@@ -662,7 +703,8 @@ class Topography(object):
                 self._x = data[:N[0],0]
                 self._Y = data[:,1].reshape(N)
                 self._y = data[::N[0],1]
-                self._Z = data[:,2].reshape(N)
+                ## RJL: need to flip since read in from NW corner
+                self._Z = numpy.flipud(data[:,2].reshape(N))
                 self._delta = self.X[0,1] - self.X[0,0]
 
             elif abs(self.topo_type) in [2,3]:
@@ -686,7 +728,8 @@ class Topography(object):
                 raise IOError("Unrecognized topo_type: %s" % self.topo_type)
                 
             if self.topo_type < 0:
-                # positive Z is depth below sea level, so negate:
+                # positive Z means distance below sea level for these
+                # topo_type's, contrary to our convention, so negate:
                 self._Z = -self._Z
                 
                 
@@ -730,9 +773,9 @@ class Topography(object):
             self._extent = [numpy.nan,numpy.nan,numpy.nan,numpy.nan]
             self._delta = numpy.nan
 
-            with open(self.path, 'r') as bathy_file:
+            with open(self.path, 'r') as topo_file:
                 # Check to see if we need to flip the header values
-                first_line = bathy_file.readline()
+                first_line = topo_file.readline()
                 try:
                     num_cells[0] = int(first_line.split()[0])
                 except ValueError:
@@ -742,11 +785,11 @@ class Topography(object):
                 else:
                     value_index = 0
 
-                num_cells[1] = int(bathy_file.readline().split()[value_index])
-                self._extent[0] = float(bathy_file.readline().split()[value_index])
-                self._extent[2] = float(bathy_file.readline().split()[value_index])
-                self._delta = float(bathy_file.readline().split()[value_index])
-                self.no_data_value = float(bathy_file.readline().split()[value_index])
+                num_cells[1] = int(topo_file.readline().split()[value_index])
+                self._extent[0] = float(topo_file.readline().split()[value_index])
+                self._extent[2] = float(topo_file.readline().split()[value_index])
+                self._delta = float(topo_file.readline().split()[value_index])
+                self.no_data_value = float(topo_file.readline().split()[value_index])
                 
                 self._extent[1] = self._extent[0] + num_cells[0] * self.delta
                 self._extent[3] = self._extent[2] + num_cells[1] * self.delta
@@ -759,7 +802,7 @@ class Topography(object):
     def write(self, path, no_data_value=None, topo_type=None, masked=True):
         r"""Write out a topography file to path of type *topo_type*.
 
-        Writes out a bathymetry file of topo type specified with *topo_type* or
+        Writes out a topography file of topo type specified with *topo_type* or
         inferred from the output file's extension, defaulting to 3, to path
         from data in Z.  The rest of the arguments are used to write the header
         data.
@@ -787,7 +830,7 @@ class Topography(object):
         if no_data_value is None:
             no_data_value = self.no_data_value
 
-        # Check to see if masks have been applied to bathymetry, if so use them
+        # Check to see if masks have been applied to topography, if so use them
         # if masked is True
         if isinstance(self.Z, numpy.ma.MaskedArray) and masked:
             pass
@@ -796,13 +839,15 @@ class Topography(object):
 
         with open(path, 'w') as outfile:
             if self.unstructured:
-                for (i, depth) in enumerate(self.z):
-                    outfile.write("%s %s %s\n" % (self.x[i], self.y[i], depth))
+                for (i, topo) in enumerate(self.z):
+                    outfile.write("%s %s %s\n" % (self.x[i], self.y[i], topo))
 
             elif topo_type == 1:
                 # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
                 # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
-                for (j, latitude) in enumerate(self.y):
+                ## RJL:  need to start at NW corner and work downward
+                for j in range(len(self.y)-1, -1, -1):
+                    latitude = self.y[j]
                     for (i, longitude) in enumerate(self.x):
                         outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
 
@@ -817,7 +862,7 @@ class Topography(object):
 
                 masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
 
-                # Write out bathy data
+                # Write out topography data
                 if topo_type == 2:
                     if masked_Z:
                         Z_filled = numpy.flipud(self.Z.filled())
@@ -866,9 +911,9 @@ class Topography(object):
         mean_lat = 0.5 * (region_extent[3] - region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
         if limits is None:
-            depth_extent = (numpy.min(self.Z),numpy.max(self.Z))
+            topo_extent = (numpy.min(self.Z),numpy.max(self.Z))
         else:
-            depth_extent = limits
+            topo_extent = limits
 
         # Create color map
         if cmap is None:
@@ -878,19 +923,19 @@ class Topography(object):
                                                   1.0:[0.8,0.5,0.2]})
             sea_cmap = plt.get_cmap('Blues_r')
             cmap = colormaps.add_colormaps((land_cmap, sea_cmap), 
-                                           data_limits=depth_extent,
+                                           data_limits=topo_extent,
                                            data_break=0.0)
 
         # Plot data
         if contours is not None:
             plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
         elif isinstance(self.Z, numpy.ma.MaskedArray):
-            plot = axes.pcolor(self.X, self.Y, self.Z, vmin=depth_extent[0], 
-                                                       vmax=depth_extent[1],
+            plot = axes.pcolor(self.X, self.Y, self.Z, vmin=topo_extent[0], 
+                                                       vmax=topo_extent[1],
                                                        cmap=cmap)
         else:
-            plot = axes.imshow(self.Z, vmin=depth_extent[0], 
-                                       vmax=depth_extent[1],
+            plot = axes.imshow(self.Z, vmin=topo_extent[0], 
+                                       vmax=topo_extent[1],
                                        extent=region_extent, 
                                        cmap=cmap,
                                        origin='lower')
@@ -908,14 +953,14 @@ class Topography(object):
         return axes
 
 
-    def project_unstructured(self, X_fill, Y_fill, Z_fill, extent=None,
+    def interp_unstructured(self, X_fill, Y_fill, Z_fill, extent=None,
                                    method='nearest', delta_limit=20.0, 
                                    no_data_value=-9999, buffer_length=100.0,
                                    proximity_radius=100.0, 
                                    resolution_limit=2000):
-        r"""Project unstructured data on to regular grid.
+        r"""Interpolate unstructured data on to regular grid.
 
-        Function to project the unstructured data in the topo object onto a 
+        Function to interpolate the unstructured data in the topo object onto a 
         structured grid.  Utilized a bounding box plus a buffer of size 
         *buffer_length* (meters) containing all data unless *extent* is not 
         None.  Then uses the fill data provided (*X_fill*, *Y_fill* and 
@@ -1146,7 +1191,7 @@ class Topography(object):
         # griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
 
     def smooth_data(self, indices, r=1):
-        r"""Filter depth data at *indices* by averaging surrounding data.
+        r"""Filter topo data at *indices* by averaging surrounding data.
 
         Surrounding data is considered within the ball of radius *r* in the 
         inf-norm.  Acts as a low-band pass filter and removes oscillatory data.
@@ -1188,9 +1233,9 @@ class Topography(object):
         # Find indices of region
         region_index = [None, None, None, None]
         region_index[0] = (self.x >= filter_region[0]).nonzero()[0][0]
-        region_index[1] = (self.x <= filter_region[1]).nonzero()[0][-1]
+        region_index[1] = (self.x <= filter_region[1]).nonzero()[0][-1] + 1
         region_index[2] = (self.y >= filter_region[2]).nonzero()[0][0]
-        region_index[3] = (self.y <= filter_region[3]).nonzero()[0][-1]
+        region_index[3] = (self.y <= filter_region[3]).nonzero()[0][-1] + 1
         newtopo = Topography()
 
         newtopo._x = self._x[region_index[0]:region_index[1]]
