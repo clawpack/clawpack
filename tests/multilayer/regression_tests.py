@@ -27,6 +27,9 @@ def wip(f):
     @wraps(f)
     def run_test(*args, **kwargs):
         try:
+            # Set to success so we don't save out the output when we know things
+            # are awry
+            args[0].success = True
             f(*args, **kwargs)
         except Exception as e:
             raise SkipTest("WIP test failed: " + str(e))
