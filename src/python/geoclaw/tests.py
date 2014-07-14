@@ -18,6 +18,8 @@ import tarfile
 import time
 import glob
 
+import numpy
+
 # Clean library files whenever this module is used
 if os.environ.has_key("CLAW"):
     CLAW = os.environ["CLAW"]
@@ -71,6 +73,7 @@ class GeoClawTest(unittest.TestCase):
         self.test_path = os.path.dirname(inspect.getfile(self.__class__))
         if len(self.test_path) == 0:
              self.test_path = "./"
+        self.rundata = None
 
     def get_remote_file(self, url, force=False, verbose=False):
         r"""Fetch file located at *url* and store in object's *temp_path*.
@@ -113,7 +116,7 @@ class GeoClawTest(unittest.TestCase):
 
 
     def setUp(self):
-        r"""Create temp dir for data and download files from web
+        r"""Create temp dir for data and setup log files.
 
         """
 
@@ -149,21 +152,39 @@ class GeoClawTest(unittest.TestCase):
         self.build_executable()
 
 
-    def runTest(self):
+    def load_rundata(self):
+        r"""(Re)load setrun module and create *rundata* object
 
-        # Write out data files
-        orig_path = os.getcwd()
+
+        """
+
         if sys.modules.has_key('setrun'):
             del(sys.modules['setrun'])
         sys.path.insert(0, self.test_path)
         import setrun
-        rundata = setrun.setrun()
-        os.chdir(self.temp_path)
-        rundata.write()
-        os.chdir(orig_path)
+        self.rundata = setrun.setrun()
         sys.path.pop(0)
 
-        # Run code
+
+    def write_rundata_objects(self, path=None):
+        r"""Write out data in the *rundata* object to *path*
+
+        Defaults to the temporary directory path *temp_path*.
+
+        """
+
+        if path is None:
+            path = self.temp_path
+
+        orig_path = os.getcwd()
+        os.chdir(path)
+        self.rundata.write()
+        os.chdir(orig_path)
+
+
+    def run_code(self):
+        r"""Run test code given an already compiled executable"""
+
         runclaw_cmd = " ".join((
                             "cd %s ;" % self.temp_path,
                             "python",
@@ -178,6 +199,56 @@ class GeoClawTest(unittest.TestCase):
                                            shell=True)
         self.stdout.flush()
         self.stderr.flush()
+
+
+    def runTest(self, save=False, indices=(2, 3)):
+        r"""Basic run test functionality
+
+        Note that this stub really only runs the code and performs no tests.
+
+        """
+
+        # Write out data files
+        self.load_rundata()
+        self.write_rundata_objects()
+
+        # Run code
+        self.run_code()
+
+        # Perform tests
+        self.check_gauges(save=save, indices=(2, 3))
+
+
+    def check_gauges(self, save=False, indices=(2, 3)):
+        r"""Basic test to assert gauge equality
+
+        """
+
+        # Get gauge data
+        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
+        data_sum = []
+        for index in indices:
+            data_sum.append(data[:, index].sum())
+
+        # Get (and save) regression comparison data
+        regression_data_file = os.path.join(self.test_path, "regression_data.txt")
+        if save:
+            numpy.savetxt(regression_data_file, data)
+        regression_data = numpy.loadtxt(regression_data_file)
+        regression_sum = []
+        for index in indices:
+            regression_sum.append(regression_data[:, index].sum())
+        # regression_sum = regression_data
+
+        # Compare data
+        tolerance = 1e-14
+        assert numpy.allclose(data_sum, regression_sum, tolerance), \
+                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
+        assert numpy.allclose(data, regression_data, tolerance), \
+                "Full gauge match failed."
+
+        # If we have gotten here then we do not need to copy the run results
+        self.success = True
 
 
     def tearDown(self):
@@ -208,10 +279,11 @@ class GeoClawTest(unittest.TestCase):
         """
 
         try:
-            # subprocess.check_call("echo '%s'" % str(self.__class__), shell=True)
-            # subprocess.check_call("echo '%s'" % inspect.getfile(self.__class__), shell=True)
-            # subprocess.check_call("echo '%s'" % self.test_path, shell=True)
-            # subprocess.check_call("echo '%s'" % self.temp_path, shell=True)
+            self.stdout.write("Test path and class info:\n")
+            self.stdout.write("  class: %s\n" % str(self.__class__))
+            self.stdout.write("  class file: %s\n" % str(inspect.getfile(self.__class__)))
+            self.stdout.write("  test path: %s\n" % str(self.test_path))
+            self.stdout.write("  temp path: %s\n" % str(self.temp_path))
             subprocess.check_call("cd %s ; make .exe" % self.test_path, 
                                                         stdout=self.stdout,
                                                         stderr=self.stderr,
