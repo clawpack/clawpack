@@ -526,6 +526,7 @@ class Topography(object):
                                  + " try to perform this operation again.") 
 
             if self.path is not None:
+                # RJL: why do we expect 1d z?
                 if self._z is None:
                 # Try to read the data, may not have done this yet
                     self.read(path=self.path, mask=mask)
@@ -699,10 +700,10 @@ class Topography(object):
                         break
                 N[0] = data.shape[0] / N[1]
 
-                self._X = data[:,0].reshape(N)
-                self._x = data[:N[0],0]
-                self._Y = data[:,1].reshape(N)
-                self._y = data[::N[0],1]
+                #self._X = data[:,0].reshape(N)
+                self._x = data[:N[1],0]
+                #self._Y = data[:,1].reshape(N)
+                self._y = data[::N[1],1]
                 ## RJL: need to flip since read in from NW corner
                 self._Z = numpy.flipud(data[:,2].reshape(N))
                 self._delta = self.X[0,1] - self.X[0,0]
@@ -903,12 +904,18 @@ class Topography(object):
         
         # Turn off annoying offset
         axes.ticklabel_format(format="plain", useOffset=False)
+        plt.xticks(rotation=20)
 
         # Generate limits if need be
         if region_extent is None:
-            region_extent = ( numpy.min(self.X), numpy.max(self.X),
-                              numpy.min(self.Y), numpy.max(self.Y) )
-        mean_lat = 0.5 * (region_extent[3] - region_extent[2])
+            dx = self.x[1] - self.x[0]
+            dy = self.y[1] - self.y[0]
+            x1 = self.x.min() - dx/2
+            x2 = self.x.max() + dx/2
+            y1 = self.y.min() - dy/2
+            y2 = self.y.max() + dy/2
+            region_extent = (x1,x2,y1,y2)
+        mean_lat = 0.5 * (region_extent[3] + region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
         if limits is None:
             topo_extent = (numpy.min(self.Z),numpy.max(self.Z))
@@ -930,15 +937,18 @@ class Topography(object):
         if contours is not None:
             plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
         elif isinstance(self.Z, numpy.ma.MaskedArray):
-            plot = axes.pcolor(self.X, self.Y, self.Z, vmin=topo_extent[0], 
-                                                       vmax=topo_extent[1],
-                                                       cmap=cmap)
+            # Adjust coordinates so color pixels centered at X,Y locations
+            plot = axes.pcolor(self.X - dx/2., self.Y - dx/2., self.Z, 
+                                       vmin=topo_extent[0], 
+                                       vmax=topo_extent[1],
+                                       cmap=cmap)
         else:
             plot = axes.imshow(self.Z, vmin=topo_extent[0], 
                                        vmax=topo_extent[1],
                                        extent=region_extent, 
                                        cmap=cmap,
-                                       origin='lower')
+                                       origin='lower',
+                                       interpolation='nearest')
         cbar = plt.colorbar(plot, ax=axes)
         cbar.set_label("Depth (m)")
         # levels = range(0,int(-numpy.min(Z)),500)
@@ -1240,8 +1250,9 @@ class Topography(object):
 
         newtopo._x = self._x[region_index[0]:region_index[1]]
         newtopo._y = self._y[region_index[2]:region_index[3]]
-        if self._z is not None:
-            newtopo._z = self._z[region_index[0]:region_index[1]]
+        # RJL: I don't think 1-d z makes sense
+        #if self._z is not None:
+        #    newtopo._z = self._z[region_index[0]:region_index[1]]
 
         # Force regeneration of 2d coordinate arrays and extent if needed
         newtopo._X = None

@@ -209,3 +209,37 @@ def test_plot_topo_bowl_hill():
     topo2.plot()
     plt.title("Cropped topography")
 
+def test_plot_kahului():
+    r"""
+    Example illustrating reading in a topo file and plotting.
+    Uses the test data KahuluiHarbor.tt3, created by cropping a data file
+    obtained from NGDC.   ===> Include link!!
+    Also crops the data further and plots cropped data, checks some values.
+    Then does a contour plot of this data.
+    """
+    import matplotlib.pyplot as plt
+
+    K = topotools.Topography('kahului_sample_1s.tt2',topo_type=2)
+    K.plot()
+    plt.title("Kahului Harbor at 1 second resolution")
+
+    plt.title("Kahului Harbor at 1 second resolution")
+
+    assert K.Z.shape == (46, 65), "*** K.Z is wrong shape"
+    assert numpy.allclose(K.Z[:3,:3], \
+                          numpy.array([[ 11.339,  11.339, 11.339],
+                                       [ 13.339,  11.339,  11.339],
+                                       [ 13.339,  11.339, 10.339]])), \
+                "*** Topography K does not match"
+
+    # Make a contour plot of topography / bathymetry:
+    plt.figure()
+    ax = plt.axes()
+    plt.contour(K.X, K.Y, K.Z, numpy.linspace(-20,-2,10), colors='b', \
+                linestyles='-')
+    plt.contour(K.X, K.Y, K.Z, numpy.linspace(2,20,10), colors='g')
+    plt.contour(K.X, K.Y, K.Z, [0.], colors='r')  # mean high water
+    ax.ticklabel_format(format="plain", useOffset=False)
+    plt.title("2-meter contours of topo (green) and bathymetry (blue)",\
+              fontsize=12)
+
