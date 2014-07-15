@@ -209,13 +209,15 @@ def test_plot_topo_bowl_hill():
     topo2.plot()
     plt.title("Cropped topography")
 
+
 def test_plot_kahului():
     r"""
     Example illustrating reading in a topo file and plotting.
-    Uses the test data KahuluiHarbor.tt3, created by cropping a data file
-    obtained from NGDC.   ===> Include link!!
-    Also crops the data further and plots cropped data, checks some values.
-    Then does a contour plot of this data.
+    Uses the test data kahului_sample_1s.tt2, created by cropping 
+    the data file obtained from the NGDC site
+        http://www.ngdc.noaa.gov/dem/squareCellGrid/download/604
+    In addition to using the Topography.plot function, also 
+    illustrate how to do a contour data of the data directly.
     """
     import matplotlib.pyplot as plt
 
