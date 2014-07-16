@@ -263,4 +263,5 @@ def test_fetch_topo_url():
     
     assert numpy.allclose(K.Z, K2.Z), "*** K2 != K after fetching from URL"
     os.system("rm %s" % fname)
+    os.system("rm %s.txt" % fname)
 
