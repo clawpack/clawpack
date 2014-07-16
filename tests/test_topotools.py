@@ -192,7 +192,7 @@ def test_read_write_topo_bowl_hill():
         print "Read back in and max difference in z is ",abs(topo.Z - topo_in.Z).max()
 
 
-def test_plot_topo_bowl_hill():
+def plot_topo_bowl_hill():
 
     """
     Create topo and write out, then read in again and plot.
@@ -205,13 +205,17 @@ def test_plot_topo_bowl_hill():
     topo = topotools.Topography(fname,topo_type=2)
 
     topo.plot()
+    fname = "bowl_hill.png"
+    plt.savefig(fname); print "Created ",fname
 
     topo2 = topo.crop([0.5, 1.5, 0., 2.])
     topo2.plot()
     plt.title("Cropped topography")
+    fname = "bowl_hill_crop.png"
+    plt.savefig(fname); print "Created ",fname
 
 
-def test_plot_kahului():
+def plot_kahului():
     r"""
     Example illustrating reading in a topo file and plotting.
     Uses the test data kahului_sample_1s.tt2, created by cropping 
@@ -227,6 +231,8 @@ def test_plot_kahului():
     plt.title("Kahului Harbor at 1 second resolution")
 
     plt.title("Kahului Harbor at 1 second resolution")
+    fname = "kahului_imshow.png"
+    plt.savefig(fname); print "Created ",fname
 
     assert K.Z.shape == (46, 65), "*** K.Z is wrong shape"
     assert numpy.allclose(K.Z[:3,:3], \
@@ -245,6 +251,8 @@ def test_plot_kahului():
     ax.ticklabel_format(format="plain", useOffset=False)
     plt.title("2-meter contours of topo (green) and bathymetry (blue)",\
               fontsize=12)
+    fname = "kahului_contour.png"
+    plt.savefig(fname); print "Created ",fname
 
 def test_fetch_topo_url():
 
@@ -259,9 +267,17 @@ def test_fetch_topo_url():
     fname = 'kahului_web.tt2'
     topotools.fetch_topo_url(url, local_fname=fname, force=True)
     K2 = topotools.Topography(fname)
-    K2.read()
+    try:
+        K2.read()
+    except:
+        import os
+        print "In directory ",os.getcwd()
+        print "Files: ",os.listdir('.')
     
     assert numpy.allclose(K.Z, K2.Z), "*** K2 != K after fetching from URL"
     os.system("rm %s" % fname)
     os.system("rm %s.txt" % fname)
 
+if __name__=="__main__":
+    plot_topo_bowl_hill()
+    plot_kahului()
