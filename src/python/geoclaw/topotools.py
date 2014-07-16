@@ -396,8 +396,7 @@ class Topography(object):
     @property
     def z(self):
         r"""A representation of the data as an 1d array."""
-        # RJL: Why should there be a 1-d version of Z??
-        if self._z is None:
+        if (self._z is None) and self.unstructured:
             self.read(mask=True)
         return self._z
     @z.setter
@@ -736,7 +735,6 @@ class Topography(object):
                 self._x = data[:N[1],0]
                 #self._Y = data[:,1].reshape(N)
                 self._y = data[::N[1],1]
-                ## RJL: need to flip since read in from NW corner
                 self._Z = numpy.flipud(data[:,2].reshape(N))
                 self._delta = self.X[0,1] - self.X[0,0]
 
@@ -878,7 +876,6 @@ class Topography(object):
             elif topo_type == 1:
                 # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
                 # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
-                ## RJL:  need to start at NW corner and work downward
                 for j in range(len(self.y)-1, -1, -1):
                     latitude = self.y[j]
                     for (i, longitude) in enumerate(self.x):
@@ -1271,6 +1268,9 @@ class Topography(object):
          - This could be a special case of in_poly although that routine could
            leave the resulting topography as unstructured effectively.
         """
+        
+        if self.unstructured:
+            raise NotImplemented("*** Cannot currently crop unstructured topo")
 
         # Find indices of region
         region_index = [None, None, None, None]
@@ -1282,9 +1282,6 @@ class Topography(object):
 
         newtopo._x = self._x[region_index[0]:region_index[1]]
         newtopo._y = self._y[region_index[2]:region_index[3]]
-        # RJL: I don't think 1-d z makes sense
-        #if self._z is not None:
-        #    newtopo._z = self._z[region_index[0]:region_index[1]]
 
         # Force regeneration of 2d coordinate arrays and extent if needed
         newtopo._X = None
