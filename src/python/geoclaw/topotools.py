@@ -246,17 +246,24 @@ def topo3writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
     topography.write(outfile, topo_type=3)
 
 
-def get_topo(topo_fname, remote_directory, force=None):
+def fetch_topo_url(url, local_fname=None, force=None):
     """
+    Replaces get_topo function.
+
     Download a topo file from the web, provided the file does not
     already exist locally.
 
-    remote_directory should be a URL.  For GeoClaw data it may be a
-    subdirectory of  http://kingkong.amath.washington.edu/topo/
+    :Input:
+        - *url* (str) URL including file name
+        - *local_fname* (str) name of local file to create.  
+          If *local_fname == None*, take file name from URL
+        - *force* (bool) If False, prompt user before downloading.
+
+    For GeoClaw examples, some topo files can be found in
+        http://www.clawpack.org/geoclaw/topo
     See that website for a list of archived topo datasets.
 
     If force==False then prompt the user to make sure it's ok to download,
-    with option to first get small file of metadata.
 
     If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
     and if this exists use its value.  This is useful for the script
@@ -269,18 +276,23 @@ def get_topo(topo_fname, remote_directory, force=None):
         force = (CTD in [True, 'True'])
     print 'force = ',force
 
-    if os.path.exists(topo_fname):
-        print "*** Not downloading topo file (already exists): %s " % topo_fname
+    remote_directory = os.path.split(url)[0]
+    topo_fname = os.path.split(url)[1]
+
+    if local_fname is None:
+        local_fname = topo_fname
+    if os.path.exists(local_fname):
+        print "*** Not downloading topo file (already exists): %s " % local_fname
     else:
         remote_fname = topo_fname
-        local_fname = topo_fname
         remote_fname_txt = remote_fname + '.txt'
         local_fname_txt = local_fname + '.txt'
 
         print "Require remote file ", remote_fname
         print "      from ", remote_directory
         if not force:
-            ans=raw_input("  Ok to download topo file?  \n"  +\
+            ans=raw_input("  Ok to download topo file and save as %s?  \n" \
+                            % local_fname  +\
                           "     Type y[es], n[o] or ? to first retrieve and print metadata  ")
             if ans.lower() not in ['y','yes','?']:
                 print "*** Aborting!   Missing: ", local_fname
@@ -324,6 +336,29 @@ def get_topo(topo_fname, remote_directory, force=None):
                 print "Saved to ", local_fname
         except:
             raise Exception("Error opening file %s" % local_fname)
+
+
+def get_topo(topo_fname, remote_directory, force=None):
+    """
+    DEPRECATED:  Use *fetch_topo_url* instead.
+
+    Download a topo file from the web, provided the file does not
+    already exist locally.
+
+    remote_directory should be a URL.  For GeoClaw data it may be a
+    subdirectory of  http://www.clawpack.org/geoclaw/topo
+    See that website for a list of archived topo datasets.
+
+    If force==False then prompt the user to make sure it's ok to download,
+    with option to first get small file of metadata.
+
+    If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
+    and if this exists use its value.  This is useful for the script
+    python/run_examples.py that runs all examples so it won't stop to prompt.
+    """
+
+    url = remote_directory + '/' + topo_fname
+    fetch_topo_url(url, force=force)
 
 
 def swapheader(inputfile, outputfile):
@@ -635,6 +670,11 @@ class Topography(object):
         if unstructured:
             self.unstructured = unstructured
 
+        # Check if the path is a URL and fetch data if needed or forced
+        if "http" in self.path:
+            fetch_topo_url(self.path)
+            
+
         if self.topo_type is None:
             if topo_type is not None:
                 self.topo_type = topo_type
@@ -651,14 +691,6 @@ class Topography(object):
                     # Default to 3
                     self.topo_type = 3
 
-        # Check if the path is a URL and fetch data if needed or forced
-        if "http" in self.path:
-            new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
-            if not os.path.exists(new_path) or force:
-                urllib.urlretrieve(self.path)
-
-            # Change path to be local
-            self.path = new_path
 
         if self.unstructured:
             # Read in the data as series of tuples

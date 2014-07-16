@@ -1,4 +1,5 @@
 
+import os
 import numpy
 from clawpack.geoclaw import topotools 
 
@@ -244,4 +245,22 @@ def test_plot_kahului():
     ax.ticklabel_format(format="plain", useOffset=False)
     plt.title("2-meter contours of topo (green) and bathymetry (blue)",\
               fontsize=12)
+
+def test_fetch_topo_url():
+
+    """
+    Fetch topography file from the web.
+    """
+
+    K = topotools.Topography('kahului_sample_1s.tt2',topo_type=2)
+    K.read()
+
+    url = 'https://raw.githubusercontent.com/rjleveque/geoclaw/5f675256c043e59e5065f9f3b5bdd41c2901702c/src/python/geoclaw/tests/kahului_sample_1s.tt2'
+    fname = 'kahului_web.tt2'
+    topotools.fetch_topo_url(url, local_fname=fname, force=True)
+    K2 = topotools.Topography(fname)
+    K2.read()
+    
+    assert numpy.allclose(K.Z, K2.Z), "*** K2 != K after fetching from URL"
+    os.system("rm %s" % fname)
 
