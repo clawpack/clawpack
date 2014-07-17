@@ -9,7 +9,7 @@ before_install:
   - sudo apt-get install gfortran
   # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print numpy.__version__"
-  - sudo apt-get install python-matplotlib
+  - pip install matplotlib
   - python -c "import matplotlib; print matplotlib.__version__"
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
