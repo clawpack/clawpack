@@ -24,7 +24,7 @@ before_script:
   - echo "------------------------------"
 
 script:
-  - cd $CLAW/pyclaw
+  - cd $CLAW/pyclaw/examples
   - nosetests
   - cd $CLAW/classic
   - nosetests
