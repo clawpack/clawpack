@@ -254,7 +254,7 @@ def plot_kahului():
     fname = "kahului_contour.png"
     plt.savefig(fname); print "Created ",fname
 
-def test_fetch_topo_url():
+def fetch_topo_url():
 
     """
     Fetch topography file from the web.
@@ -279,5 +279,7 @@ def test_fetch_topo_url():
     os.system("rm %s.txt" % fname)
 
 if __name__=="__main__":
+    # Run tests that Travis cannot run...
     plot_topo_bowl_hill()
     plot_kahului()
+    fetch_topo_url()
