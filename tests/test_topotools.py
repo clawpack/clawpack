@@ -1,6 +1,8 @@
 
 import os
 import numpy
+import matplotlib
+matplotlib.use("Agg")  # use image backend -- needed for Travis tests
 from clawpack.geoclaw import topotools 
 
 def topo_bowl(x,y):
