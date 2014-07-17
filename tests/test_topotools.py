@@ -6,6 +6,7 @@ matplotlib.use("Agg")  # use image backend -- needed for Travis tests
 from clawpack.geoclaw import topotools 
 
 testdir = os.getcwd()
+print "+++ testdir = ",testdir
 
 def topo_bowl(x,y):
     """Sample topo"""
@@ -266,6 +267,7 @@ def test_fetch_topo_url():
     """
 
     path = os.path.join(testdir,'kahului_sample_1s.tt2')
+    print "+++ path = ",path
     K = topotools.Topography(path,topo_type=2)
     K.read()
 
