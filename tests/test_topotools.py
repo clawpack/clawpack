@@ -5,6 +5,8 @@ import matplotlib
 matplotlib.use("Agg")  # use image backend -- needed for Travis tests
 from clawpack.geoclaw import topotools 
 
+testdir = os.getcwd()
+
 def topo_bowl(x,y):
     """Sample topo"""
     z = 1000.*(x**2 + y**2 - 1.)
@@ -194,7 +196,7 @@ def test_read_write_topo_bowl_hill():
         print "Read back in and max difference in z is ",abs(topo.Z - topo_in.Z).max()
 
 
-def test_plot_topo_bowl_hill():
+def plot_topo_bowl_hill():
 
     """
     Create topo and write out, then read in again and plot.
@@ -228,7 +230,8 @@ def plot_kahului():
     """
     import matplotlib.pyplot as plt
 
-    K = topotools.Topography('kahului_sample_1s.tt2',topo_type=2)
+    path = os.path.join(testdir,'kahului_sample_1s.tt2')
+    K = topotools.Topography(path,topo_type=2)
     K.plot()
     plt.title("Kahului Harbor at 1 second resolution")
 
@@ -256,13 +259,14 @@ def plot_kahului():
     fname = "kahului_contour.png"
     plt.savefig(fname); print "Created ",fname
 
-def fetch_topo_url():
+def test_fetch_topo_url():
 
     """
     Fetch topography file from the web.
     """
 
-    K = topotools.Topography('kahului_sample_1s.tt2',topo_type=2)
+    path = os.path.join(testdir,'kahului_sample_1s.tt2')
+    K = topotools.Topography(path,topo_type=2)
     K.read()
 
     url = 'https://raw.githubusercontent.com/rjleveque/geoclaw/5f675256c043e59e5065f9f3b5bdd41c2901702c/src/python/geoclaw/tests/kahului_sample_1s.tt2'
@@ -272,7 +276,6 @@ def fetch_topo_url():
     try:
         K2.read()
     except:
-        import os
         print "In directory ",os.getcwd()
         print "Files: ",os.listdir('.')
     
@@ -282,6 +285,6 @@ def fetch_topo_url():
 
 if __name__=="__main__":
     # Run tests that Travis cannot run...
-    test_plot_topo_bowl_hill()
+    plot_topo_bowl_hill()
     plot_kahului()
-    fetch_topo_url()
+    test_fetch_topo_url()
