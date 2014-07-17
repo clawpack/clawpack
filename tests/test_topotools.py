@@ -215,13 +215,15 @@ def plot_topo_bowl_hill():
 
     topo.plot()
     fname = "bowl_hill.png"
-    plt.savefig(fname); print "Created ",fname
+    plt.savefig(fname)
+    print "Created ",fname
 
     topo2 = topo.crop([0.5, 1.5, 0., 2.])
     topo2.plot()
     plt.title("Cropped topography")
     fname = "bowl_hill_crop.png"
-    plt.savefig(fname); print "Created ",fname
+    plt.savefig(fname)
+    print "Created ",fname
 
 
 def plot_kahului():
@@ -242,7 +244,8 @@ def plot_kahului():
 
     plt.title("Kahului Harbor at 1 second resolution")
     fname = "kahului_imshow.png"
-    plt.savefig(fname); print "Created ",fname
+    plt.savefig(fname)
+    print "Created ",fname
 
     assert K.Z.shape == (46, 65), "*** K.Z is wrong shape"
     assert numpy.allclose(K.Z[:3,:3], \
@@ -258,11 +261,20 @@ def plot_kahului():
                 linestyles='-')
     plt.contour(K.X, K.Y, K.Z, numpy.linspace(2,20,10), colors='g')
     plt.contour(K.X, K.Y, K.Z, [0.], colors='r')  # mean high water
+
+    # fix aspect ratio based on latitude:
+    mean_lat = 0.5 * (K.y.max() + K.y.min())
+    ax.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
+
+    # fix tick marks so readable:
     ax.ticklabel_format(format="plain", useOffset=False)
+    plt.xticks(rotation=20)
+
     plt.title("2-meter contours of topo (green) and bathymetry (blue)",\
               fontsize=12)
     fname = "kahului_contour.png"
-    plt.savefig(fname); print "Created ",fname
+    plt.savefig(fname)
+    print "Created ",fname
 
 def test_fetch_topo_url():
 
@@ -271,7 +283,6 @@ def test_fetch_topo_url():
     """
 
     path = os.path.join(testdir,'kahului_sample_1s.tt2')
-    print "+++ path = ",path
     K = topotools.Topography(path,topo_type=2)
     K.read()
 
@@ -290,7 +301,6 @@ def test_fetch_topo_url():
     os.system("rm %s.txt" % fname)
 
 if __name__=="__main__":
-    # Run tests that Travis cannot run...
+    # Run tests that Travis cannot run...  
     plot_topo_bowl_hill()
     plot_kahului()
-    test_fetch_topo_url()
