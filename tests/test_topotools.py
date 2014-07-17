@@ -1,6 +1,16 @@
 
+import os
 import numpy
+import matplotlib
+matplotlib.use("Agg")  # use image backend -- needed for Travis tests
 from clawpack.geoclaw import topotools 
+
+try:
+    CLAW = os.environ['CLAW']
+except KeyError:
+    raise Exception("Need to set CLAW environment variable")
+testdir = os.path.join(CLAW, 'geoclaw/tests')
+
 
 def topo_bowl(x,y):
     """Sample topo"""
@@ -191,7 +201,7 @@ def test_read_write_topo_bowl_hill():
         print "Read back in and max difference in z is ",abs(topo.Z - topo_in.Z).max()
 
 
-def test_plot_topo_bowl_hill():
+def plot_topo_bowl_hill():
 
     """
     Create topo and write out, then read in again and plot.
@@ -204,8 +214,93 @@ def test_plot_topo_bowl_hill():
     topo = topotools.Topography(fname,topo_type=2)
 
     topo.plot()
+    fname = "bowl_hill.png"
+    plt.savefig(fname)
+    print "Created ",fname
 
     topo2 = topo.crop([0.5, 1.5, 0., 2.])
     topo2.plot()
     plt.title("Cropped topography")
+    fname = "bowl_hill_crop.png"
+    plt.savefig(fname)
+    print "Created ",fname
 
+
+def plot_kahului():
+    r"""
+    Example illustrating reading in a topo file and plotting.
+    Uses the test data kahului_sample_1s.tt2, created by cropping 
+    the data file obtained from the NGDC site
+        http://www.ngdc.noaa.gov/dem/squareCellGrid/download/604
+    In addition to using the Topography.plot function, also 
+    illustrate how to do a contour data of the data directly.
+    """
+    import matplotlib.pyplot as plt
+
+    path = os.path.join(testdir,'kahului_sample_1s.tt2')
+    K = topotools.Topography(path,topo_type=2)
+    K.plot()
+    plt.title("Kahului Harbor at 1 second resolution")
+
+    plt.title("Kahului Harbor at 1 second resolution")
+    fname = "kahului_imshow.png"
+    plt.savefig(fname)
+    print "Created ",fname
+
+    assert K.Z.shape == (46, 65), "*** K.Z is wrong shape"
+    assert numpy.allclose(K.Z[:3,:3], \
+                          numpy.array([[ 11.339,  11.339, 11.339],
+                                       [ 13.339,  11.339,  11.339],
+                                       [ 13.339,  11.339, 10.339]])), \
+                "*** Topography K does not match"
+
+    # Make a contour plot of topography / bathymetry:
+    plt.figure()
+    ax = plt.axes()
+    plt.contour(K.X, K.Y, K.Z, numpy.linspace(-20,-2,10), colors='b', \
+                linestyles='-')
+    plt.contour(K.X, K.Y, K.Z, numpy.linspace(2,20,10), colors='g')
+    plt.contour(K.X, K.Y, K.Z, [0.], colors='r')  # mean high water
+
+    # fix aspect ratio based on latitude:
+    mean_lat = 0.5 * (K.y.max() + K.y.min())
+    ax.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
+
+    # fix tick marks so readable:
+    ax.ticklabel_format(format="plain", useOffset=False)
+    plt.xticks(rotation=20)
+
+    plt.title("2-meter contours of topo (green) and bathymetry (blue)",\
+              fontsize=12)
+    fname = "kahului_contour.png"
+    plt.savefig(fname)
+    print "Created ",fname
+
+def test_fetch_topo_url():
+
+    """
+    Fetch topography file from the web.
+    """
+
+    path = os.path.join(testdir,'kahului_sample_1s.tt2')
+    K = topotools.Topography(path,topo_type=2)
+    K.read()
+
+    url = 'https://raw.githubusercontent.com/rjleveque/geoclaw/5f675256c043e59e5065f9f3b5bdd41c2901702c/src/python/geoclaw/tests/kahului_sample_1s.tt2'
+    fname = 'kahului_web.tt2'
+    topotools.fetch_topo_url(url, local_fname=fname, force=True)
+    K2 = topotools.Topography(fname)
+    try:
+        K2.read()
+    except:
+        print "In directory ",os.getcwd()
+        print "Files: ",os.listdir('.')
+    
+    assert numpy.allclose(K.Z, K2.Z), "*** K2 != K after fetching from URL"
+    os.system("rm %s" % fname)
+    os.system("rm %s.txt" % fname)
+
+if __name__=="__main__":
+    # Run tests that Travis cannot run...  
+    plot_topo_bowl_hill()
+    plot_kahului()

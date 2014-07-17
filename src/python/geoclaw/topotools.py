@@ -246,17 +246,24 @@ def topo3writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
     topography.write(outfile, topo_type=3)
 
 
-def get_topo(topo_fname, remote_directory, force=None):
+def fetch_topo_url(url, local_fname=None, force=None):
     """
+    Replaces get_topo function.
+
     Download a topo file from the web, provided the file does not
     already exist locally.
 
-    remote_directory should be a URL.  For GeoClaw data it may be a
-    subdirectory of  http://kingkong.amath.washington.edu/topo/
+    :Input:
+        - *url* (str) URL including file name
+        - *local_fname* (str) name of local file to create.  
+          If *local_fname == None*, take file name from URL
+        - *force* (bool) If False, prompt user before downloading.
+
+    For GeoClaw examples, some topo files can be found in
+        http://www.clawpack.org/geoclaw/topo
     See that website for a list of archived topo datasets.
 
     If force==False then prompt the user to make sure it's ok to download,
-    with option to first get small file of metadata.
 
     If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
     and if this exists use its value.  This is useful for the script
@@ -269,18 +276,23 @@ def get_topo(topo_fname, remote_directory, force=None):
         force = (CTD in [True, 'True'])
     print 'force = ',force
 
-    if os.path.exists(topo_fname):
-        print "*** Not downloading topo file (already exists): %s " % topo_fname
+    remote_directory = os.path.split(url)[0]
+    topo_fname = os.path.split(url)[1]
+
+    if local_fname is None:
+        local_fname = topo_fname
+    if os.path.exists(local_fname):
+        print "*** Not downloading topo file (already exists): %s " % local_fname
     else:
         remote_fname = topo_fname
-        local_fname = topo_fname
         remote_fname_txt = remote_fname + '.txt'
         local_fname_txt = local_fname + '.txt'
 
         print "Require remote file ", remote_fname
         print "      from ", remote_directory
         if not force:
-            ans=raw_input("  Ok to download topo file?  \n"  +\
+            ans=raw_input("  Ok to download topo file and save as %s?  \n" \
+                            % local_fname  +\
                           "     Type y[es], n[o] or ? to first retrieve and print metadata  ")
             if ans.lower() not in ['y','yes','?']:
                 print "*** Aborting!   Missing: ", local_fname
@@ -326,6 +338,29 @@ def get_topo(topo_fname, remote_directory, force=None):
             raise Exception("Error opening file %s" % local_fname)
 
 
+def get_topo(topo_fname, remote_directory, force=None):
+    """
+    DEPRECATED:  Use *fetch_topo_url* instead.
+
+    Download a topo file from the web, provided the file does not
+    already exist locally.
+
+    remote_directory should be a URL.  For GeoClaw data it may be a
+    subdirectory of  http://www.clawpack.org/geoclaw/topo
+    See that website for a list of archived topo datasets.
+
+    If force==False then prompt the user to make sure it's ok to download,
+    with option to first get small file of metadata.
+
+    If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
+    and if this exists use its value.  This is useful for the script
+    python/run_examples.py that runs all examples so it won't stop to prompt.
+    """
+
+    url = remote_directory + '/' + topo_fname
+    fetch_topo_url(url, force=force)
+
+
 def swapheader(inputfile, outputfile):
     r"""Swap the order of key and value in header to value first.
 
@@ -361,8 +396,7 @@ class Topography(object):
     @property
     def z(self):
         r"""A representation of the data as an 1d array."""
-        # RJL: Why should there be a 1-d version of Z??
-        if self._z is None:
+        if (self._z is None) and self.unstructured:
             self.read(mask=True)
         return self._z
     @z.setter
@@ -526,6 +560,7 @@ class Topography(object):
                                  + " try to perform this operation again.") 
 
             if self.path is not None:
+                # RJL: why do we expect 1d z?
                 if self._z is None:
                 # Try to read the data, may not have done this yet
                     self.read(path=self.path, mask=mask)
@@ -634,6 +669,11 @@ class Topography(object):
         if unstructured:
             self.unstructured = unstructured
 
+        # Check if the path is a URL and fetch data if needed or forced
+        if "http" in self.path:
+            fetch_topo_url(self.path)
+            
+
         if self.topo_type is None:
             if topo_type is not None:
                 self.topo_type = topo_type
@@ -650,14 +690,6 @@ class Topography(object):
                     # Default to 3
                     self.topo_type = 3
 
-        # Check if the path is a URL and fetch data if needed or forced
-        if "http" in self.path:
-            new_path = os.path.join(os.getcwd(), os.path.split(self.path)[0])
-            if not os.path.exists(new_path) or force:
-                urllib.urlretrieve(self.path)
-
-            # Change path to be local
-            self.path = new_path
 
         if self.unstructured:
             # Read in the data as series of tuples
@@ -699,11 +731,10 @@ class Topography(object):
                         break
                 N[0] = data.shape[0] / N[1]
 
-                self._X = data[:,0].reshape(N)
-                self._x = data[:N[0],0]
-                self._Y = data[:,1].reshape(N)
-                self._y = data[::N[0],1]
-                ## RJL: need to flip since read in from NW corner
+                #self._X = data[:,0].reshape(N)
+                self._x = data[:N[1],0]
+                #self._Y = data[:,1].reshape(N)
+                self._y = data[::N[1],1]
                 self._Z = numpy.flipud(data[:,2].reshape(N))
                 self._delta = self.X[0,1] - self.X[0,0]
 
@@ -845,7 +876,6 @@ class Topography(object):
             elif topo_type == 1:
                 # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
                 # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
-                ## RJL:  need to start at NW corner and work downward
                 for j in range(len(self.y)-1, -1, -1):
                     latitude = self.y[j]
                     for (i, longitude) in enumerate(self.x):
@@ -890,8 +920,20 @@ class Topography(object):
 
 
     def plot(self, axes=None, region_extent=None, contours=None, 
-             coastlines=True, limits=None, cmap=None, fig_kwargs={}):
-        r"""Plot the topography."""
+             coastlines=True, limits=None, cmap=None, add_colorbar=True, 
+             fig_kwargs={}):
+        r"""Plot the topography.
+
+        :Input:
+         - *axes* (matplotlib.pyplot.axes) - 
+         - *region_extent* (tuple) - 
+         - *contours* (list) - 
+         - *coastlines* (bool) - 
+         - *limits* (list) - 
+         - *cmap* (matplotlib.colors.Colormap) - 
+         - *fig_kawargs* (dict) - 
+
+        """
 
         import matplotlib.pyplot as plt
         import clawpack.visclaw.colormaps as colormaps
@@ -903,48 +945,71 @@ class Topography(object):
         
         # Turn off annoying offset
         axes.ticklabel_format(format="plain", useOffset=False)
+        plt.xticks(rotation=20)
 
         # Generate limits if need be
-        if region_extent is None:
-            region_extent = ( numpy.min(self.X), numpy.max(self.X),
-                              numpy.min(self.Y), numpy.max(self.Y) )
-        mean_lat = 0.5 * (region_extent[3] - region_extent[2])
+        if (region_extent is None) and (not self.unstructured):
+            dx = self.x[1] - self.x[0]
+            dy = self.y[1] - self.y[0]
+            x1 = self.x.min() - dx/2
+            x2 = self.x.max() + dx/2
+            y1 = self.y.min() - dy/2
+            y2 = self.y.max() + dy/2
+            region_extent = (x1,x2,y1,y2)
+        mean_lat = 0.5 * (region_extent[3] + region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
+
         if limits is None:
-            topo_extent = (numpy.min(self.Z),numpy.max(self.Z))
+            if self.unstructured:
+                topo_extent = (numpy.min(self.z), numpy.max(self.z))
+            else:
+                topo_extent = (numpy.min(self.Z), numpy.max(self.Z))
         else:
             topo_extent = limits
 
-        # Create color map
+        # Create color map - assume shore is at z = 0.0
         if cmap is None:
             land_cmap = colormaps.make_colormap({ 0.0:[0.1,0.4,0.0],
                                                  0.25:[0.0,1.0,0.0],
                                                   0.5:[0.8,1.0,0.5],
                                                   1.0:[0.8,0.5,0.2]})
             sea_cmap = plt.get_cmap('Blues_r')
-            cmap = colormaps.add_colormaps((land_cmap, sea_cmap), 
-                                           data_limits=topo_extent,
-                                           data_break=0.0)
+            if topo_extent[0] > 0.0:
+                cmap = land_cmap
+            elif topo_extent[1] <= 0.0:
+                cmap = sea_cmap
+            else:
+                cmap = colormaps.add_colormaps((land_cmap, sea_cmap), 
+                                               data_limits=topo_extent,
+                                               data_break=0.0)
 
         # Plot data
-        if contours is not None:
+        if self.unstructured:
+            plot = axes.scatter(self.x, self.y, c=self.z, cmap=cmap,
+                                    vmin=topo_extent[0],
+                                    vmax=topo_extent[1],
+                                    marker=',', linewidths=(0.0,))
+        elif contours is not None:
             plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
         elif isinstance(self.Z, numpy.ma.MaskedArray):
-            plot = axes.pcolor(self.X, self.Y, self.Z, vmin=topo_extent[0], 
-                                                       vmax=topo_extent[1],
-                                                       cmap=cmap)
+            # Adjust coordinates so color pixels centered at X,Y locations
+            plot = axes.pcolor(self.X - dx/2., self.Y - dx/2., self.Z, 
+                                       vmin=topo_extent[0], 
+                                       vmax=topo_extent[1],
+                                       cmap=cmap)
         else:
             plot = axes.imshow(self.Z, vmin=topo_extent[0], 
                                        vmax=topo_extent[1],
                                        extent=region_extent, 
                                        cmap=cmap,
-                                       origin='lower')
+                                       origin='lower',
+                                       interpolation='nearest')
         cbar = plt.colorbar(plot, ax=axes)
-        cbar.set_label("Depth (m)")
+        cbar.set_label("Topography (m)")
         # levels = range(0,int(-numpy.min(Z)),500)
 
         # Plot coastlines
-        if coastlines:
+        if coastlines and not self.unstructured:
             axes.contour(self.X, self.Y, self.Z, levels=[0.0],colors='r')
 
         axes.set_xlim(region_extent[0:2])
@@ -953,27 +1018,33 @@ class Topography(object):
         return axes
 
 
-    def interp_unstructured(self, X_fill, Y_fill, Z_fill, extent=None,
+    def interp_unstructured(self, fill_topo, extent=None,
                                    method='nearest', delta_limit=20.0, 
                                    no_data_value=-9999, buffer_length=100.0,
                                    proximity_radius=100.0, 
                                    resolution_limit=2000):
         r"""Interpolate unstructured data on to regular grid.
 
-        Function to interpolate the unstructured data in the topo object onto a 
-        structured grid.  Utilized a bounding box plus a buffer of size 
-        *buffer_length* (meters) containing all data unless *extent* is not 
-        None.  Then uses the fill data provided (*X_fill*, *Y_fill* and 
-        *Z_fill*) to fill in the gaps in the unstructured data.  By default this
-        is done by masking the fill data with the extents, the value 
-        *no_data_value* and if *proximity_radius* (meters) is not 0, by a radius
-        of *proximity_radius* from all grid points in the object.  Stores the 
+        Function to interpolate the unstructured data in the topo object onto a
+        structured grid.  Utilizes a bounding box plus a buffer of size 
+        *buffer_length* (meters) containing all data unless *extent is not None*
+        is *True*.  Then uses the fill topography *fill_topo* to fill in the
+        gaps in the unstructured data.  By default this is done by masking the 
+        fill data with the extents, the value *no_data_value* and if 
+        *proximity_radius* (meters) is not 0, by a radius of *proximity_radius* 
+        from all grid points in the object.  Stores the 
         result in the *self.X*, *self.Y* and *self.Z* object attributes.  The
         resolution of the final grid is determined by calculating the minimum
         distance between all *x* and *y* data with a hard lower limit of 
         *delta_limit* (meters).
 
+        Note that the function *scipy.interpolate.griddata* does not respect
+        masks so a call to *numpy.ma.MaskedArray.compressed()* must be made to 
+        remove the masked data.
+
         :Input:
+         - *fill_topo* (list) - List of Topography objects to use as fill data
+           in the projection.
          - *extent* (tuple) - A tuple defining the rectangle of the sub-section.  
            Must be in the form (x lower,x upper,y lower, y upper).
          - *method* (string) - Method used for interpolation, valid methods are
@@ -988,7 +1059,9 @@ class Topography(object):
            used to mask the fill data with.  Default is *100.0* meters.
          - *resolution_limit* (int) - Limit the number of grid points in a
            single dimension.  Raises a *ValueError* if the limit is violated.
-           Default value is 
+           Default value is ``2000''.
+
+        Sets this object's *unstructured* attribute to *False* if successful.
 
         """
 
@@ -1019,40 +1092,89 @@ class Topography(object):
                                      numpy.linspace(extent[0], extent[1], N[0]),
                                      numpy.linspace(extent[2], extent[3], N[1]))
 
-        # Create extent mask
-        extent_mask = extent[0] > X_fill
-        extent_mask = numpy.logical_or(extent_mask,extent[1] < X_fill)
-        extent_mask = numpy.logical_or(extent_mask,extent[2] > Y_fill)
-        extent_mask = numpy.logical_or(extent_mask,extent[3] < Y_fill)
-        
-        # Create fill no-data value mask
-        no_data_mask = numpy.logical_or(extent_mask, Z_fill == no_data_value)
+        # Add the unstructured points to the data
+        points = numpy.array([self.x, self.y]).transpose()
+        values = self.z
 
-        all_mask = numpy.logical_or(extent_mask, no_data_mask)
+        # Mask fill topography and flatten the arrays if needed
+        if not isinstance(fill_topo, list):
+            fill_topo = list(fill_topo)
+        for topo in fill_topo:
+            if topo.unstructured:
+                x_fill = topo.x
+                y_fill = topo.y
+                z_fill = topo.z
 
-        # Create proximity mask
-        if proximity_radius > 0.0:
-        
-            indices = (~all_mask).nonzero()
-            for n in xrange(indices[0].shape[0]):
-                i = indices[0][n]
-                j = indices[1][n]
-                all_mask[i,j] = numpy.any(numpy.sqrt((self.x - X_fill[i,j])**2 
-                                                   + (self.y - Y_fill[i,j])**2)
-                                             < proximity_radius_deg)
+                extent_mask = extent[0] > x_fill
+                extent_mask = numpy.logical_or(extent_mask,extent[1] < x_fill)
+                extent_mask = numpy.logical_or(extent_mask,extent[2] > y_fill)
+                extent_mask = numpy.logical_or(extent_mask,extent[3] < y_fill)
+                
+                # Create fill no-data value mask
+                no_data_mask = numpy.logical_or(extent_mask, z_fill == no_data_value)
 
-        X_fill_masked = numpy.ma.masked_where(all_mask, X_fill)
-        Y_fill_masked = numpy.ma.masked_where(all_mask, Y_fill)
-        Z_fill_masked = numpy.ma.masked_where(all_mask, Z_fill)    
+                all_mask = numpy.logical_or(extent_mask, no_data_mask)
 
-        # Stick both the input data and fill data into arrays
-        fill_points = numpy.column_stack((X_fill_masked.compressed(),
-                                          Y_fill_masked.compressed()))
-        points = numpy.concatenate((numpy.array([self.x, self.y]).transpose(), 
-                                    fill_points))
-        values = numpy.concatenate((self.z, Z_fill_masked.compressed()))
+                # Create proximity mask
+                if proximity_radius > 0.0:
+                    indices = (~all_mask).nonzero()
+                    for n in xrange(indices[0].shape[0]):
+                        i = indices[0][n]
+                        all_mask[i] = numpy.any(numpy.sqrt((self.x - x_fill[i])**2 
+                                                         + (self.y - y_fill[i])**2)
+                                                     < proximity_radius_deg)
 
-        # Use nearest-neighbor interpolation
+                x_fill_masked = numpy.ma.masked_where(all_mask, x_fill)
+                y_fill_masked = numpy.ma.masked_where(all_mask, y_fill)
+                z_fill_masked = numpy.ma.masked_where(all_mask, z_fill)    
+
+                # Add the fill bathymetry to points and values
+                fill_points = numpy.column_stack((x_fill_masked.compressed(), 
+                                                  y_fill_masked.compressed()))
+
+                points = numpy.concatenate((fill_points, points))
+                values = numpy.concatenate((z_fill_masked.compressed(), values))
+
+            else:
+                # Structured fill data
+                X_fill = topo.X
+                Y_fill = topo.Y
+                Z_fill = topo.Z
+
+                # Create extent mask
+                extent_mask = extent[0] > X_fill
+                extent_mask = numpy.logical_or(extent_mask,extent[1] < X_fill)
+                extent_mask = numpy.logical_or(extent_mask,extent[2] > Y_fill)
+                extent_mask = numpy.logical_or(extent_mask,extent[3] < Y_fill)
+                
+                # Create fill no-data value mask
+                no_data_mask = numpy.logical_or(extent_mask, Z_fill == no_data_value)
+
+                all_mask = numpy.logical_or(extent_mask, no_data_mask)
+
+                # Create proximity mask
+                if proximity_radius > 0.0:
+                
+                    indices = (~all_mask).nonzero()
+                    for n in xrange(indices[0].shape[0]):
+                        i = indices[0][n]
+                        j = indices[1][n]
+                        all_mask[i,j] = numpy.any(numpy.sqrt((self.x - X_fill[i,j])**2 
+                                                           + (self.y - Y_fill[i,j])**2)
+                                                     < proximity_radius_deg)
+
+                X_fill_masked = numpy.ma.masked_where(all_mask, X_fill)
+                Y_fill_masked = numpy.ma.masked_where(all_mask, Y_fill)
+                Z_fill_masked = numpy.ma.masked_where(all_mask, Z_fill)    
+
+                # Add the fill bathymetry to points and values
+                fill_points = numpy.column_stack((X_fill_masked.compressed(),
+                                                  Y_fill_masked.compressed()))
+
+                points = numpy.concatenate((fill_points, points))
+                values = numpy.concatenate((Z_fill_masked.compressed(), values))
+
+        # Use specified interpolation
         self._Z = interpolate.griddata(points, values, (self.X, self.Y), 
                                                                   method=method)
 
@@ -1115,8 +1237,8 @@ class Topography(object):
         intersect = (numpy.mod(num_intersections, numpy.ones(x.shape) * 2) != 1)
 
         # Return masked arrays that are reshaped back to the input shapes
-        return numpy.ma.masked_where(intersect, x, copy=False).reshape(X.shape), \
-               numpy.ma.masked_where(intersect, y, copy=False).reshape(Y.shape)
+        return numpy.ma.masked_where(intersect, x, copy=False).reshape(self.X.shape), \
+               numpy.ma.masked_where(intersect, y, copy=False).reshape(self.Y.shape)
 
 
     def replace_values(self, indices, value=numpy.nan, method='fill'):
@@ -1149,6 +1271,7 @@ class Topography(object):
 
         elif method == "nearest":
             pass
+
 
     def replace_no_data_values(self, method='fill'):
         r"""Replace *no_data_value* with other values as specified by *method*.
@@ -1190,6 +1313,7 @@ class Topography(object):
 
         # griddata2topofile(X,Y,Z,outputfile,topotypeout,nodata_value,nodata_value)
 
+
     def smooth_data(self, indices, r=1):
         r"""Filter topo data at *indices* by averaging surrounding data.
 
@@ -1218,7 +1342,8 @@ class Topography(object):
             if num_points > 0:
                 self.Z[index[0], index[1]] = summation / num_points
 
-    def crop(self,filter_region):
+
+    def crop(self, filter_region):
         r"""Crop region to *filter_region*
 
         Create a new Topography object that is identical to this one but cropped
@@ -1229,6 +1354,9 @@ class Topography(object):
          - This could be a special case of in_poly although that routine could
            leave the resulting topography as unstructured effectively.
         """
+        
+        if self.unstructured:
+            raise NotImplemented("*** Cannot currently crop unstructured topo")
 
         # Find indices of region
         region_index = [None, None, None, None]
@@ -1240,8 +1368,6 @@ class Topography(object):
 
         newtopo._x = self._x[region_index[0]:region_index[1]]
         newtopo._y = self._y[region_index[2]:region_index[3]]
-        if self._z is not None:
-            newtopo._z = self._z[region_index[0]:region_index[1]]
 
         # Force regeneration of 2d coordinate arrays and extent if needed
         newtopo._X = None
