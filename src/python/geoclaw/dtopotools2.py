@@ -220,12 +220,15 @@ class DTopography(object):
             print "Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes)
             X = numpy.reshape(lastlines[:,1],(my,mx))
             Y = numpy.reshape(lastlines[:,2],(my,mx))
+            Y = numpy.flipud(Y)
             dz_list = []
             print "Returning dZ as a list of mx*my arrays"
             for n in range(ntimes):
                 i1 = n*mx*my
                 i2 = (n+1)*mx*my
-                dz_list.append(numpy.reshape(d[i1:i2,3],(my,mx)))
+                dz = numpy.reshape(d[i1:i2,3],(my,mx))
+                dz = numpy.flipud(dz)
+                dz_list.append(dz)
             self.X = X
             self.Y = Y
             self.x = X[0,:]
@@ -333,7 +336,7 @@ class DTopography(object):
         Interpolate dz_list to specified time t and then call module function
         plot_dz_colors.
         """
-        plot_dz_colors(self.x,self.y,self.dz(t),cmax_dz=cmax_dz, \
+        plot_dz_colors(self.X,self.Y,self.dz(t),cmax_dz=cmax_dz, \
                        dz_interval=dz_interval)
 
 
@@ -342,7 +345,7 @@ class DTopography(object):
         Interpolate dz_list to specified time t and then call module function
         plot_dz_contours.
         """
-        plot_dz_contours(self.x,self.y,self.dz(t),dz_interval=dz_interval)
+        plot_dz_contours(self.X,self.Y,self.dz(t),dz_interval=dz_interval)
 
 
 class Fault(object):
