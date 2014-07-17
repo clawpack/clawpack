@@ -33,7 +33,7 @@ before_script:
   - echo "FC="$FC
   
 script:
-  - cd $CLAW/geoclaw/tests
+  - cd $CLAW/geoclaw
   - nosetests -s
   - if [ -d *_output ] ; then for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done ; fi
   

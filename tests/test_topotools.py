@@ -5,8 +5,12 @@ import matplotlib
 matplotlib.use("Agg")  # use image backend -- needed for Travis tests
 from clawpack.geoclaw import topotools 
 
-testdir = os.getcwd()
-print "+++ testdir = ",testdir
+try:
+    CLAW = os.environ['CLAW']
+except KeyError:
+    raise Exception("Need to set CLAW environment variable")
+testdir = os.path.join(CLAW, 'geoclaw/tests')
+
 
 def topo_bowl(x,y):
     """Sample topo"""
