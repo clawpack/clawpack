@@ -192,7 +192,7 @@ def test_read_write_topo_bowl_hill():
         print "Read back in and max difference in z is ",abs(topo.Z - topo_in.Z).max()
 
 
-def plot_topo_bowl_hill():
+def test_plot_topo_bowl_hill():
 
     """
     Create topo and write out, then read in again and plot.
@@ -280,6 +280,6 @@ def fetch_topo_url():
 
 if __name__=="__main__":
     # Run tests that Travis cannot run...
-    plot_topo_bowl_hill()
+    test_plot_topo_bowl_hill()
     plot_kahului()
     fetch_topo_url()
