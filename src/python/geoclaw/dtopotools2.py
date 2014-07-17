@@ -508,8 +508,10 @@ class SubFault(object):
         self.slip = None
         self.rake = None
         self.dip = None
+        self.coordinates = None
         self.coordinate_specification = "top center"
-        self.units = {}
+        self.mu = 4e11
+        self.units = {'mu':"dyne/cm^2"}
 
 
     def convert2meters(self, parameters): 
@@ -686,15 +688,15 @@ class SubFault(object):
         p = x2*numpy.cos(ang_dip) + hh*numpy.sin(ang_dip)
         q = x2*numpy.sin(ang_dip) - hh*numpy.cos(ang_dip)
     
-        f1=strike_slip (x1+halfL,p,  ang_dip,q)
-        f2=strike_slip (x1+halfL,p-w,ang_dip,q)
-        f3=strike_slip (x1-halfL,p,  ang_dip,q)
-        f4=strike_slip (x1-halfL,p-w,ang_dip,q)
+        f1=self._strike_slip (x1+halfL,p,  ang_dip,q)
+        f2=self._strike_slip (x1+halfL,p-w,ang_dip,q)
+        f3=self._strike_slip (x1-halfL,p,  ang_dip,q)
+        f4=self._strike_slip (x1-halfL,p-w,ang_dip,q)
     
-        g1=dip_slip (x1+halfL,p,  ang_dip,q)
-        g2=dip_slip (x1+halfL,p-w,ang_dip,q)
-        g3=dip_slip (x1-halfL,p,  ang_dip,q)
-        g4=dip_slip (x1-halfL,p-w,ang_dip,q)
+        g1=self._dip_slip (x1+halfL,p,  ang_dip,q)
+        g2=self._dip_slip (x1+halfL,p-w,ang_dip,q)
+        g3=self._dip_slip (x1-halfL,p,  ang_dip,q)
+        g4=self._dip_slip (x1-halfL,p-w,ang_dip,q)
     
         # Displacement in direction of strike and dip:
         ds = d*numpy.cos(ang_slip)
@@ -713,6 +715,42 @@ class SubFault(object):
         self.dtopo = dtopo
         return dtopo
 
+    # Utility functions for okada:
+
+    def _strike_slip(self,y1,y2,ang_dip,q):
+        """
+        !.....Used for Okada's model
+        !.. ..Methods from Yoshimitsu Okada (1985)
+        !-----------------------------------------------------------------------
+        """
+        sn = numpy.sin(ang_dip)
+        cs = numpy.cos(ang_dip)
+        d_bar = y2*sn - q*cs
+        r = numpy.sqrt(y1**2 + y2**2 + q**2)
+        xx = numpy.sqrt(y1**2 + q**2)
+        a4 = 2.0*poisson/cs*(numpy.log(r+d_bar) - sn*numpy.log(r+y2))
+        f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*3.14159)
+    
+        return f
+    
+    
+    def _dip_slip(self,y1,y2,ang_dip,q):
+        """
+        !.....Based on Okada's paper (1985)
+        !.....Added by Xiaoming Wang
+        !-----------------------------------------------------------------------
+        """
+        sn = numpy.sin(ang_dip)
+        cs = numpy.cos(ang_dip)
+    
+        d_bar = y2*sn - q*cs;
+        r = numpy.sqrt(y1**2 + y2**2 + q**2)
+        xx = numpy.sqrt(y1**2 + q**2)
+        a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
+        f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
+    
+        return f
+    
 
 
 class UCSBFault(Fault):
