@@ -448,7 +448,8 @@ class Fault(object):
         for k,subfault in enumerate(self.subfaults):
                 sys.stdout.write("%s.." % k)
                 sys.stdout.flush()
-                subfault.okada(x,y)
+                subfault.okada(x,y)  # sets subfault.dtopo with times=[0]
+                                     # and len(subfault.dtopo.dz_list) == 1
         sys.stdout.write("\nDone\n")
 
         if self.rupture_type == 'static':
@@ -513,7 +514,7 @@ class SubFault(object):
         self.dip = None
         self.coordinates = None
         self.coordinate_specification = "top center"
-        self.mu = 4e11
+        self.mu = 4e11  # default value for rigidity = shear modulus
         self.units = {'mu':"dyne/cm^2"}
 
 
