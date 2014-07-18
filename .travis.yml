@@ -10,7 +10,7 @@ before_install:
   - pip install --use-mirrors yolk
   
 install:
-  - python setup.py install
+  - pip install -e .
   - export PYTHONPATH=${PWD}:$PYTHONPATH
   - export CLAW=${PWD}
   - export FC=gfortran
