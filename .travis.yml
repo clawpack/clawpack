@@ -11,7 +11,8 @@ before_install:
   
 install:
   - python setup.py install
-  - export CLAW=`pwd`
+  - export PYTHONPATH=${PWD}:$PYTHONPATH
+  - export CLAW=${PWD}
   - export FC=gfortran
   
 before_script:
