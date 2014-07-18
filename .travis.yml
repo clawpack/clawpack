@@ -10,8 +10,9 @@ before_install:
   - pip install --use-mirrors yolk
   
 install:
-  - python setup.py install
-  - export CLAW=`pwd`
+  - pip install -e .
+  - export PYTHONPATH=${PWD}:$PYTHONPATH
+  - export CLAW=${PWD}
   - export FC=gfortran
   
 before_script:
@@ -24,7 +25,7 @@ before_script:
   - echo "------------------------------"
 
 script:
-  - cd $CLAW/pyclaw
+  - cd $CLAW/pyclaw/examples
   - nosetests
   - cd $CLAW/classic
   - nosetests
