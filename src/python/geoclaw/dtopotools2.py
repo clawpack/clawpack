@@ -372,14 +372,34 @@ class Fault(object):
 
     def read(self, path, column_map, coordinate_specification="centroid",
                          rupture_type="static", skiprows=0, delimiter=None,
-                         units={}):
+                         units={}, defaults=None):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
         *path*.
-
-        column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
-                          "strike":5, "dip":6}
+        Inputs:
+          - *path* (str) file to read in, should contain subfaults, one per line
+          - *column_map* (dict) specifies mapping from parameter to the column
+            of the input file that contains values for this parameter, e.g.
+                column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
+                              "strike":5, "dip":6}
+          - *coordinate_specification* (str) specifies the location on each
+            subfault that corresponds to the (longitude,latitude) and depth 
+            of the subfault.
+            Currently must be one of these strings:
+                "centroid": (longitude,latitude) and depth at centroid of plane
+                "top center": (longitude,latitude) and depth at top center
+                "noaa sift": (longitude,latitude) at bottom center, 
+                             depth at top,  mixed convention used by NOAA SIFT
+                             database and "unit sources", see
+                             http://nctr.pmel.noaa.gov/propagation-database.html
+          - *rupture_type* (str) either "static" or "dynamic"
+          - *skiprows* (int) number of header lines to skip before data
+          - *delimiter* (str) e.g. ',' for csv files
+          - *units* (dict) indicating units of length for dimensions, slip, depth
+                           and units for rigidity mu.
+          - *defaults* (dict) default values for all subfaults, for values not
+                       included in subfault file on each line.
 
         """
 
@@ -407,6 +427,10 @@ class Fault(object):
                     setattr(new_subfault, var, data[n, column])
 
             self.subfaults.append(new_subfault)
+        if defaults is not None:
+            for subfault in self.subfaults:
+                pass
+            raise NotImplementedError("*** need to add support for defaults")
 
 
 
