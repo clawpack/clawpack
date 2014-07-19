@@ -570,12 +570,98 @@ class Fault(object):
 
 
 
+    
     def plot_subfaults(self, plot_centerline=False, slip_color=False, \
-            cmap_slip=None, cmin_slip=None, cmax_slip=None, \
-            plot_rake=False, xylim=None, plot_box=True):
-
-        r"""Plot subfault rectangle and slip for all subfaults"""
-        raise NotImplementedError("To appear.")
+                cmap_slip=None, cmin_slip=None, cmax_slip=None, \
+                plot_rake=False, xylim=None, plot_box=True):
+    
+        """
+        Plot each subfault projected onto the surface.
+        Describe parameters...
+        """
+    
+        import matplotlib
+        import matplotlib.pyplot as plt
+    
+        # for testing purposes, make random slips:
+        test_random = False
+    
+        max_slip = 0.
+        min_slip = 0.
+        for subfault in self.subfaults:
+            if test_random:
+                subfault.slip = 10.*numpy.rand()  # for testing
+            slip = subfault.slip
+            max_slip = max(abs(slip), max_slip)
+            min_slip = min(abs(slip), min_slip)
+        print "Max slip, Min slip: ",max_slip, min_slip
+    
+        if slip_color:
+            if cmap_slip is None:
+                cmap_slip = matplotlib.cm.jet
+                #white_purple = colormaps.make_colormap({0.:'w', 1.:[.6,0.2,.6]})
+                #cmap_slip = white_purple
+            if cmax_slip is None:
+                cmax_slip = max_slip
+            if cmin_slip is None:
+                cmin_slip = 0.
+            if test_random:
+                print "*** test_random == True so slip and rake have been randomized"
+            
+        y_ave = 0.
+        for subfault in self.subfaults:
+    
+            subfault.set_geometry()
+    
+            # unpack parameters:
+            paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
+                depth_top depth_bottom x_corners y_corners""".split()
+    
+            for param in paramlist:
+                cmd = "%s = subfault.geometry['%s']" % (param,param)
+                exec(cmd)
+    
+            y_ave += y_centroid
+    
+    
+            # Plot projection of planes to x-y surface:
+            if plot_centerline:
+                plt.plot([x_top],[y_top],'bo',label="Top center")
+                plt.plot([x_centroid],[y_centroid],'ro',label="Centroid")
+                plt.plot([x_top,x_centroid],[y_top,y_centroid],'r-')
+            if plot_rake:
+                if test_random:
+                    subfault.rake = 90. + 30.*(rand()-0.5)  # for testing
+                tau = (subfault.rake - 90) * numpy.pi/180.
+                plt.plot([x_centroid],[y_centroid],'go',markersize=5,label="Centroid")
+                dxr = x_top - x_centroid
+                dyr = y_top - y_centroid
+                x_rake = x_centroid + numpy.cos(tau)*dxr - numpy.sin(tau)*dyr
+                y_rake = y_centroid + numpy.sin(tau)*dxr + numpy.cos(tau)*dyr
+                plt.plot([x_rake,x_centroid],[y_rake,y_centroid],'g-',linewidth=1)
+            if slip_color:
+                slip = subfault.slip
+                s = min(1, max(0, (slip-cmin_slip)/(cmax_slip-cmin_slip)))
+                c = cmap_slip(s*.99)  # since 1 does not map properly with jet
+                plt.fill(x_corners,y_corners,color=c,edgecolor='none')
+            if plot_box:
+                plt.plot(x_corners, y_corners, 'k-')
+    
+        slipax = plt.gca()
+            
+        y_ave = y_ave / len(self.subfaults)
+        slipax.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
+        plt.ticklabel_format(format='plain',useOffset=False)
+        plt.xticks(rotation=80)
+        if xylim is not None:
+            plt.axis(xylim)
+        plt.title('Fault planes')
+        if slip_color:
+            cax,kw = matplotlib.colorbar.make_axes(slipax)
+            norm = matplotlib.colors.Normalize(vmin=cmin_slip,vmax=cmax_slip)
+            cb1 = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap_slip, norm=norm)
+        plt.sca(slipax) # reset the current axis to the main figure
+    
 
 
     def plot_subfaults_depth(self):
