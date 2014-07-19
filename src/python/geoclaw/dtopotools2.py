@@ -116,6 +116,26 @@ def Mw(Mo, units="N-m"):
 
     return Mw
     
+def strike_direction(x1,y1,x2,y2):
+    """
+    Calculate strike direction between two points.
+    Actually calculates "initial bearing" from (x1,y1) in direction
+    towards (x2,y2), following
+        http://www.movable-type.co.uk/scripts/latlong.html
+    """
+
+    x1 = x1*numpy.pi/180.
+    y1 = y1*numpy.pi/180.
+    x2 = x2*numpy.pi/180.
+    y2 = y2*numpy.pi/180.
+    dx = x2-x1
+    theta = numpy.arctan2(numpy.sin(dx)*numpy.cos(y2), \
+            numpy.cos(y1)*numpy.sin(y2) \
+            - numpy.sin(y1)*numpy.cos(y2)*numpy.cos(dx))
+    s = theta*180./numpy.pi
+    if s<0:
+        s = 360+s
+    return s
 
 def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     """
