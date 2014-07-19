@@ -47,12 +47,16 @@ poisson = 0.25  # Poisson ratio for Okada
 
 def plot_dz_contours(x,y,dz,dz_interval=0.5):
     r"""For plotting seafloor deformation dz"""
+    import matplotlib.pyplot as plt
     dzmax = max(dz.max(), -dz.min()) + dz_interval
     clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
 
-    print "Plotting contour lines at: ",clines
-    plt.contour(x,y,dz,clines,colors='k')
+    if len(clines) > 0:
+        print "Plotting contour lines at: ",clines
+        plt.contour(x,y,dz,clines,colors='k')
+    else:   
+        print "No contours to plot"
 
 def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
     r"""
@@ -64,7 +68,10 @@ def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
 
     dzmax = abs(dz).max()
     if cmax_dz is None:
-        cmax_dz = dzmax
+        if dzmax < 1.e-12:
+            cmax_dz = 0.1
+        else:
+            cmax_dz = dzmax
     cmap = colormaps.blue_white_red
     plt.pcolor(x, y, dz, cmap=cmap)
     plt.clim(-cmax_dz,cmax_dz)
@@ -74,8 +81,12 @@ def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
         dz_interval = cmax_dz/10.
     clines1 = numpy.arange(dz_interval, dzmax + dz_interval, dz_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
-    print "Plotting contour lines at: ",clines
-    plt.contour(x,y,dz,clines,colors='k',linestyles='solid')
+    if len(clines) > 0:
+        print "Plotting contour lines at: ",clines
+        plt.contour(x,y,dz,clines,colors='k',linestyles='solid')
+    else:   
+        print "No contours to plot"
+
     y_ave = 0.5*(y.min() + y.max())
     plt.gca().set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
 
@@ -114,13 +125,14 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     parameters for each subfault for an earthquake event.
     """
 
+    t = numpy.array(t)
     if t_rise_ending is None: 
         t_rise_ending = t_rise
 
     t1 = t0+t_rise
     t2 = t1+t_rise_ending
 
-    rf = where(t<=t0, 0., 1.)
+    rf = numpy.where(t<=t0, 0., 1.)
     if t2==t0:
         return rf
 
@@ -131,8 +143,8 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     c1 = t21 / (t20*t10*t21) 
     c2 = t10 / (t20*t10*t21) 
 
-    rf = where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
-    rf = where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
+    rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
+    rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
 
     return rf
 
@@ -508,14 +520,15 @@ class Fault(object):
             dz = numpy.zeros(X.shape)
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
-                    t0 = subfault.get('rupture_time',0)
-                    t1 = subfault.get('rise_time',0.5)
-                    t2 = subfault.get('rise_time_ending',0)
-                    rf = rise_fraction(t0,t1,t2)
-                    dfrac = rf(t) - rf(t_prev)
+                    t0 = getattr(subfault,'rupture_time',0)
+                    t1 = getattr(subfault,'rise_time',0.5)
+                    t2 = getattr(subfault,'rise_time_ending',None)
+                    rf = rise_fraction([t_prev,t],t0,t1,t2)
+                    dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
                         dz = dz + dfrac * subfault.dtopo.dz_list[0]
-                dz_list.append(dZ)
+                dz_list.append(dz)
+                t_prev = t
             dtopo.dz_list = dz_list
             self.dtopo = dtopo
             return dtopo
