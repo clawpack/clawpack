@@ -45,7 +45,7 @@ poisson = 0.25  # Poisson ratio for Okada
 #  General utility functions
 # ==============================================================================
 
-def plot_dz_contours(x,y,dz,dz_interval=0.5):
+def plot_dz_contours(x,y,dz,dz_interval=0.5,verbose=False):
     r"""For plotting seafloor deformation dz"""
     import matplotlib.pyplot as plt
     dzmax = max(dz.max(), -dz.min()) + dz_interval
@@ -53,12 +53,13 @@ def plot_dz_contours(x,y,dz,dz_interval=0.5):
     clines = list(-numpy.flipud(clines1)) + list(clines1)
 
     if len(clines) > 0:
-        print "Plotting contour lines at: ",clines
+        if verbose:
+            print "Plotting contour lines at: ",clines
         plt.contour(x,y,dz,clines,colors='k')
     else:   
         print "No contours to plot"
 
-def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
+def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None,verbose=False):
     r"""
     Plot sea floor deformation dz as colormap with contours
     """
@@ -82,9 +83,10 @@ def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
     clines1 = numpy.arange(dz_interval, dzmax + dz_interval, dz_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
     if len(clines) > 0:
-        print "Plotting contour lines at: ",clines
+        if verbose:
+            print "Plotting contour lines at: ",clines
         plt.contour(x,y,dz,clines,colors='k',linestyles='solid')
-    else:   
+    elif verbose:
         print "No contours to plot"
 
     y_ave = 0.5*(y.min() + y.max())
@@ -369,12 +371,42 @@ class DTopography(object):
                        dz_interval=dz_interval)
 
 
-    def plot_dz_contours(self,x,y,t,dz,dz_interval=0.5):
+    def plot_dz_contours(self,t,dz_interval=0.5):
         """
         Interpolate dz_list to specified time t and then call module function
         plot_dz_contours.
         """
         plot_dz_contours(self.X,self.Y,self.dz(t),dz_interval=dz_interval)
+
+    def animate_dz_colors(self,times=None,cmax_dz=None,dz_interval=None):
+        """
+        Animate seafloor motion for time-dependent ruptures.
+        Interpolate dz_list to specified times and then call module function
+        plot_dz_colors.
+        """
+        from time import sleep
+        import matplotlib.pyplot as plt
+
+        if times is None:
+            times = self.times
+
+        dz_list = []
+        max_dz = 0.
+        for t in times:
+            dz_t = self.dz(t)
+            dz_list.append(dz_t)
+            max_dz = max(max_dz, abs(dz_t).max())
+        if cmax_dz is None:
+            cmax_dz = max_dz
+        print "max abs(dz(t)) = ",max_dz
+        plt.figure()
+        for k,t in enumerate(times):
+            plt.clf()
+            plot_dz_colors(self.X,self.Y,dz_list[k],cmax_dz=cmax_dz, \
+                       dz_interval=dz_interval)
+            plt.title("Seafloor deformation at t = %12.6f" % t)
+            plt.draw()
+            sleep(0.5)
 
 
 class Fault(object):
