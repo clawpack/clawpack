@@ -257,6 +257,8 @@ class DTopography(object):
             if extension[:2] == "tt":
                 dtopo_type = int(extension[2])
             elif extension == 'xyz':
+                dtopo_type = 0
+            elif extension == 'txyz':
                 dtopo_type = 1
             else:
                 # Default to 3
@@ -273,7 +275,18 @@ class DTopography(object):
         ## Shouldn't need to interpolate in time.
         with open(path, 'w') as data_file:
 
-            if dtopo_type == 1:
+            if dtopo_type == 0:
+                # Topography file with 3 columns, x, y, dz written from the
+                # upper left corner of the region
+                Y_flipped = numpy.flipud(self.Y)
+                dZ_flipped = numpy.flipud(self.dz_list[0])
+
+                for j in xrange(self.Y.shape[0]):
+                    for i in xrange(self.X.shape[1]):
+                        data_file.write("%s %s %s\n" % self.X[j,i], 
+                            Y_flipped[j,i], dZ_flipped[j,i])
+
+            elif dtopo_type == 1:
                 # Topography file with 4 columns, t, x, y, dz written from the
                 # upper
                 # left corner of the region
@@ -289,16 +302,20 @@ class DTopography(object):
                                 self.X[j,i], Y_flipped[j,i], dZ_flipped[j,i]))
         
             elif dtopo_type == 2 or dtopo_type == 3:
+                if len(self.times) == 1:
+                    dt = 0.
+                else:
+                    dt = float(self.times[1] - self.times[0])
                 # Write out header
                 data_file.write("%7i       mx \n" % x.shape[0])
                 data_file.write("%7i       my \n" % y.shape[0])
-                data_file.write("%7i       mt \n" % self.times.shape[0])
+                data_file.write("%7i       mt \n" % len(self.times))
                 data_file.write("%20.14e   xlower\n" % x[0])
                 data_file.write("%20.14e   ylower\n" % y[0])
                 data_file.write("%20.14e   t0\n" % self.times[0])
                 data_file.write("%20.14e   dx\n" % dx)
                 data_file.write("%20.14e   dy\n" % dy)
-                data_file.write("%20.14e   dt\n" % float(self.times[1] - self.times[0]))
+                data_file.write("%20.14e   dt\n" % dt)
 
                 if dtopo_type == 2:
                     raise ValueError("Topography type 2 is not yet supported.")
@@ -385,14 +402,7 @@ class Fault(object):
                                "rake":4, "strike":5, "dip":6}
           - *coordinate_specification* (str) specifies the location on each
             subfault that corresponds to the (longitude,latitude) and depth 
-            of the subfault.
-            Currently must be one of these strings:
-                "centroid": (longitude,latitude) and depth at centroid of plane
-                "top center": (longitude,latitude) and depth at top center
-                "noaa sift": (longitude,latitude) at bottom center, 
-                             depth at top,  mixed convention used by NOAA SIFT
-                             database and "unit sources", see
-                             http://nctr.pmel.noaa.gov/propagation-database.html
+            of the subfault.  See the documentation for *SubFault.okada*.
           - *rupture_type* (str) either "static" or "dynamic"
           - *skiprows* (int) number of header lines to skip before data
           - *delimiter* (str) e.g. ',' for csv files
@@ -477,14 +487,17 @@ class Fault(object):
         sys.stdout.write("\nDone\n")
 
         if self.rupture_type == 'static':
-            if len(times) != 2:
-                raise ValueError("For static deformation, need len(times)==2")
-            dz0 = numpy.zeros(X.shape)
+            if len(times) > 2:
+                raise ValueError("For static deformation, need len(times) <= 2")
             dz = numpy.zeros(X.shape)
             for subfault in self.subfaults:
                 dz += subfault.dtopo.dz_list[0]
 
-            dtopo.dz_list = [dz0, dz]
+            if len(times)==1:
+                dtopo.dz_list = [dz]   # only final deformation stored
+            elif len(times)==2:
+                dz0 = numpy.zeros(X.shape)
+                dtopo.dz_list = [dz0, dz]
             self.dtopo = dtopo
             return dtopo
 
@@ -619,7 +632,21 @@ class SubFault(object):
         okadamap function riginally written in Python by Dave George for
         Clawpack 4.6 okada.py routine.
         Rewritten and made more flexible by Randy LeVeque:
-        coordinate_specification can be specified as "top center" or "centroid".
+
+        Note: *self.coordinate_specification* (str) specifies the location on each
+            subfault that corresponds to the (longitude,latitude) and depth 
+            of the subfault.  See the documentation for *SubFault.okada*.
+            Currently must be one of these strings:
+                "bottom center": (longitude,latitude) and depth at bottom center
+                "top center": (longitude,latitude) and depth at top center
+                "centroid": (longitude,latitude) and depth at centroid of plane
+                "noaa sift": (longitude,latitude) at bottom center, depth at top,  
+                             This mixed convention is used by the NOAA SIFT
+                             database and "unit sources", see:
+                             http://nctr.pmel.noaa.gov/propagation-database.html
+            The Okada model is expressed assuming (longitude,latitude) and depth
+            are at the bottom center of the fault plane, so values must be
+            shifted or other specifications.
 
         """
 
@@ -645,7 +672,14 @@ class SubFault(object):
         halfL = 0.5*L
     
     
-        if location == "top center":
+        if location == "bottom center":
+            del_x = 0.
+            del_y = 0.
+            depth_bottom = hh
+            x_bottom = x0
+            y_bottom = y0
+
+        elif location == "top center":
     
             # Convert focal depth used for Okada's model
             # from top of fault plane to bottom:
@@ -687,6 +721,17 @@ class SubFault(object):
             x_bottom = x0+del_x
             y_bottom = y0+del_y
     
+        if location == "noaa sift":
+            depth_top = hh
+            hh = hh + w*numpy.sin(ang_dip)
+            depth_bottom = hh
+
+            del_x = 0.
+            del_y = 0.
+            depth_bottom = hh
+            x_bottom = x0
+            y_bottom = y0
+
         else:
             raise ValueError("Unrecognized coordinate_specification" \
                     % coordinate_specification)
