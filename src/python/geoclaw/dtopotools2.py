@@ -381,8 +381,8 @@ class Fault(object):
           - *path* (str) file to read in, should contain subfaults, one per line
           - *column_map* (dict) specifies mapping from parameter to the column
             of the input file that contains values for this parameter, e.g.
-                column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
-                              "strike":5, "dip":6}
+                column_map = {"latitude":0, "longitude":1, "depth":2, "slip":3,
+                               "rake":4, "strike":5, "dip":6}
           - *coordinate_specification* (str) specifies the location on each
             subfault that corresponds to the (longitude,latitude) and depth 
             of the subfault.
@@ -396,8 +396,8 @@ class Fault(object):
           - *rupture_type* (str) either "static" or "dynamic"
           - *skiprows* (int) number of header lines to skip before data
           - *delimiter* (str) e.g. ',' for csv files
-          - *units* (dict) indicating units of length for dimensions, slip, depth
-                           and units for rigidity mu.
+          - *units* (dict) indicating units for length, width, slip, depth,
+                           and for rigidity mu.
           - *defaults* (dict) default values for all subfaults, for values not
                        included in subfault file on each line.
 
@@ -531,12 +531,14 @@ class SubFault(object):
 
     def __init__(self):
         self.strike = None
-        self.dimensions = None
+        self.length = None
+        self.width = None
         self.depth = None
         self.slip = None
         self.rake = None
         self.dip = None
-        self.coordinates = None
+        self.latitude = None
+        self.longitude = None
         self.coordinate_specification = "top center"
         self.mu = 4e11  # default value for rigidity = shear modulus
         self.units = {'mu':"dyne/cm^2"}
@@ -545,7 +547,7 @@ class SubFault(object):
     def convert2meters(self, parameters): 
         r"""Convert relevant lengths to correct units.
 
-        Returns converted (dimensions, depth, slip) 
+        Returns converted (length, width, depth, slip) 
 
         """
 
@@ -589,8 +591,8 @@ class SubFault(object):
         else:
             raise ValueError("Unknown unit for rigidity %s." % self.units['mu'])
 
-        dimensions, slip = self.convert2meters(["dimensions", "slip"])
-        total_slip = dimensions[0] * dimensions[1] * slip
+        length, width, slip = self.convert2meters(["length","width","slip"])
+        total_slip = length * width * slip
         Mo = mu * total_slip
         return Mo
 
@@ -622,18 +624,18 @@ class SubFault(object):
         """
 
         # Convert to meters if necessary:
-        dimensions, depth, slip = self.convert2meters(["dimensions", "depth",
-                                    "slip"])
+        length, width, depth, slip = self.convert2meters(["length","width", \
+                                    "depth","slip"])
 
         hh =  depth
-        L  =  dimensions[0]
-        w  =  dimensions[1]
+        L  =  length
+        w  =  width
         d  =  slip
         th =  self.strike
         dl =  self.dip
         rd =  self.rake
-        x0 =  self.coordinates[0]
-        y0 =  self.coordinates[1]
+        x0 =  self.longitude
+        y0 =  self.latitude
         location =  self.coordinate_specification
 
     
@@ -895,17 +897,19 @@ class UCSBFault(Fault):
 
         # Calculate center of fault
 
-        column_map = {"coordinates":(1,0), "depth":2, "slip":3, "rake":4, 
-                      "strike":5, "dip":6, 'mu':10}
+        column_map = {"latitude":0, "longitude":1, "depth":2, "slip":3,
+                       "rake":4, "strike":5, "dip":6, "rupture_time":7,
+                       "rise_time":8, "rise_time_ending":9, "mu":10}
 
         super(UCSBFault, self).read(path, column_map, skiprows=header_lines,
                                 coordinate_specification="centroid")
 
         # Set general data
         for subfault in self.subfaults:
-            subfault.dimensions = [dx, dy]
+            subfault.length = dx
+            subfault.width = dy
             subfault.units.update({"slip":"cm", "depth":"km", 'mu':"dyne/cm^2",
-                                   "dimensions":"km"})
+                                   "length":"km", "width":"km"})
 
 
 class CSVFault(Fault):
@@ -924,31 +928,36 @@ class CSVFault(Fault):
 
         """
 
+        possible_column_names = """longitude latitude length width depth strike dip
+                          rake slip mu rupture_time rise_time rise_time_ending""".split()
+        param = {}
+        for n in possible_column_names:
+            param[n] = n
+        # alternative names that might appear in csv file:
+        param["rigidity"] = "mu"
+        param["rupture time"] = "rupture_time"
+        param["rise time"] = "rise_time"
+
         # Read header of file
         with open(path, 'r') as subfault_file:
             header_line = subfault_file.readline().split(",")
-            column_map = {'coordinates':[None, None], 'dimensions':[None,
-None]}
+            column_map = {}
             for (n,column_heading) in enumerate(header_line):
                 if "(" in column_heading:
                     # Strip out units if present
                     unit_start = column_heading.find("(")
                     unit_end = column_heading.find(")")
-                    column_key = column_heading[:unit_start].lower()
-                    self.units[column_key] = column_heading[unit_start:unit_end]
+                    column_name = column_heading[:unit_start].lower()
+                    self.units[column_name] = column_heading[unit_start:unit_end]
                 else:
-                    column_key = column_heading.lower()
-                column_key = column_key.strip()
-                if column_key in ("depth", "strike", "dip", "rake", "slip"):
+                    column_name = column_heading.lower()
+                column_name = column_name.strip()
+                if column_name in param.keys():
+                    column_key = param[column_name]
                     column_map[column_key] = n
-                elif column_key == "longitude":
-                    column_map['coordinates'][0] = n
-                elif column_key == "latitude":
-                    column_map['coordinates'][1] = n
-                elif column_key == "length":
-                    column_map['dimensions'][0] = n
-                elif column_key == "width":
-                    column_map['dimensions'][1] = n
+                else:
+                    print "*** Warning: column name not recognized: %s" \
+                        % column_name
 
         super(CSVFault, self).read(path, column_map=column_map, skiprows=1,
                                 delimiter=",", units=units,
