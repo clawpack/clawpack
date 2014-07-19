@@ -446,7 +446,7 @@ class Fault(object):
                                "rake":4, "strike":5, "dip":6}
           - *coordinate_specification* (str) specifies the location on each
             subfault that corresponds to the (longitude,latitude) and depth 
-            of the subfault.  See the documentation for *SubFault.okada*.
+            of the subfault.  See the documentation for *SubFault.set_geometry*.
           - *rupture_type* (str) either "static" or "dynamic"
           - *skiprows* (int) number of header lines to skip before data
           - *delimiter* (str) e.g. ',' for csv files
@@ -600,6 +600,7 @@ class SubFault(object):
         self.coordinate_specification = "top center"
         self.mu = 4e11  # default value for rigidity = shear modulus
         self.units = {'mu':"dyne/cm^2"}
+        self.geometry = None
 
 
     def convert2meters(self, parameters): 
@@ -654,6 +655,113 @@ class SubFault(object):
         Mo = mu * total_slip
         return Mo
 
+    def set_geometry(self):
+        r"""
+        Set self.geometry, a dictionary containing 
+        bottom, top, centroid, and corner values of x,y, and depth at top and
+        bottom of fault, based on subfault parameters.  
+
+        Note: *self.coordinate_specification*  specifies the location on each
+            subfault that corresponds to the (longitude,latitude) and depth 
+            of the subfault.
+            Currently must be one of these strings:
+                "bottom center": (longitude,latitude) and depth at bottom center
+                "top center": (longitude,latitude) and depth at top center
+                "centroid": (longitude,latitude) and depth at centroid of plane
+                "noaa sift": (longitude,latitude) at bottom center, depth at top,  
+                             This mixed convention is used by the NOAA SIFT
+                             database and "unit sources", see:
+                             http://nctr.pmel.noaa.gov/propagation-database.html
+            The Okada model is expressed assuming (longitude,latitude) and depth
+            are at the bottom center of the fault plane, so values must be
+            shifted or other specifications.
+        """
+
+        # Convert to meters if necessary:
+        length, width, depth, slip = self.convert2meters(["length","width", \
+                                    "depth","slip"])
+
+        L  =  length
+        w  =  width
+        d  =  slip
+        th =  self.strike
+        dl =  self.dip
+        rd =  self.rake
+        x0 =  self.longitude
+        y0 =  self.latitude
+        location =  self.coordinate_specification
+
+    
+        ang_dip = DEG2RAD*dl
+        ang_strike = DEG2RAD*th
+        halfL = 0.5*L
+    
+        # vector (dx,dy) goes up-dip from bottom to top:
+        dx = -w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
+                (lat2meter*numpy.cos(y0*DEG2RAD))
+        dy = w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
+
+        if location == "bottom center":
+            depth_bottom = depth
+            depth_top = depth - w*numpy.sin(ang_dip)
+            x_bottom = x0
+            y_bottom = y0
+            x_top = x0 + dx
+            y_top = y0 + dy
+            x_centroid = x_bottom + 0.5*dx
+            y_centroid = y_bottom + 0.5*dy
+
+        elif location == "top center":
+            depth_top = depth
+            depth_bottom = depth + w*numpy.sin(ang_dip)
+            x_top = x0
+            y_top = y0 
+            x_bottom = x0 - dx
+            y_bottom = y0 - dy
+            x_centroid = x_bottom + 0.5*dx
+            y_centroid = y_bottom + 0.5*dy
+    
+        elif location == "centroid":
+            depth_top = depth - 0.5*w*numpy.sin(ang_dip)
+            depth_bottom = depth + 0.5*w*numpy.sin(ang_dip)
+    
+            x_centroid = x0
+            y_centroid = y0
+            x_top = x0 + 0.5*dx
+            y_top = y0 + 0.5*dy
+            x_bottom = x0 - 0.5*dx
+            y_bottom = y0 - 0.5*dy
+    
+        elif location == "noaa sift":
+            depth_top = depth
+            depth_bottom = depth + w*numpy.sin(ang_dip)
+            x_bottom = x0
+            y_bottom = y0
+            x_top = x0 + dx
+            y_top = y0 + dy
+            x_centroid = x_bottom + 0.5*dx
+            y_centroid = y_bottom + 0.5*dy
+
+        else:
+            raise ValueError("Unrecognized coordinate_specification" \
+                    % coordinate_specification)
+        
+
+        # distance along strike from center of an edge to corner:
+        dx2 = 0.5*length*numpy.sin(ang_strike) \
+                / (lat2meter*numpy.cos(y_bottom*DEG2RAD))
+        dy2 = 0.5*length*numpy.cos(ang_strike) / lat2meter
+        x_corners = [x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2]
+        y_corners = [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2]
+
+        paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
+            depth_top depth_bottom x_corners y_corners""".split()
+
+        self.geometry = {}
+        for param in paramlist:
+            cmd = "self.geometry['%s'] = %s" % (param,eval(param))
+            exec(cmd)
+    
 
     def okada(self, x, y):
         r"""
@@ -671,124 +779,41 @@ class SubFault(object):
         to a surface deformation.
         See Okada 1985, or Okada 1992, Bull. Seism. Soc. Am.
         
-        Some routines adapted from fortran routines written by
-        Xiaoming Wang.
-        
         okadamap function riginally written in Python by Dave George for
-        Clawpack 4.6 okada.py routine.
-        Rewritten and made more flexible by Randy LeVeque:
+        Clawpack 4.6 okada.py routine, with some routines adapted
+        from fortran routines written by Xiaoming Wang.
+
+        Rewritten and made more flexible by Randy LeVeque
 
         Note: *self.coordinate_specification* (str) specifies the location on each
             subfault that corresponds to the (longitude,latitude) and depth 
-            of the subfault.  See the documentation for *SubFault.okada*.
-            Currently must be one of these strings:
-                "bottom center": (longitude,latitude) and depth at bottom center
-                "top center": (longitude,latitude) and depth at top center
-                "centroid": (longitude,latitude) and depth at centroid of plane
-                "noaa sift": (longitude,latitude) at bottom center, depth at top,  
-                             This mixed convention is used by the NOAA SIFT
-                             database and "unit sources", see:
-                             http://nctr.pmel.noaa.gov/propagation-database.html
-            The Okada model is expressed assuming (longitude,latitude) and depth
-            are at the bottom center of the fault plane, so values must be
-            shifted or other specifications.
+            of the subfault.
+        See the documentation for *SubFault.set_geometry* for dicussion of the 
+        possible values *self.coordinate_specification* can take.
 
         """
 
-        # Convert to meters if necessary:
+        # Compute geometry if not already done:
+        if self.geometry is None:
+            self.set_geometry()
+
+        # Okada model assumes x,y are at bottom center:
+        x_bottom = self.geometry['x_bottom']
+        y_bottom = self.geometry['y_bottom']
+        depth_bottom = self.geometry['depth_bottom']
+
+
+        # Convert some parameters to meters if necessary:
         length, width, depth, slip = self.convert2meters(["length","width", \
                                     "depth","slip"])
 
-        hh =  depth
-        L  =  length
+        halfL = 0.5*length
         w  =  width
-        d  =  slip
-        th =  self.strike
-        dl =  self.dip
-        rd =  self.rake
-        x0 =  self.longitude
-        y0 =  self.latitude
-        location =  self.coordinate_specification
 
-    
-        ang_dip = DEG2RAD*dl
-        ang_slip = DEG2RAD*rd
-        ang_strike = DEG2RAD*th
-        halfL = 0.5*L
-    
-    
-        if location == "bottom center":
-            del_x = 0.
-            del_y = 0.
-            depth_bottom = hh
-            x_bottom = x0
-            y_bottom = y0
-
-        elif location == "top center":
-    
-            # Convert focal depth used for Okada's model
-            # from top of fault plane to bottom:
-    
-            depth_top = hh
-            hh = hh + w*numpy.sin(ang_dip)
-            depth_bottom = hh
-    
-            # Convert fault origin from top of fault plane to bottom:
-            del_x = w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
-                    (lat2meter*numpy.cos(y0*DEG2RAD))
-            del_y = -w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
-            
-            x_top = x0
-            y_top = y0 
-            x_bottom = x0+del_x
-            y_bottom = y0+del_y
-            x_centroid = x0+0.5*del_x
-            y_centroid = y0+0.5*del_y
-    
-    
-        elif location == "centroid":
-    
-            # Convert focal depth used for Okada's model
-            # from middle of fault plane to bottom:
-            depth_top = hh - 0.5*w*numpy.sin(ang_dip)
-            hh = hh + 0.5*w*numpy.sin(ang_dip)
-            depth_bottom = hh
-    
-            # Convert fault origin from middle of fault plane to bottom:
-            del_x = 0.5*w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
-                    (lat2meter*numpy.cos(y0*DEG2RAD))
-            del_y = -0.5*w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
-    
-            x_centroid = x0
-            y_centroid = y0
-            x_top = x0-del_x
-            y_top = y0-del_y
-            x_bottom = x0+del_x
-            y_bottom = y0+del_y
-    
-        if location == "noaa sift":
-            depth_top = hh
-            hh = hh + w*numpy.sin(ang_dip)
-            depth_bottom = hh
-
-            del_x = 0.
-            del_y = 0.
-            depth_bottom = hh
-            x_bottom = x0
-            y_bottom = y0
-
-        else:
-            raise ValueError("Unrecognized coordinate_specification" \
-                    % coordinate_specification)
-    
-        # adjust x0,y0 to bottom center of fault plane:
-        x0 = x0 + del_x
-        y0 = y0 + del_y
-    
-        # distance along strike from center of an edge to corner:
-        dx2 = 0.5*L*numpy.sin(ang_strike) / \
-                (lat2meter*numpy.cos(y_bottom*DEG2RAD))
-        dy2 = 0.5*L*numpy.cos(ang_strike) / lat2meter
+        # convert angles to radians:
+        ang_dip = DEG2RAD * self.dip
+        ang_rake = DEG2RAD * self.rake
+        ang_strike = DEG2RAD * self.strike
     
         X,Y = numpy.meshgrid(x,y)   # use convention of upper case for 2d
     
@@ -805,8 +830,8 @@ class SubFault(object):
         # In Okada's paper, x2 is distance up the fault plane, not down dip:
         x2 = -x2
     
-        p = x2*numpy.cos(ang_dip) + hh*numpy.sin(ang_dip)
-        q = x2*numpy.sin(ang_dip) - hh*numpy.cos(ang_dip)
+        p = x2*numpy.cos(ang_dip) + depth_bottom * numpy.sin(ang_dip)
+        q = x2*numpy.sin(ang_dip) - depth_bottom * numpy.cos(ang_dip)
     
         f1=self._strike_slip (x1+halfL,p,  ang_dip,q)
         f2=self._strike_slip (x1+halfL,p-w,ang_dip,q)
@@ -819,8 +844,8 @@ class SubFault(object):
         g4=self._dip_slip (x1-halfL,p-w,ang_dip,q)
     
         # Displacement in direction of strike and dip:
-        ds = d*numpy.cos(ang_slip)
-        dd = d*numpy.sin(ang_slip)
+        ds = slip*numpy.cos(ang_rake)
+        dd = slip*numpy.sin(ang_rake)
     
         us = (f1-f2-f3+f4)*ds
         ud = (g1-g2-g3+g4)*dd
