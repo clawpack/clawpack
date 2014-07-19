@@ -668,8 +668,34 @@ class Fault(object):
         """
         Plot the depth of each subfault vs. x in one plot and vs. y in a second plot.
         """
-        raise NotImplementedError("To appear.")
+    
+        import matplotlib.pyplot as plt
 
+        plt.figure()
+    
+        for subfault in self.subfaults:
+    
+            subfault.set_geometry()
+    
+            # unpack parameters:
+            paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
+                depth_top depth_bottom x_corners y_corners""".split()
+    
+            for param in paramlist:
+                cmd = "%s = subfault.geometry['%s']" % (param,param)
+                exec(cmd)
+    
+            # Plot planes in x-z and y-z to see depths:
+            plt.subplot(211)
+            plt.plot([x_top,x_bottom],[-depth_top,-depth_bottom])
+            plt.subplot(212)
+            plt.plot([y_top,y_bottom],[-depth_top,-depth_bottom])
+    
+        plt.subplot(211)
+        plt.title('depth vs. x')
+        plt.subplot(212)
+        plt.title('depth vs. y')
+    
 
 class SubFault(object):
 
