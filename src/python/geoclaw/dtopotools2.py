@@ -143,7 +143,7 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
 
 class DTopography(object):
 
-    def __init__(self, path=None, topo_type=None):
+    def __init__(self, path=None, dtopo_type=None):
         self.dz_list = []
         self.times = []
         self.x = None
@@ -152,19 +152,19 @@ class DTopography(object):
         self.Y = None
         self.delta = None
         if path:
-            self.read(path, topo_type)
+            self.read(path, dtopo_type)
 
-    def read(self, path, topo_type):
+    def read(self, path, dtopo_type):
         r"""
         Read in a dtopo file and use to set attributes of this object.
 
         input
         -----
          - *path* (path) - Path to the output file to written to.
-         - *topo_type* (int) - Type of topography file to write out.  Default
+         - *dtopo_type* (int) - Type of topography file to write out.  Default
            is 1.
         """
-        if topo_type == 2 or topo_type == 3:
+        if dtopo_type == 2 or dtopo_type == 3:
             fid = open(path)
             mx = int(fid.readline().split()[0])
             my = int(fid.readline().split()[0])
@@ -185,14 +185,14 @@ class DTopography(object):
     
             dZvals = numpy.loadtxt(path, skiprows=9)
             dz_list = []
-            if topo_type==3:
+            if dtopo_type==3:
                 # my lines with mx values on each
                 for k,t in enumerate(times):
                     dZk = numpy.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
                     dZk = numpy.flipud(dZk)
                     dz_list.append(dZk)
             else:
-                # topo_type==2 ==> mx*my lines with 1 values on each
+                # dtopo_type==2 ==> mx*my lines with 1 values on each
                 for k,t in enumerate(times):
                     dZk = numpy.reshape(dZvals[k*mx*my:(k+1)*mx*my], (my,mx))
                     dZk = numpy.flipud(dZk)
@@ -204,7 +204,7 @@ class DTopography(object):
             self.times = times
             self.dz_list = dz_list
 
-        elif topo_type==1:
+        elif dtopo_type==1:
             d = numpy.loadtxt(path)
             print "Loaded file %s with %s lines" %(path,d.shape[0])
             t = list(set(d[:,0]))
@@ -237,30 +237,30 @@ class DTopography(object):
             self.dz_list = dz_list
 
         else:
-            raise NotImplementedError("*** Not implemented for topo_type: %s" % topo_type)
+            raise NotImplementedError("*** Not implemented for dtopo_type: %s" % dtopo_type)
 
 
-    def write(self, path, topo_type=None):
+    def write(self, path, dtopo_type=None):
         r"""Write out subfault resulting dtopo to file at *path*.
 
         input
         -----
          - *path* (path) - Path to the output file to written to.
-         - *topo_type* (int) - Type of topography file to write out.  Default
+         - *dtopo_type* (int) - Type of topography file to write out.  Default
            is 1.
 
         """
 
-        if topo_type is None:
+        if dtopo_type is None:
             # Try to look at suffix for type
             extension = os.path.splitext(path)[1][1:]
             if extension[:2] == "tt":
-                topo_type = int(extension[2])
+                dtopo_type = int(extension[2])
             elif extension == 'xyz':
-                topo_type = 1
+                dtopo_type = 1
             else:
                 # Default to 3
-                topo_type = 3
+                dtopo_type = 3
 
         x = self.X[0,:]
         y = self.Y[:,0]
@@ -273,7 +273,7 @@ class DTopography(object):
         ## Shouldn't need to interpolate in time.
         with open(path, 'w') as data_file:
 
-            if topo_type == 1:
+            if dtopo_type == 1:
                 # Topography file with 4 columns, t, x, y, dz written from the
                 # upper
                 # left corner of the region
@@ -288,7 +288,7 @@ class DTopography(object):
                             data_file.write("%s %s %s %s\n" % (self.times[n],
                                 self.X[j,i], Y_flipped[j,i], dZ_flipped[j,i]))
         
-            elif topo_type == 2 or topo_type == 3:
+            elif dtopo_type == 2 or dtopo_type == 3:
                 # Write out header
                 data_file.write("%7i       mx \n" % x.shape[0])
                 data_file.write("%7i       my \n" % y.shape[0])
@@ -300,9 +300,9 @@ class DTopography(object):
                 data_file.write("%20.14e   dy\n" % dy)
                 data_file.write("%20.14e   dt\n" % float(self.times[1] - self.times[0]))
 
-                if topo_type == 2:
+                if dtopo_type == 2:
                     raise ValueError("Topography type 2 is not yet supported.")
-                elif topo_type == 3:
+                elif dtopo_type == 3:
                     for (n, time) in enumerate(self.times):
                         #alpha = (time - self.t[0]) / (self.t[-1])
                         for j in range(self.Y.shape[0]-1, -1, -1):
