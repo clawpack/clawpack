@@ -630,8 +630,9 @@ class Fault(object):
             
         y_ave = 0.
         for subfault in self.subfaults:
-    
-            subfault.set_geometry()
+
+            # @property definition of geometry should remove need for this:
+            #subfault.set_geometry()
     
             # unpack parameters:
             paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
@@ -695,7 +696,8 @@ class Fault(object):
     
         for subfault in self.subfaults:
     
-            subfault.set_geometry()
+            # @property definition of geometry should remove need for this:
+            #subfault.set_geometry()
     
             # unpack parameters:
             paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
@@ -732,7 +734,7 @@ class SubFault(object):
         self.coordinate_specification = "top center"
         self.mu = 4e11  # default value for rigidity = shear modulus
         self.units = {'mu':"dyne/cm^2"}
-        self.geometry = None
+        self._geometry = None
 
 
     def convert2meters(self, parameters): 
@@ -787,11 +789,27 @@ class SubFault(object):
         Mo = mu * total_slip
         return Mo
 
+    @property
+    def geometry(self):
+        r"""Subfault geometry"""
+        if self._geometry is None:
+            self.set_geometry()
+        return self._geometry
+
+    @geometry.setter
+    def geometry(self,value):
+        # Do we need this?
+        self._geometry = value
+    @geometry.deleter
+    def geometry(self):
+        del self._geometry
+
     def set_geometry(self):
         r"""
-        Set self.geometry, a dictionary containing 
+        Set self._geometry, a dictionary containing 
         bottom, top, centroid, and corner values of x,y, and depth at top and
         bottom of fault, based on subfault parameters.  
+        Automatically called first time user requests self.geometry.
 
         Note: *self.coordinate_specification*  specifies the location on each
             subfault that corresponds to the (longitude,latitude) and depth 
@@ -889,9 +907,9 @@ class SubFault(object):
         paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
             depth_top depth_bottom x_corners y_corners""".split()
 
-        self.geometry = {}
+        self._geometry = {}
         for param in paramlist:
-            cmd = "self.geometry['%s'] = %s" % (param,eval(param))
+            cmd = "self._geometry['%s'] = %s" % (param,eval(param))
             exec(cmd)
     
 
@@ -926,8 +944,10 @@ class SubFault(object):
         """
 
         # Compute geometry if not already done:
-        if self.geometry is None:
-            self.set_geometry()
+        if self._geometry is None:
+            # @property definition of geometry should remove need for this:
+            #self.set_geometry()
+            pass
 
         # Okada model assumes x,y are at bottom center:
         x_bottom = self.geometry['x_bottom']
