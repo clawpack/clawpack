@@ -631,9 +631,6 @@ class Fault(object):
         y_ave = 0.
         for subfault in self.subfaults:
 
-            # @property definition of geometry should remove need for this:
-            #subfault.set_geometry()
-    
             # unpack parameters:
             paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
                 depth_top depth_bottom x_corners y_corners""".split()
@@ -695,9 +692,6 @@ class Fault(object):
         plt.figure()
     
         for subfault in self.subfaults:
-    
-            # @property definition of geometry should remove need for this:
-            #subfault.set_geometry()
     
             # unpack parameters:
             paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
@@ -942,12 +936,6 @@ class SubFault(object):
         possible values *self.coordinate_specification* can take.
 
         """
-
-        # Compute geometry if not already done:
-        if self._geometry is None:
-            # @property definition of geometry should remove need for this:
-            #self.set_geometry()
-            pass
 
         # Okada model assumes x,y are at bottom center:
         x_bottom = self.geometry['x_bottom']
