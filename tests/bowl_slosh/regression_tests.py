@@ -36,35 +36,6 @@ class BowlSloshTest(tests.GeoClawTest):
         topo.write(os.path.join(self.temp_path, "bowl.topotype2"))
 
 
-    def runTest(self, save=False):
-
-        # Run code
-        super(BowlSloshTest, self).runTest()
-
-        # Get gauge data
-        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
-        data_sum = [data[:,2].sum(), data[:,3].sum()]
-
-        # Get (and save) regression comparison data
-        regression_data_file = os.path.join(self.test_path, "regression_data.txt")
-        if save:
-            numpy.savetxt(regression_data_file, data)
-        regression_data = numpy.loadtxt(regression_data_file)
-        regression_sum = [regression_data[:,2].sum(), regression_data[:,3].sum()]
-        # regression_sum = regression_data
-
-        # Compare data
-        tolerance = 1e-14
-        assert numpy.allclose(data_sum, regression_sum, tolerance), \
-                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
-        assert numpy.allclose(data, regression_data, tolerance), \
-                "Full gauge match failed."
-
-        # If we have gotten here then we do not need to copy the run results
-        self.success = True
-
-
-
 if __name__=="__main__":
     if len(sys.argv) > 1:
         if bool(sys.argv[1]):
