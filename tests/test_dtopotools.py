@@ -1,11 +1,18 @@
 
-from clawpack.geoclaw import dtopotools, topotools
+import os
 import numpy
+from clawpack.geoclaw import dtopotools, topotools
+
+try:
+    CLAW = os.environ['CLAW']
+except KeyError:
+    raise Exception("Need to set CLAW environment variable")
+testdir = os.path.join(CLAW, 'geoclaw/tests')
 
 
 def test_read_csv_make_dtopo():
 
-    subfault_fname = 'data/alaska1964.csv'
+    subfault_fname = os.path.join(testdir,'data/alaska1964.csv')
     units = {"length":"km", "width":"km", "depth":"km", "slip":"m", "mu":"dyne/cm^2"}
     fault = dtopotools.CSVFault()
     fault.read(subfault_fname, units=units, coordinate_specification="noaa sift")
@@ -30,7 +37,7 @@ def test_read_csv_make_dtopo():
 
     dtopo = fault.create_deformation_array(x,y,times=[1.])
     
-    dtopo_fname = 'data/alaska1964.tt3'
+    dtopo_fname = os.path.join(testdir,'data/alaska1964.tt3')
     dtopo.write(dtopo_fname, dtopo_type=3)
     dtopo.dz_list[-1].min()
     dtopo2 = dtopotools.DTopography()
