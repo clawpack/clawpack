@@ -398,14 +398,27 @@ class DTopography(object):
         """
         plot_dz_contours(self.X,self.Y,self.dz(t),dz_interval=dz_interval)
 
-    def animate_dz_colors(self,times=None,cmax_dz=None,dz_interval=None):
+
+    def animate_dz_colors(self,times=None,cmax_dz=None,dz_interval=None,
+                    style='loop'):
         """
         Animate seafloor motion for time-dependent ruptures.
         Interpolate dz_list to specified times and then call module function
         plot_dz_colors.
+        
+        *style* == 'loop'  ==> plot in a simple loops, works in IPython shell
+        *style* == 'html'  ==> use JSAnimation and embed in html file
+        *style* == 'notebook'  ==> use JSAnimation and display in notebook
         """
+
         from time import sleep
         import matplotlib.pyplot as plt
+        
+        if style in ['html', 'notebook']:
+            from clawpack.visclaw.JSAnimation import IPython_display
+            import clawpack.visclaw.JSAnimation.JSAnimation_frametools as J
+            plotdir = '_plots'
+            J.make_plotdir(plotdir, clobber=True)
 
         if times is None:
             times = self.times
@@ -426,7 +439,20 @@ class DTopography(object):
                        dz_interval=dz_interval)
             plt.title("Seafloor deformation at t = %12.6f" % t)
             plt.draw()
-            sleep(0.5)
+            if style == 'loop':
+                sleep(0.5)
+            else:
+                J.save_frame(k, verbose=True)
+
+        if style in ['html', 'notebook']:
+            anim = J.make_anim(plotdir)
+        if style == 'html':
+            file_name="dtopo_movie.html"
+            J.make_html(anim, file_name=file_name, title="Moving dtopo")
+        if style == 'notebook':
+            return anim
+
+                
 
 
 class Fault(object):
@@ -603,6 +629,7 @@ class Fault(object):
         import matplotlib
         import matplotlib.pyplot as plt
     
+        ax = plt.axes()
         # for testing purposes, make random slips:
         test_random = False
     
