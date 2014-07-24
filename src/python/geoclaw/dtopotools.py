@@ -74,7 +74,8 @@ def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None,verbose=False):
         else:
             cmax_dz = dzmax
     cmap = colormaps.blue_white_red
-    plt.pcolor(x, y, dz, cmap=cmap)
+    extent = [x.min(),x.max(),y.min(),y.max()]
+    plt.imshow(dz, extent=extent, cmap=cmap, origin='lower')
     plt.clim(-cmax_dz,cmax_dz)
     cb2 = plt.colorbar(shrink=1.0)
     
