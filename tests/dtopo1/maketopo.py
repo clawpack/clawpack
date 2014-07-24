@@ -60,9 +60,6 @@ def read_fault(fname_subfaults, plotfig=None):
     Test data
     """
 
-    # Format of subfault file:
-    columns = """longitude latitude depth length width strike dip rake slip
-       """.split()
     units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
 
     fault = dtopotools.CSVFault()
