@@ -189,16 +189,35 @@ class DTopography(object):
         if path:
             self.read(path, dtopo_type)
 
-    def read(self, path, dtopo_type):
+    def read(self, path=None, dtopo_type=None):
         r"""
         Read in a dtopo file and use to set attributes of this object.
 
         input
         -----
-         - *path* (path) - Path to the output file to written to.
-         - *dtopo_type* (int) - Type of topography file to write out.  Default
-           is 1.
+         - *path* (path) - Path to existing dtopo file to read in.
+         - *dtopo_type* (int) - Type of topography file to read.  Default is 3
+            if not specified or apparent from file extension.
         """
+        if path is not None:
+            self.path = path
+        if self.path is None:
+            raise IOError("*** need to specify path to file for reading")
+        path = self.path
+
+        if dtopo_type is None:
+            # Try to look at suffix for type
+            extension = os.path.splitext(path)[1][1:]
+            if extension[:2] == "tt":
+                dtopo_type = int(extension[2])
+            elif extension == 'xyz':
+                dtopo_type = 0
+            elif extension == 'txyz':
+                dtopo_type = 1
+            else:
+                # Default to 3
+                dtopo_type = 3
+
         if dtopo_type == 2 or dtopo_type == 3:
             fid = open(path)
             mx = int(fid.readline().split()[0])
@@ -275,16 +294,22 @@ class DTopography(object):
             raise NotImplementedError("*** Not implemented for dtopo_type: %s" % dtopo_type)
 
 
-    def write(self, path, dtopo_type=None):
+    def write(self, path=None, dtopo_type=None):
         r"""Write out subfault resulting dtopo to file at *path*.
 
         input
         -----
          - *path* (path) - Path to the output file to written to.
          - *dtopo_type* (int) - Type of topography file to write out.  Default
-           is 1.
+           is 3.
 
         """
+
+        if path is not None:
+            self.path = path
+        if self.path is None:
+            raise IOError("*** need to specify path to file for writing")
+        path = self.path
 
         if dtopo_type is None:
             # Try to look at suffix for type
@@ -458,7 +483,7 @@ class DTopography(object):
 
 class Fault(object):
 
-    def __init__(self, path=None, subfaults=None, units={}):
+    def __init__(self, subfaults=None, units={}):
 
         # Parameters for subfault specification
         self.rupture_type = 'static' # 'static' or 'dynamic'
@@ -469,10 +494,12 @@ class Fault(object):
         self.units = {}
         self.units.update(units)
         
-        if path is not None:
+        # RJL: remove option to read on instantiation since more needs to be 
+        # specified, e.g. column_map
+        #if path is not None:
             # Read in file at path assuming it is a subfault specification
-            self.read(path)
-        elif subfaults is not None:
+            #self.read(path)
+        if subfaults is not None:
             if not isinstance(subfaults, list):
                 raise ValueError("Input parameter subfaults must be a list.")
             self.subfaults = subfaults
