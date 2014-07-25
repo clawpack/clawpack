@@ -767,6 +767,63 @@ class Fault(object):
         plt.subplot(212)
         plt.title('depth vs. y')
     
+    def containing_rect(self):
+        r"""Find containing rectangle of fault in x-y plane.
+
+        Returns tuple of x-limits and y-limits.
+
+        """
+
+        rect = [numpy.infty, -numpy.infty, numpy.infty, -numpy.infty]
+        for subfault in self.subfaults:
+            xmin = numpy.array(subfault.geometry['x_corners']).min()
+            xmax = numpy.array(subfault.geometry['x_corners']).max()
+            ymin = numpy.array(subfault.geometry['y_corners']).min()
+            ymax = numpy.array(subfault.geometry['y_corners']).max()
+            rect[0] = min(xmin, rect[0])
+            rect[1] = max(xmax, rect[1])
+            rect[2] = min(ymin, rect[2])
+            rect[3] = max(ymax, rect[3])
+
+        return rect
+
+    
+    def create_dtopo_xy(self, rect=None, dx=1/60., buffer_size=0.5):
+        r"""Create coordinate arrays containing fault with a buffer.
+
+        Input
+        -----
+         - *rect* - if None, use self.containing_rect
+            Otherwise a list [x1,x2,y1,y2]
+         - *dx* (int) - Spatial resolution. Defaults to 1" resolution.
+         - *buffer_size* (float) - Buffer distance around edge of fault in
+           degrees, defaults to 0.5 degrees.
+
+        Output
+        ------
+         - *x,y* 1-dimensional arrays that cover the desired rect.
+           They start at (x1,y1) and may go a bit beyond (x2,y2) depending on dx
+
+        """
+
+        if rect is None:
+            rect = self.containing_rect()
+        rect[0] -= buffer_size
+        rect[1] += buffer_size
+        rect[2] -= buffer_size
+        rect[3] += buffer_size
+
+        mx = int(numpy.ceil(rect[1] - rect[0]) / dx) + 1
+        x1 = rect[0]
+        x2 = x1 + (mx-1)*dx
+        my = int(numpy.ceil(rect[3] - rect[2]) / dx) + 1
+        y1 = rect[2]
+        y2 = y1 + (my-1)*dx   # note dy==dx
+
+        x = numpy.linspace(x1,x2,mx)
+        y = numpy.linspace(y1,y2,my)
+        return x,y
+
 
 class SubFault(object):
 
