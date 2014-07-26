@@ -31,6 +31,29 @@ class IkeTest(tests.GeoClawTest):
         shutil.copy(os.path.join(self.test_path, 'ike.storm'), self.temp_path)
 
 
+    def runTest(self, save=False, indices=(2, 3)):
+        r"""Basic run test functionality
+
+        :Input:
+         - *save* (bool) - If *True* will save the output from this test to 
+           the file *regresion_data.txt*.  Passed to *check_gauges*.  Default is
+           *False*.
+         - *indices* (tuple) - Contains indices to compare in the gague 
+           comparison and passed to *check_gauges*.  Defaults to *(2, 3)*.
+
+        """
+
+        # Write out data files
+        self.load_rundata()
+        self.write_rundata_objects()
+
+        # Run code
+        self.run_code()
+
+        # Perform tests
+        self.check_gauges(save=save, indices=(2, 3))
+
+
 if __name__=="__main__":
     if len(sys.argv) > 1:
         if bool(sys.argv[1]):
