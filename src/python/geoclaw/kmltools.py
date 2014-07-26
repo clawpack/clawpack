@@ -178,6 +178,47 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000'):
     print "Created ",fname
         
 
+def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000'):
+    """
+    Make a quadrilateral with default color blue.
+    xy should be a tuple (x1,x2,y1,y2,x3,y3,x4,y4).
+    """
+
+    x1,x2,y1,y2,x3,y3,x4,y4 = xy[0:]
+    print "Quadrilateral:   %10.6f  %10.6f" % (x1,y1)
+    print "                 %10.6f  %10.6f" % (x2,y2)
+    print "                 %10.6f  %10.6f" % (x3,y3)
+    print "                 %10.6f  %10.6f" % (x4,y4)
+
+    elev = 0.
+    kml_text = kml_header() 
+    
+    mapping = {}
+    mapping['x1'] = x1
+    mapping['x2'] = x2
+    mapping['x3'] = x3
+    mapping['x4'] = x4
+    mapping['y1'] = y1
+    mapping['y2'] = y2
+    mapping['y3'] = y3
+    mapping['y4'] = y4
+    mapping['elev'] = elev
+    mapping['name'] = name
+    mapping['desc'] = "  x1 = %g, y1 = %g\n" % (x1,y1) \
+            + "  x2 = %g, y2 = %g" % (x2,y2) \
+            + "  x3 = %g, y3 = %g" % (x3,y3) \
+            + "  x4 = %g, y4 = %g" % (x4,y4) 
+    mapping['color'] = color
+
+    region_text = kml_region(mapping)
+
+    kml_text = kml_text + region_text + kml_footer()
+    kml_file = open(fname,'w')
+    kml_file.write(kml_text)
+    kml_file.close()
+    print "Created ",fname
+        
+
 def gauges2kml(rundata=None, fname='gauges.kml'):
 
     """
@@ -250,7 +291,19 @@ def kml_footer():
     return footer
 
 def kml_region(mapping):
-    region_text = """
+    if mapping.has_key('x3'):
+        # quadrilateral with 4 corners specified
+        region_text = """
+{x1:10.4f},{y1:10.4f},{elev:10.4f}
+{x2:10.4f},{y2:10.4f},{elev:10.4f}
+{x3:10.4f},{y3:10.4f},{elev:10.4f}
+{x4:10.4f},{y4:10.4f},{elev:10.4f}
+{x1:10.4f},{y1:10.4f},{elev:10.4f}
+""".format(**mapping).replace(' ','')
+
+    else:
+        # rectangle with 2 corners specified
+        region_text = """
 {x1:10.4f},{y1:10.4f},{elev:10.4f}
 {x2:10.4f},{y1:10.4f},{elev:10.4f}
 {x2:10.4f},{y2:10.4f},{elev:10.4f}
