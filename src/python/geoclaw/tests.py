@@ -13,14 +13,12 @@ import subprocess
 import unittest
 import shutil
 import inspect
-import urllib
-import tarfile
 import time
 import glob
 
 import numpy
 
-import ..util
+import clawpack.geoclaw.util
 
 # Clean library files whenever this module is used
 if os.environ.has_key("CLAW"):
@@ -101,8 +99,10 @@ class GeoClawTest(unittest.TestCase):
                              "set yet.  Try calling super before attempting ",
                              "to get remote files.")
 
-        output_path = util.get_remote_file(url, output_dir=self.temp_path, 
-                                                force=force, verbose=verbose)
+        output_path = clawpack.geoclaw.util.get_remote_file(url, 
+                                                      output_dir=self.temp_path, 
+                                                      force=force, 
+                                                      verbose=verbose)
         self.remote_files.append(output_path)
 
 

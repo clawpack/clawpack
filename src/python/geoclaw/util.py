@@ -53,16 +53,18 @@ def get_remote_file(url, output_dir=None, force=False, verbose=False,
             if verbose:
                 print "Downloading %s to %s..." % (url, output_path)
             with open(output_path, "w") as output_file:
-                with urllib2.urlopen(url) as remote_file:
-                    output_file.write(remote_file.read())
+                remote_file = urllib2.urlopen(url)
+                output_file.write(remote_file.read())
             if verbose:
                 print "Done downloading."
 
         if tarfile.is_tarfile(output_path):
             if verbose:
-                print "Un-archiving %s to %s..." % (output_path, unarchived_output_path)
+                print "Un-archiving %s to %s..." % (output_path, 
+                                                    unarchived_output_path)
             with tarfile.open(output_path, mode="r:*") as tar_file:
-                tar_file.extractall(path=output_path)
+                import pdb; pdb.set_trace()
+                tar_file.extractall(path=unarchived_output_path)
             if verbose:
                 print "Done un-archiving."
         # TODO: Should check here if a file is a bare compressed file (no tar)
