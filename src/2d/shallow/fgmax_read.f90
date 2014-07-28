@@ -36,7 +36,7 @@ subroutine fgmax_read(fname,ifg)
     use amr_module, only: mxnest
 
     implicit none
-    character(80), intent(in) :: fname
+    character(150), intent(in) :: fname
     integer, intent(in) :: ifg 
     integer :: k,i,j,point_style,nx,ny,n12,n23
     real(kind=8) :: x1,x2,y1,y2,yj
