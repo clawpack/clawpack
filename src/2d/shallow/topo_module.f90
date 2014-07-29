@@ -288,12 +288,14 @@ contains
         !---------------tests for analytic bathymetry-------------------
         ! Simple jump discontinuity in bathymetry
         else if (test_topography == 1) then
+            topo_finalized = .true.
             read(iunit,"(d16.8)") topo_location
             read(iunit,"(d16.8)") topo_left
             read(iunit,"(d16.8)") topo_right
 
         ! Idealized ocean shelf
         else if (test_topography == 2 .or. test_topography == 3) then
+            topo_finalized = .true.
             read(iunit,"(d16.8)") topo_x0
             read(iunit,"(d16.8)") topo_x1
             read(iunit,"(d16.8)") topo_x2
