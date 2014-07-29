@@ -20,6 +20,11 @@ import numpy
 
 import clawpack.geoclaw.util
 
+# Support for WIP decorator
+from functools import wraps
+from nose.plugins.attrib import attr
+from nose.plugins.skip import SkipTest
+
 # Clean library files whenever this module is used
 if os.environ.has_key("CLAW"):
     CLAW = os.environ["CLAW"]
@@ -34,6 +39,25 @@ for lib_path in [os.path.join(CLAW,"amrclaw","src","2d"),
         os.remove(path)
     for path in glob.glob(os.path.join(lib_path,"*.mod")):
         os.remove(path)
+
+
+# Work in progress test decorator
+def fail(message):
+    raise AssertionError(message)
+ 
+def wip(f):
+    @wraps(f)
+    def run_test(*args, **kwargs):
+        try:
+            # Set to success so we don't save out the output when we know things
+            # are awry
+            args[0].success = True
+            f(*args, **kwargs)
+        except Exception as e:
+            raise SkipTest("WIP test failed: " + str(e))
+        fail("test passed but marked as work in progress")
+    
+    return attr('wip')(run_test)
 
 
 # TODO: Maybe rename this to `GeoClawRegressionTest`
