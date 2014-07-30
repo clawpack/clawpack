@@ -1200,28 +1200,30 @@ class UCSBFault(Fault):
 
     """
 
-    def __init__(self, path=None, rupture_type='static'):
+    def __init__(self):
         r"""UCSBFault initialization routine.
         
         See :class:`UCSBFault` for more info.
-        Subfault format contains info for dynamic rupture, so can specify 
-        rupture_type = 'static' or 'dynamic'
 
         """
 
-        self.num_cells = [None, None]
+        self.num_cells = [None, None]   # RJL: Why needed??
 
-        super(UCSBFault, self).__init__(path=path)
-        self.rupture_type = rupture_type
+        super(UCSBFault, self).__init__()
 
 
-    def read(self, path):
+    def read(self, path, rupture_type='static'):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
         *path*.
 
+        Subfault format contains info for dynamic rupture, so can specify 
+        rupture_type = 'static' or 'dynamic'
+
         """
+
+        self.rupture_type = rupture_type
 
         # Read header of file
         regexp_dx = re.compile(r"Dx=[ ]*(?P<dx>[^k]*)")
