@@ -1004,8 +1004,9 @@ class Topography(object):
                                        cmap=cmap,
                                        origin='lower',
                                        interpolation='nearest')
-        cbar = plt.colorbar(plot, ax=axes)
-        cbar.set_label("Topography (m)")
+        if add_colorbar:
+            cbar = plt.colorbar(plot, ax=axes)
+            cbar.set_label("Topography (m)")
         # levels = range(0,int(-numpy.min(Z)),500)
 
         # Plot coastlines
