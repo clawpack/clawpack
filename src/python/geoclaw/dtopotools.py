@@ -15,6 +15,7 @@ dtopo files, and calculating Okada based deformations.
     Fault
     UCSBFault
     CSVFault
+    SiftFault
     
 :Functions:
 
@@ -1375,7 +1376,11 @@ class SiftFault(Fault):
     Define a fault by specifying the slip on a subset of the SIFT unit sources.
     The database is read in by load_sift_unit_sources.
     See http://www.pmel.noaa.gov/pubs/PDF/gica2937/gica2937.pdf
-    for a discussion of these unit sources.
+    for a discussion of these unit sources, although the database used
+    is more recent than what is reported in that paper and uses different
+    notation for the subfault names.
+    The subfault database used was downloaded from
+        http://sift.pmel.noaa.gov/ComMIT/compressed/info_sz.dat
 
     Example:
         >>> sift_slip = {'acsza1':2, 'acszb1':3}
