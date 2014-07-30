@@ -172,6 +172,44 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     return rf
 
 
+def load_sift_unit_sources():
+    r"""
+    Load SIFT unit source subfault data base. 
+    File was downloaded from
+        http://sift.pmel.noaa.gov/ComMIT/compressed/info_sz.dat
+    """
+
+    import os
+    try:
+        CLAW = os.environ['CLAW']
+    except:
+        raise Exception("Environment variable CLAW must be set")
+    unit_source_file = os.path.join(CLAW,'geoclaw','datafiles','info_sz.dat.txt')
+    lines = open(unit_source_file).readlines()
+    print "Loading sift unit sources from ",unit_source_file
+    sift_subfaults = {}
+    units = {'length':'km', 'width':'km', 'depth':'km', 'slip':'m'}
+    for line in lines[2:]:
+        tokens = line.split(',')
+        name = tokens[0]
+        url = tokens[1]
+        subfault = SubFault()
+        subfault.longitude = float(tokens[2])
+        subfault.latitude = float(tokens[3])
+        subfault.slip = float(tokens[4])
+        subfault.strike = float(tokens[5])
+        subfault.dip = float(tokens[6])
+        subfault.depth = float(tokens[7])
+        subfault.length = float(tokens[8])
+        subfault.width = float(tokens[9])
+        subfault.rake = float(tokens[10])
+        subfault.coordinate_specification = "noaa sift"
+        subfault.units = units
+        sift_subfaults[name] = subfault
+    return sift_subfaults
+
+
+
 # ==============================================================================
 #  Classes: 
 # ==============================================================================
@@ -1330,3 +1368,36 @@ class CSVFault(Fault):
                                 delimiter=",", units=units,
                                 coordinate_specification=coordinate_specification,
                                 rupture_type=rupture_type)
+
+class SiftFault(Fault):
+
+    r"""
+    Define a fault by specifying the slip on a subset of the SIFT unit sources.
+    The database is read in by load_sift_unit_sources.
+    See http://www.pmel.noaa.gov/pubs/PDF/gica2937/gica2937.pdf
+    for a discussion of these unit sources.
+
+    Example:
+        >>> sift_slip = {'acsza1':2, 'acszb1':3}
+        >>> fault = SiftFault(sift_slip)
+    results in a fault with two specified subfaults with slip of 2 and 3 meters.
+    """
+
+    def __init__(self, sift_slip=None):
+        
+        super(SiftFault, self).__init__()
+        self.sift_subfaults = load_sift_unit_sources()
+        if sift_slip is not None:
+            self.set_subfaults(sift_slip)
+            
+    def set_subfaults(self,sift_slip):
+        r"""
+        *sift_slip* (dict) is a dictionary with key = name of unit source
+                    and value = magnitude of slip to assign (in meters).
+        """
+        self.subfaults = []
+        for k,v in sift_slip.iteritems():
+            subfault = self.sift_subfaults[k]
+            subfault.slip = v
+            self.subfaults.append(subfault)
+
