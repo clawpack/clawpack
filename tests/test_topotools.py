@@ -1,16 +1,20 @@
+#!/usr/bin/env python
 
 import os
+import sys
+
 import numpy
-import matplotlib
-matplotlib.use("Agg")  # use image backend -- needed for Travis tests
-from clawpack.geoclaw import topotools 
 
-try:
-    CLAW = os.environ['CLAW']
-except KeyError:
-    raise Exception("Need to set CLAW environment variable")
-testdir = os.path.join(CLAW, 'geoclaw/tests')
+import clawpack.geoclaw.topotools as topotools
 
+# try:
+#     CLAW = os.environ['CLAW']
+# except KeyError:
+#     raise Exception("Need to set CLAW environment variable")
+# testdir = os.path.join(CLAW, 'geoclaw/tests')
+testdir = os.path.dirname(__file__)
+if len(testdir) == 0:
+     testdir = "./"
 
 def topo_bowl(x,y):
     """Sample topo"""
@@ -207,7 +211,8 @@ def plot_topo_bowl_hill():
     Create topo and write out, then read in again and plot.
     Note that center of bowl should be at (0,0).
     """
-
+    import matplotlib
+    matplotlib.use("Agg")  # use image backend -- needed for Travis tests
     import matplotlib.pyplot as plt
     make_topo_bowl_hill()
     fname = 'bowl_hill.tt2'
@@ -235,6 +240,8 @@ def plot_kahului():
     In addition to using the Topography.plot function, also 
     illustrate how to do a contour data of the data directly.
     """
+    import matplotlib
+    matplotlib.use("Agg")  # use image backend -- needed for Travis tests
     import matplotlib.pyplot as plt
 
     path = os.path.join(testdir,'kahului_sample_1s.tt2')
@@ -300,7 +307,67 @@ def test_fetch_topo_url():
     os.system("rm %s" % fname)
     os.system("rm %s.txt" % fname)
 
+
+def test_unstructured_topo(save=False, plot=False):
+
+    # Create random test data
+    def func(x, y):
+        return x * (1 - x) * numpy.cos(4 * numpy.pi * x) * numpy.sin(4 * numpy.pi * y**2)**2
+
+    fill_topo = topotools.Topography()
+    fill_topo.x = numpy.linspace(0, 1, 100)
+    fill_topo.y = numpy.linspace(0, 1, 200)
+    fill_topo.Z = func(fill_topo.X, fill_topo.Y)
+
+    points = numpy.loadtxt("unstructured_points.txt")
+    values = func(points[:,0], points[:,1])
+
+    # Create topography object
+    topo = topotools.Topography(unstructured=True)
+    topo.x = points[:,0]
+    topo.y = points[:,1]
+    topo.z = values
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure(figsize=(16,6))
+        axes = fig.add_subplot(1, 3, 1)
+        fill_topo.plot(axes=axes)
+        axes.set_title("True Field")
+        axes = fig.add_subplot(1, 3, 2)
+        topo.plot(axes=axes, region_extent=[0, 1, 0, 1])
+        axes.set_title("Unstructured Field")
+
+    topo.interp_unstructured(fill_topo, extent=[0, 1, 0, 1], delta=1e-2)
+    assert not topo.unstructured
+
+    # Load (and save) test data and make the comparison
+    test_data_path = os.path.join(testdir, "unstructured_test_data.tt3")
+    if save:
+        topo.write(test_data_path)
+
+    compare_data = topotools.Topography(path=test_data_path)
+
+    assert numpy.allclose(compare_data.Z, topo.Z)
+
+    if plot:
+        axes = fig.add_subplot(1, 3, 3)
+        topo.plot(axes=axes)
+        axes.set_title("Interpolated Field")
+
+        plt.show()
+
+
 if __name__=="__main__":
-    # Run tests that Travis cannot run...  
-    plot_topo_bowl_hill()
-    plot_kahului()
+    if len(sys.argv) > 1:
+        if "plot" in sys.argv[1].lower():
+            plot_topo_bowl_hill()
+            plot_kahului()
+            test_unstructured_topo(save=False, plot=True)
+        elif bool(sys.argv[1]):
+            test_unstructured_topo(save=True)
+    else:
+        # Run nose tests in this module
+        import nose
+        nose.main()

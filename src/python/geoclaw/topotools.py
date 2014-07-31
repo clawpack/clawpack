@@ -948,14 +948,9 @@ class Topography(object):
         plt.xticks(rotation=20)
 
         # Generate limits if need be
-        if (region_extent is None) and (not self.unstructured):
-            dx = self.x[1] - self.x[0]
-            dy = self.y[1] - self.y[0]
-            x1 = self.x.min() - dx/2
-            x2 = self.x.max() + dx/2
-            y1 = self.y.min() - dy/2
-            y2 = self.y.max() + dy/2
-            region_extent = (x1,x2,y1,y2)
+        if region_extent is None:
+            region_extent = self.extent
+
         mean_lat = 0.5 * (region_extent[3] + region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
 
@@ -998,6 +993,7 @@ class Topography(object):
                                        vmax=topo_extent[1],
                                        cmap=cmap)
         else:
+            print region_extent
             plot = axes.imshow(self.Z, vmin=topo_extent[0], 
                                        vmax=topo_extent[1],
                                        extent=region_extent, 
@@ -1019,8 +1015,8 @@ class Topography(object):
         return axes
 
 
-    def interp_unstructured(self, fill_topo, extent=None,
-                                   method='nearest', delta_limit=20.0, 
+    def interp_unstructured(self, fill_topo, extent=None, method='nearest',
+                                   delta=None, delta_limit=20.0, 
                                    no_data_value=-9999, buffer_length=100.0,
                                    proximity_radius=100.0, 
                                    resolution_limit=2000):
@@ -1050,6 +1046,9 @@ class Topography(object):
            Must be in the form (x lower,x upper,y lower, y upper).
          - *method* (string) - Method used for interpolation, valid methods are
            found in *scipy.interpolate.griddata*.  Default is *nearest*.
+         - *delta* (float) - Directly set the grid spacing of the interpolation
+           rather than determining it from the data itself.  Defaults to *None*
+           which causes the method to determine this value itself.
          - *delta_limit* (float) - Limit of finest horizontal resolution, 
            default is 20 meters.
          - *no_data_value* (float) - Value to use if no data was found to fill in a 
@@ -1082,9 +1081,10 @@ class Topography(object):
                        numpy.max(self.x) + buffer_degrees, 
                        numpy.min(self.y) - buffer_degrees, 
                        numpy.max(self.y) + buffer_degrees ]
-        delta = max( min(numpy.min(numpy.abs(self.x[1:] - self.x[:-1])), 
-                         numpy.min(numpy.abs(self.y[1:] - self.y[:-1])) ),
-                    delta_degrees)
+        if delta is None:
+            delta = max( min(numpy.min(numpy.abs(self.x[1:] - self.x[:-1])), 
+                             numpy.min(numpy.abs(self.y[1:] - self.y[:-1])) ),
+                        delta_degrees)
         N = ( numpy.ceil((extent[1] - extent[0]) / delta),
               numpy.ceil((extent[3] - extent[2]) / delta) )
         assert numpy.all(N[:] < numpy.ones((2)) * resolution_limit), \
@@ -1099,7 +1099,7 @@ class Topography(object):
 
         # Mask fill topography and flatten the arrays if needed
         if not isinstance(fill_topo, list):
-            fill_topo = list(fill_topo)
+            fill_topo = [fill_topo]
         for topo in fill_topo:
             if topo.unstructured:
                 x_fill = topo.x
