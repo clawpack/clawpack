@@ -37,7 +37,7 @@ class BowlSloshTest(tests.GeoClawTest):
 
 
     def runTest(self, save=False, indices=(2, 3)):
-        r"""Basic run test functionality
+        r"""Test bowl-slosh example
 
         Note that this stub really only runs the code and performs no tests.
 

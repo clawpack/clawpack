@@ -52,6 +52,7 @@ class MultilayerTest(tests.GeoClawTest):
 
     @tests.wip
     def runTest(self, save=False):
+        r"""Test multi-layer basic plane-waves."""
 
         # Load and write data, change init-condition's starting angle
         self.load_rundata()

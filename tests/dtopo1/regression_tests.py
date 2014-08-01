@@ -71,7 +71,7 @@ class DTopoTests(tests.GeoClawTest):
 
 
     def runTest(self, save=False, indices=(2, 3)):
-        r"""Basic run test functionality
+        r"""DTopography basic regression test
 
         :Input:
          - *save* (bool) - If *True* will save the output from this test to 

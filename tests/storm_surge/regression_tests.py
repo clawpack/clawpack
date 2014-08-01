@@ -5,10 +5,7 @@
 import sys
 import os
 import unittest
-import glob
 import shutil
-
-import numpy
 
 import clawpack.geoclaw.tests as tests
 
@@ -32,7 +29,7 @@ class IkeTest(tests.GeoClawTest):
 
 
     def runTest(self, save=False, indices=(2, 3)):
-        r"""Basic run test functionality
+        r"""Storm Surge Regression Test
 
         :Input:
          - *save* (bool) - If *True* will save the output from this test to 
