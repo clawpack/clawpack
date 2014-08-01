@@ -198,7 +198,7 @@ def test_get_remote_file():
         local_path = os.path.join(temp_path, os.path.basename(url))
         download_topo = topotools.Topography(path=local_path)
 
-        test_path = os.path.join(testdir, os.path.basename(url))
+        test_path = os.path.join(testdir, "data", os.path.basename(url))
         test_topo = topotools.Topography(path=test_path)
 
         assert numpy.allclose(download_topo.Z, test_topo.Z), \
@@ -221,7 +221,8 @@ def test_unstructured_topo(save=False, plot=False):
     fill_topo.y = numpy.linspace(0, 1, 200)
     fill_topo.Z = func(fill_topo.X, fill_topo.Y)
 
-    points = numpy.loadtxt("unstructured_points.txt")
+    points = numpy.loadtxt(os.path.join(testdir, "data", 
+                                                 "unstructured_points.txt"))
     values = func(points[:,0], points[:,1])
 
     # Create topography object
@@ -245,7 +246,7 @@ def test_unstructured_topo(save=False, plot=False):
     assert not topo.unstructured
 
     # Load (and save) test data and make the comparison
-    test_data_path = os.path.join(testdir, "unstructured_test_data.tt3")
+    test_data_path = os.path.join(testdir, "data", "unstructured_test_data.tt3")
     if save:
         topo.write(test_data_path)
 
@@ -270,7 +271,10 @@ def plot_topo_bowl_hill():
     import matplotlib
     matplotlib.use("Agg")  # use image backend -- needed for Travis tests
     import matplotlib.pyplot as plt
-    make_topo_bowl_hill()
+
+    topo = topotools.Topography(topo_func=topo_bowl_hill)
+    topo.x = numpy.linspace(-1.5, 2.5, 101)
+    topo.y = numpy.linspace(-1.0, 2.0, 76)
     fname = 'bowl_hill.tt2'
     topo = topotools.Topography(fname,topo_type=2)
 
@@ -356,3 +360,5 @@ if __name__ == "__main__":
         test_read_write_topo_bowl_hill()
         test_get_remote_file()
         test_unstructured_topo()
+
+        print "All tests passed."
