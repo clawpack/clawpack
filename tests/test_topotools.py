@@ -2,19 +2,19 @@
 
 import os
 import sys
+import tempfile
+import shutil
 
 import numpy
 
 import clawpack.geoclaw.topotools as topotools
+import clawpack.geoclaw.util as util
 
-# try:
-#     CLAW = os.environ['CLAW']
-# except KeyError:
-#     raise Exception("Need to set CLAW environment variable")
-# testdir = os.path.join(CLAW, 'geoclaw/tests')
+# Set local test directory to get local files
 testdir = os.path.dirname(__file__)
 if len(testdir) == 0:
      testdir = "./"
+
 
 def topo_bowl(x,y):
     """Sample topo"""
@@ -28,95 +28,80 @@ def test_read_write_topo_bowl():
     Note that ordering should go from NW corner.
     """
 
-    nxpoints = 5
-    nypoints = 4
-    xlower = -1.
-    xupper = 3.
-    ylower = 0.
-    yupper = 3.
+    # Base topography
     topo = topotools.Topography(topo_func=topo_bowl)
-    topo.x = numpy.linspace(xlower,xupper,nxpoints)
-    topo.y = numpy.linspace(ylower,yupper,nypoints)
+    topo.x = numpy.linspace(-1.0, 3.0, 5)
+    topo.y = numpy.linspace( 0.0, 3.0, 4)
 
     assert numpy.allclose(topo.x, numpy.array([-1.,  0.,  1.,  2., 3.])), \
-        "*** topo.x does not match"
-    assert numpy.allclose(topo.X, \
-        numpy.array([[-1.,  0.,  1.,  2.,  3.],
-                   [-1.,  0.,  1.,  2.,  3.],
-                   [-1.,  0.,  1.,  2.,  3.],
-                   [-1.,  0.,  1.,  2.,  3.]])), \
-        "*** topo.X does not match"
+           "Topography x values are incorrect."
+    assert numpy.allclose(topo.X,
+                          numpy.array([[-1.,  0.,  1.,  2.,  3.],
+                                       [-1.,  0.,  1.,  2.,  3.],
+                                       [-1.,  0.,  1.,  2.,  3.],
+                                       [-1.,  0.,  1.,  2.,  3.]])), \
+           "Topography X values are incorrect."
     assert numpy.allclose(topo.y, numpy.array([ 0.,  1.,  2.,  3.])), \
-        "*** topo.y does not match"
-    assert numpy.allclose(topo.Y, \
-        numpy.array([[ 0.,  0.,  0.,  0.,  0.],
-                   [ 1.,  1.,  1.,  1.,  1.],
-                   [ 2.,  2.,  2.,  2.,  2.],
-                   [ 3.,  3.,  3.,  3.,  3.]])), \
-        "*** topo.Y does not match"
-    assert numpy.allclose(topo.Z, \
-        numpy.array([[     0.,  -1000.,      0.,   3000., 8000.],
-                   [  1000.,      0.,   1000.,   4000.,   9000.],
-                   [  4000.,   3000.,   4000.,   7000.,  12000.],
-                   [  9000.,   8000.,   9000.,  12000.,  17000.]])), \
-        "*** topo.Z does not match"
+           "Topography y values are incorrect."
+    assert numpy.allclose(topo.Y,
+                          numpy.array([[ 0.,  0.,  0.,  0.,  0.],
+                                       [ 1.,  1.,  1.,  1.,  1.],
+                                       [ 2.,  2.,  2.,  2.,  2.],
+                                       [ 3.,  3.,  3.,  3.,  3.]])), \
+           "Topography Y values are incorrect."
+    assert numpy.allclose(topo.Z,
+                numpy.array([[     0.,  -1000.,      0.,   3000., 8000.],
+                             [  1000.,      0.,   1000.,   4000.,   9000.],
+                             [  4000.,   3000.,   4000.,   7000.,  12000.],
+                             [  9000.,   8000.,   9000.,  12000.,  17000.]])), \
+           "Topography Z values are incorrect."
 
-    for ttype in [1,2,3]:
-        fname = 'bowl.tt%s' % ttype
-        if ttype==1:
-            topotools.topo1writer(fname,topo_bowl,xlower,xupper,ylower,yupper,\
-                              nxpoints,nypoints)
-        elif ttype==2:
-            topotools.topo2writer(fname,topo_bowl,xlower,xupper,ylower,yupper,\
-                              nxpoints,nypoints)
-        elif ttype==3:
-            topotools.topo3writer(fname,topo_bowl,xlower,xupper,ylower,yupper,\
-                              nxpoints,nypoints)
-        print "Created ",fname
-        topo_in = topotools.Topography(fname)
-        print "Read back in and max difference in z is ",abs(topo.Z - topo_in.Z).max()
-        
-        topo_in = topotools.Topography()
-        topo_in.read(path=fname)  # should figure out topo_type properly
-        print "Read back in second way and max difference in z is ",abs(topo.Z - topo_in.Z).max()
-    return topo
+    temp_path = tempfile.mkdtemp()
+    try:
+        for topo_type in xrange(1, 4):
+            path = os.path.join(temp_path, 'bowl.tt%s' % topo_type)
+            topo.write(path, topo_type=topo_type)
+
+            topo_in = topotools.Topography(path)
+            assert numpy.allclose(topo.Z, topo_in.Z), \
+                   "Differnece in written and read topography found."
+    except AssertionError as e:
+        # If the assertion failed then copy the contents of the directory
+        shutil.copytree(temp_path, os.path.join(os.getcwd(), 
+                                                "test_read_write_topo_bowl"))
+        raise e
+    finally:
+        shutil.rmtree(temp_path)
+
 
 def test_crop_topo_bowl():
     """
     Test cropping a topo file.
     """
 
-    nxpoints = 5
-    nypoints = 4
-    xlower = -1.
-    xupper = 3.
-    ylower = 0.
-    yupper = 3.
     topo = topotools.Topography(topo_func=topo_bowl)
-    topo.x = numpy.linspace(xlower,xupper,nxpoints)
-    topo.y = numpy.linspace(ylower,yupper,nypoints)
+    topo.x = numpy.linspace(-1.0, 3.0, 5)
+    topo.y = numpy.linspace( 0.0, 3.0, 4)
 
     # topo.Z should be created automatically when referenced below:
-    assert numpy.allclose(topo.Z, \
-        numpy.array([[     0.,  -1000.,      0.,   3000., 8000.],
-                   [  1000.,      0.,   1000.,   4000.,   9000.],
-                   [  4000.,   3000.,   4000.,   7000.,  12000.],
-                   [  9000.,   8000.,   9000.,  12000.,  17000.]])), \
-        "*** topo.Z does not match"
+    assert numpy.allclose(topo.Z,
+           numpy.array([[     0.,  -1000.,      0.,   3000., 8000.],
+                        [  1000.,      0.,   1000.,   4000.,   9000.],
+                        [  4000.,   3000.,   4000.,   7000.,  12000.],
+                        [  9000.,   8000.,   9000.,  12000.,  17000.]])), \
+           "Basic topography does not match test data."
 
-    topo2 = topo.crop([0,1,0,2])
+    cropped_topo = topo.crop([0, 1, 0, 2])
+    assert numpy.allclose(cropped_topo.x, numpy.array([0.0, 1.0])), \
+           "Cropped topography y values do not match"
+    assert numpy.allclose(cropped_topo.y, numpy.array([ 0.,  1.,  2.])), \
+           "Cropped topography y values do not match."
+    assert numpy.allclose(cropped_topo.Z,
+                          numpy.array([[-1000.,     0.],
+                                       [    0.,  1000.],
+                                       [ 3000.,  4000.]])), \
+           "Cropped topography Z values do not match."
 
-    assert numpy.allclose(topo2.x, numpy.array([0.,  1.])), \
-        "*** topo.x does not match"
-    assert numpy.allclose(topo2.y, numpy.array([ 0.,  1.,  2.])), \
-        "*** topo.y does not match"
-    assert numpy.allclose(topo2.Z, \
-        numpy.array([[-1000.,     0.],
-                   [    0.,  1000.],
-                   [ 3000.,  4000.]])), \
-        "*** topo.Z does not match"
-
-    return topo2
 
 
 def test_against_old():
@@ -125,33 +110,39 @@ def test_against_old():
     Compare bowl.tt1 to bowl_old.tt1
     """
 
-    try:
-        from clawpack.geoclaw import topotools_5_1_0 as old_topotools
-    except:
-        print "*** can't compare to old: need topotools_5_1_0.py"
-        return
+    import old_topotools
 
     nxpoints = 5
     nypoints = 4
-    xlower = -1.
-    xupper = 3.
-    ylower = 0.
-    yupper = 3.
+    xlower = -1.0
+    xupper = 3.0
+    ylower = 0.0
+    yupper = 3.0
     topo = topotools.Topography(topo_func=topo_bowl)
-    topo.x = numpy.linspace(xlower,xupper,nxpoints)
-    topo.y = numpy.linspace(ylower,yupper,nypoints)
+    topo.x = numpy.linspace(xlower, xupper, nxpoints)
+    topo.y = numpy.linspace(ylower, yupper, nypoints)
 
-    fname = 'bowl_old.tt1'
-    old_topotools.topo1writer(fname,topo_bowl,xlower,xupper,ylower,yupper,\
-                      nxpoints,nypoints)
-    print "Created ",fname
-    X,Y,Z = old_topotools.topofile2griddata(fname,topotype=1)
-    # flip because new topotools uses different convention:
-    Y = numpy.flipud(Y)
-    Z = numpy.flipud(Z)
-    print "Read back in and max difference in x is ",abs(topo.X - X).max()
-    print "Read back in and max difference in y is ",abs(topo.Y - Y).max()
-    print "Read back in and max difference in z is ",abs(topo.Z - Z).max()
+    temp_path = tempfile.mkdtemp()
+    try:
+        file_path = os.path.join(temp_path, "bowl_old.tt1")
+        old_topotools.topo1writer(file_path, topo_bowl, xlower, xupper, ylower, 
+                                  yupper, nxpoints, nypoints)
+        X, Y, Z = old_topotools.topofile2griddata(file_path, topotype=1)
+        Y = numpy.flipud(Y)
+        Z = numpy.flipud(Z)
+
+        assert numpy.allclose(topo.X, X), "Difference in X grid."
+        assert numpy.allclose(topo.Y, Y), "Difference in Y grid."
+        assert numpy.allclose(topo.Z, Z), "Difference in Z grid."
+
+    except AssertionError as e:
+        # If the assertion failed then copy the contents of the directory
+        shutil.copytree(temp_path, os.path.join(os.getcwd(), 
+                                                "test_against_old"))
+        raise e
+    finally:
+        shutil.rmtree(temp_path)
+
 
 
 def topo_bowl_hill(x,y):
@@ -164,45 +155,110 @@ def topo_bowl_hill(x,y):
     z = z + 1000.*numpy.exp(-100*((x-0.7)**2 + (y-0.8)**2))
     return z
 
-def make_topo_bowl_hill():
-    """
-    Create topo file as a sample to read and plot.
-    """
-
-    nxpoints = 101
-    nypoints = 76
-    xlower = -1.5
-    xupper = 2.5
-    ylower = -1.
-    yupper = 2.
-
-    fname = 'bowl_hill.tt2'
-    topotools.topo2writer(fname,topo_bowl_hill,xlower,xupper,ylower,yupper,\
-                          nxpoints,nypoints)
-    print "Created ",fname
-
 
 def test_read_write_topo_bowl_hill():
     """
     Test writing and reading topo files.
     """
+    temp_path = tempfile.mkdtemp()
 
-    nxpoints = 101
-    nypoints = 76
-    xlower = -1.5
-    xupper = 2.5
-    ylower = -1.
-    yupper = 2.
-    topo = topotools.Topography(topo_func=topo_bowl_hill)
-    topo.x = numpy.linspace(xlower,xupper,nxpoints)
-    topo.y = numpy.linspace(ylower,yupper,nypoints)
+    try:
+        topo = topotools.Topography(topo_func=topo_bowl_hill)
+        topo.x = numpy.linspace(-1.5, 2.5, 101)
+        topo.y = numpy.linspace(-1.0, 2.0, 76)
 
-    for ttype in [1,2,3]:
-        fname = 'bowl_hill.tt%s' % ttype
-        topo.write(fname, topo_type=ttype)
-        print "Created ",fname
-        topo_in = topotools.Topography(fname,topo_type=ttype)
-        print "Read back in and max difference in z is ",abs(topo.Z - topo_in.Z).max()
+        for topo_type in xrange(1,4):
+            file_path = os.path.join(temp_path, 'bowl_hill.tt%s' % topo_type)
+            topo.write(file_path, topo_type=topo_type)
+            topo_in = topotools.Topography(path=file_path, topo_type=topo_type)
+            assert numpy.allclose(topo.Z, topo_in.Z), \
+                   "Written file of topo_type=%s does not equal read in" + \
+                   " file." % topo_type
+
+    except AssertionError as e:
+        # If the assertion failed then copy the contents of the directory
+        shutil.copytree(temp_path, os.path.join(os.getcwd(), 
+                                              "test_read_write_topo_bowl_hill"))
+        raise e
+    finally:
+        shutil.rmtree(temp_path)
+
+
+def test_get_remote_file():
+    """Test the ability to fetch a remote file from the web."""
+    
+    temp_path = tempfile.mkdtemp()
+    try:
+
+        url = "".join(('https://raw.githubusercontent.com/rjleveque/geoclaw/',
+                       '5f675256c043e59e5065f9f3b5bdd41c2901702c/src/python/',
+                       'geoclaw/tests/kahului_sample_1s.tt2'))
+        util.get_remote_file(url, output_dir=temp_path, force=True)
+
+        local_path = os.path.join(temp_path, os.path.basename(url))
+        download_topo = topotools.Topography(path=local_path)
+
+        test_path = os.path.join(testdir, os.path.basename(url))
+        test_topo = topotools.Topography(path=test_path)
+
+        assert numpy.allclose(download_topo.Z, test_topo.Z), \
+               "Downloaded file does not match %s" % test_path
+    except AssertionError as e:
+        shutil.copy(local_path, os.path.join(os.getcwd(), "remote_file.tt2"))
+        raise e
+    finally:
+        shutil.rmtree(temp_path)
+
+
+def test_unstructured_topo(save=False, plot=False):
+
+    # Create random test data
+    def func(x, y):
+        return x * (1 - x) * numpy.cos(4 * numpy.pi * x) * numpy.sin(4 * numpy.pi * y**2)**2
+
+    fill_topo = topotools.Topography()
+    fill_topo.x = numpy.linspace(0, 1, 100)
+    fill_topo.y = numpy.linspace(0, 1, 200)
+    fill_topo.Z = func(fill_topo.X, fill_topo.Y)
+
+    points = numpy.loadtxt("unstructured_points.txt")
+    values = func(points[:,0], points[:,1])
+
+    # Create topography object
+    topo = topotools.Topography(unstructured=True)
+    topo.x = points[:,0]
+    topo.y = points[:,1]
+    topo.z = values
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure(figsize=(16,6))
+        axes = fig.add_subplot(1, 3, 1)
+        fill_topo.plot(axes=axes)
+        axes.set_title("True Field")
+        axes = fig.add_subplot(1, 3, 2)
+        topo.plot(axes=axes, region_extent=[0, 1, 0, 1])
+        axes.set_title("Unstructured Field")
+
+    topo.interp_unstructured(fill_topo, extent=[0, 1, 0, 1], delta=1e-2)
+    assert not topo.unstructured
+
+    # Load (and save) test data and make the comparison
+    test_data_path = os.path.join(testdir, "unstructured_test_data.tt3")
+    if save:
+        topo.write(test_data_path)
+
+    compare_data = topotools.Topography(path=test_data_path)
+
+    assert numpy.allclose(compare_data.Z, topo.Z)
+
+    if plot:
+        axes = fig.add_subplot(1, 3, 3)
+        topo.plot(axes=axes)
+        axes.set_title("Interpolated Field")
+
+        plt.show()
 
 
 def plot_topo_bowl_hill():
@@ -283,83 +339,8 @@ def plot_kahului():
     plt.savefig(fname)
     print "Created ",fname
 
-def test_fetch_topo_url():
 
-    """
-    Fetch topography file from the web.
-    """
-
-    path = os.path.join(testdir,'kahului_sample_1s.tt2')
-    K = topotools.Topography(path,topo_type=2)
-    K.read()
-
-    url = 'https://raw.githubusercontent.com/rjleveque/geoclaw/5f675256c043e59e5065f9f3b5bdd41c2901702c/src/python/geoclaw/tests/kahului_sample_1s.tt2'
-    fname = 'kahului_web.tt2'
-    topotools.fetch_topo_url(url, local_fname=fname, force=True)
-    K2 = topotools.Topography(fname)
-    try:
-        K2.read()
-    except:
-        print "In directory ",os.getcwd()
-        print "Files: ",os.listdir('.')
-    
-    assert numpy.allclose(K.Z, K2.Z), "*** K2 != K after fetching from URL"
-    os.system("rm %s" % fname)
-    os.system("rm %s.txt" % fname)
-
-
-def test_unstructured_topo(save=False, plot=False):
-
-    # Create random test data
-    def func(x, y):
-        return x * (1 - x) * numpy.cos(4 * numpy.pi * x) * numpy.sin(4 * numpy.pi * y**2)**2
-
-    fill_topo = topotools.Topography()
-    fill_topo.x = numpy.linspace(0, 1, 100)
-    fill_topo.y = numpy.linspace(0, 1, 200)
-    fill_topo.Z = func(fill_topo.X, fill_topo.Y)
-
-    points = numpy.loadtxt("unstructured_points.txt")
-    values = func(points[:,0], points[:,1])
-
-    # Create topography object
-    topo = topotools.Topography(unstructured=True)
-    topo.x = points[:,0]
-    topo.y = points[:,1]
-    topo.z = values
-
-    if plot:
-        import matplotlib.pyplot as plt
-
-        fig = plt.figure(figsize=(16,6))
-        axes = fig.add_subplot(1, 3, 1)
-        fill_topo.plot(axes=axes)
-        axes.set_title("True Field")
-        axes = fig.add_subplot(1, 3, 2)
-        topo.plot(axes=axes, region_extent=[0, 1, 0, 1])
-        axes.set_title("Unstructured Field")
-
-    topo.interp_unstructured(fill_topo, extent=[0, 1, 0, 1], delta=1e-2)
-    assert not topo.unstructured
-
-    # Load (and save) test data and make the comparison
-    test_data_path = os.path.join(testdir, "unstructured_test_data.tt3")
-    if save:
-        topo.write(test_data_path)
-
-    compare_data = topotools.Topography(path=test_data_path)
-
-    assert numpy.allclose(compare_data.Z, topo.Z)
-
-    if plot:
-        axes = fig.add_subplot(1, 3, 3)
-        topo.plot(axes=axes)
-        axes.set_title("Interpolated Field")
-
-        plt.show()
-
-
-if __name__=="__main__":
+if __name__ == "__main__":
     if len(sys.argv) > 1:
         if "plot" in sys.argv[1].lower():
             plot_topo_bowl_hill()
@@ -368,6 +349,10 @@ if __name__=="__main__":
         elif bool(sys.argv[1]):
             test_unstructured_topo(save=True)
     else:
-        # Run nose tests in this module
-        import nose
-        nose.main()
+        # Run tests one at a time
+        test_read_write_topo_bowl()
+        test_crop_topo_bowl()
+        test_against_old()
+        test_read_write_topo_bowl_hill()
+        test_get_remote_file()
+        test_unstructured_topo()

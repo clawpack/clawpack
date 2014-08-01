@@ -21,18 +21,38 @@ def strip_archive_extensions(path, extensions=["tar", "tgz", "bz2", "gz"]):
         return path
 
 
-def get_remote_file(url, output_dir=None, force=False, verbose=False, 
-                         ask_user=False):
+def get_remote_file(url, output_dir=None, file_name=None, force=False,  
+                         verbose=False, ask_user=False):
     r"""Fetch file located at *url* and store at *output_dir*.
 
+    :Input:
+    
+     - *url* (path) - URL to file to be downloaded.
+     - *output_dir* (path) - Directory that the remote file will be downloaded
+       to.  Defaults to the current working directory returned by *os.getcwd()*.
+     - *file_name* (string) - Name of local file.  This defaults to the name of
+       the remote file.
+     - *force* (bool) - Force downloading of remote file regardless of whether
+       it exists locally or not.  Default is *False*
+     - *verbose* (bool) - Print out status information.  Default is *False*
+     - *ask_user* (bool) - Whether to ask the user if it is ok to download the
+       file before proceeding.  Default is *False*
 
+    :Raises:
+     
+    Exceptions are raised from the *urllib2* module having to do with errors
+    fetching the remote file.  Please see its documentation for more details of
+    the exceptions that can be raised.
 
+    returns nothing
     """
 
     if output_dir is None:
         output_dir = os.getcwd()
 
-    file_name = os.path.basename(url)
+    if file_name is None:
+        file_name = os.path.basename(url)
+        
     output_path = os.path.join(output_dir, file_name)
     unarchived_output_path = strip_archive_extensions(output_path)
 
@@ -63,7 +83,6 @@ def get_remote_file(url, output_dir=None, force=False, verbose=False,
                 print "Un-archiving %s to %s..." % (output_path, 
                                                     unarchived_output_path)
             with tarfile.open(output_path, mode="r:*") as tar_file:
-                import pdb; pdb.set_trace()
                 tar_file.extractall(path=unarchived_output_path)
             if verbose:
                 print "Done un-archiving."

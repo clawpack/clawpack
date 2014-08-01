@@ -246,8 +246,11 @@ def topo3writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
     topography.write(outfile, topo_type=3)
 
 
-def fetch_topo_url(url, local_fname=None, force=None):
+def fetch_topo_url(url, local_fname=None, force=None, verbose=False, 
+                        ask_user=False):
     """
+    DEPRECATED:  Use *get_remote_file* instead (see note below).
+
     Replaces get_topo function.
 
     Download a topo file from the web, provided the file does not
@@ -268,74 +271,27 @@ def fetch_topo_url(url, local_fname=None, force=None):
     If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
     and if this exists use its value.  This is useful for the script
     python/run_examples.py that runs all examples so it won't stop to prompt.
+    
+    This routine has been deprecated in favor of 
+    *clawpack.geoclaw.util.get_remote_file*.  All the functionality should be 
+    the same but calls the other routine internally.
     """
-    import urllib
+
+    import clawpack.geoclaw.util
 
     if force is None:
         CTD = os.environ.get('CLAW_TOPO_DOWNLOAD', None)
         force = (CTD in [True, 'True'])
-    print 'force = ',force
 
-    remote_directory = os.path.split(url)[0]
-    topo_fname = os.path.split(url)[1]
+    if local_fname is not None:
+        output_dir = os.path.dirname(local_fname)
+        file_name = os.path.basename(local_fname)
 
-    if local_fname is None:
-        local_fname = topo_fname
-    if os.path.exists(local_fname):
-        print "*** Not downloading topo file (already exists): %s " % local_fname
-    else:
-        remote_fname = topo_fname
-        remote_fname_txt = remote_fname + '.txt'
-        local_fname_txt = local_fname + '.txt'
-
-        print "Require remote file ", remote_fname
-        print "      from ", remote_directory
-        if not force:
-            ans=raw_input("  Ok to download topo file and save as %s?  \n" \
-                            % local_fname  +\
-                          "     Type y[es], n[o] or ? to first retrieve and print metadata  ")
-            if ans.lower() not in ['y','yes','?']:
-                print "*** Aborting!   Missing: ", local_fname
-                return
-            if ans=="?":
-                try:
-                    print "Retrieving remote file ", remote_fname_txt
-                    print "      from ", remote_directory
-                    url = os.path.join(remote_directory, remote_fname_txt)
-                    urllib.urlretrieve(url, local_fname_txt)
-                    os.system("cat %s" % local_fname_txt)
-                except:
-                    print "*** Error retrieving metadata file!"
-                ans=raw_input("  Ok to download topo file?  ")
-                if ans.lower() not in ['y','yes','?']:
-                    print "*** Aborting!   Missing: ", local_fname
-                    return
-
-        if not os.path.exists(local_fname_txt):
-            try:
-                print "Retrieving metadata file ", remote_fname_txt
-                print "      from ", remote_directory
-                url = os.path.join(remote_directory, remote_fname_txt)
-                urllib.urlretrieve(url, local_fname_txt)
-            except:
-                print "*** Error retrieving metadata file!"
-
-        try:
-            print "Retrieving topo file ", remote_fname
-            print "      from ", remote_directory
-            url = os.path.join(remote_directory, remote_fname)
-            urllib.urlretrieve(url, local_fname)
-        except:
-            print "*** Error retrieving file!  Missing: ", local_fname
-            raise Exception("Error from urllib.urlretrieve")
-        try:
-            firstline = open(local_fname,'r').readline()
-            if firstline.find('DOC') > -1:
-                print "*** Possible error -- check the file ", local_fname
-            else:
-                print "Saved to ", local_fname
-        except:
-            raise Exception("Error opening file %s" % local_fname)
+    clawpack.geoclaw.util.get_remote_file(url, output_dir=output_dir, 
+                                               file_name=file_name,
+                                               force=force, 
+                                               verbose=verbose, 
+                                               ask_user=ask_user)
 
 
 def get_topo(topo_fname, remote_directory, force=None):
