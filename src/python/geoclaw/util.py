@@ -83,7 +83,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                 print "Un-archiving %s to %s..." % (output_path, 
                                                     unarchived_output_path)
             with tarfile.open(output_path, mode="r:*") as tar_file:
-                tar_file.extractall(path=unarchived_output_path)
+                tar_file.extractall(path=output_dir)
             if verbose:
                 print "Done un-archiving."
         # TODO: Should check here if a file is a bare compressed file (no tar)
