@@ -29,120 +29,42 @@ topography (bathymetry) files.
 """
 
 import os
-import urllib
-import types
 
 import numpy
 
-
-
-# Constants
-from data import Rearth
-DEG2RAD = numpy.pi / 180.0
-RAD2DEG = 180.0 / numpy.pi
-
+import clawpack.geoclaw.util as util
+import clawpack.geoclaw.data
 
 # ==============================================================================
-#  Functions
+#  Topography Related Functions
 # ==============================================================================
-def dms2decimal(d,m,s,coord='N'):
-    r"""Convert coordinates in (degrees, minutes, seconds) to decimal form.  
+def determine_topo_type(path, default=None):
+    r"""Using the file suffix of path, attempt to deterimine the topo type.
+
+    :Input:
+
+     - *path* (string) - Path to the file.  Can include archive extensions (they
+       will be stripped off). 
+     - *default* (object) - Value returned if no suitable topo type was 
+       determined.  Default is *None*.
+
+    returns integer between 1-3 or *default* if nothing matches.
     
-    If coord == 'S' or coord == 'W' then value is negated too.
-    Example: 
-        >>> topotools.dms2decimal(7,30,36,'W')
-        -7.51
-    (Note that you might want to add 360 to resulting W coordinate
-    if using E coordinates everywhere in a computation spanning date line.)
-
-    returns float
-
     """
 
-    deg = d + m / 60.0 + s / 3600.0
-    if coord in ['S','W']:
-        deg = -deg
-
-    return deg
-
-
-def dist_latlong2meters(dx, dy, latitude=0.0):
-    """Convert distance from degrees longitude-latitude to meters.
-
-    Takes the distance described by *dx* and *dy* in degrees and converts it into
-    distances in meters.
-
-    returns (float, float) 
-
-    """
-
-    dym = Rearth * DEG2RAD * dy
-    dxm = Rearth * numpy.cos(latitude * DEG2RAD) * dx * DEG2RAD
-
-    return dxm,dym
-
-
-def dist_meters2latlong(dx, dy, latitude=0.0):
-    """Convert distance from meters to degrees of longitude-latitude.
-
-    Takes the distance described by *dx* and *dy* in meters and converts it into
-    distances in the longitudinal and latitudinal directions in degrees.  
-
-    returns (float, float)
-
-    """
-
-    dxd = dx / (Rearth * numpy.cos(latitude * DEG2RAD)) * RAD2DEG
-    dyd = dy * RAD2DEG / Rearth
-
-    return dxd, dyd
-
-
-def haversine(x, y, units='degrees'):
-    r"""Compute the great circle distance on the earth between points x and y.
-
-
-    """
-    if units == 'degrees':
-        # convert to radians:
-        x *= DEG2RAD
-        y *= DEG2RAD
-
-    delta = [x[0] - y[0], x[1] - y[1]]
-
-    # angle subtended by two points, using Haversine formula:
-    dsigma = 2.0 * numpy.arcsin( numpy.sqrt( numpy.sin(0.5 * delta[1])**2   \
-            + numpy.cos(x[1]) * numpy.cos(y[1]) * numpy.sin(0.5 * delta[0])**2))
-
-    # alternative formula that may have more rounding error:
-    #dsigma2 = arccos(sin(y1)*sin(y2)+ cos(y1)*cos(y2)*cos(dx))
-    #print "max diff in dsigma: ", abs(dsigma-dsigma2).max()
-
-    return Rearth * dsigma
+    extension = os.path.splitext(util.strip_archive_extensions(path))[-1][1:]
     
+    topo_type = default
+    if extension[:2] == "tt" or extension[:2] == 'topotype':
+        topo_type = int(extension[2])
+    elif extension == 'xyz':
+        topo_type = 1
+    elif extension == 'asc':
+        topo_type = 3
+    elif extension == 'txyz':
+        topo_type = 1
 
-def inv_haversine(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
-    r"""Invert the Haversine function to find dx given a distance and point.
-
-
-    Invert the haversine function to find dx given distance d and (x1,y1) and y2.
-    The corresponding x2 can be x1+dx or x1-dx.
-    May return NaN if no solution.
-    """
-
-    if units=='degrees':
-        # convert to radians:
-        x1 = x1 * RAD2DEG
-        y1 = y1 * RAD2DEG
-        y2 = y2 * RAD2DEG
-    elif units != 'radians':
-        raise Exception("unrecognized units")
-    dsigma = d / Rsphere
-    cos_dsigma = (numpy.cos(dsigma) - numpy.sin(y1)*numpy.sin(y2)) / (numpy.cos(y1)*numpy.cos(y2))
-    dx = numpy.arccos(cos_dsigma)
-    if units=='degrees':
-        dx = dx * RAD2DEG
-    return dx
+    return topo_type
 
 
 def create_topo_func(loc,verbose=False):
@@ -152,8 +74,8 @@ def create_topo_func(loc,verbose=False):
     topgraphy at the point (x,y).  (The resulting function is constant in y.)
     
     :Example: 
-    >>> f = create_topo_profile_func(loc)
-    >>> b = f(x,y)
+    >>> f = create_topo_func(loc)
+    >>> b = f(x, y)
     
     :Input:
      - *loc* (list) - Create a topography file with the profile denoted by the
@@ -635,17 +557,9 @@ class Topography(object):
                 self.topo_type = topo_type
             else:
                 # Try to look at suffix for type
-                extension = os.path.splitext(self.path)[1][1:]
-                if extension[:2] == "tt":
-                    self.topo_type = int(extension[2])
-                elif extension == 'xyz':
-                    self.topo_type = 1
-                elif extension == 'asc':
+                self.topo_type = determine_topo_type(self.path)
+                if self.topo_type is None:
                     self.topo_type = 3
-                else:
-                    # Default to 3
-                    self.topo_type = 3
-
 
         if self.unstructured:
             # Read in the data as series of tuples
@@ -802,14 +716,7 @@ class Topography(object):
                 topo_type = self.topo_type
             else:
                 # Try to look at suffix for type
-                extension = os.path.splitext(path)[1][1:]
-                if extension[:2] == "tt" or extension[:2] == 'topotype':
-                    topo_type = int(extension[2])
-                elif extension == 'xyz':
-                    topo_type = 1
-                else:
-                    # Default to 3
-                    topo_type = 3
+                self.topo_type = determine_topo_type(self.path, default=3)
 
         # Default to this object's no_data_value if the passed is None, 
         # otherwise the argument will override the object's value or it will 
@@ -944,6 +851,7 @@ class Topography(object):
             plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             # Adjust coordinates so color pixels centered at X,Y locations
+            dx = 
             plot = axes.pcolor(self.X - dx/2., self.Y - dx/2., self.Z, 
                                        vmin=topo_extent[0], 
                                        vmax=topo_extent[1],
@@ -1025,11 +933,14 @@ class Topography(object):
 
         # Convert meter inputs to degrees
         mean_latitude = numpy.mean(self.y)
-        buffer_degrees = dist_meters2latlong(buffer_length, 0.0, mean_latitude)[0]
-        delta_degrees = dist_meters2latlong(delta_limit, 0.0, mean_latitude)[0]
+        buffer_degrees = util.dist_meters2latlong(buffer_length, 0.0, 
+                                                  mean_latitude)[0]
+        delta_degrees = util.dist_meters2latlong(delta_limit, 0.0, 
+                                                 mean_latitude)[0]
         if proximity_radius > 0.0:
-            proximity_radius_deg = dist_meters2latlong(proximity_radius, 0.0,
-                                                        mean_latitude)[0]
+            proximity_radius_deg = util.dist_meters2latlong(proximity_radius, 
+                                                            0.0,
+                                                            mean_latitude)[0]
             
         # Calculate new grid coordinates
         if extent is None:
@@ -1223,7 +1134,7 @@ class Topography(object):
                                 summation += self.Z[i,j]
                                 num_points += 1
                     if num_points > 0:
-                        Z[index[0], index[1]] = summation / num_points
+                        self.Z[index[0], index[1]] = summation / num_points
                         point_replaced = True
 
         elif method == "nearest":
