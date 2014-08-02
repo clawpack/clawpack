@@ -15,6 +15,7 @@ dtopo files, and calculating Okada based deformations.
     Fault
     UCSBFault
     CSVFault
+    SiftFault
     
 :Functions:
 
@@ -45,17 +46,23 @@ poisson = 0.25
 # ==============================================================================
 #  General utility functions
 # ==============================================================================
-def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False):
+def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False,
+                               fig_kwargs={}):
     r"""For plotting seafloor deformation dz"""
     import matplotlib.pyplot as plt
 
     if axes is None:
-        fig = plt.figure()
+        fig = plt.figure(**fig_kwargs)
         axes = fig.add_subplot(1, 1, 1)
 
     dzmax = max(dz.max(), -dz.min()) + dz_interval
     clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
+
+    # Create axes if needed
+    if axes is None:
+        fig = plt.figure(**fig_kwargs)
+        axes = fig.add_subplot(111)
 
     if len(clines) > 0:
         if verbose:
@@ -66,8 +73,8 @@ def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False):
 
     return axes
 
-
-def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None, verbose=False):
+def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
+                             verbose=False, fig_kwargs={}):
     r"""
     Plot sea floor deformation dz as colormap with contours
     """
@@ -76,7 +83,7 @@ def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None, verbose=
     import matplotlib.pyplot as plt
 
     if axes is None:
-        fig = plt.figure()
+        fig = plt.figure(**fig_kwargs)
         axes = fig.add_subplot(1, 1, 1)
 
     dzmax = numpy.abs(dz).max()
@@ -87,10 +94,11 @@ def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None, verbose=
             cmax_dz = dzmax
     cmap = colormaps.blue_white_red
     extent = [x.min(), x.max(), y.min(), y.max()]
-    axes.imshow(dz, extent=extent, cmap=cmap, origin='lower')
-    axes.clim(-cmax_dz,cmax_dz)
-    cb2 = plt.colorbar(shrink=1.0, ax=axes)
-    cb2.set_label("Sea Floor Deformation (m)")
+    im = axes.imshow(dz, extent=extent, cmap=cmap, origin='lower')
+    im.set_clim(-cmax_dz,cmax_dz)
+    if add_colorbar:
+        cbar = plt.colorbar(im, ax=axes)
+        cbar.set_label("Deformation (m)")
     
     if dz_interval is None:
         dz_interval = cmax_dz/10.
@@ -105,12 +113,10 @@ def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None, verbose=
 
     y_ave = 0.5*(y.min() + y.max())
     axes.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
-
     axes.ticklabel_format(format='plain', useOffset=False)
     axes.set_xticklabels([label.set_rotation(80) 
                                            for label in axes.get_xticklabels()])
     axes.set_title('Seafloor deformation')
-
     return axes
 
 
@@ -421,25 +427,30 @@ class DTopography(object):
             return dz
 
 
-    def plot_dz_colors(self, t, cmax_dz=None, dz_interval=None):
+    def plot_dz_colors(self, t, axes=None, cmax_dz=None, dz_interval=None, 
+                                fig_kwargs={}):
         """
         Interpolate dz_list to specified time t and then call module function
         plot_dz_colors.
         """
-        plot_dz_colors(self.X,self.Y,self.dz(t),cmax_dz=cmax_dz, \
-                       dz_interval=dz_interval)
+        axes = plot_dz_colors(self.X, self.Y, self.dz(t), axes=axes,
+                              cmax_dz=cmax_dz, dz_interval=dz_interval,
+                              fig_kwargs=fig_kwargs)
+        return axes
 
 
-    def plot_dz_contours(self, t, dz_interval=0.5):
+    def plot_dz_contours(self, t, dz_interval=0.5, axes=None, fig_kwargs={}):
         """
         Interpolate dz_list to specified time t and then call module function
         plot_dz_contours.
         """
-        plot_dz_contours(self.X,self.Y,self.dz(t),dz_interval=dz_interval)
+        axes = plot_dz_contours(self.X, self.Y, self.dz(t), 
+                                dz_interval=dz_interval)
+        return axes
 
 
     def animate_dz_colors(self, times=None, cmax_dz=None, dz_interval=None,
-                                style='loop'):
+                                style='loop', axes=None, fig_kwargs={}):
         """
         Animate seafloor motion for time-dependent ruptures.
         Interpolate dz_list to specified times and then call module function
@@ -452,6 +463,12 @@ class DTopography(object):
 
         from time import sleep
         import matplotlib.pyplot as plt
+
+        # Create axes if needed
+        if axes is None:
+            fig = plt.figure(**fig_kwargs)
+            axes = fig.add_subplot(111)
+
         
         if style in ['html', 'notebook']:
             from clawpack.visclaw.JSAnimation import IPython_display
@@ -474,8 +491,9 @@ class DTopography(object):
         plt.figure()
         for k,t in enumerate(times):
             plt.clf()
-            plot_dz_colors(self.X,self.Y,dz_list[k],cmax_dz=cmax_dz, \
-                       dz_interval=dz_interval)
+            axes = plot_dz_colors(self.X,self.Y,dz_list[k],axes=axes,
+                        cmax_dz=cmax_dz, dz_interval=dz_interval, 
+                        fig_kwargs=fig_kwargs)
             plt.title("Seafloor deformation at t = %12.6f" % t)
             plt.draw()
             if style == 'loop':
@@ -1218,28 +1236,30 @@ class UCSBFault(Fault):
 
     """
 
-    def __init__(self, path=None, rupture_type='static'):
+    def __init__(self):
         r"""UCSBFault initialization routine.
         
         See :class:`UCSBFault` for more info.
-        Subfault format contains info for dynamic rupture, so can specify 
-        rupture_type = 'static' or 'dynamic'
 
         """
 
-        self.num_cells = [None, None]
+        self.num_cells = [None, None]   # RJL: Why needed??
 
-        super(UCSBFault, self).__init__(path=path)
-        self.rupture_type = rupture_type
+        super(UCSBFault, self).__init__()
 
 
-    def read(self, path):
+    def read(self, path, rupture_type='static'):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
         *path*.
 
+        Subfault format contains info for dynamic rupture, so can specify 
+        rupture_type = 'static' or 'dynamic'
+
         """
+
+        self.rupture_type = rupture_type
 
         # Read header of file
         regexp_dx = re.compile(r"Dx=[ ]*(?P<dx>[^k]*)")
@@ -1403,7 +1423,11 @@ class SiftFault(Fault):
     Define a fault by specifying the slip on a subset of the SIFT unit sources.
     The database is read in by load_sift_unit_sources.
     See http://www.pmel.noaa.gov/pubs/PDF/gica2937/gica2937.pdf
-    for a discussion of these unit sources.
+    for a discussion of these unit sources, although the database used
+    is more recent than what is reported in that paper and uses different
+    notation for the subfault names.
+    The subfault database used was downloaded from
+        http://sift.pmel.noaa.gov/ComMIT/compressed/info_sz.dat
 
     Example:
         >>> sift_slip = {'acsza1':2, 'acszb1':3}
