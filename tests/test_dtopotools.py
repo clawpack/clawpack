@@ -65,6 +65,14 @@ def test_read_csv_make_dtopo(save=False):
         shutil.rmtree(temp_path)
 
 
+def test_NOAA_Sift_make_dtopo(save=False):
+    pass
+
+
+def test_geometry():
+    pass
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         if "plot" in sys.argv[1].lower():
@@ -72,5 +80,6 @@ if __name__ == "__main__":
         elif bool(sys.argv[1]):
             test_read_csv_make_dtopo(save=True)
     else:
-    
         test_read_csv_make_dtopo()
+        test_NOAA_Sift_make_dtopo()
+        test_geometry()
