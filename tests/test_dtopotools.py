@@ -41,7 +41,7 @@ def test_read_csv_make_dtopo(save=False):
     x = numpy.linspace(xlower,xupper,mx)
     y = numpy.linspace(ylower,yupper,my)
 
-    dtopo = fault.create_deformation_array(x,y,times=[1.])
+    dtopo = fault.create_dtopography(x,y,times=[1.])
     
     temp_path = tempfile.mkdtemp()
     try:

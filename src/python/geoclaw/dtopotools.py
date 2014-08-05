@@ -221,6 +221,7 @@ class DTopography(object):
         self.X = None
         self.Y = None
         self.delta = None
+        self.path = path
         if path:
             self.read(path, dtopo_type)
 
@@ -237,13 +238,15 @@ class DTopography(object):
         """
 
         if path is not None:
+            self.path = path
+        else:
             if self.path is None:
                 raise ValueError("Need to specify a path to a file.")
             else:
-                self.path = path
+                path = self.path
 
         if dtopo_type is None:
-            dtopo_type = topotools.determine_topo_type(self.path, default=3)
+            dtopo_type = topotools.determine_topo_type(path, default=3)
 
         if dtopo_type == 1:
             d = numpy.loadtxt(path)
@@ -1026,8 +1029,8 @@ class SubFault(object):
     
         # vector (dx,dy) goes up-dip from bottom to top:
         dx = -w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
-                (lat2meter*numpy.cos(y0*DEG2RAD))
-        dy = w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / lat2meter
+                (LAT2METER*numpy.cos(y0*DEG2RAD))
+        dy = w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / LAT2METER
 
         if location == "bottom center":
             depth_bottom = depth
@@ -1077,8 +1080,8 @@ class SubFault(object):
 
         # distance along strike from center of an edge to corner:
         dx2 = 0.5*length*numpy.sin(ang_strike) \
-                / (lat2meter*numpy.cos(y_bottom*DEG2RAD))
-        dy2 = 0.5*length*numpy.cos(ang_strike) / lat2meter
+                / (LAT2METER*numpy.cos(y_bottom*DEG2RAD))
+        dy2 = 0.5*length*numpy.cos(ang_strike) / LAT2METER
         x_corners = [x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2]
         y_corners = [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2]
 

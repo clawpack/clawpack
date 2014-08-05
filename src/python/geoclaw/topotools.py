@@ -851,7 +851,7 @@ class Topography(object):
             plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             # Adjust coordinates so color pixels centered at X,Y locations
-            dx = 
+            dx = None ## RJL:  incomplete line, what should it be?
             plot = axes.pcolor(self.X - dx/2., self.Y - dx/2., self.Z, 
                                        vmin=topo_extent[0], 
                                        vmax=topo_extent[1],
