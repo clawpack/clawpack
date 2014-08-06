@@ -762,8 +762,10 @@ class Fault(object):
         y_ave = y_ave / len(self.subfaults)
         slipax.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
         axes.ticklabel_format(format='plain',useOffset=False)
-        axes.set_xticklabels([label.set_rotation(80) 
-                                           for label in axes.get_xticklabels()])
+
+        ## RJL: setting labels like this gives None's as labels:
+        #axes.set_xticklabels([label.set_rotation(80) 
+        #                                   for label in axes.get_xticklabels()])
         if xylim is not None:
             axes.set_xlim(xylim[:2])
             axes.set_ylim(xylim[2:])
@@ -799,8 +801,8 @@ class Fault(object):
             axes[0].plot([x_top, x_bottom], [-depth_top, -depth_bottom])
             axes[1].plot([y_top, y_bottom], [-depth_top, -depth_bottom])
     
-        axes[0].title('depth vs. x')
-        axes[1].title('depth vs. y')
+        axes[0].set_title('depth vs. x')
+        axes[1].set_title('depth vs. y')
     
 
     def containing_rect(self):
@@ -1084,6 +1086,11 @@ class SubFault(object):
         dy2 = 0.5*length*numpy.cos(ang_strike) / LAT2METER
         x_corners = [x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2]
         y_corners = [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2]
+
+        # restore proper units to depth if necessary:
+        if self.units['depth'] == 'km':
+            depth_top = depth_top / 1000.
+            depth_bottom = depth_bottom / 1000.
 
         paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
             depth_top depth_bottom x_corners y_corners""".split()
@@ -1467,8 +1474,10 @@ class SiftFault(Fault):
 
         unit_source_file = os.path.join(os.path.dirname(__file__), 'data', 
                                         'info_sz.dat.txt')
-        units = {'length':'km', 'width':'km', 'depth':'km', 'slip':'m'}
+        units = {'length':'km', 'width':'km', 'depth':'km', 'slip':'m',
+                 'mu':"dyne/cm^2"}
 
+        self.sift_subfaults = {}
 
         with open(unit_source_file, 'r') as sift_file:
             # Skip first two lines
@@ -1489,6 +1498,6 @@ class SiftFault(Fault):
                 subfault.rake = float(tokens[10])
                 subfault.coordinate_specification = "noaa sift"
                 subfault.units = units
+                # subfault.mu = ??  ## currently using SubFault default
                 self.sift_subfaults[name] = subfault
-
 
