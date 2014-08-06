@@ -1501,3 +1501,200 @@ class SiftFault(Fault):
                 # subfault.mu = ??  ## currently using SubFault default
                 self.sift_subfaults[name] = subfault
 
+
+# ==============================================================================
+#  Subdivided plane sub-class of Fault
+# ==============================================================================
+class SubdividedPlaneFault(Fault):
+
+    r"""
+    Define a fault by starting with a single fault plane (specified as 
+    *fault_plane* of class *SubFault*) and subdividing the fault plane
+    into a rectangular array of *nstrike* by *ndip* equally sized subfaults.
+
+    By default,the slip on each subfault will be initialized to
+    *fault_plane.slip* so that the slip is uniform over the original plane
+    and the seismic moment is independent of the number of subdivisions.  
+
+    Alternatively, the slip distribution can be specified by providing a
+    function *slip_distribution*, which should be a function of *(xi,eta)*
+    with each variable ranging from 0 to 1.  *xi* varies from 0 at the top
+    of the fault to 1 at the bottom in the down-dip direction. 
+    *eta* varies from one edge of the fault to the other moving in the
+    strike direction.  This function will be evaluated at the centroid of
+    each subfault to set the slip.
+
+    Can also specify a desired seismic moment Mo in which case the slips will
+    be rescaled at the end so the total seismic moment is Mo.  In this case
+    the *slip_distribution* function only indicates the relative slip
+    between subfaults.
+
+    """
+
+
+    def __init__(self, fault_plane, nstrike=1, ndip=1,
+                       slip_function=None, Mo=None):
+        
+        from numpy import sin,cos
+        super(SubdividedPlaneFault, self).__init__()
+
+        self.fault_plane = fault_plane
+        self.nstrike = nstrike
+        self.ndip = ndip
+
+        self.subdivide(nstrike, ndip, slip_function, Mo)
+
+
+    def subdivide(self, nstrike=1, ndip=1, slip_function=None, Mo=None):
+
+        # may have changed resolution:
+        self.nstrike = nstrike
+        self.ndip = ndip
+
+        fault_plane = self.fault_plane
+        strike = fault_plane.strike
+        dip = fault_plane.dip
+        rake = fault_plane.rake
+        slip = fault_plane.slip
+        length = fault_plane.length
+        width = fault_plane.width
+
+        # unpack corners from fault plane geometry:
+        x_corners = fault_plane.geometry['x_corners']
+        y_corners = fault_plane.geometry['y_corners']
+
+        # set depth at corners:
+        depth_top = fault_plane.geometry['depth_top']
+        depth_bottom = fault_plane.geometry['depth_bottom']
+        d_corners = [depth_bottom, depth_top, depth_top, depth_bottom,
+                     depth_bottom]
+
+        # coefficients for bilinear interpolants:
+        cx = [x_corners[1], 
+              x_corners[0] - x_corners[1],
+              x_corners[2] - x_corners[1], 
+              x_corners[3] + x_corners[1] - x_corners[2] - x_corners[0]]
+        cy = [y_corners[1], 
+              y_corners[0] - y_corners[1],
+              y_corners[2] - y_corners[1], 
+              y_corners[3] + y_corners[1] - y_corners[2] - y_corners[0]]
+        cd = [d_corners[1], 
+              d_corners[0] - d_corners[1],
+              d_corners[2] - d_corners[1], 
+              d_corners[3] + d_corners[1] - d_corners[2] - d_corners[0]]
+
+        self.subfaults = []
+
+        # determine coordinates for each subfault.
+        # note that xi goes from 0 to 1 from top to bottom in dip direction,
+        #          eta goes from 0 to 1 in along-strike direction.
+        dxi = 1. / ndip
+        deta = 1. / nstrike
+        for i in range(ndip):
+            xi = numpy.array([i, i+0.5, i+1.]) * dxi # xi at top, center, bottom
+            for j in range(nstrike):
+                eta = (j+0.5)*deta
+                # interpolate longitude,latitude,depth from corners:
+                x_sf = cx[0] + cx[1]*xi + cx[2]*eta + cx[3]*xi*eta
+                y_sf = cy[0] + cy[1]*xi + cy[2]*eta + cy[3]*xi*eta
+                d_sf = cd[0] + cd[1]*xi + cd[2]*eta + cd[3]*xi*eta
+
+                subfault = SubFault()
+
+                if fault_plane.coordinate_specification == 'centroid':
+                    subfault.longitude = x_sf[1]
+                    subfault.latitude = y_sf[1]
+                    subfault.depth = d_sf[1]
+                elif fault_plane.coordinate_specification == 'top center':
+                    subfault.longitude = x_sf[0]
+                    subfault.latitude = y_sf[0]
+                    subfault.depth = d_sf[0]
+                elif fault_plane.coordinate_specification == 'noaa sift':
+                    subfault.longitude = x_sf[2]
+                    subfault.latitude = y_sf[2]
+                    subfault.depth = d_sf[0]
+                else:   
+                    msg = "Unrecognized coordinate_specification: %s" \
+                            % fault_plane.coordinate_specification
+                    raise NotImplementedError(msg)
+
+                subfault.dip = dip
+                subfault.strike = strike
+                subfault.rake = rake
+                subfault.length = length / nstrike
+                subfault.width = width / ndip
+                subfault.slip = slip
+                subfault.coordinate_specification = \
+                        fault_plane.coordinate_specification
+                subfault.mu = fault_plane.mu
+                subfault.units = fault_plane.units
+
+                self.subfaults.append(subfault)
+
+        if slip_function is not None:
+            self.set_slip(nstrike, ndip, slip_function, Mo)
+
+    def set_slip(self, nstrike, ndip, slip_function, Mo=None):
+
+        self.slip_function = slip_function
+        dxi = 1. / ndip
+        deta = 1. / nstrike
+        Mo_0 = 0.
+        k = 0
+        for i in range(ndip):
+            xi = (i+0.5) * dxi
+            for j in range(nstrike):
+                eta = (j+0.5) * deta
+                subfault = self.subfaults[k]  
+                k = k+1
+                subfault.slip = slip_function(xi,eta)
+                Mo_0 += subfault.Mo()
+
+        if Mo is not None:
+            # rescale slip on each subfault to achieve desired seismic moment
+            Mo_ratio = Mo / Mo_0
+            for k in range(len(self.subfaults)):
+                self.subfaults[k].slip *= Mo_ratio
+
+
+
+# ==============================================================================
+#  Tensor product sub-class of Fault
+# ==============================================================================
+class TensorProductFault(SubdividedPlaneFault):
+
+    r"""
+    Define a fault by starting with a single fault plane (specified as 
+    *fault_plane* of class *SubFault*) and subdividing the fault plane
+    into a rectangular array of *nstrike* by *ndip* equally sized subfaults.
+    
+    Then define the slip on each subfault via
+    two one-dimensional functions *slip_along_strike* and
+    *slip_down_dip* that specify the slip as a function of fractional
+    distance in the along-strike and down-dip direction respectively
+    (i.e. the argument of each goes from 0 to 1).
+
+    Setting either to None defaults to constant function 1.
+
+    The slip is set by evaluating the tensor product at the centroid of
+    each subfault.
+
+    Can specify a desired seismic moment Mo in which case the slips will
+    be rescaled at the end.
+
+    """
+
+    def __init__(self, fault_plane, slip_along_strike=None, slip_down_dip=None,
+                      nstrike=1, ndip=1, Mo=None):
+        
+        # perform the subdivision and set parameters on each subfault:
+        super(TensorProductFault, self).__init__(fault_plane, nstrike, ndip)
+
+        if slip_along_strike is None:
+            # set to constant in the strike direction if not specified
+            slip_along_strike = lambda eta: 1.0
+        if slip_down_dip is None:
+            # set to constant in the dip direction if not specified
+            slip_down_dip = lambda xi: 1.0
+
+        
