@@ -16,6 +16,7 @@ dtopo files, and calculating Okada based deformations.
     UCSBFault
     CSVFault
     SiftFault
+    SegmentedPlaneFault
     
 :Functions:
 
@@ -74,7 +75,7 @@ def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False,
     return axes
 
 def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
-                             verbose=False, fig_kwargs={}):
+                   add_colorbar=True, verbose=False, fig_kwargs={}):
     r"""
     Plot sea floor deformation dz as colormap with contours
     """
@@ -85,6 +86,8 @@ def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
     if axes is None:
         fig = plt.figure(**fig_kwargs)
         axes = fig.add_subplot(1, 1, 1)
+    print "+++ in plot_dz_colors, axes = ",axes
+    print "+++ in plot_dz_colors, id(axes) = ",id(axes)
 
     dzmax = numpy.abs(dz).max()
     if cmax_dz is None:
@@ -114,8 +117,9 @@ def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
     y_ave = 0.5*(y.min() + y.max())
     axes.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
     axes.ticklabel_format(format='plain', useOffset=False)
-    axes.set_xticklabels([label.set_rotation(80) 
-                                           for label in axes.get_xticklabels()])
+    ## RJL: setting labels like this gives None's as labels:
+    #axes.set_xticklabels([label.set_rotation(80) 
+    #                                       for label in axes.get_xticklabels()])
     axes.set_title('Seafloor deformation')
     return axes
 
@@ -169,9 +173,15 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     with maximum slope at t0 + t_rise.
     For specifying dynamic fault ruptures:  Subfault files often contain these
     parameters for each subfault for an earthquake event.
+
+    *t* can be a scalar or a numpy array of times and the returned result
+    will have the same type.
     """
 
-    t = numpy.array(t)
+    scalar = (type(t) in [float,int])
+    if scalar:
+        t = numpy.array(t)
+
     if t_rise_ending is None: 
         t_rise_ending = t_rise
 
@@ -179,18 +189,20 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     t2 = t1+t_rise_ending
 
     rf = numpy.where(t<=t0, 0., 1.)
-    if t2==t0:
-        return rf
+    if t2 != t0:
 
-    t20 = float(t2-t0)
-    t10 = float(t1-t0)
-    t21 = float(t2-t1)
+        t20 = float(t2-t0)
+        t10 = float(t1-t0)
+        t21 = float(t2-t1)
 
-    c1 = t21 / (t20*t10*t21) 
-    c2 = t10 / (t20*t10*t21) 
+        c1 = t21 / (t20*t10*t21) 
+        c2 = t10 / (t20*t10*t21) 
 
-    rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
-    rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
+        rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
+        rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
+
+    if scalar:
+        rf = float(rf)   # return a scalar if input t is scalar
 
     return rf
 
@@ -473,8 +485,9 @@ class DTopography(object):
             axes = fig.add_subplot(111)
 
         
-        if style in ['html', 'notebook']:
+        if style == 'notebook':
             from clawpack.visclaw.JSAnimation import IPython_display
+        if style in ['html', 'notebook']:
             import clawpack.visclaw.JSAnimation.JSAnimation_frametools as J
             plotdir = '_plots'
             J.make_plotdir(plotdir, clobber=True)
@@ -493,13 +506,17 @@ class DTopography(object):
         print "max abs(dz(t)) = ",max_dz
         plt.figure()
         for k,t in enumerate(times):
+            print "+++ k = ",k
+            print "+++ axes = ",axes
+            print "+++ id(axes) = ",id(axes)
             plt.clf()
-            axes = plot_dz_colors(self.X,self.Y,dz_list[k],axes=axes,
+            plot_dz_colors(self.X,self.Y,dz_list[k],axes=axes,
                         cmax_dz=cmax_dz, dz_interval=dz_interval, 
-                        fig_kwargs=fig_kwargs)
-            plt.title("Seafloor deformation at t = %12.6f" % t)
+                        add_colorbar=False, fig_kwargs=fig_kwargs)
+            axes.set_title("Seafloor deformation at t = %12.6f" % t)
             plt.draw()
             if style == 'loop':
+                plt.show()
                 sleep(0.5)
             else:
                 J.save_frame(k, verbose=True)
@@ -1230,6 +1247,26 @@ class SubFault(object):
     
         return f
     
+    def dynamic_slip(self, t):
+        r"""
+        For a dynamic fault, compute the slip at time t.
+        Assumes the following attributes are set:
+            *rupture_time*
+            *rise_time*
+            *rise_time_ending*: optional, defaults to *rise_time*
+
+        """
+        if (self.rupture_type != 'dynamic') or (self.rupture_time is None) \
+                or (self.rise_time is None):
+            raise Exception("dynamic_slip method only works for dynamic ruptures")
+
+        t0 = self.rupture_time
+        t1 = self.rise_time
+        t2 = getattr(self,'rise_time_ending',None)
+        rf = rise_fraction(t,t0,t1,t2)
+        return rf * self.slip
+            
+
 
 
 # ==============================================================================
