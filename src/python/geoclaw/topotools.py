@@ -249,6 +249,7 @@ def swapheader(inputfile, outputfile):
     topo.write(outputfile)
 
 
+
 # ==============================================================================
 #  Topography class
 # ==============================================================================
@@ -1251,3 +1252,33 @@ class Topography(object):
 
         # print "Cropped to %s by %s array"  % (len(newtopo.x),len(newtopo.y))
         return newtopo
+
+    def make_shoreline_xy(self, sea_level=0):
+        r"""
+        Returns an array *shoreline_xy* with 2 columns containing x and y values
+        for all segements of the shoreline (defined to be the contour 
+        where self.z = sea_level) separated by [nan,nan] pairs.  
+        This allows all shorelines to be quickly plotted via:
+            plot(shoreline_xy[:,0], shoreline_xy[:,1])
+        The shoreline can be saved as a binary *.npy* file via:
+            numpy.save(filename, shoreline_xy)
+        which is much smaller than the original topography file. 
+        Reload via:
+            shoreline_xy = numpy.load(filename)
+        """
+
+        import matplotlib.pyplot as plt
+
+        x = self.x
+        y = self.y
+        Z = self.Z
+        c = plt.contour(x,y,Z,[sea_level])  
+        # c is the level 0 contour as list of arrays, one for each segement
+        # catenate these together separated by array([nan,nan]):
+        shoreline_xy = c.allsegs[0][0]  # first segment
+        for k in range(1,len(c.allsegs[0])):
+            shoreline_xy = numpy.vstack((shoreline_xy, \
+                           numpy.array([numpy.nan,numpy.nan]), c.allsegs[0][k]))
+        return shoreline_xy
+
+
