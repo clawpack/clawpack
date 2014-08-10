@@ -86,8 +86,8 @@ def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
     if axes is None:
         fig = plt.figure(**fig_kwargs)
         axes = fig.add_subplot(1, 1, 1)
-    print "+++ in plot_dz_colors, axes = ",axes
-    print "+++ in plot_dz_colors, id(axes) = ",id(axes)
+    #print "+++ in plot_dz_colors, axes = ",axes
+    #print "+++ in plot_dz_colors, id(axes) = ",id(axes)
 
     dzmax = numpy.abs(dz).max()
     if cmax_dz is None:
@@ -504,12 +504,12 @@ class DTopography(object):
         if cmax_dz is None:
             cmax_dz = max_dz
         print "max abs(dz(t)) = ",max_dz
-        plt.figure()
+        #plt.figure()
         for k,t in enumerate(times):
-            print "+++ k = ",k
-            print "+++ axes = ",axes
-            print "+++ id(axes) = ",id(axes)
-            plt.clf()
+            #print "+++ k = ",k
+            #print "+++ axes = ",axes
+            #print "+++ id(axes) = ",id(axes)
+            fig.clf()
             plot_dz_colors(self.X,self.Y,dz_list[k],axes=axes,
                         cmax_dz=cmax_dz, dz_interval=dz_interval, 
                         add_colorbar=False, fig_kwargs=fig_kwargs)
@@ -586,6 +586,7 @@ class Fault(object):
         if len(data.shape) == 1:
             data = numpy.array([data])
 
+        self.coordinate_specification = coordinate_specification
         self.subfaults = []
         for n in xrange(data.shape[0]):
 
@@ -608,6 +609,70 @@ class Fault(object):
                 pass
             raise NotImplementedError("*** need to add support for defaults")
 
+    def write(self, path, style=None, column_list=None, units={}, 
+                    delimiter='  '):
+        r"""
+        Write subfault format file with one line for each subfault.
+        Can either specify a *style* that determines the columns, 
+        or a *column_list*.  Must specify one but not both.  See below for
+        details.
+
+        Inputs:
+          - *path* (str) file to write to. 
+          - *style* (str) to write in a style that matches standard styles
+            adopted by various groups.  One of the following:
+                - "usgs"  (Not implemented)
+                - "noaa sift"  (Not implemented)
+                - "ucsb"  (Not implemented)
+          - *column_list* (list) specifies what order the parameters should
+            be written in the output file, e.g.
+                column_list = ['longitude','latitude','length','width',
+                               'depth','strike','rake','dip','slip']
+          - *units* (dict) specifies units to convert to before writing.
+            #Defaults to {'length':'m', 'width':'m', 'depth':'m', 'slip':'m'} 
+            Defaults to self.subfaults[0].units
+          - *delimiter* (str) specifies delimiter between columns, e.g.
+            "," to create a csv file.  Defaults to "  ".
+
+        """
+
+        #output_units = {'length':'m', 'width':'m', 'depth':'m', 'slip':'m'} 
+        output_units = self.subfaults[0].units
+        output_units.update(units)
+
+        if style is not None:
+            msg =  "style option not yet implemented, use column_map"
+            raise NotImplementedError(msg)
+
+        if column_list is None:
+            raise Exception("Must specify column_list")
+        
+        format = {}
+        format['longitude'] = '%15.5f'
+        format['latitude'] = '%15.5f'
+        format['strike'] = '%15.5f'
+        format['rake'] = '%15.5f'
+        format['dip'] = '%15.5f'
+        format['depth'] = '%15.8e'
+        format['length'] = '%15.8e'
+        format['width'] = '%15.8e'
+        format['slip'] = '%15.8e'
+
+        with open(path, 'w') as data_file:
+            # write header:
+            data_file.write('Subfaults file with coordinate_specification:  ')
+            data_file.write('%s, \n' % self.coordinate_specification)
+            data_file.write('Units: %s, \n' % str(output_units))
+            s = ""
+            for param in column_list:
+                s = s + delimiter + param.rjust(15)
+            data_file.write(s + '\n')
+            for subfault in self.subfaults:
+                s = ""
+                for param in column_list:
+                    s = s + delimiter + format[param] % getattr(subfault,param)
+                data_file.write(s + '\n')
+                
 
 
     def Mo(self):
@@ -700,27 +765,53 @@ class Fault(object):
     
     def plot_subfaults(self, axes=None, plot_centerline=False, slip_color=False,
                              cmap_slip=None, cmin_slip=None, cmax_slip=None,
+                             slip_time=None,
                              plot_rake=False, xylim=None, plot_box=True):
         """
         Plot each subfault projected onto the surface.
-        Describe parameters...
+
+        *axes* can be passed in to specify the *matplotlib.axes.AxesSubplot*
+        on which to add this plot.  If *axes == None*, a new figure window
+        will be opened.  The *axes* on which it is plotted is the return
+        value of this call.
+
+        If *plot_centerline == True*, plot a line from the centroid to the
+        top center of each subfault to show what direction is up-dip.
+
+        If *slip_color == True* then use the color map *cmap_slip* 
+        (which defaults to *matplotlib.cm.jet*) to color the subplots based
+        on the magnitude of slip, scaled between *cmin_slip* and *cmax_slip*.  
+        (If these are *None* then scaled automatically based on range of slip.)
+        If *slip_time == None* then colors are based on the final slip.
+        For dynamic faults, *slip_time* can be set to a time and the 
+        dynamic timing of each subfault will be used to compute and 
+        plot the slip at this time.
+
+        If *plot_rake == True*, plot a line from the centroid pointing in
+        the direction of the rake (the direction in which the top block is
+        moving relative to the lower block.  The distance it moves is given
+        by the *slip*.)
+
+        *xylim* can be set to a list or tuple of length 4 of the form
+        [x1,x2,y1,y2] to specify the x- and y-axis limits.
+
+        If *plot_box == True*, a box will be drawn around each subfault.
         """
     
         import matplotlib
         import matplotlib.pyplot as plt
-    
+
+        if (slip_time is not None) and (self.rupture_type == 'static'):
+            raise Exception("slip_time can only be specified for dynamic faults")
         if axes is None:
             fig = plt.figure()
             axes = fig.add_subplot(1, 1, 1)
-        # for testing purposes, make random slips:
-        test_random = False
     
         max_slip = 0.
         min_slip = 0.
         for subfault in self.subfaults:
-            if test_random:
-                subfault.slip = 10.*numpy.rand()  # for testing
-            slip = subfault.slip
+            if subfault.units['slip'] == 'cm':
+                slip = subfault.slip / 100.  ### convert to meters
             max_slip = max(abs(slip), max_slip)
             min_slip = min(abs(slip), min_slip)
         print "Max slip, Min slip: ",max_slip, min_slip
@@ -734,8 +825,6 @@ class Fault(object):
                 cmax_slip = max_slip
             if cmin_slip is None:
                 cmin_slip = 0.
-            if test_random:
-                print "*** test_random == True so slip and rake have been randomized"
             
         y_ave = 0.
         for subfault in self.subfaults:
@@ -757,8 +846,6 @@ class Fault(object):
                 axes.plot([x_centroid],[y_centroid],'ro',label="Centroid")
                 axes.plot([x_top,x_centroid],[y_top,y_centroid],'r-')
             if plot_rake:
-                if test_random:
-                    subfault.rake = 90. + 30.*(rand()-0.5)  # for testing
                 tau = (subfault.rake - 90) * numpy.pi/180.
                 axes.plot([x_centroid],[y_centroid],'go',markersize=5,label="Centroid")
                 dxr = x_top - x_centroid
@@ -767,7 +854,12 @@ class Fault(object):
                 y_rake = y_centroid + numpy.sin(tau)*dxr + numpy.cos(tau)*dyr
                 axes.plot([x_rake,x_centroid],[y_rake,y_centroid],'g-',linewidth=1)
             if slip_color:
-                slip = subfault.slip
+                if slip_time is not None:
+                    slip = subfault.dynamic_slip(slip_time)
+                else:
+                    slip = subfault.slip
+                if subfault.units['slip'] == 'cm':
+                    slip = slip / 100. ### convert to meters
                 s = min(1, max(0, (slip-cmin_slip)/(cmax_slip-cmin_slip)))
                 c = cmap_slip(s*.99)  # since 1 does not map properly with jet
                 axes.fill(x_corners,y_corners,color=c,edgecolor='none')
@@ -786,12 +878,22 @@ class Fault(object):
         if xylim is not None:
             axes.set_xlim(xylim[:2])
             axes.set_ylim(xylim[2:])
-        axes.set_title('Fault planes')
+        if slip_color:
+            if slip_time is None:
+                axes.set_title('Slip on fault')
+            else:
+                axes.set_title('Slip on fault at time %6.1fs' % slip_time)
+        else:
+            axes.set_title('Fault planes')
+
         if slip_color:
             cax,kw = matplotlib.colorbar.make_axes(slipax)
             norm = matplotlib.colors.Normalize(vmin=cmin_slip,vmax=cmax_slip)
             cb1 = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap_slip, norm=norm)
+            cb1.set_label("Slip (m)")
         plt.sca(slipax) # reset the current axis to the main figure
+
+        return slipax
     
 
 
@@ -880,6 +982,20 @@ class Fault(object):
         y = numpy.linspace(y1,y2,my)
 
         return x,y
+
+    def set_dynamic_slip(self, t):
+        r"""
+        Set *slip_at_dynamic_t* attribute of all subfaults to slip at the
+        requested time *t*.
+        """
+
+        if self.rupture_type is 'static':
+            print "*** Warning, rupture_type is static"
+
+        self.dynamic_t = t
+        for subfault in self.subfaults:
+            subfault.slip_at_dynamic_t = subfault.dynamic_slip(t)
+
 
 
 
@@ -1155,8 +1271,11 @@ class SubFault(object):
 
 
         # Convert some parameters to meters if necessary:
+        if self.units['depth'] == 'km':
+            depth_bottom = depth_bottom * 1000.
         length, width, depth, slip = self.convert2meters(["length","width", \
                                     "depth","slip"])
+
 
         halfL = 0.5*length
         w  =  width
@@ -1256,8 +1375,7 @@ class SubFault(object):
             *rise_time_ending*: optional, defaults to *rise_time*
 
         """
-        if (self.rupture_type != 'dynamic') or (self.rupture_time is None) \
-                or (self.rise_time is None):
+        if (self.rupture_time is None) or (self.rise_time is None):
             raise Exception("dynamic_slip method only works for dynamic ruptures")
 
         t0 = self.rupture_time
