@@ -812,6 +812,8 @@ class Fault(object):
         for subfault in self.subfaults:
             if subfault.units['slip'] == 'cm':
                 slip = subfault.slip / 100.  ### convert to meters
+            else:
+                slip = subfault.slip
             max_slip = max(abs(slip), max_slip)
             min_slip = min(abs(slip), min_slip)
         print "Max slip, Min slip: ",max_slip, min_slip
