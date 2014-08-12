@@ -19,16 +19,28 @@ fault.plot_subfaults(slip_color=True)  # plot final slip
 plt.show()
 
 # seafloor deformation:
+quick_test = True
 
-xlower = 140.
-xupper = 146.
-ylower = 35.
-yupper = 41.
-xylim = [xlower,xupper,ylower,yupper]
+if quick_test:
+    xlower = 140.
+    xupper = 146.
+    ylower = 35.
+    yupper = 41.
+    xylim = [xlower,xupper,ylower,yupper]
 
-# dtopo parameters for 4 min resolution:
-mx = int((xupper - xlower)*60 + 1)
-my = int((yupper - ylower)*60 + 1)
+    # dtopo parameters for 4 min resolution:
+    mx = int((xupper - xlower)*15 + 1)
+    my = int((yupper - ylower)*15 + 1)
+else:
+    xlower = 135.
+    xupper = 150.
+    ylower = 30.
+    yupper = 45.
+    xylim = [xlower,xupper,ylower,yupper]
+
+    # dtopo parameters for 1 min resolution:
+    mx = int((xupper - xlower)*60 + 1)
+    my = int((yupper - ylower)*60 + 1)
 
 
 x = linspace(xlower,xupper,mx)
