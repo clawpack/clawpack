@@ -246,12 +246,11 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     parameters for each subfault for an earthquake event.
 
     *t* can be a scalar or a numpy array of times and the returned result
-    will have the same type.
+    will have the same type.  A list or tuple of times returns a numpy array.
     """
 
     scalar = (type(t) in [float,int])
-    if scalar:
-        t = numpy.array(t)
+    t = numpy.array(t)
 
     if t_rise_ending is None: 
         t_rise_ending = t_rise
@@ -661,7 +660,7 @@ class Fault(object):
             data = numpy.array([data])
 
         self.coordinate_specification = coordinate_specification
-        self.input_units = input_units
+        self.input_units = standard_units
         self.input_units.update(input_units)
         self.subfaults = []
         for n in xrange(data.shape[0]):

@@ -60,10 +60,11 @@ def read_fault(fname_subfaults, plotfig=None):
     Test data
     """
 
-    units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
+    input_units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
 
     fault = dtopotools.CSVFault()
-    fault.read(fname_subfaults, units=units, coordinate_specification="top center")
+    fault.read(fname_subfaults, input_units=input_units, 
+                coordinate_specification="top center")
     fault.rupture_type = 'dynamic'
                     
     if plotfig:
@@ -103,7 +104,7 @@ def make_dtopo1(plotfig=None):
 
     tfinal = 1.
     times = numpy.linspace(0.,tfinal,25)
-    dtopo = fault.create_deformation_array(x,y,times=times)
+    dtopo = fault.create_dtopography(x,y,times=times)
     dtopo.write(dtopo_fname,3)
 
 
@@ -149,7 +150,7 @@ def make_dtopo2(plotfig=None):
 
     tfinal = 1.2
     times = numpy.linspace(0.5,tfinal,25)
-    dtopo = fault.create_deformation_array(x,y,times=times)
+    dtopo = fault.create_dtopography(x,y,times=times)
     dtopo.write(dtopo_fname,3)
 
 

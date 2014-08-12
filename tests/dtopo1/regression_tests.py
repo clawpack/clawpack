@@ -43,26 +43,28 @@ class DTopoTests(tests.GeoClawTest):
 
         # Make dtopography
         subfault_path = os.path.join(self.test_path, "dtopo1.csv")
-        units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
+        input_units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
         fault = dtopotools.CSVFault()
-        fault.read(subfault_path, units=units, coordinate_specification="top center")
+        fault.read(subfault_path, input_units=input_units, 
+                coordinate_specification="top center")
         fault.rupture_type = 'dynamic'
         times = numpy.linspace(0.0, 1.0, 25)
         x = numpy.linspace(-0.4,0.6,151)
         y = numpy.linspace(-0.4,0.4,121)
-        dtopo = fault.create_deformation_array(x,y,times=times)
+        dtopo = fault.create_dtopography(x,y,times=times)
         dtopo.write(os.path.join(self.temp_path, "dtopo1.tt3"), dtopo_type=3)
         print "+++ writing ",os.path.join(self.temp_path, "dtopo1.tt3")
 
         subfault_path = os.path.join(self.test_path, "dtopo2.csv")
-        units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
+        input_units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
         fault = dtopotools.CSVFault()
-        fault.read(subfault_path, units=units, coordinate_specification="top center")
+        fault.read(subfault_path, input_units=input_units, 
+                    coordinate_specification="top center")
         fault.rupture_type = 'dynamic'
         times = numpy.linspace(0.5, 1.2, 25)
         x = numpy.linspace(-0.9,0.1,201)
         y = numpy.linspace(-0.4,0.4,161)
-        dtopo = fault.create_deformation_array(x,y,times=times)
+        dtopo = fault.create_dtopography(x,y,times=times)
         dtopo.write(os.path.join(self.temp_path, "dtopo2.tt3"), dtopo_type=3)
 
         # copy existing file:
