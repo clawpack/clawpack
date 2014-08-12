@@ -45,8 +45,79 @@ from clawpack.geoclaw.util import DEG2RAD, LAT2METER
 poisson = 0.25
 
 # ==============================================================================
+#  Units dictionaries
+# ==============================================================================
+
+# Dictionary for standard units to be used for all subfault models.
+# The data might be read in from a file where different units are used,
+# in which case the *input_units* argument of the *read* method can be used
+# to indicate these units.  The *read* function should then convert to these
+# standard units:
+standard_units = {}
+standard_units['length'] = 'm'
+standard_units['width'] = 'm'
+standard_units['depth'] = 'm'
+standard_units['slip'] = 'm'
+standard_units['mu'] = 'Pa'
+
+# Dictionary for converting input_units specified by user to or from
+# standard units used internally:
+# (Conversion is performed by the module function *convert_units*, which
+# is called by *SubFault.convert_to_standard_units*)
+
+unit_conversion_factor = {}  
+# for length, width, depth, slip:  (standard units = 'm')
+unit_conversion_factor['m'] = 1.
+unit_conversion_factor['cm'] = 0.01
+unit_conversion_factor['km'] = 1000.
+unit_conversion_factor['nm'] = 1852.0  # nautical miles
+# for rigidity (shear modulus) mu:  (standard units = 'Pa')
+unit_conversion_factor['Pa'] = 1.
+unit_conversion_factor['GPa'] = 1.e9
+unit_conversion_factor['dyne/cm^2'] = 0.1
+unit_conversion_factor['dyne/m^2'] = 1.e-5
+# for seismic moment Mo:  (standard units = 'N-m', Newton-meters)
+unit_conversion_factor['N-m'] = 1.
+unit_conversion_factor['dyne-cm'] = 1.e-7
+
+# Check that these are consistent:
+check = [unit_conversion_factor[standard_units[param]] is 1. for param in \
+         standard_units.keys()]
+assert numpy.alltrue(check), \
+        """Conversion factors should be 1 for all standard_units"""
+
+
+# ==============================================================================
 #  General utility functions
 # ==============================================================================
+
+
+def convert_units(value, io_units, direction=1, verbose=False):
+    r"""
+    convert *value* to standard units from *io_units* or vice versa.
+    *io_units* (str) refers to the units used in the subfault file read or to be
+    written.  The standard units are those used internally in this module.
+    See the comments below for the standard units.
+    If *direction==1*, *value* is in *io_units* and convert to standard.
+    If *direction==2*, *value* is in standard units and convert to *io_units*.
+
+    """
+    try:
+        factor = unit_conversion_factor[io_units]
+    except:
+        raise ValueError("Unrecognized io_units %s, must be one of %s" \
+              % (io_units, unit_conversion_factor.keys()))
+    if direction == 1:
+        converted_value = value * factor
+    elif direction == 2:
+        converted_value = value / factor
+    else:
+        raise ValueError("Unrecognized direction, must be 1 or 2")
+
+    return converted_value
+
+
+
 def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False,
                                fig_kwargs={}):
     r"""For plotting seafloor deformation dz"""
@@ -536,7 +607,7 @@ class DTopography(object):
 # ==============================================================================
 class Fault(object):
 
-    def __init__(self, subfaults=None, units={}):
+    def __init__(self, subfaults=None, input_units={}):
 
         # Parameters for subfault specification
         self.rupture_type = 'static' # 'static' or 'dynamic'
@@ -544,18 +615,20 @@ class Fault(object):
         self.dtopo = None
 
         # Default units of each parameter type
-        self.units = {}
-        self.units.update(units)
+        self.input_units = standard_units
+        self.input_units.update(input_units)
         
         if subfaults is not None:
             if not isinstance(subfaults, list):
                 raise ValueError("Input parameter subfaults must be a list.")
             self.subfaults = subfaults
+            for subfault in self.subfaults:
+                subfault.convert_to_standard_units(input_units)
 
 
     def read(self, path, column_map, coordinate_specification="centroid",
                                      rupture_type="static", skiprows=0, 
-                                     delimiter=None, units={}, defaults=None):
+                                     delimiter=None, input_units={}, defaults=None):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
@@ -572,8 +645,9 @@ class Fault(object):
           - *rupture_type* (str) either "static" or "dynamic"
           - *skiprows* (int) number of header lines to skip before data
           - *delimiter* (str) e.g. ',' for csv files
-          - *units* (dict) indicating units for length, width, slip, depth,
-                           and for rigidity mu.
+          - *input_units* (dict) indicating units for length, width, slip, depth,
+                           and for rigidity mu as specified in file.  These
+                           will be converted to "standard units".
           - *defaults* (dict) default values for all subfaults, for values not
                        included in subfault file on each line.
 
@@ -587,14 +661,14 @@ class Fault(object):
             data = numpy.array([data])
 
         self.coordinate_specification = coordinate_specification
+        self.input_units = input_units
+        self.input_units.update(input_units)
         self.subfaults = []
         for n in xrange(data.shape[0]):
 
             new_subfault = SubFault()
             new_subfault.coordinate_specification = coordinate_specification
-            new_subfault.units = units
-            #new_subfault.rupture_type = rupture_type
-
+            
             for (var, column) in column_map.iteritems():
                 if isinstance(column, tuple) or isinstance(column, list):
                     setattr(new_subfault, var, [None for k in column])
@@ -603,13 +677,15 @@ class Fault(object):
                 else:
                     setattr(new_subfault, var, data[n, column])
 
-            self.subfaults.append(new_subfault)
-        if defaults is not None:
-            for subfault in self.subfaults:
-                pass
-            raise NotImplementedError("*** need to add support for defaults")
+            if defaults is not None:
+                for param in defaults.iterkeys():
+                    setattr(new_subfault, param, defaults[param]) 
 
-    def write(self, path, style=None, column_list=None, units={}, 
+            new_subfault.input_units = input_units
+            new_subfault.convert_to_standard_units(self.input_units)
+            self.subfaults.append(new_subfault)
+
+    def write(self, path, style=None, column_list=None, output_units={}, 
                     delimiter='  '):
         r"""
         Write subfault format file with one line for each subfault.
@@ -628,17 +704,15 @@ class Fault(object):
             be written in the output file, e.g.
                 column_list = ['longitude','latitude','length','width',
                                'depth','strike','rake','dip','slip']
-          - *units* (dict) specifies units to convert to before writing.
-            #Defaults to {'length':'m', 'width':'m', 'depth':'m', 'slip':'m'} 
-            Defaults to self.subfaults[0].units
+          - *output_units* (dict) specifies units to convert to before writing.
+            Defaults to "standard units".
           - *delimiter* (str) specifies delimiter between columns, e.g.
             "," to create a csv file.  Defaults to "  ".
 
         """
 
-        #output_units = {'length':'m', 'width':'m', 'depth':'m', 'slip':'m'} 
-        output_units = self.subfaults[0].units
-        output_units.update(units)
+        self.output_units = standard_units
+        self.output_units.update(output_units)
 
         if style is not None:
             msg =  "style option not yet implemented, use column_map"
@@ -670,7 +744,11 @@ class Fault(object):
             for subfault in self.subfaults:
                 s = ""
                 for param in column_list:
-                    s = s + delimiter + format[param] % getattr(subfault,param)
+                    value = getattr(subfault,param)
+                    if output_units.has_key(param):
+                        converted_value = convert_units(value, 
+                                    self.output_units[param], direction=2)
+                    s = s + delimiter + format[param] % value
                 data_file.write(s + '\n')
                 
 
@@ -810,10 +888,7 @@ class Fault(object):
         max_slip = 0.
         min_slip = 0.
         for subfault in self.subfaults:
-            if subfault.units['slip'] == 'cm':
-                slip = subfault.slip / 100.  ### convert to meters
-            else:
-                slip = subfault.slip
+            slip = subfault.slip
             max_slip = max(abs(slip), max_slip)
             min_slip = min(abs(slip), min_slip)
         print "Max slip, Min slip: ",max_slip, min_slip
@@ -860,8 +935,6 @@ class Fault(object):
                     slip = subfault.dynamic_slip(slip_time)
                 else:
                     slip = subfault.slip
-                if subfault.units['slip'] == 'cm':
-                    slip = slip / 100. ### convert to meters
                 s = min(1, max(0, (slip-cmin_slip)/(cmax_slip-cmin_slip)))
                 c = cmap_slip(s*.99)  # since 1 does not map properly with jet
                 axes.fill(x_corners,y_corners,color=c,edgecolor='none')
@@ -1009,7 +1082,7 @@ class SubFault(object):
 
     """
 
-    def __init__(self, units={}):
+    def __init__(self):
         r"""SubFault initialization routine.
         
         See :class:`SubFault` for more info.
@@ -1021,13 +1094,13 @@ class SubFault(object):
         self.strike = None
         r"""Strike direction of subfault in degrees."""
         self.length = None
-        r"""Length of subfault in specified units."""
+        r"""Length of subfault in standard units."""
         self.width = None
-        r"""Width of subfault in specified units."""
+        r"""Width of subfault in standard units."""
         self.depth = None
         r"""Depth of subfault based on *coordinate_specification*."""
         self.slip = None
-        r"""Slip on subfault in strike direction in specified units."""
+        r"""Slip on subfault in strike direction in standard units."""
         self.rake = None
         r"""Rake of subfault movement in degrees."""
         self.dip = None
@@ -1040,20 +1113,37 @@ class SubFault(object):
         r"""Specifies where the latitude, longitude and depth are measured from."""
         self.mu = 4e11  # default value for rigidity = shear modulus
         r"""Rigidity of subfault movement == shear modulus."""
-        self.units = {'mu':"dyne/cm^2", 'length':'km', 'width':'km', 
-                      'depth':'km'}
-        r"""Dictionary of units for the relevant parameters."""
 
-        self.units.update(units)
+        # deprecated:
+        #self.units = {'mu':"dyne/cm^2", 'length':'km', 'width':'km', 
+        #              'depth':'km'}
+        #r"""Dictionary of units for the relevant parameters."""
+
+        #self.units.update(units)
 
 
         self._geometry = None
 
+    def convert_to_standard_units(self, input_units, verbose=False):
+        r"""
+        Convert parameters from the units used for input into the standard
+        units used in this module.
+        """
+        params = standard_units.keys()
+        for param in params:
+            value = getattr(self, param)
+            converted_value = convert_units(value, input_units[param], 1)
+            setattr(self,param,converted_value)
+            if verbose:
+                print "%s %s %s converted to %s %s" \
+                    % (param, value, input_units[param], converted_value, \
+                       standard_units[param])
 
     def convert2meters(self, parameters): 
         r"""Convert relevant lengths to correct units.
 
         Returns converted (length, width, depth, slip) 
+        Deprecated?
 
         """
 
@@ -1081,28 +1171,11 @@ class SubFault(object):
     def Mo(self):
         r"""Calculate the seismic moment for a single subfault
 
-        Returns in units of in units N-m. 
+        Returns in units of N-m and assumes mu is in Pascals. 
         """
 
-        # Convert units of rigidity mu to Pascals 
-        # (1 Pa = 1 Newton / m^2 = 10 dyne / cm^2)
-        if self.units["mu"] == "Pa":
-            mu = self.mu
-        if self.units["mu"] == "GPa":
-            # e.g. mu = 40 GPa
-            mu = 1e9 * self.mu
-        if self.units["mu"] == "dyne/cm^2":
-            # e.g. mu = 4e11 dyne/cm^2
-            mu = 0.1 * self.mu
-        elif self.units["mu"] == 'dyne/m^2':
-            # Does anyone use this unit?  
-            mu = 1e-5 * self.mu 
-        else:
-            raise ValueError("Unknown unit for rigidity %s." % self.units['mu'])
-
-        length, width, slip = self.convert2meters(["length", "width", "slip"])
-        total_slip = length * width * slip
-        Mo = mu * total_slip
+        total_slip = self.length * self.width * self.slip
+        Mo = self.mu * total_slip
         return Mo
 
 
@@ -1146,23 +1219,25 @@ class SubFault(object):
         """
 
         # Convert to meters if necessary:
-        length, width, depth, slip = self.convert2meters(["length","width", \
-                                    "depth","slip"])
+        #length, width, depth, slip = self.convert2meters(["length","width", \
+        #                            "depth","slip"])
+        # Should now already be in meters!
 
-        L  =  length
-        w  =  width
-        d  =  slip
-        th =  self.strike
-        dl =  self.dip
-        rd =  self.rake
+        length = self.length
+        width = self.width
+        depth = self.depth
+        slip = self.slip
         x0 =  self.longitude
         y0 =  self.latitude
         location =  self.coordinate_specification
 
-    
-        ang_dip = DEG2RAD*dl
-        ang_strike = DEG2RAD*th
-        halfL = 0.5*L
+        halfL = 0.5*length
+        w  =  width
+
+        # convert angles to radians:
+        ang_dip = DEG2RAD * self.dip
+        ang_rake = DEG2RAD * self.rake
+        ang_strike = DEG2RAD * self.strike
     
         # vector (dx,dy) goes up-dip from bottom to top:
         dx = -w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
@@ -1223,9 +1298,10 @@ class SubFault(object):
         y_corners = [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2]
 
         # restore proper units to depth if necessary:
-        if self.units['depth'] == 'km':
-            depth_top = depth_top / 1000.
-            depth_bottom = depth_bottom / 1000.
+        # deprecated
+        #if self.units['depth'] == 'km':
+            #depth_top = depth_top / 1000.
+            #depth_bottom = depth_bottom / 1000.
 
         paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
             depth_top depth_bottom x_corners y_corners""".split()
@@ -1273,11 +1349,16 @@ class SubFault(object):
 
 
         # Convert some parameters to meters if necessary:
-        if self.units['depth'] == 'km':
-            depth_bottom = depth_bottom * 1000.
-        length, width, depth, slip = self.convert2meters(["length","width", \
-                                    "depth","slip"])
+        # deprecated -- assume they are in meters
+        #if self.units['depth'] == 'km':
+        #    depth_bottom = depth_bottom * 1000.
+        #length, width, depth, slip = self.convert2meters(["length","width", \
+        #                            "depth","slip"])
 
+        length = self.length
+        width = self.width
+        depth = self.depth
+        slip = self.slip
 
         halfL = 0.5*length
         w  =  width
@@ -1511,16 +1592,13 @@ class UCSBFault(Fault):
         column_map = {"latitude":0, "longitude":1, "depth":2, "slip":3,
                        "rake":4, "strike":5, "dip":6, "rupture_time":7,
                        "rise_time":8, "rise_time_ending":9, "mu":10}
+        defaults = {"length":dx, "width":dy}
+        input_units = {"slip":"cm", "depth":"km", 'mu':"dyne/cm^2",
+                                   "length":"km", "width":"km"}
 
         super(UCSBFault, self).read(path, column_map, skiprows=header_lines,
-                                coordinate_specification="centroid")
-
-        # Set general data
-        for subfault in self.subfaults:
-            subfault.length = dx
-            subfault.width = dy
-            subfault.units.update({"slip":"cm", "depth":"km", 'mu':"dyne/cm^2",
-                                   "length":"km", "width":"km"})
+                                coordinate_specification="centroid",
+                                input_units=input_units, defaults=defaults)
 
 
 
@@ -1534,7 +1612,7 @@ class CSVFault(Fault):
     Assumes that the first row gives the column headings
     """
 
-    def read(self, path, units={}, coordinate_specification="top center",
+    def read(self, path, input_units={}, coordinate_specification="top center",
                          rupture_type="static"):
         r"""Read in subfault specification at *path*.
 
@@ -1563,7 +1641,13 @@ class CSVFault(Fault):
                     unit_start = column_heading.find("(")
                     unit_end = column_heading.find(")")
                     column_name = column_heading[:unit_start].lower()
-                    self.units[column_name] = column_heading[unit_start:unit_end]
+                    units = column_heading[unit_start+1:unit_end]
+                    if input_units.get(column_name,units) != units:
+                        print "*** Warning: input_units[%s] reset to %s" \
+                              % (column_name, units)
+                        print "    based on file header"
+                        input_units[column_name] = units
+
                 else:
                     column_name = column_heading.lower()
                 column_name = column_name.strip()
@@ -1575,7 +1659,7 @@ class CSVFault(Fault):
                         % column_name
 
         super(CSVFault, self).read(path, column_map=column_map, skiprows=1,
-                                delimiter=",", units=units,
+                                delimiter=",", input_units=input_units,
                                 coordinate_specification=coordinate_specification,
                                 rupture_type=rupture_type)
 
@@ -1631,7 +1715,7 @@ class SiftFault(Fault):
 
         unit_source_file = os.path.join(os.path.dirname(__file__), 'data', 
                                         'info_sz.dat.txt')
-        units = {'length':'km', 'width':'km', 'depth':'km', 'slip':'m',
+        self.input_units = {'length':'km', 'width':'km', 'depth':'km', 'slip':'m',
                  'mu':"dyne/cm^2"}
 
         self.sift_subfaults = {}
@@ -1654,8 +1738,8 @@ class SiftFault(Fault):
                 subfault.width = float(tokens[9])
                 subfault.rake = float(tokens[10])
                 subfault.coordinate_specification = "noaa sift"
-                subfault.units = units
                 # subfault.mu = ??  ## currently using SubFault default
+                subfault.convert_to_standard_units(self.input_units)
                 self.sift_subfaults[name] = subfault
 
 
@@ -1784,7 +1868,6 @@ class SubdividedPlaneFault(Fault):
                 subfault.coordinate_specification = \
                         fault_plane.coordinate_specification
                 subfault.mu = fault_plane.mu
-                subfault.units = fault_plane.units
 
                 self.subfaults.append(subfault)
 
