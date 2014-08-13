@@ -16,7 +16,8 @@ if len(testdir) == 0:
      testdir = "./"
 
 def test_read_csv_make_dtopo(save=False):
-
+    r"""Test reading and making of a CSV subfault speficied dtopo"""
+    
     subfault_path = os.path.join(testdir, 'data', 'alaska1964.csv')
     input_units = {"length":"km", "width":"km", "depth":"km", "slip":"m", 
              "mu":"dyne/cm^2"}
@@ -235,6 +236,31 @@ def test_SubdividedPlaneFault_make_dtopo(save=False):
 
 def test_geometry():
     pass
+
+
+def test_read_write_dtopo():
+    r"""Test new dtopo read functionality vs. old version"""
+    
+    import old_dtopotools
+
+    # Write out supported dtopo files that are supported
+    old_dtopotools
+
+    old_dtopotools.read_dtopo()
+
+
+
+def test_vs_old_dtopo():
+    r"""Test new dtopotools with old version from 5.2"""
+
+    import old_dtopotools
+
+    subfault_path = os.path.join(testdir, 'data', 'alaska1964.csv')
+    old_subfaults = old_dtopotools.read_subfault_model_csv(subfault_path)
+    dtopo_params = {}
+    old_dtopo = old_dtopotools.make_dtopo_from_subfaults(old_subfaults, 
+                                                         dtopo_params)
+    
 
 
 if __name__ == "__main__":
