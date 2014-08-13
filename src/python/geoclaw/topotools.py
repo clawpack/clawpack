@@ -171,7 +171,7 @@ def topo3writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
 def fetch_topo_url(url, local_fname=None, force=None, verbose=False, 
                         ask_user=False):
     """
-    DEPRECATED:  Use *get_remote_file* instead (see note below).
+    DEPRECATED:  Use *clawpack.geoclaw.util.get_remote_file* instead (see note below).
 
     Replaces get_topo function.
 
@@ -218,7 +218,7 @@ def fetch_topo_url(url, local_fname=None, force=None, verbose=False,
 
 def get_topo(topo_fname, remote_directory, force=None):
     """
-    DEPRECATED:  Use *fetch_topo_url* instead.
+    DEPRECATED:  Use *clawpack.geoclaw.util.get_remote_file* instead
 
     Download a topo file from the web, provided the file does not
     already exist locally.
@@ -236,7 +236,7 @@ def get_topo(topo_fname, remote_directory, force=None):
     """
 
     url = remote_directory + '/' + topo_fname
-    fetch_topo_url(url, force=force)
+    clawpack.geoclaw.util.get_remote_file(url, force=force)
 
 
 def swapheader(inputfile, outputfile):
