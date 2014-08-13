@@ -212,6 +212,12 @@ def test_get_remote_file():
 
 def test_unstructured_topo(save=False, plot=False):
 
+    try:
+        import scipy
+    except:
+        print "Skipping test since scipy not found"
+        pass
+
     # Create random test data
     def func(x, y):
         return x * (1 - x) * numpy.cos(4 * numpy.pi * x) * numpy.sin(4 * numpy.pi * y**2)**2
