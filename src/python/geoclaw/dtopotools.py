@@ -1686,7 +1686,6 @@ class SiftFault(Fault):
                 self.sift_subfaults[name] = subfault
 
 
-<<<<<<< Updated upstream
 # ==============================================================================
 #  Subdivided plane sub-class of Fault
 # ==============================================================================
@@ -1882,7 +1881,6 @@ class TensorProductFault(SubdividedPlaneFault):
             slip_down_dip = lambda xi: 1.0
 
         
-=======
 
 # =============================================================================
 # Below are the first attempt at an implementation for these classes
@@ -3262,4 +3260,3 @@ class TensorProductFault(SubdividedPlaneFault):
 #         raise ValueError("Invalid component %s requested.  Valid range = [1,3]" % i)
 
 # ==============================================================================
->>>>>>> Stashed changes
