@@ -216,7 +216,7 @@ def test_unstructured_topo(save=False, plot=False):
         import scipy
     except:
         print "Skipping test since scipy not found"
-        pass
+        return
 
     # Create random test data
     def func(x, y):
