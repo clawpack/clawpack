@@ -511,6 +511,14 @@ class DTopography(object):
             dz = (t2-t)/(t2-t1) * self.dz_list[n] + (t-t1)/(t2-t1) * self.dz_list[n+1]
             return dz
 
+    def dz_max(self):
+        r"""Return max(abs(dz)) over all dz in self.dz_list, the maximum
+        surface deformation for this dtopo."""
+
+        dzm = 0.
+        for dz in dtopo.dz_list:
+            dzm = max(dzm, abs(dz).max())
+        return dzm
 
     def plot_dz_colors(self, t, axes=None, cmax_dz=None, dz_interval=None, 
                                 fig_kwargs={}):
