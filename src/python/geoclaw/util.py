@@ -59,7 +59,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
     fetching the remote file.  Please see its documentation for more details of
     the exceptions that can be raised.
 
-    returns nothing
+    returns *unarchived_output_path*
     """
 
     if output_dir is None:
@@ -92,6 +92,8 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                 output_file.write(remote_file.read())
             if verbose:
                 print "Done downloading."
+        elif verbose:
+            print "File already exists, not downloading"
 
         if tarfile.is_tarfile(output_path):
             if verbose:
