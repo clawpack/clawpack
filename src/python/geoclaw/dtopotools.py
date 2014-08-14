@@ -336,7 +336,8 @@ class DTopography(object):
                 print "Loaded file %s with %s lines" %(path,data.shape[0])
             t = list(set(data[:,0]))
             t.sort()
-            print "times found: ",t
+            if verbose:
+                print "times found: ",t
             ntimes = len(t)
             tlast = t[-1]
             lastlines = data[data[:,0]==tlast]
@@ -344,12 +345,14 @@ class DTopography(object):
             xvals.sort()
             mx = len(xvals)
             my = len(lastlines) / mx
-            print "Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes)
+            if verbose:
+                print "Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes)
             X = numpy.reshape(lastlines[:,1],(my,mx))
             Y = numpy.reshape(lastlines[:,2],(my,mx))
             Y = numpy.flipud(Y)
             dz_list = []
-            print "Returning dZ as a list of mx*my arrays"
+            if verbose:
+                print "Returning dZ as a list of mx*my arrays"
             for n in range(ntimes):
                 i1 = n*mx*my
                 i2 = (n+1)*mx*my
@@ -805,8 +808,8 @@ class Fault(object):
     
     def plot_subfaults(self, axes=None, plot_centerline=False, slip_color=False,
                              cmap_slip=None, cmin_slip=None, cmax_slip=None,
-                             slip_time=None,
-                             plot_rake=False, xylim=None, plot_box=True):
+                             slip_time=None, plot_rake=False, xylim=None, 
+                             plot_box=True, verbose=False):
         """
         Plot each subfault projected onto the surface.
 
@@ -853,7 +856,8 @@ class Fault(object):
             slip = subfault.slip
             max_slip = max(abs(slip), max_slip)
             min_slip = min(abs(slip), min_slip)
-        print "Max slip, Min slip: ",max_slip, min_slip
+        if verbose:
+            print "Max slip, Min slip: ",max_slip, min_slip
     
         if slip_color:
             if cmap_slip is None:

@@ -15,6 +15,7 @@ import os
 import sys
 import copy
 import re
+import string
 
 import numpy
 
@@ -891,6 +892,146 @@ def strike_direction(x1,y1,x2,y2):
 # ==============================================================================
 # Constants
 poisson = 0.25
+
+#=================================================================================
+def builddeffile (okadaparamfile,faultparamfile,outfile):
+
+    faultparams=getokadaparams(okadaparamfile)
+    faultparams.update(getfaultparams(faultparamfile))
+
+    fid=open(outfile,'w')
+
+    X=linspace(faultparams['xlower'],faultparams['xupper'],faultparams['mx'])
+    Y=linspace(faultparams['ylower'],faultparams['yupper'],faultparams['my'])
+
+    dZ=okadamap(faultparams,X,Y)
+    ind=fixdata.findbadindices(dZ)
+    if ind:
+        dZ=fixdata.fillbaddata(dZ,ind)
+
+    dZ = filtermask(dZ,faultparams)
+    #pdb.set_trace()
+    for jj in xrange(faultparams['my']):
+        j=-1-jj
+        for i in xrange(faultparams['mx']) :
+            fid.write('%012.6e %012.6e %012.6e \n' % (X[i],Y[j],dZ[j,i]))
+
+    fid.close()
+    return
+
+#=================================================================================
+def builddynamicdeffile (okadaparamfile,faultparamfile,outfile,t0=0.0, tend=1.0, nt = 2):
+
+    faultparams=getokadaparams(okadaparamfile)
+    faultparams.update(getfaultparams(faultparamfile))
+
+    fid=open(outfile,'w')
+
+    X=linspace(faultparams['xlower'],faultparams['xupper'],faultparams['mx'])
+    Y=linspace(faultparams['ylower'],faultparams['yupper'],faultparams['my'])
+
+    T=linspace(t0,tend,nt)
+
+    dZ=okadamap(faultparams,X,Y)
+    ind=fixdata.findbadindices(dZ)
+    if ind:
+        dZ=fixdata.fillbaddata(dZ,ind)
+
+    dZ = filtermask(dZ,faultparams)
+    #pdb.set_trace()
+    for it in T:
+        alpha=(it-t0)/(tend-t0)
+        for jj in xrange(faultparams['my']):
+            j=-1-jj
+            for i in xrange(faultparams['mx']) :
+                fid.write('%012.6e %012.6e %012.6e %012.6e \n' % (it,X[i],Y[j],alpha*dZ[j,i]))
+
+    fid.close()
+    return
+
+#=================================================================================
+def getokadaparams (infile):
+
+    """
+    obtain parameters necessary for okada map from config file: infile
+
+        file format:
+        parameter names and values should appear on the same single line seperated by a space
+    """
+
+    keylist=["Focal_Depth","Fault_Length","Fault_Width","Dislocation","Strike_Direction", \
+             "Dip_Angle","Slip_Angle","Epicenter_Latitude","Epicenter_Longitude"]
+
+    okadaparams={}
+    fid=open(infile,'r')
+    keyleft=len(keylist)
+    while keyleft> 0 :
+        line=string.split(fid.readline())
+        if line:
+            if line[0] in keylist:
+                okadaparams[line[0]]=float(line[1])
+                keyleft=keyleft-1
+            if line[1] in keylist:
+                okadaparams[line[1]]=float(line[0])
+                keyleft=keyleft-1
+
+    for key in keylist :
+        if not key in okadaparams:
+            print('ERROR: parameters for okada fault not fully specified in %s' % (infile))
+            exit
+
+    fid.close()
+    return okadaparams
+    #end getokadaparams=============================================================
+
+#===================================================================================
+def getfaultparams (infile):
+
+    """
+    obtain params from a file that specify a fault grid from infile
+    params are xlower,ylower,dx,dy,mx,my, OR
+    xlower,ylower,xupper,yupper,mx,my
+
+    file format:
+        parameter names and values should appear on the same single line seperated by a space
+    """
+
+    keylist=["xlower","ylower","xupper","yupper","dx","dy","mx","my"]
+
+    faultgridparams={}
+    fid=open(infile,'r')
+    keyleft=len(keylist)-2
+    while keyleft> 0 :
+        line=string.split(fid.readline())
+        if line:
+            if line[0] in keylist:
+                faultgridparams[line[0]]=float(line[1])
+                keyleft=keyleft-1
+            if line[1] in keylist:
+                faultgridparams[line[1]]=float(line[0])
+                keyleft=keyleft-1
+
+    faultgridparams['mx'] = int(faultgridparams['mx'])
+    faultgridparams['my'] = int(faultgridparams['my'])
+
+    if faultgridparams.has_key('dx')& faultgridparams.has_key('dy'):
+        faultgridparams['xupper'] = faultgridparams['xlower'] + faultgridparams['dx']*(faultgridparams['mx']-1)
+        faultgridparams['yupper'] = faultgridparams['ylower'] + faultgridparams['dy']*(faultgridparams['my']-1)
+    elif faultgridparams.has_key('xupper')&faultgridparams.has_key('yupper'):
+        faultgridparams['dx'] = (faultgridparams['xupper']-faultgridparams['xlower'])/(faultgridparams['mx']-1)
+        faultgridparams['dy'] = (faultgridparams['yupper']-faultgridparams['ylower'])/(faultgridparams['my']-1)
+    else:
+        print('ERROR: parameters for fault grid not fully specified in %s' % (infile))
+        exit
+
+    for key in keylist :
+        if not key in faultgridparams:
+            print('ERROR: parameters for fault grid not fully specified in %s' % (infile))
+            exit
+
+    fid.close()
+    return faultgridparams
+    #end getfaultparams===========================================================
 
 def okadamap(okadaparams,X,Y):
 
