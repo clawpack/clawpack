@@ -7,6 +7,8 @@ import shutil
 
 import numpy
 
+import nose
+
 import clawpack.geoclaw.topotools as topotools
 import clawpack.geoclaw.util as util
 
@@ -215,8 +217,7 @@ def test_unstructured_topo(save=False, plot=False):
     try:
         import scipy
     except:
-        print "Skipping test since scipy not found"
-        return
+        raise nose.SkipTest("Skipping test since scipy not found")
 
     # Create random test data
     def func(x, y):
