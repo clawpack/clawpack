@@ -308,7 +308,7 @@ class DTopography(object):
             self.read(path, dtopo_type)
 
 
-    def read(self, path=None, dtopo_type=None, verbos):
+    def read(self, path=None, dtopo_type=None, verbose=False):
         r"""
         Read in a dtopo file and use to set attributes of this object.
 
@@ -334,12 +334,12 @@ class DTopography(object):
             data = numpy.loadtxt(path)
             if verbose:
                 print "Loaded file %s with %s lines" %(path,data.shape[0])
-            t = list(set(d[:,0]))
+            t = list(set(data[:,0]))
             t.sort()
             print "times found: ",t
             ntimes = len(t)
             tlast = t[-1]
-            lastlines = d[d[:,0]==tlast]
+            lastlines = data[data[:,0]==tlast]
             xvals = list(set(lastlines[:,1]))
             xvals.sort()
             mx = len(xvals)
@@ -353,7 +353,7 @@ class DTopography(object):
             for n in range(ntimes):
                 i1 = n*mx*my
                 i2 = (n+1)*mx*my
-                dz = numpy.reshape(d[i1:i2,3],(my,mx))
+                dz = numpy.reshape(data[i1:i2,3],(my,mx))
                 dz = numpy.flipud(dz)
                 dz_list.append(dz)
             self.X = X
@@ -517,7 +517,7 @@ class DTopography(object):
         surface deformation for this dtopo."""
 
         dzm = 0.
-        for dz in dtopo.dz_list:
+        for dz in self.dz_list:
             dzm = max(dzm, abs(dz).max())
         return dzm
 
@@ -549,8 +549,25 @@ class DTopography(object):
 #  Generic Fault Class
 # ==============================================================================
 class Fault(object):
+    
+    r"""Base Fault class
+
+    A class describing a fault possibly composed of subfaults.
+
+    :Properties:
+
+    :Initialization:
+
+    :Examples:
+
+    """
 
     def __init__(self, subfaults=None, input_units={}):
+        r"""Fault initialization routine.
+        
+        See :class:`Fault` for more info.
+
+        """
 
         # Parameters for subfault specification
         self.rupture_type = 'static' # 'static' or 'dynamic'
@@ -719,6 +736,8 @@ class Fault(object):
         Use subfaults' `okada` routine and add all 
         deformations together.
 
+        Raises a ValueError exception if the *rupture_type* is an unknown type.
+
         returns a :class`DTopography` object.
         """
 
@@ -775,7 +794,7 @@ class Fault(object):
             dtopo.dz_list = dz_list
 
         else:   
-            raise Exception("Unrecognized rupture_type: %s" % self.rupture_type)
+            raise ValueError("Unrecognized rupture_type: %s" % self.rupture_type)
 
         # Store for user
         self.dtopo = dtopo
@@ -888,11 +907,7 @@ class Fault(object):
             
         y_ave = y_ave / len(self.subfaults)
         slipax.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
-        axes.ticklabel_format(format='plain',useOffset=False)
 
-        ## RJL: setting labels like this gives None's as labels:
-        #axes.set_xticklabels([label.set_rotation(80) 
-        #                                   for label in axes.get_xticklabels()])
         if xylim is not None:
             axes.set_xlim(xylim[:2])
             axes.set_ylim(xylim[2:])
@@ -903,6 +918,10 @@ class Fault(object):
                 axes.set_title('Slip on fault at time %6.1fs' % slip_time)
         else:
             axes.set_title('Fault planes')
+
+        axes.ticklabel_format(format='plain', useOffset=False)
+        labels = axes.get_xticks().tolist()
+        axes.set_xticklabels(labels, rotation=80)
 
         if slip_color:
             cax,kw = matplotlib.colorbar.make_axes(slipax)
@@ -915,14 +934,19 @@ class Fault(object):
     
 
 
-    def plot_subfaults_depth(self):
+    def plot_subfaults_depth(self, axes=None):
         """
-        Plot the depth of each subfault vs. x in one plot and vs. y in a second plot.
+        Plot the depth of each subfault vs. x and vs. y in a second plot.
         """
     
         import matplotlib.pyplot as plt
 
-        fig, axes = plt.subplots(nrows=2, ncols=1)
+        if axes is None:
+            fig, axes = plt.subplots(nrows=2, ncols=1)
+        else:
+            if len(axes) != 2:
+                raise ValueError("The *axes* argument should be a list of ",
+                                 "axes objects of length == 2.")
     
         for subfault in self.subfaults:
     
@@ -940,6 +964,8 @@ class Fault(object):
     
         axes[0].set_title('depth vs. x')
         axes[1].set_title('depth vs. y')
+
+        return axes
     
 
     def containing_rect(self):
@@ -1001,14 +1027,21 @@ class Fault(object):
 
         return x,y
 
+
     def set_dynamic_slip(self, t):
         r"""
         Set *slip_at_dynamic_t* attribute of all subfaults to slip at the
         requested time *t*.
+
+        :Input:
+         - *t* (float) -
+
+        Raises a ValueError exception if this object's rupture_type attribute
+        is set to static.
         """
 
         if self.rupture_type is 'static':
-            print "*** Warning, rupture_type is static"
+            raise ValueError("Rupture type is set to static.")
 
         self.dynamic_t = t
         for subfault in self.subfaults:
