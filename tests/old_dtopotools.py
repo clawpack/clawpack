@@ -19,10 +19,8 @@ import string
 
 import numpy
 
-import clawpack.geoclaw.topotools as topotools
-
 # Poisson ratio for Okada 
-from clawpack.geoclaw.util import DEG2RAD
+from clawpack.geoclaw.util import DEG2RAD, LAT2METER
 poisson = 0.25
 
 class DTopo(object):
@@ -1305,3 +1303,117 @@ def filtermask (dZ,faultparams):
     dZ = filterdata(dZ,filterindices,radius=2)
 
     return dZ
+
+
+def set_geometry(subfault):
+    r"""
+    Set geometry, a dictionary containing 
+    bottom, top, centroid, and corner values of x,y, and depth at top and
+    bottom of fault, based on subfault parameters.  
+    Automatically called first time user requests self.geometry.
+
+    Note: *self.coordinate_specification*  specifies the location on each
+        subfault that corresponds to the (longitude,latitude) and depth 
+        of the subfault.
+        Currently must be one of these strings:
+            "bottom center": (longitude,latitude) and depth at bottom center
+            "top center": (longitude,latitude) and depth at top center
+            "centroid": (longitude,latitude) and depth at centroid of plane
+            "noaa sift": (longitude,latitude) at bottom center, depth at top,  
+                         This mixed convention is used by the NOAA SIFT
+                         database and "unit sources", see:
+                         http://nctr.pmel.noaa.gov/propagation-database.html
+        The Okada model is expressed assuming (longitude,latitude) and depth
+        are at the bottom center of the fault plane, so values must be
+        shifted or other specifications.
+    """
+
+    length = subfault.length
+    width = subfault.width
+    depth = subfault.depth
+    slip = subfault.slip
+    x0 =  subfault.longitude
+    y0 =  subfault.latitude
+    location =  subfault.coordinate_specification
+
+    halfL = 0.5*length
+    w  =  width
+
+    # convert angles to radians:
+    ang_dip = DEG2RAD * subfault.dip
+    ang_rake = DEG2RAD * subfault.rake
+    ang_strike = DEG2RAD * subfault.strike
+
+    # vector (dx,dy) goes up-dip from bottom to top:
+    dx = -w*numpy.cos(ang_dip)*numpy.cos(ang_strike) / \
+            (LAT2METER*numpy.cos(y0*DEG2RAD))
+    dy = w*numpy.cos(ang_dip)*numpy.sin(ang_strike) / LAT2METER
+
+    if location == "bottom center":
+        depth_bottom = depth
+        depth_top = depth - w*numpy.sin(ang_dip)
+        x_bottom = x0
+        y_bottom = y0
+        x_top = x0 + dx
+        y_top = y0 + dy
+        x_centroid = x_bottom + 0.5*dx
+        y_centroid = y_bottom + 0.5*dy
+
+    elif location == "top center":
+        depth_top = depth
+        depth_bottom = depth + w*numpy.sin(ang_dip)
+        x_top = x0
+        y_top = y0 
+        x_bottom = x0 - dx
+        y_bottom = y0 - dy
+        x_centroid = x_bottom + 0.5*dx
+        y_centroid = y_bottom + 0.5*dy
+
+    elif location == "centroid":
+        depth_top = depth - 0.5*w*numpy.sin(ang_dip)
+        depth_bottom = depth + 0.5*w*numpy.sin(ang_dip)
+
+        x_centroid = x0
+        y_centroid = y0
+        x_top = x0 + 0.5*dx
+        y_top = y0 + 0.5*dy
+        x_bottom = x0 - 0.5*dx
+        y_bottom = y0 - 0.5*dy
+
+    elif location == "noaa sift":
+        depth_top = depth
+        depth_bottom = depth + w*numpy.sin(ang_dip)
+        x_bottom = x0
+        y_bottom = y0
+        x_top = x0 + dx
+        y_top = y0 + dy
+        x_centroid = x_bottom + 0.5*dx
+        y_centroid = y_bottom + 0.5*dy
+
+    else:
+        raise ValueError("Unrecognized coordinate_specification" \
+                % coordinate_specification)
+    
+
+    # distance along strike from center of an edge to corner:
+    dx2 = 0.5*length*numpy.sin(ang_strike) \
+            / (LAT2METER*numpy.cos(y_bottom*DEG2RAD))
+    dy2 = 0.5*length*numpy.cos(ang_strike) / LAT2METER
+    x_corners = [x_bottom-dx2,x_top-dx2,x_top+dx2,x_bottom+dx2,x_bottom-dx2]
+    y_corners = [y_bottom-dy2,y_top-dy2,y_top+dy2,y_bottom+dy2,y_bottom-dy2]
+
+    # restore proper units to depth if necessary:
+    # deprecated
+    #if subfault.units['depth'] == 'km':
+        #depth_top = depth_top / 1000.
+        #depth_bottom = depth_bottom / 1000.
+
+    paramlist = """x_top y_top x_bottom y_bottom x_centroid y_centroid
+        depth_top depth_bottom x_corners y_corners""".split()
+
+    geometry = {}
+    for param in paramlist:
+        cmd = "geometry['%s'] = %s" % (param,eval(param))
+        exec(cmd)
+
+    return geometry

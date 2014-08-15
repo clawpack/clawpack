@@ -46,10 +46,7 @@ def test_read_csv_make_dtopo(save=False):
     y = numpy.linspace(ylower, yupper, my)
 
     dtopo = fault.create_dtopography(x, y, times=[1.])
-    # print "max dz = ",dtopo.dz_list[-1].max()
-    
-    # temp_path = tempfile.mkdtemp()
-    # try:
+
     test_data_path = os.path.join(testdir, "data", "alaska1964_test_data.tt3")
     if save:
         dtopo.write(test_data_path, dtopo_type=3)
@@ -62,15 +59,6 @@ def test_read_csv_make_dtopo(save=False):
 
     for k in range(len(dtopo.dz_list)):
         assert numpy.allclose(compare_data.dz_list[k], dtopo.dz_list[k])
-
-    # except AssertionError as e:
-    #     test_name = inspect.stack()[1][-2][0][:-3]
-    #     test_dump_path = os.path.join(os.getcwd(), test_name)
-    #     shutil.mkdir(test_dump_path)
-    #     shutil.copy(temp_path, test_dump_path)
-    #     raise e
-    # finally:
-    #     shutil.rmtree(temp_path)
 
 
 def test_read_ucsb_make_dtopo(save=False):
@@ -105,11 +93,7 @@ def test_read_ucsb_make_dtopo(save=False):
     fault.rupture_type = 'dynamic'
     times = numpy.linspace(0, tmax, 10)
     dtopo = fault.create_dtopography(x, y, times)
-    # print "max dz = ",dtopo.dz_list[-1].max()
-    
-    # temp_path = tempfile.mkdtemp()
-    # try:
-    # Load (and save) test data and make the comparison
+
     test_data_path = os.path.join(testdir, "data", "tohoku_test_data.tt3")
     if save:
         dtopo.write(test_data_path, dtopo_type=3)
@@ -122,12 +106,6 @@ def test_read_ucsb_make_dtopo(save=False):
 
     for k in range(len(dtopo.dz_list)):
         assert numpy.allclose(compare_data.dz_list[k], dtopo.dz_list[k])
-
-    # except AssertionError as e:
-    #     shutil.copy(test_data_path, os.path.split(test_data_path)[1])
-    #     raise e
-    # finally:
-    #     shutil.rmtree(temp_path)
 
 
 def test_read_sift_make_dtopo(save=False):
@@ -219,11 +197,7 @@ def test_SubdividedPlaneFault_make_dtopo(save=False):
 
     times = [1.]
     dtopo = fault2.create_dtopography(x,y,times)
-    # print "max dz = ", dtopo.dz_list[-1].max()
-    
-    # temp_path = tempfile.mkdtemp()
-    # try:
-    # Load (and save) test data and make the comparison
+
     test_data_path = os.path.join(testdir, "data", 
             "SubdividedFaultPlane_test_data.tt3")
     if save:
@@ -237,12 +211,6 @@ def test_SubdividedPlaneFault_make_dtopo(save=False):
 
     for k in range(len(dtopo.dz_list)):
         assert numpy.allclose(compare_data.dz_list[k], dtopo.dz_list[k])
-
-    # except AssertionError as e:
-    #     shutil.copy(test_data_path, os.path.split(test_data_path)[1])
-    #     raise e
-    # finally:
-    #     shutil.rmtree(temp_path)
 
 
 def test_dtopo_io():
@@ -281,7 +249,57 @@ def test_dtopo_io():
 
 
 def test_geometry():
-    pass
+    r"""Test subfault geometry calculation."""
+
+    import old_dtopotools
+
+    subfault_path = os.path.join(testdir, 'data', 'alaska1964.csv')
+    input_units = {"length":"km", "width":"km", "depth":"km", "slip":"m", 
+         "mu":"dyne/cm^2"}
+    specifications = ['top center', 'centroid', 'bottom center', 'noaa sift']
+
+    for specification in specifications:
+        fault = dtopotools.CSVFault()
+        fault.read(subfault_path, input_units=input_units, 
+                                  coordinate_specification=specification)
+
+        # Subfault 10 is chosen at random, maybe do all?
+        subfault = fault.subfaults[10]
+        geometry = old_dtopotools.set_geometry(subfault)
+
+        coord_tests = {"top center":{'test':[geometry['x_top'], 
+                                             geometry['y_top'], 
+                                             geometry['depth_top']], 
+                                 'computed':subfault.fault_plane_centers[0]},
+                       "centroid":{'test':[geometry['x_centroid'],
+                                           geometry['y_centroid']],
+                               'computed':subfault.fault_plane_centers[1][:2]},
+                       "bottom center":{"test":[geometry['x_bottom'],
+                                                geometry['y_bottom'],
+                                                geometry['depth_bottom']],
+                                    "computed":subfault.fault_plane_centers[2]},
+                       "Corner A":{"test":[geometry["x_corners"][2],
+                                           geometry["y_corners"][2]],
+                               "computed":subfault.fault_plane_corners[0][:2]},
+                       "Corner B":{"test":[geometry["x_corners"][3],
+                                           geometry["y_corners"][3]],
+                               "computed":subfault.fault_plane_corners[1][:2]},
+                       "Corner C":{"test":[geometry["x_corners"][0],
+                                           geometry["y_corners"][0]],
+                               "computed":subfault.fault_plane_corners[2][:2]},
+                       "Corner D":{"test":[geometry["x_corners"][1],
+                                           geometry["y_corners"][1]],
+                               "computed":subfault.fault_plane_corners[3][:2]}
+
+                    }
+
+        for (values, coord_test) in coord_tests.iteritems():
+            assert numpy.allclose(coord_test['test'], coord_test['computed']), \
+                   "Specification = %s, coords= %s:\n%s !=\n%s" % (
+                                                         specification, 
+                                                         values, 
+                                                         coord_test['test'], 
+                                                         coord_test['computed'])
 
 
 def test_vs_old_dtopo():
@@ -332,10 +350,13 @@ if __name__ == "__main__":
         elif bool(sys.argv[1]):
             test_read_csv_make_dtopo(save=True)
     else:
-        test_read_csv_make_dtopo()
-        test_read_ucsb_make_dtopo()
-        test_read_sift_make_dtopo()
-        test_SubdividedPlaneFault_make_dtopo()
-        test_dtopo_io()
-        # test_vs_old_dtopo()
-        # test_geometry()
+        try:
+            test_read_csv_make_dtopo()
+            test_read_ucsb_make_dtopo()
+            test_read_sift_make_dtopo()
+            test_SubdividedPlaneFault_make_dtopo()
+            test_dtopo_io()
+            test_geometry()
+            test_vs_old_dtopo()
+        except nose.SkipTest as e:
+            print e.message
