@@ -91,8 +91,6 @@ assert numpy.alltrue(check), \
 # ==============================================================================
 #  General utility functions
 # ==============================================================================
-
-
 def convert_units(value, io_units, direction=1, verbose=False):
     r"""
     convert *value* to standard units from *io_units* or vice versa.
@@ -116,7 +114,6 @@ def convert_units(value, io_units, direction=1, verbose=False):
         raise ValueError("Unrecognized direction, must be 1 or 2")
 
     return converted_value
-
 
 
 def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False,
@@ -145,6 +142,7 @@ def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False,
         print "No contours to plot"
 
     return axes
+
 
 def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
                    add_colorbar=True, verbose=False, fig_kwargs={}):
@@ -188,10 +186,9 @@ def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
 
     y_ave = 0.5*(y.min() + y.max())
     axes.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
-    axes.ticklabel_format(format='plain', useOffset=False)
-    ## RJL: setting labels like this gives None's as labels:
-    #axes.set_xticklabels([label.set_rotation(80) 
-    #                                       for label in axes.get_xticklabels()])
+    # axes.ticklabel_format(format='plain', useOffset=False)
+    labels = axes.get_xticks().tolist()
+    axes.set_xticklabels(labels, rotation=80)
     axes.set_title('Seafloor deformation')
     return axes
 
@@ -649,6 +646,7 @@ class Fault(object):
             new_subfault.convert_to_standard_units(self.input_units)
             self.subfaults.append(new_subfault)
 
+
     def write(self, path, style=None, column_list=None, output_units={}, 
                     delimiter='  '):
         r"""
@@ -985,11 +983,12 @@ class Fault(object):
         """
 
         extent = [numpy.infty, -numpy.infty, numpy.infty, -numpy.infty]
-        for corner in self.fault_plane_corners:
-            extent[0] = min(corner[0], extent[0])
-            extent[1] = max(corner[0], extent[1])
-            extent[2] = min(corner[1], extent[2])
-            extent[3] = max(corner[1], extent[3])
+        for subfault in self.subfaults:
+            for corner in subfault.fault_plane_corners:
+                extent[0] = min(corner[0], extent[0])
+                extent[1] = max(corner[0], extent[1])
+                extent[2] = min(corner[1], extent[2])
+                extent[3] = max(corner[1], extent[3])
 
         return extent
 
@@ -1187,7 +1186,7 @@ class SubFault(object):
         total_slip = self.length * self.width * self.slip
         Mo = self.mu * total_slip
         return Mo
-    
+
 
     def __str__(self):
         output = "Subfault Characteristics:\n"
@@ -1508,7 +1507,7 @@ class UCSBFault(Fault):
 
     """
 
-    def __init__(self):
+    def __init__(self, path=None, **kwargs):
         r"""UCSBFault initialization routine.
         
         See :class:`UCSBFault` for more info.
@@ -1516,8 +1515,13 @@ class UCSBFault(Fault):
         """
 
         self.num_cells = [None, None]   # RJL: Why needed??
+                                        # Do not really but the specification
+                                        # has it.
 
         super(UCSBFault, self).__init__()
+
+        if path is not None:
+            self.read(path, **kwargs)
 
 
     def read(self, path, rupture_type='static'):
@@ -1581,30 +1585,31 @@ class UCSBFault(Fault):
 
         # Locate fault plane in 3D space - see SubFault `calculate_geometry`
         # for
+        # These are only useful in sub-faults
         # a schematic of where these points are
-        self._fault_plane_corners = [None, # a 
-                                     None, # b
-                                     None, # c
-                                     None] # d
-        self._fault_plane_centers = [[0.0, 0.0, 0.0], # 1
-                                     [0.0, 0.0, 0.0], # 2 
-                                     [0.0, 0.0, 0.0]] # 3
-        # :TODO: Is the order of this a good assumption?
-        self._fault_plane_corners[0] = boundary_data[0]
-        self._fault_plane_corners[3] = boundary_data[1]
-        self._fault_plane_corners[2] = boundary_data[2]
-        self._fault_plane_corners[1] = boundary_data[3]
+        # self._fault_plane_corners = [None, # a 
+        #                              None, # b
+        #                              None, # c
+        #                              None] # d
+        # self._fault_plane_centers = [[0.0, 0.0, 0.0], # 1
+        #                              [0.0, 0.0, 0.0], # 2 
+        #                              [0.0, 0.0, 0.0]] # 3
+        # # :TODO: Is the order of this a good assumption?
+        # self._fault_plane_corners[0] = boundary_data[0]
+        # self._fault_plane_corners[3] = boundary_data[1]
+        # self._fault_plane_corners[2] = boundary_data[2]
+        # self._fault_plane_corners[1] = boundary_data[3]
         
-        # Calculate center by averaging position of appropriate corners
-        for (n, corner) in enumerate(self._fault_plane_corners):
-            for i in xrange(3):
-                self._fault_plane_centers[1][i] += corner[i] / 4
-            if n == 0 or n == 4:
-                for i in xrange(3):
-                    self._fault_plane_centers[0][i] += corner[i] / 2
-            else:
-                for i in xrange(3):
-                    self._fault_plane_centers[2][i] += corner[i] / 2
+        # # Calculate center by averaging position of appropriate corners
+        # for (n, corner) in enumerate(self._fault_plane_corners):
+        #     for i in xrange(3):
+        #         self._fault_plane_centers[1][i] += corner[i] / 4
+        #     if n == 0 or n == 4:
+        #         for i in xrange(3):
+        #             self._fault_plane_centers[0][i] += corner[i] / 2
+        #     else:
+        #         for i in xrange(3):
+        #             self._fault_plane_centers[2][i] += corner[i] / 2
 
 
         if not (found_subfault_boundary and found_subfault_discretization):
