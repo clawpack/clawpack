@@ -623,7 +623,6 @@ class Fault(object):
                 for param in defaults.iterkeys():
                     setattr(new_subfault, param, defaults[param]) 
 
-            new_subfault.input_units = input_units
             new_subfault.convert_to_standard_units(self.input_units)
             self.subfaults.append(new_subfault)
 
