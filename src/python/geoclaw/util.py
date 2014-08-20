@@ -106,7 +106,8 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
         # TODO: Should check here if a file is a bare compressed file (no tar)
     else:
         if verbose:
-            print "Skipping %s because it already exists locally." % url
+            print "Skipping %s " % url
+            print "  because file already exists: %s" % output_path
         return None
 
     return unarchived_output_path
