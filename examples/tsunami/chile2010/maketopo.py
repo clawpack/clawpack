@@ -13,7 +13,7 @@ except:
     raise Exception("*** Must first set CLAW enviornment variable")
 
 # Scratch directory for storing topo and dtopo files:
-scratch_dir = os.path.join(CLAW, 'geoclaw', 'SCRATCH')
+scratch_dir = os.path.join(CLAW, 'geoclaw', 'scratch')
 
 def get_topo():
     """
@@ -22,7 +22,8 @@ def get_topo():
     from clawpack.geoclaw import topotools, util
     topo_fname = 'etopo10min120W60W60S0S.asc'
     url = 'http://www.geoclaw.org/topo/etopo/' + topo_fname
-    util.get_remote_file(url, output_dir=scratch_dir, file_name=topo_fname)
+    util.get_remote_file(url, output_dir=scratch_dir, file_name=topo_fname,
+            verbose=True)
 
     
 def make_dtopo():
