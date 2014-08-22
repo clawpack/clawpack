@@ -606,9 +606,7 @@ class Topography(object):
                         break
                 N[0] = data.shape[0] / N[1]
 
-                #self._X = data[:,0].reshape(N)
                 self._x = data[:N[1],0]
-                #self._Y = data[:,1].reshape(N)
                 self._y = data[::N[1],1]
                 self._Z = numpy.flipud(data[:,2].reshape(N))
                 self._delta = self.X[0,1] - self.X[0,0]
@@ -638,6 +636,9 @@ class Topography(object):
                 # topo_type's, contrary to our convention, so negate:
                 self._Z = -self._Z
                 
+            # Make sure these are set to None to force re-generating:
+            self._X = None
+            self._Y = None
                 
             # Perform region filtering
             if filter_region is not None:
