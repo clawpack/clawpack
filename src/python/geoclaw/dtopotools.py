@@ -1090,16 +1090,9 @@ class SubFault(object):
         r"""Longitude of the subfault based on *coordinate_specification*."""
         self.coordinate_specification = "top center"
         r"""Specifies where the latitude, longitude and depth are measured from."""
-        self.mu = 4e11  # default value for rigidity = shear modulus
-        r"""Rigidity of subfault movement == shear modulus."""
-
-        # deprecated:
-        #self.units = {'mu':"dyne/cm^2", 'length':'km', 'width':'km', 
-        #              'depth':'km'}
-        #r"""Dictionary of units for the relevant parameters."""
-
-        #self.units.update(units)
-
+        self.mu = 4e10  # default value for rigidity = shear modulus
+                        # Note that standard units for mu is now Pascals.
+                        # Multiply by 10 to get dyne/cm^2 value.
 
         self._geometry = None
 
