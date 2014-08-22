@@ -549,8 +549,12 @@ class Topography(object):
             self.unstructured = unstructured
 
         # Check if the path is a URL and fetch data if needed or forced
-        if "http" in self.path:
-            fetch_topo_url(self.path)
+        #if "http" in self.path:
+        #    fetch_topo_url(self.path)
+        # RJL: should switch to util.get_remote_file, but after fetching
+        # still need to read it in, which that routine does not do.
+        # Do we really want to support this?  Seems better for user
+        # to fetch and store as desired filename and then read file.
             
 
         if self.topo_type is None:
