@@ -27,7 +27,7 @@ def test_read_csv_make_dtopo(save=False):
     fault.read(subfault_path, input_units=input_units, 
                               coordinate_specification="noaa sift")
 
-    assert abs(fault.Mw() - 9.2) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
+    assert abs(fault.Mw() - 8.53336) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
 
     xlower = 203
     xupper = 214.  # approximate - adjusted below
@@ -136,7 +136,7 @@ def test_read_sift_make_dtopo(save=False):
     sift_slip = {'acsza1':2, 'acszb1':3}
     fault = dtopotools.SiftFault(sift_slip)
 
-    assert abs(fault.Mw() - 7.966666666) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
+    assert abs(fault.Mw() - 7.3) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
 
     xlower = 162.
     xupper = 168.
@@ -198,7 +198,7 @@ def test_SubdividedPlaneFault_make_dtopo(save=False):
     # print "new Mo = ",fault2.Mo()
     #fault2.plot_subfaults(slip_color=True)
 
-    assert abs(fault2.Mw() - 7.50068666) < 1e-4, \
+    assert abs(fault2.Mw() - 6.83402) < 1e-4, \
            "*** Mw is wrong: %g" % fault.Mw()
 
     xlower = 162.
