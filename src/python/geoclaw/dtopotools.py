@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 r"""
-GeoClaw dtopotools Module
+GeoClaw dtopotools Module  `$CLAW/geoclaw/src/python/geoclaw/dtopotools.py`
 
 Module provides several functions for dealing with changes to topography (usually
 due to earthquakes) including reading sub-fault specifications, writing out 
@@ -10,23 +10,27 @@ dtopo files, and calculating Okada based deformations.
 
 :Classes:
 
-    DTopography
-    SubFault
-    Fault
-    UCSBFault
-    CSVFault
-    SiftFault
-    SegmentedPlaneFault
+  - DTopography
+  - SubFault
+  - Fault
+  - UCSBFault
+  - CSVFault
+  - SiftFault
+  - SegmentedPlaneFault
     
 :Functions:
+  - convert_units
+  - plot_dz_contours
+  - plot_dz_colors
+  - Mw
+  - strike_direction
+  - rise_fraction
 
 
 :TODO:
- - List functions and classes in this docstring?
  - This file contains both the older dtopo functionality and a new class, should
    merge as much functionality into the class as possible ensuring nothing is
    left behind.
- - Refactor Okada functionality
 """
 
 import os
@@ -199,7 +203,9 @@ def Mw(Mo, units="N-m"):
     """ 
     Calculate moment magnitude based on seismic moment Mo.
     Follows USGS recommended definition from 
+
         http://earthquake.usgs.gov/aboutus/docs/020204mag_policy.php
+
     The SubFault and Fault classes each have a function Mo to compute
     the seismic moment for a single subfault or collection respectively.
     """
@@ -220,7 +226,7 @@ def strike_direction(x1, y1, x2, y2):
     Calculate strike direction between two points.
     Actually calculates "initial bearing" from (x1,y1) in direction
     towards (x2,y2), following
-        http://www.movable-type.co.uk/scripts/latlong.html
+    http://www.movable-type.co.uk/scripts/latlong.html
     """
 
     x1 = x1*numpy.pi/180.
@@ -239,8 +245,10 @@ def strike_direction(x1, y1, x2, y2):
 def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     """
     A continuously differentiable piecewise quadratic function of t that is 
-       0 for t <= t0, 
-       1 for t >= t0 + t_rise + t_rise_ending 
+
+     *  0 for t <= t0, 
+     *  1 for t >= t0 + t_rise + t_rise_ending 
+
     with maximum slope at t0 + t_rise.
     For specifying dynamic fault ruptures:  Subfault files often contain these
     parameters for each subfault for an earthquake event.
@@ -312,8 +320,8 @@ class DTopography(object):
         r"""
         Read in a dtopo file and use to set attributes of this object.
 
-        input
-        -----
+        :input:
+        
          - *path* (path) - Path to existing dtopo file to read in.
          - *dtopo_type* (int) - Type of topography file to read.  Default is 3
             if not specified or apparent from file extension.
@@ -414,8 +422,8 @@ class DTopography(object):
     def write(self, path=None, dtopo_type=None):
         r"""Write out subfault resulting dtopo to file at *path*.
 
-        input
-        -----
+        :input:
+        
          - *path* (path) - Path to the output file to written to.
          - *dtopo_type* (int) - Type of topography file to write out.  Default
            is 3.
@@ -596,12 +604,16 @@ class Fault(object):
 
         Creates a list of subfaults from the subfault specification file at
         *path*.
-        Inputs:
+    
+        :Inputs:
+
           - *path* (str) file to read in, should contain subfaults, one per line
           - *column_map* (dict) specifies mapping from parameter to the column
             of the input file that contains values for this parameter, e.g.
+
                 column_map = {"latitude":0, "longitude":1, "depth":2, "slip":3,
-                               "rake":4, "strike":5, "dip":6}
+                "rake":4, "strike":5, "dip":6}
+
           - *coordinate_specification* (str) specifies the location on each
             subfault that corresponds to the (longitude,latitude) and depth 
             of the subfault.  See the documentation for *SubFault.set_geometry*.
@@ -659,13 +671,17 @@ class Fault(object):
           - *path* (str) file to write to. 
           - *style* (str) to write in a style that matches standard styles
             adopted by various groups.  One of the following:
-                - "usgs"  (Not implemented)
-                - "noaa sift"  (Not implemented)
-                - "ucsb"  (Not implemented)
+
+              - "usgs"  (Not implemented)
+              - "noaa sift"  (Not implemented)
+              - "ucsb"  (Not implemented)
+
           - *column_list* (list) specifies what order the parameters should
             be written in the output file, e.g.
+
                 column_list = ['longitude','latitude','length','width',
-                               'depth','strike','rake','dip','slip']
+                'depth','strike','rake','dip','slip']
+
           - *output_units* (dict) specifies units to convert to before writing.
             Defaults to "standard units".
           - *delimiter* (str) specifies delimiter between columns, e.g.
@@ -995,16 +1011,16 @@ class Fault(object):
     def create_dtopo_xy(self, rect=None, dx=1/60., buffer_size=0.5):
         r"""Create coordinate arrays containing fault with a buffer.
 
-        Input
-        -----
+        :Input:
+        
          - *rect* - if None, use self.containing_rect
             Otherwise a list [x1,x2,y1,y2]
          - *dx* (int) - Spatial resolution. Defaults to 1" resolution.
          - *buffer_size* (float) - Buffer distance around edge of fault in
            degrees, defaults to 0.5 degrees.
 
-        Output
-        ------
+        :Output:
+        
          - *x,y* 1-dimensional arrays that cover the desired rect.
            They start at (x1,y1) and may go a bit beyond (x2,y2) depending on dx
 
@@ -1174,20 +1190,22 @@ class SubFault(object):
         bottom of fault, based on subfault parameters.  
         Automatically called first time user requests self.geometry.
 
-        Note: *self.coordinate_specification*  specifies the location on each
-            subfault that corresponds to the (longitude,latitude) and depth 
-            of the subfault.
-            Currently must be one of these strings:
-                "bottom center": (longitude,latitude) and depth at bottom center
-                "top center": (longitude,latitude) and depth at top center
-                "centroid": (longitude,latitude) and depth at centroid of plane
-                "noaa sift": (longitude,latitude) at bottom center, depth at top,  
-                             This mixed convention is used by the NOAA SIFT
-                             database and "unit sources", see:
-                             http://nctr.pmel.noaa.gov/propagation-database.html
-            The Okada model is expressed assuming (longitude,latitude) and depth
-            are at the bottom center of the fault plane, so values must be
-            shifted or other specifications.
+        **Note:** *self.coordinate_specification*  specifies the location on each
+        subfault that corresponds to the (longitude,latitude) and depth 
+        of the subfault.
+        Currently must be one of these strings:
+
+          - "bottom center": (longitude,latitude) and depth at bottom center
+          - "top center": (longitude,latitude) and depth at top center
+          - "centroid": (longitude,latitude) and depth at centroid of plane
+          - "noaa sift": (longitude,latitude) at bottom center, depth at top,  
+                         This mixed convention is used by the NOAA SIFT
+                         database and "unit sources", see:
+                         http://nctr.pmel.noaa.gov/propagation-database.html
+
+        The Okada model is expressed assuming (longitude,latitude) and depth
+        are at the bottom center of the fault plane, so values must be
+        shifted or other specifications.
         """
 
         # Convert to meters if necessary:
@@ -1288,10 +1306,10 @@ class SubFault(object):
         r"""
         Apply Okada to this subfault and return a DTopography object.
 
-        Input:
-            x,y are 1d arrays
-        Output:
-            DTopography object with dz_list = [dz] being a list with 
+        :Input:
+          - x,y are 1d arrays
+        :Output:
+          - DTopography object with dz_list = [dz] being a list with 
                 single static displacement and times = [0.].
 
         Currently only calculates the vertical displacement.
@@ -1306,9 +1324,10 @@ class SubFault(object):
 
         Rewritten and made more flexible by Randy LeVeque
 
-        Note: *self.coordinate_specification* (str) specifies the location on each
-            subfault that corresponds to the (longitude,latitude) and depth 
-            of the subfault.
+        **Note:** *self.coordinate_specification* (str) specifies the location on 
+        each subfault that corresponds to the (longitude,latitude) and depth 
+        subfault.
+
         See the documentation for *SubFault.set_geometry* for dicussion of the 
         possible values *self.coordinate_specification* can take.
 
@@ -1425,9 +1444,10 @@ class SubFault(object):
         r"""
         For a dynamic fault, compute the slip at time t.
         Assumes the following attributes are set:
-            *rupture_time*
-            *rise_time*
-            *rise_time_ending*: optional, defaults to *rise_time*
+
+          - *rupture_time*
+          - *rise_time*
+          - *rise_time_ending*: optional, defaults to *rise_time*
 
         """
         if (self.rupture_time is None) or (self.rise_time is None):
@@ -1650,11 +1670,14 @@ class SiftFault(Fault):
     is more recent than what is reported in that paper and uses different
     notation for the subfault names.
     The subfault database used was downloaded from
+
         http://sift.pmel.noaa.gov/ComMIT/compressed/info_sz.dat
 
     Example:
+
         >>> sift_slip = {'acsza1':2, 'acszb1':3}
         >>> fault = SiftFault(sift_slip)
+
     results in a fault with two specified subfaults with slip of 2 and 3 meters.
     """
 
