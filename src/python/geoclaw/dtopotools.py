@@ -304,7 +304,7 @@ class DTopography(object):
 
         """
 
-        self.dz_list = []
+        self.DZ = None
         self.times = []
         self.x = None
         self.y = None
@@ -358,21 +358,25 @@ class DTopography(object):
             X = numpy.reshape(lastlines[:,1],(my,mx))
             Y = numpy.reshape(lastlines[:,2],(my,mx))
             Y = numpy.flipud(Y)
-            dz_list = []
             if verbose:
-                print "Returning dZ as a list of mx*my arrays"
+                print "Returning DZ as a list of mx*my arrays"
+            DZ = None
             for n in range(ntimes):
                 i1 = n*mx*my
                 i2 = (n+1)*mx*my
-                dz = numpy.reshape(data[i1:i2,3],(my,mx))
-                dz = numpy.flipud(dz)
-                dz_list.append(dz)
+                dzt = numpy.reshape(data[i1:i2,3],(my,mx))
+                dzt = numpy.flipud(dzt)
+                dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
+                if DZ is None:
+                    DZ = dzt.copy()
+                else:
+                    DZ = numpy.append(DZ, dzt, axis=0)
             self.X = X
             self.Y = Y
             self.x = X[0,:]
             self.y = Y[:,0]
             self.times = t
-            self.dz_list = dz_list
+            self.DZ = DZ
 
         elif dtopo_type == 2 or dtopo_type == 3:
             fid = open(path)
@@ -394,25 +398,32 @@ class DTopography(object):
             times = numpy.linspace(t0, t0+(mt-1)*dt, mt)
     
             dZvals = numpy.loadtxt(path, skiprows=9)
-            dz_list = []
             if dtopo_type==3:
                 # my lines with mx values on each
                 for k,t in enumerate(times):
                     dZk = numpy.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
                     dZk = numpy.flipud(dZk)
-                    dz_list.append(dZk)
+                    dZk = numpy.array(dZk, ndmin=3)  # convert to 3d array
+                    if k==0:
+                        DZ = dZk.copy()
+                    else:
+                        DZ = numpy.append(DZ, dZk, axis=0)
             else:
                 # dtopo_type==2 ==> mx*my lines with 1 values on each
                 for k,t in enumerate(times):
                     dZk = numpy.reshape(dZvals[k*mx*my:(k+1)*mx*my], (my,mx))
                     dZk = numpy.flipud(dZk)
-                    dz_list.append(dZk)
+                    dZk = numpy.array(dZk, ndmin=3)  # convert to 3d array
+                    if k==0:
+                        DZ = dZk.copy()
+                    else:
+                        DZ = numpy.append(DZ, dZk, axis=0)
                     
             self.x = x
             self.y = y
             self.X, self.Y = numpy.meshgrid(x,y)
             self.times = times
-            self.dz_list = dz_list
+            self.DZ = DZ
 
         else:
             raise ValueError("Only topography types 1, 2, and 3 are supported,",
@@ -452,9 +463,9 @@ class DTopography(object):
 
             if dtopo_type == 0:
                 # Topography file with 3 columns, x, y, dz written from the
-                # upper left corner of the region
+                # upper left corner of the region. Only final time.
                 Y_flipped = numpy.flipud(self.Y)
-                dZ_flipped = numpy.flipud(self.dz_list[0])
+                dZ_flipped = numpy.flipud(self.DZ[-1,:,:]) 
 
                 for j in xrange(self.Y.shape[0]):
                     for i in xrange(self.X.shape[1]):
@@ -469,7 +480,7 @@ class DTopography(object):
                 for (n, time) in enumerate(self.times):
                     #alpha = (time - self.t[0]) / self.t[-1]
                     #dZ_flipped = numpy.flipud(alpha * self.dZ[:,:])
-                    dZ_flipped = numpy.flipud(self.dz_list[n])
+                    dZ_flipped = numpy.flipud(self.DZ[n,:,:])  
 
                     for j in xrange(self.Y.shape[0]):
                         for i in xrange(self.X.shape[1]):
@@ -499,7 +510,7 @@ class DTopography(object):
                         #alpha = (time - self.t[0]) / (self.t[-1])
                         for j in range(self.Y.shape[0]-1, -1, -1):
                             data_file.write(self.X.shape[1] * '%012.6e  ' 
-                                                  % tuple(self.dz_list[n][j,:]))
+                                                  % tuple(self.DZ[n,j,:]))
                             data_file.write("\n")
 
             else:
@@ -507,38 +518,39 @@ class DTopography(object):
                                  "supported, given %s." % dtopo_type)
 
 
-    def dz(self, t):
+    def dZ_at_t(self, t):
         """
-        Interpolate dz_list to specified time t and return deformation dz.
+        Interpolate DZ to specified time t and return deformation.
         """
         from matplotlib.mlab import find
         if t <= self.times[0]:
-            return self.dz_list[0]
+            return self.DZ[0,:,:]
         elif t >= self.times[-1]:
-            return self.dz_list[-1]
+            return self.DZ[-1,:,:]
         else:
             n = max(find(self.times <= t))
             t1 = self.times[n]
             t2 = self.times[n+1]
-            dz = (t2-t)/(t2-t1) * self.dz_list[n] + (t-t1)/(t2-t1) * self.dz_list[n+1]
+            dz = (t2-t)/(t2-t1) * self.DZ[n,:,:] + \
+                 (t-t1)/(t2-t1) * self.DZ[n+1,:,:]
             return dz
 
-    def dz_max(self):
-        r"""Return max(abs(dz)) over all dz in self.dz_list, the maximum
-        surface deformation for this dtopo."""
+    def dZ_max(self):
+        r"""Return max(abs(DZ)) over all dz in self.DZ, the maximum
+        surface deformation for this dtopo.
+        DEPRECATE? -- it's now a 1-liner
+        """
 
-        dzm = 0.
-        for dz in self.dz_list:
-            dzm = max(dzm, abs(dz).max())
-        return dzm
+        return abs(self.DZ).max()
+
 
     def plot_dz_colors(self, t, axes=None, cmax_dz=None, dz_interval=None, 
                                 fig_kwargs={}):
         """
-        Interpolate dz_list to specified time t and then call module function
+        Interpolate self.DZ to specified time t and then call module function
         plot_dz_colors.
         """
-        axes = plot_dz_colors(self.X, self.Y, self.dz(t), axes=axes,
+        axes = plot_dz_colors(self.X, self.Y, self.dZ_at_t(t), axes=axes,
                               cmax_dz=cmax_dz, dz_interval=dz_interval,
                               fig_kwargs=fig_kwargs)
         return axes
@@ -546,10 +558,10 @@ class DTopography(object):
 
     def plot_dz_contours(self, t, dz_interval=0.5, axes=None, fig_kwargs={}):
         """
-        Interpolate dz_list to specified time t and then call module function
+        Interpolate self.DZ to specified time t and then call module function
         plot_dz_contours.
         """
-        axes = plot_dz_contours(self.X, self.Y, self.dz(t), 
+        axes = plot_dz_contours(self.X, self.Y, self.dZ_at_t(t), 
                                 dz_interval=dz_interval)
         return axes
 
@@ -776,7 +788,7 @@ class Fault(object):
                 sys.stdout.write("%s.." % k)
                 sys.stdout.flush()
             subfault.okada(x,y)  # sets subfault.dtopo with times=[0]
-                                 # and len(subfault.dtopo.dz_list) == 1
+                                 # and subfault.dtopo.DZ.shape[0] == 1
         if verbose:
             sys.stdout.write("\nDone\n")
 
@@ -785,19 +797,23 @@ class Fault(object):
                 raise ValueError("For static deformation, need len(times) <= 2")
             dz = numpy.zeros(X.shape)
             for subfault in self.subfaults:
-                dz += subfault.dtopo.dz_list[0]
+                dz += subfault.dtopo.DZ[0,:,:]
 
             if len(times) == 1:
-                dtopo.dz_list = [dz]   # only final deformation stored
+                # only final deformation stored:
+                dtopo.DZ = numpy.array(dz, ndmin=3) 
             elif len(times) == 2:
+                # store 0 at first time and final deformation at second:
                 dz0 = numpy.zeros(X.shape)
-                dtopo.dz_list = [dz0, dz]
+                dtopo.DZ = numpy.array([dz0, dz])
+                assert dtopo.DZ.shape == (2,dz.shape[0],dz.shape[1]), \
+                    "dtopo.DZ does not have expected shape"
 
         elif self.rupture_type in ['dynamic','kinematic']:
 
             t_prev = -1.e99
-            dz_list = []
-            dz = numpy.zeros(X.shape)
+            dzt = numpy.zeros(X.shape)
+            DZ = None
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
                     t0 = getattr(subfault,'rupture_time',0)
@@ -806,10 +822,14 @@ class Fault(object):
                     rf = rise_fraction([t_prev,t],t0,t1,t2)
                     dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
-                        dz = dz + dfrac * subfault.dtopo.dz_list[0]
-                dz_list.append(dz)
+                        dzt = dzt + dfrac * subfault.dtopo.DZ[0,:,:]
+                dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
+                if DZ is None:
+                    DZ = dzt.copy()
+                else:
+                    DZ = numpy.append(DZ, dzt, axis=0)
                 t_prev = t
-            dtopo.dz_list = dz_list
+            dtopo.DZ = DZ
 
         else:   
             raise ValueError("Unrecognized rupture_type: %s" % self.rupture_type)
@@ -1309,8 +1329,8 @@ class SubFault(object):
         :Input:
           - x,y are 1d arrays
         :Output:
-          - DTopography object with dz_list = [dz] being a list with 
-                single static displacement and times = [0.].
+          - DTopography object with DZ array of shape (1,len(x),len(y))
+                with single static displacement and times = [0.].
 
         Currently only calculates the vertical displacement.
 
@@ -1399,7 +1419,7 @@ class SubFault(object):
         dtopo = DTopography()
         dtopo.X = X
         dtopo.Y = Y
-        dtopo.dz_list = [dz]
+        dtopo.DZ = numpy.array(dz, ndmin=3)
         dtopo.times = [0.]
         self.dtopo = dtopo
         return dtopo
