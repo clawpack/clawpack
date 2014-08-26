@@ -61,7 +61,8 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
     
      - *url* (path) - URL to file to be downloaded.
      - *output_dir* (path) - Directory that the remote file will be downloaded
-       to.  Defaults to the current working directory returned by *os.getcwd()*.
+       to.  Defaults to the GeoClaw sratch directory defined by 
+       *os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')*.
      - *file_name* (string) - Name of local file.  This defaults to the name of
        the remote file.
      - *force* (bool) - Force downloading of remote file regardless of whether
@@ -80,7 +81,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
     """
 
     if output_dir is None:
-        output_dir = os.getcwd()
+        output_dir = os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')
 
     if file_name is None:
         file_name = os.path.basename(url)
