@@ -1,11 +1,11 @@
 
 from clawpack.geoclaw import dtopotools
-from numpy import linspace, array, load
+from numpy import linspace, load
 import matplotlib.pyplot as plt
 import time
 import os
 
-datadir = os.path.join(os.environ['CLAW'], 'geoclaw', 'datafiles')
+datadir = os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')
 
 shoreline_fname = os.path.join(datadir,'tohoku_shoreline_1min.npy')
 shoreline_xy = load(shoreline_fname)
