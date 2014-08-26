@@ -1,30 +1,32 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-r"""GeoClaw Topography Tools Module
+r"""
+GeoClaw topotools Module  `$CLAW/geoclaw/src/python/geoclaw/topotools.py`
 
 Module provides several functions for reading, writing and manipulating
 topography (bathymetry) files.
 
-:Functions:
- - dms2decimal - Convert (degrees, minutes, seconds) to decimal degrees
- - dist_meters2latlong - Convert dx, dy distance in meters to degrees
- - dist_latlong2meters - Convert dx, dy distance in degrees to meters
- - haversine - Calculate the haversine based great circle distance
- - inv_haversine - Inverts the haversine distance
+:Classes:
+ - Topography 
 
-:Topography Class:
+:Functions:
+
+ - determine_topo_type
+ - create_topo_func
+ - topo1writer
+ - topo2writer 
+ - topo3writer 
+ - swapheader
+
 
 :TODO:
- - Tests are implemented but not passing, should we expect the arrays to be 
-   identical?
  - Add sub and super sampling capababilities
  - Add functions for creating topography based off a topo function, incorporate
    the create_topo_func into Topography class, maybe allow more broad 
    initialization ability to the class to handle this?
  - Fix `in_poly` function
  - Add remove/fill no data value
- - Probably should better handle remote files (fetching from http)
  - Add more robust plotting capabilities
 """
 
@@ -74,15 +76,18 @@ def create_topo_func(loc,verbose=False):
     topgraphy at the point (x,y).  (The resulting function is constant in y.)
     
     :Example: 
-    >>> f = create_topo_func(loc)
-    >>> b = f(x, y)
+
+        >>> f = create_topo_func(loc)
+        >>> b = f(x, y)
     
     :Input:
      - *loc* (list) - Create a topography file with the profile denoted by the
        tuples inside of loc.  A sample set of points are shown below.  Note 
        that the first value of the list is the x location and the second is 
        the height of the topography.
-        
+
+       **This figure doesn't show up properly in Sphinx docs...**
+
         z (m)
         ^                                                  o loc[5]  o
         |                                                    
@@ -185,7 +190,7 @@ def fetch_topo_url(url, local_fname=None, force=None, verbose=False,
         - *force* (bool) If False, prompt user before downloading.
 
     For GeoClaw examples, some topo files can be found in
-        http://www.clawpack.org/geoclaw/topo
+    `http://www.geoclaw.org/topo`_
     See that website for a list of archived topo datasets.
 
     If force==False then prompt the user to make sure it's ok to download,
@@ -534,6 +539,7 @@ class Topography(object):
          - *unstructured* (bool)
          - *mask* (bool)
          - *filter_region* (tuple)
+
         The first three might have already been set when instatiating object.
 
         """
@@ -549,8 +555,12 @@ class Topography(object):
             self.unstructured = unstructured
 
         # Check if the path is a URL and fetch data if needed or forced
-        if "http" in self.path:
-            fetch_topo_url(self.path)
+        #if "http" in self.path:
+        #    fetch_topo_url(self.path)
+        # RJL: should switch to util.get_remote_file, but after fetching
+        # still need to read it in, which that routine does not do.
+        # Do we really want to support this?  Seems better for user
+        # to fetch and store as desired filename and then read file.
             
 
         if self.topo_type is None:
@@ -602,9 +612,7 @@ class Topography(object):
                         break
                 N[0] = data.shape[0] / N[1]
 
-                #self._X = data[:,0].reshape(N)
                 self._x = data[:N[1],0]
-                #self._Y = data[:,1].reshape(N)
                 self._y = data[::N[1],1]
                 self._Z = numpy.flipud(data[:,2].reshape(N))
                 self._delta = self.X[0,1] - self.X[0,0]
@@ -634,6 +642,9 @@ class Topography(object):
                 # topo_type's, contrary to our convention, so negate:
                 self._Z = -self._Z
                 
+            # Make sure these are set to None to force re-generating:
+            self._X = None
+            self._Y = None
                 
             # Perform region filtering
             if filter_region is not None:
@@ -920,12 +931,12 @@ class Topography(object):
          - *no_data_value* (float) - Value to use if no data was found to fill in a 
            missing value, ignored if `method = 'nearest'`. Default is `-9999`.
          - *buffer_length* (float) - Buffer around bounding box, only applicable
-           when *extent* is None.  Default is *100.0* meters.
+           when *extent* is None.  Default is `100.0` meters.
          - *proximity_radius* (float) - Radius every unstructured data point
-           used to mask the fill data with.  Default is *100.0* meters.
+           used to mask the fill data with.  Default is `100.0` meters.
          - *resolution_limit* (int) - Limit the number of grid points in a
            single dimension.  Raises a *ValueError* if the limit is violated.
-           Default value is ``2000''.
+           Default value is `2000`.
 
         Sets this object's *unstructured* attribute to *False* if successful.
 
@@ -1058,14 +1069,14 @@ class Topography(object):
 
         Uses simple ray casting algorithm for speed so beware of corner cases!
 
-        Input
-        -----
+        :Input:
+        
          - *polygon* (list) List of points that comprise the polygon.  Note that
            order of the points will effect if this works (positive versus negative
            winding order).  Points should be in counter-clockwise arrangement.
 
-        Returns
-        -------
+        :Returns:
+        
          - *X_mask* (numpy.ma.MaskedArray) Masked array of X coordinates where those
            points outside of the polygon have been masked.
          - *Y* (numpy.ndarray) Coordinates in y direction in a meshgrid type of
@@ -1148,10 +1159,12 @@ class Topography(object):
 
         self.no_data_value
 
-        :Methods:
-         - *fill* - Fill in all *no_data_value*s with *value*
-         - *nearest* - Fill in *no_data_value*s with average of nearest
-           neighbors.
+        :Input:
+         - *method* can be one of:
+
+             - *fill* - Fill in all *no_data_value* locations with *value*
+             - *nearest* - Fill in *no_data_value* locations with 
+               average of nearest neighbors.
 
         """
         raise NotImplemented("This functionality has not been added yet.")
@@ -1260,12 +1273,17 @@ class Topography(object):
         for all segements of the shoreline (defined to be the contour 
         where self.z = sea_level) separated by [nan,nan] pairs.  
         This allows all shorelines to be quickly plotted via:
-            plot(shoreline_xy[:,0], shoreline_xy[:,1])
+
+            >>> plot(shoreline_xy[:,0], shoreline_xy[:,1])
+
         The shoreline can be saved as a binary *.npy* file via:
-            numpy.save(filename, shoreline_xy)
+
+            >>> numpy.save(filename, shoreline_xy)
+
         which is much smaller than the original topography file. 
         Reload via:
-            shoreline_xy = numpy.load(filename)
+
+            >>> shoreline_xy = numpy.load(filename)
         """
 
         import matplotlib.pyplot as plt

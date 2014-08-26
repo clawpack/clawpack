@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 r"""
-GeoClaw dtopotools Module
+GeoClaw dtopotools Module  `$CLAW/geoclaw/src/python/geoclaw/dtopotools.py`
 
 Module provides several functions for dealing with changes to topography (usually
 due to earthquakes) including reading sub-fault specifications, writing out 
@@ -10,23 +10,27 @@ dtopo files, and calculating Okada based deformations.
 
 :Classes:
 
-    DTopography
-    SubFault
-    Fault
-    UCSBFault
-    CSVFault
-    SiftFault
-    SegmentedPlaneFault
+  - DTopography
+  - SubFault
+  - Fault
+  - UCSBFault
+  - CSVFault
+  - SiftFault
+  - SegmentedPlaneFault
     
 :Functions:
+  - convert_units
+  - plot_dz_contours
+  - plot_dz_colors
+  - Mw
+  - strike_direction
+  - rise_fraction
 
 
 :TODO:
- - List functions and classes in this docstring?
  - This file contains both the older dtopo functionality and a new class, should
    merge as much functionality into the class as possible ensuring nothing is
    left behind.
- - Refactor Okada functionality
 """
 
 import os
@@ -197,7 +201,9 @@ def Mw(Mo, units="N-m"):
     """ 
     Calculate moment magnitude based on seismic moment Mo.
     Follows USGS recommended definition from 
+
         http://earthquake.usgs.gov/aboutus/docs/020204mag_policy.php
+
     The SubFault and Fault classes each have a function Mo to compute
     the seismic moment for a single subfault or collection respectively.
     """
@@ -218,7 +224,7 @@ def strike_direction(x1, y1, x2, y2):
     Calculate strike direction between two points.
     Actually calculates "initial bearing" from (x1,y1) in direction
     towards (x2,y2), following
-        http://www.movable-type.co.uk/scripts/latlong.html
+    http://www.movable-type.co.uk/scripts/latlong.html
     """
 
     x1 = x1*numpy.pi/180.
@@ -237,8 +243,10 @@ def strike_direction(x1, y1, x2, y2):
 def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     """
     A continuously differentiable piecewise quadratic function of t that is 
-       0 for t <= t0, 
-       1 for t >= t0 + t_rise + t_rise_ending 
+
+     *  0 for t <= t0, 
+     *  1 for t >= t0 + t_rise + t_rise_ending 
+
     with maximum slope at t0 + t_rise.
     For specifying dynamic fault ruptures:  Subfault files often contain these
     parameters for each subfault for an earthquake event.
@@ -294,7 +302,7 @@ class DTopography(object):
 
         """
 
-        self.dz_list = []
+        self.DZ = None
         self.times = []
         self.x = None
         self.y = None
@@ -310,8 +318,8 @@ class DTopography(object):
         r"""
         Read in a dtopo file and use to set attributes of this object.
 
-        input
-        -----
+        :input:
+        
          - *path* (path) - Path to existing dtopo file to read in.
          - *dtopo_type* (int) - Type of topography file to read.  Default is 3
             if not specified or apparent from file extension.
@@ -348,21 +356,25 @@ class DTopography(object):
             X = numpy.reshape(lastlines[:,1],(my,mx))
             Y = numpy.reshape(lastlines[:,2],(my,mx))
             Y = numpy.flipud(Y)
-            dz_list = []
             if verbose:
-                print "Returning dZ as a list of mx*my arrays"
+                print "Returning DZ as a list of mx*my arrays"
+            DZ = None
             for n in range(ntimes):
                 i1 = n*mx*my
                 i2 = (n+1)*mx*my
-                dz = numpy.reshape(data[i1:i2,3],(my,mx))
-                dz = numpy.flipud(dz)
-                dz_list.append(dz)
+                dzt = numpy.reshape(data[i1:i2,3],(my,mx))
+                dzt = numpy.flipud(dzt)
+                dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
+                if DZ is None:
+                    DZ = dzt.copy()
+                else:
+                    DZ = numpy.append(DZ, dzt, axis=0)
             self.X = X
             self.Y = Y
             self.x = X[0,:]
             self.y = Y[:,0]
             self.times = t
-            self.dz_list = dz_list
+            self.DZ = DZ
 
         elif dtopo_type == 2 or dtopo_type == 3:
             fid = open(path)
@@ -384,25 +396,32 @@ class DTopography(object):
             times = numpy.linspace(t0, t0+(mt-1)*dt, mt)
     
             dZvals = numpy.loadtxt(path, skiprows=9)
-            dz_list = []
             if dtopo_type==3:
                 # my lines with mx values on each
                 for k,t in enumerate(times):
                     dZk = numpy.reshape(dZvals[k*my:(k+1)*my, :], (my,mx))
                     dZk = numpy.flipud(dZk)
-                    dz_list.append(dZk)
+                    dZk = numpy.array(dZk, ndmin=3)  # convert to 3d array
+                    if k==0:
+                        DZ = dZk.copy()
+                    else:
+                        DZ = numpy.append(DZ, dZk, axis=0)
             else:
                 # dtopo_type==2 ==> mx*my lines with 1 values on each
                 for k,t in enumerate(times):
                     dZk = numpy.reshape(dZvals[k*mx*my:(k+1)*mx*my], (my,mx))
                     dZk = numpy.flipud(dZk)
-                    dz_list.append(dZk)
+                    dZk = numpy.array(dZk, ndmin=3)  # convert to 3d array
+                    if k==0:
+                        DZ = dZk.copy()
+                    else:
+                        DZ = numpy.append(DZ, dZk, axis=0)
                     
             self.x = x
             self.y = y
             self.X, self.Y = numpy.meshgrid(x,y)
             self.times = times
-            self.dz_list = dz_list
+            self.DZ = DZ
 
         else:
             raise ValueError("Only topography types 1, 2, and 3 are supported,",
@@ -412,8 +431,8 @@ class DTopography(object):
     def write(self, path=None, dtopo_type=None):
         r"""Write out subfault resulting dtopo to file at *path*.
 
-        input
-        -----
+        :input:
+        
          - *path* (path) - Path to the output file to written to.
          - *dtopo_type* (int) - Type of topography file to write out.  Default
            is 3.
@@ -442,9 +461,9 @@ class DTopography(object):
 
             if dtopo_type == 0:
                 # Topography file with 3 columns, x, y, dz written from the
-                # upper left corner of the region
+                # upper left corner of the region. Only final time.
                 Y_flipped = numpy.flipud(self.Y)
-                dZ_flipped = numpy.flipud(self.dz_list[0])
+                dZ_flipped = numpy.flipud(self.DZ[-1,:,:]) 
 
                 for j in xrange(self.Y.shape[0]):
                     for i in xrange(self.X.shape[1]):
@@ -459,7 +478,7 @@ class DTopography(object):
                 for (n, time) in enumerate(self.times):
                     #alpha = (time - self.t[0]) / self.t[-1]
                     #dZ_flipped = numpy.flipud(alpha * self.dZ[:,:])
-                    dZ_flipped = numpy.flipud(self.dz_list[n])
+                    dZ_flipped = numpy.flipud(self.DZ[n,:,:])  
 
                     for j in xrange(self.Y.shape[0]):
                         for i in xrange(self.X.shape[1]):
@@ -489,7 +508,7 @@ class DTopography(object):
                         #alpha = (time - self.t[0]) / (self.t[-1])
                         for j in range(self.Y.shape[0]-1, -1, -1):
                             data_file.write(self.X.shape[1] * '%012.6e  ' 
-                                                  % tuple(self.dz_list[n][j,:]))
+                                                  % tuple(self.DZ[n,j,:]))
                             data_file.write("\n")
 
             else:
@@ -497,38 +516,39 @@ class DTopography(object):
                                  "supported, given %s." % dtopo_type)
 
 
-    def dz(self, t):
+    def dZ_at_t(self, t):
         """
-        Interpolate dz_list to specified time t and return deformation dz.
+        Interpolate DZ to specified time t and return deformation.
         """
         from matplotlib.mlab import find
         if t <= self.times[0]:
-            return self.dz_list[0]
+            return self.DZ[0,:,:]
         elif t >= self.times[-1]:
-            return self.dz_list[-1]
+            return self.DZ[-1,:,:]
         else:
             n = max(find(self.times <= t))
             t1 = self.times[n]
             t2 = self.times[n+1]
-            dz = (t2-t)/(t2-t1) * self.dz_list[n] + (t-t1)/(t2-t1) * self.dz_list[n+1]
+            dz = (t2-t)/(t2-t1) * self.DZ[n,:,:] + \
+                 (t-t1)/(t2-t1) * self.DZ[n+1,:,:]
             return dz
 
-    def dz_max(self):
-        r"""Return max(abs(dz)) over all dz in self.dz_list, the maximum
-        surface deformation for this dtopo."""
+    def dZ_max(self):
+        r"""Return max(abs(DZ)) over all dz in self.DZ, the maximum
+        surface deformation for this dtopo.
+        DEPRECATE? -- it's now a 1-liner
+        """
 
-        dzm = 0.
-        for dz in self.dz_list:
-            dzm = max(dzm, abs(dz).max())
-        return dzm
+        return abs(self.DZ).max()
+
 
     def plot_dz_colors(self, t, axes=None, cmax_dz=None, dz_interval=None, 
                                 fig_kwargs={}):
         """
-        Interpolate dz_list to specified time t and then call module function
+        Interpolate self.DZ to specified time t and then call module function
         plot_dz_colors.
         """
-        axes = plot_dz_colors(self.X, self.Y, self.dz(t), axes=axes,
+        axes = plot_dz_colors(self.X, self.Y, self.dZ_at_t(t), axes=axes,
                               cmax_dz=cmax_dz, dz_interval=dz_interval,
                               fig_kwargs=fig_kwargs)
         return axes
@@ -536,10 +556,10 @@ class DTopography(object):
 
     def plot_dz_contours(self, t, dz_interval=0.5, axes=None, fig_kwargs={}):
         """
-        Interpolate dz_list to specified time t and then call module function
+        Interpolate self.DZ to specified time t and then call module function
         plot_dz_contours.
         """
-        axes = plot_dz_contours(self.X, self.Y, self.dz(t), 
+        axes = plot_dz_contours(self.X, self.Y, self.dZ_at_t(t), 
                                 dz_interval=dz_interval)
         return axes
 
@@ -594,12 +614,16 @@ class Fault(object):
 
         Creates a list of subfaults from the subfault specification file at
         *path*.
-        Inputs:
+    
+        :Inputs:
+
           - *path* (str) file to read in, should contain subfaults, one per line
           - *column_map* (dict) specifies mapping from parameter to the column
             of the input file that contains values for this parameter, e.g.
+
                 column_map = {"latitude":0, "longitude":1, "depth":2, "slip":3,
-                               "rake":4, "strike":5, "dip":6}
+                "rake":4, "strike":5, "dip":6}
+
           - *coordinate_specification* (str) specifies the location on each
             subfault that corresponds to the (longitude,latitude) and depth 
             of the subfault.  See the documentation for *SubFault.set_geometry*.
@@ -642,7 +666,6 @@ class Fault(object):
                 for param in defaults.iterkeys():
                     setattr(new_subfault, param, defaults[param]) 
 
-            new_subfault.input_units = input_units
             new_subfault.convert_to_standard_units(self.input_units)
             self.subfaults.append(new_subfault)
 
@@ -659,13 +682,17 @@ class Fault(object):
           - *path* (str) file to write to. 
           - *style* (str) to write in a style that matches standard styles
             adopted by various groups.  One of the following:
-                - "usgs"  (Not implemented)
-                - "noaa sift"  (Not implemented)
-                - "ucsb"  (Not implemented)
+
+              - "usgs"  (Not implemented)
+              - "noaa sift"  (Not implemented)
+              - "ucsb"  (Not implemented)
+
           - *column_list* (list) specifies what order the parameters should
             be written in the output file, e.g.
+
                 column_list = ['longitude','latitude','length','width',
-                               'depth','strike','rake','dip','slip']
+                'depth','strike','rake','dip','slip']
+
           - *output_units* (dict) specifies units to convert to before writing.
             Defaults to "standard units".
           - *delimiter* (str) specifies delimiter between columns, e.g.
@@ -760,7 +787,7 @@ class Fault(object):
                 sys.stdout.write("%s.." % k)
                 sys.stdout.flush()
             subfault.okada(x,y)  # sets subfault.dtopo with times=[0]
-                                 # and len(subfault.dtopo.dz_list) == 1
+                                 # and subfault.dtopo.DZ.shape[0] == 1
         if verbose:
             sys.stdout.write("\nDone\n")
 
@@ -769,19 +796,23 @@ class Fault(object):
                 raise ValueError("For static deformation, need len(times) <= 2")
             dz = numpy.zeros(X.shape)
             for subfault in self.subfaults:
-                dz += subfault.dtopo.dz_list[0]
+                dz += subfault.dtopo.DZ[0,:,:]
 
             if len(times) == 1:
-                dtopo.dz_list = [dz]   # only final deformation stored
+                # only final deformation stored:
+                dtopo.DZ = numpy.array(dz, ndmin=3) 
             elif len(times) == 2:
+                # store 0 at first time and final deformation at second:
                 dz0 = numpy.zeros(X.shape)
-                dtopo.dz_list = [dz0, dz]
+                dtopo.DZ = numpy.array([dz0, dz])
+                assert dtopo.DZ.shape == (2,dz.shape[0],dz.shape[1]), \
+                    "dtopo.DZ does not have expected shape"
 
         elif self.rupture_type in ['dynamic','kinematic']:
 
             t_prev = -1.e99
-            dz_list = []
-            dz = numpy.zeros(X.shape)
+            dzt = numpy.zeros(X.shape)
+            DZ = None
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
                     t0 = getattr(subfault,'rupture_time',0)
@@ -790,10 +821,14 @@ class Fault(object):
                     rf = rise_fraction([t_prev,t],t0,t1,t2)
                     dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
-                        dz = dz + dfrac * subfault.dtopo.dz_list[0]
-                dz_list.append(dz)
+                        dzt = dzt + dfrac * subfault.dtopo.DZ[0,:,:]
+                dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
+                if DZ is None:
+                    DZ = dzt.copy()
+                else:
+                    DZ = numpy.append(DZ, dzt, axis=0)
                 t_prev = t
-            dtopo.dz_list = dz_list
+            dtopo.DZ = DZ
 
         else:   
             raise ValueError("Unrecognized rupture_type: %s" % self.rupture_type)
@@ -996,16 +1031,16 @@ class Fault(object):
     def create_dtopo_xy(self, rect=None, dx=1/60., buffer_size=0.5):
         r"""Create coordinate arrays containing fault with a buffer.
 
-        Input
-        -----
+        :Input:
+        
          - *rect* - if None, use self.containing_rect
             Otherwise a list [x1,x2,y1,y2]
          - *dx* (int) - Spatial resolution. Defaults to 1" resolution.
          - *buffer_size* (float) - Buffer distance around edge of fault in
            degrees, defaults to 0.5 degrees.
 
-        Output
-        ------
+        :Output:
+        
          - *x,y* 1-dimensional arrays that cover the desired rect.
            They start at (x1,y1) and may go a bit beyond (x2,y2) depending on dx
 
@@ -1125,8 +1160,12 @@ class SubFault(object):
         r"""Longitude of the subfault based on *coordinate_specification*."""
         self.coordinate_specification = "top center"
         r"""Specifies where the latitude, longitude and depth are measured from."""
-        self.mu = 4e11  # default value for rigidity = shear modulus
-        r"""Rigidity of subfault movement == shear modulus."""
+
+        # default value for rigidity = shear modulus
+        # Note that standard units for mu is now Pascals.
+        # Multiply by 10 to get dyne/cm^2 value.
+        self.mu = 4e10
+        r"""Rigidity (== shear modulus) in Pascals."""
 
         self._fault_plane_centers = None
         self._fault_plane_corners = None
@@ -1146,35 +1185,6 @@ class SubFault(object):
                 print "%s %s %s converted to %s %s" \
                     % (param, value, input_units[param], converted_value, \
                        standard_units[param])
-
-
-    # def convert2meters(self, parameters): 
-    #     r"""Convert relevant lengths to correct units.
-
-    #     Returns converted (length, width, depth, slip) 
-    #     Deprecated?
-
-    #     """
-
-    #     ## Note nm = Nautical mile
-    #     conversion_dict = {"km":1e3, "cm":1e-2, "nm":1852.0, "m":1.0}
-        
-    #     converted_lengths = []
-    #     for (n, parameter) in enumerate(parameters):
-    #         if isinstance(getattr(self, parameter), list) or \
-    #            isinstance(getattr(self, parameter), tuple):
-    #             converted_lengths.append(list())
-    #             for k in xrange(len(getattr(self, parameter))):
-    #                 converted_lengths[n].append(getattr(self, parameter)[k] * \
-    #                         conversion_dict[self.units[parameter]])
-    #         else:
-    #             converted_lengths.append(getattr(self, parameter) * \
-    #                         conversion_dict[self.units[parameter]])
-
-    #     if len(converted_lengths) == 1:
-    #         return converted_lengths[0]
-
-    #     return converted_lengths
 
 
     def Mo(self):
@@ -1206,6 +1216,22 @@ class SubFault(object):
         *fault_plane_centers* which are the corners of the fault plane and 
         points along the centerline respecitvely in 3D space.
 
+        **Note:** *self.coordinate_specification*  specifies the location on each
+        subfault that corresponds to the (longitude,latitude) and depth 
+        of the subfault.
+        Currently must be one of these strings:
+
+          - "bottom center": (longitude,latitude) and depth at bottom center
+          - "top center": (longitude,latitude) and depth at top center
+          - "centroid": (longitude,latitude) and depth at centroid of plane
+          - "noaa sift": (longitude,latitude) at bottom center, depth at top,  
+                         This mixed convention is used by the NOAA SIFT
+                         database and "unit sources", see:
+                         http://nctr.pmel.noaa.gov/propagation-database.html
+
+        The Okada model is expressed assuming (longitude,latitude) and depth
+        are at the bottom center of the fault plane, so values must be
+        shifted or other specifications.
         """
 
         # Simple conversion factor of latitude to meters
@@ -1228,31 +1254,16 @@ class SubFault(object):
             self._fault_plane_centers[1][2] = self.depth + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_centers[2][2] = self.depth + self.width * numpy.sin(self.dip * DEG2RAD)
 
-            # self._fault_plane_corners[0][2] = self.depth
-            # self._fault_plane_corners[1][2] = self.depth     \
-            #                      + self.width * numpy.sin(self.dip * DEG2RAD)
-            # self._fault_plane_centers[1][2] = self.depth      \
-            #                + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
         elif self.coordinate_specification == 'centroid':
-
             self._fault_plane_centers[0][2] = self.depth - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = self.depth
             self._fault_plane_centers[2][2] = self.depth + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
-            # self._fault_plane_corners[0][2] = self.depth     \
-            #                      - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
-            # self._fault_plane_corners[2][2] = self.depth     \
-            #                      + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
-            # self._fault_plane_centers[1][2] = self.depth
-        elif self.coordinate_specification == 'bottom center':
 
+        elif self.coordinate_specification == 'bottom center':
             self._fault_plane_centers[0][2] = self.depth - self.width * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = self.depth - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
-            self._fault_plane_centers[2][2] = self.depth 
-            # self._fault_plane_corners[2][2] = self.depth
-            # self._fault_plane_corners[1][2] = self.depth     \
-            #                      - self.width * numpy.sin(self.dip * DEG2RAD)
-            # self._fault_plane_centers[0][2] = self.depth      \
-            #                - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[2][2] = self.depth
+            
         else:
             raise ValueError("Invalid coordinate specification %s." % self.coordinate_specification)
 
@@ -1260,19 +1271,6 @@ class SubFault(object):
         self._fault_plane_corners[3][2] = self._fault_plane_centers[0][2]
         self._fault_plane_corners[1][2] = self._fault_plane_centers[2][2]
         self._fault_plane_corners[2][2] = self._fault_plane_centers[2][2]
-
-        # self._fault_plane_corners[2][2] = self._fault_plane_corners[0][2]
-        # self._fault_plane_corners[3][2] = self._fault_plane_corners[1][2]
-        # self._fault_plane_centers[0][2] = self._fault_plane_corners[0][2]
-        # self._fault_plane_centers[2][2] = self._fault_plane_corners[1][2]
-
-        # Convert dimensions to lat-long
-        length = self.length / lat2meter
-        width = self.width / lat2meter
-
-        # Calculate xy-plane projected width
-        # xy_width = self.width * numpy.cos(self.dip * DEG2RAD)
-        xy_width = width * numpy.sin(self.dip * DEG2RAD)
         
         # Locate fault plane in 3D space
         # Note that the coodinate specification is in reference to the fault 
@@ -1297,8 +1295,6 @@ class SubFault(object):
                               / (LAT2METER * numpy.cos(self.latitude * DEG2RAD)),
                    self.width * numpy.cos(self.dip * DEG2RAD)           \
                               * numpy.sin(self.strike * DEG2RAD) / LAT2METER)
-        xy_corners = [None, None, None, None]
-        xy_centers = [None, None, None]
         if self.coordinate_specification == 'top center':
 
             self._fault_plane_centers[0][:2] = (self.longitude, self.latitude)
@@ -1347,11 +1343,11 @@ class SubFault(object):
         r"""
         Apply Okada to this subfault and return a DTopography object.
 
-        Input:
-            x,y are 1d arrays
-        Output:
-            DTopography object with dz_list = [dz] being a list with 
-                single static displacement and times = [0.].
+        :Input:
+          - x,y are 1d arrays
+        :Output:
+          - DTopography object with DZ array of shape (1,len(x),len(y))
+                with single static displacement and times = [0.].
 
         Currently only calculates the vertical displacement.
 
@@ -1365,9 +1361,10 @@ class SubFault(object):
 
         Rewritten and made more flexible by Randy LeVeque
 
-        Note: *self.coordinate_specification* (str) specifies the location on each
-            subfault that corresponds to the (longitude,latitude) and depth 
-            of the subfault.
+        **Note:** *self.coordinate_specification* (str) specifies the location on 
+        each subfault that corresponds to the (longitude,latitude) and depth 
+        subfault.
+
         See the documentation for *SubFault.set_geometry* for dicussion of the 
         possible values *self.coordinate_specification* can take.
 
@@ -1431,7 +1428,7 @@ class SubFault(object):
         dtopo = DTopography()
         dtopo.X = X
         dtopo.Y = Y
-        dtopo.dz_list = [dz]
+        dtopo.DZ = numpy.array(dz, ndmin=3)
         dtopo.times = [0.]
         self.dtopo = dtopo
         return dtopo
@@ -1476,9 +1473,10 @@ class SubFault(object):
         r"""
         For a dynamic fault, compute the slip at time t.
         Assumes the following attributes are set:
-            *rupture_time*
-            *rise_time*
-            *rise_time_ending*: optional, defaults to *rise_time*
+
+          - *rupture_time*
+          - *rise_time*
+          - *rise_time_ending*: optional, defaults to *rise_time*
 
         """
         if (self.rupture_time is None) or (self.rise_time is None):
@@ -1707,11 +1705,14 @@ class SiftFault(Fault):
     is more recent than what is reported in that paper and uses different
     notation for the subfault names.
     The subfault database used was downloaded from
+
         http://sift.pmel.noaa.gov/ComMIT/compressed/info_sz.dat
 
     Example:
+
         >>> sift_slip = {'acsza1':2, 'acszb1':3}
         >>> fault = SiftFault(sift_slip)
+
     results in a fault with two specified subfaults with slip of 2 and 3 meters.
     """
 

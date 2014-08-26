@@ -1,13 +1,30 @@
 #!/usr/bin/env python
 
-r"""Utility functions for GeoClaw"""
+r"""
+GeoClaw util Module  `$CLAW/geoclaw/src/python/geoclaw/util.py`
+
+Module provides provides utility functions.
+
+:Constants:
+ - DEG2RAD factor to convert degrees to radians
+ - RAD2DEG factor to convert radians to degrees
+ - LAT2METER factor to convert degrees in latitude to meters
+
+:Functions:
+
+ - strip_archive_extensions - strip off things like .tar or .gz
+ - get_remote_file - Fetch a file from a url, e.g. a topo file
+ - dms2decimal - Convert (degrees, minutes, seconds) to decimal degrees
+ - dist_meters2latlong - Convert dx, dy distance in meters to degrees
+ - dist_latlong2meters - Convert dx, dy distance in degrees to meters
+ - haversine - Calculate the haversine based great circle distance
+ - inv_haversine - Inverts the haversine distance
+"""
 
 import os
 import urllib2
 import tarfile
-
 import numpy
-
 import clawpack.geoclaw.data
 
 # ==============================================================================
@@ -106,7 +123,8 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
         # TODO: Should check here if a file is a bare compressed file (no tar)
     else:
         if verbose:
-            print "Skipping %s because it already exists locally." % url
+            print "Skipping %s " % url
+            print "  because file already exists: %s" % output_path
         return None
 
     return unarchived_output_path
@@ -119,13 +137,16 @@ def dms2decimal(d,m,s,coord='N'):
     r"""Convert coordinates in (degrees, minutes, seconds) to decimal form.  
     
     If coord == 'S' or coord == 'W' then value is negated too.
-    Example: 
+
+    :Example: 
+
         >>> topotools.dms2decimal(7,30,36,'W')
         -7.51
+
     (Note that you might want to add 360 to resulting W coordinate
     if using E coordinates everywhere in a computation spanning date line.)
 
-    returns float
+    :Returns: float
 
     """
 

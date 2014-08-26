@@ -27,7 +27,7 @@ def test_read_csv_make_dtopo(save=False):
     fault.read(subfault_path, input_units=input_units, 
                               coordinate_specification="noaa sift")
 
-    assert abs(fault.Mw() - 9.2) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
+    assert abs(fault.Mw() - 8.53336) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
 
     xlower = 203
     xupper = 214.  # approximate - adjusted below
@@ -53,12 +53,11 @@ def test_read_csv_make_dtopo(save=False):
     compare_data = dtopotools.DTopography(path=test_data_path)
     compare_data.read(path=test_data_path, dtopo_type=3)
 
-    assert len(dtopo.dz_list) == len(compare_data.dz_list), \
-        "len(dtopo.dz_list) is %s, should be %s" \
-        % (len(dtopo.dz_list), len(compare_data.dz_list))
+    assert dtopo.DZ.shape == compare_data.DZ.shape, \
+        "dtopo.DZ.shape is %s, should be %s" \
+        % (dtopo.DZ.shape, compare_data.DZ.shape)
 
-    for k in range(len(dtopo.dz_list)):
-        assert numpy.allclose(compare_data.dz_list[k], dtopo.dz_list[k])
+    assert numpy.allclose(compare_data.DZ, dtopo.DZ)
 
 
 def test_read_ucsb_make_dtopo(save=False):
@@ -100,12 +99,11 @@ def test_read_ucsb_make_dtopo(save=False):
     compare_data = dtopotools.DTopography(path=test_data_path)
     compare_data.read(path=test_data_path, dtopo_type=3)
 
-    assert len(dtopo.dz_list) == len(compare_data.dz_list), \
-        "len(dtopo.dz_list) is %s, should be %s" \
-        % (len(dtopo.dz_list), len(compare_data.dz_list))
+    assert dtopo.DZ.shape == compare_data.DZ.shape, \
+        "dtopo.DZ.shape is %s, should be %s" \
+        % (dtopo.DZ.shape, compare_data.DZ.shape)
 
-    for k in range(len(dtopo.dz_list)):
-        assert numpy.allclose(compare_data.dz_list[k], dtopo.dz_list[k])
+    assert numpy.allclose(compare_data.DZ, dtopo.DZ)
 
 
 def test_read_sift_make_dtopo(save=False):
@@ -114,7 +112,7 @@ def test_read_sift_make_dtopo(save=False):
     sift_slip = {'acsza1':2, 'acszb1':3}
     fault = dtopotools.SiftFault(sift_slip)
 
-    assert abs(fault.Mw() - 7.966666666) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
+    assert abs(fault.Mw() - 7.3) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
 
     xlower = 162.
     xupper = 168.
@@ -145,12 +143,11 @@ def test_read_sift_make_dtopo(save=False):
     compare_data = dtopotools.DTopography(path=test_data_path)
     compare_data.read(path=test_data_path, dtopo_type=3)
 
-    assert len(dtopo.dz_list) == len(compare_data.dz_list), \
-        "len(dtopo.dz_list) is %s, should be %s" \
-        % (len(dtopo.dz_list), len(compare_data.dz_list))
+    assert dtopo.DZ.shape == compare_data.DZ.shape, \
+        "dtopo.DZ.shape is %s, should be %s" \
+        % (dtopo.DZ.shape, compare_data.DZ.shape)
 
-    for k in range(len(dtopo.dz_list)):
-        assert numpy.allclose(compare_data.dz_list[k], dtopo.dz_list[k])
+    assert numpy.allclose(compare_data.DZ, dtopo.DZ)
 
     # except AssertionError as e:
     #     test_name = inspect.stack()[1][-2][0][:-3]
@@ -176,7 +173,7 @@ def test_SubdividedPlaneFault_make_dtopo(save=False):
     # print "new Mo = ",fault2.Mo()
     #fault2.plot_subfaults(slip_color=True)
 
-    assert abs(fault2.Mw() - 7.50068666) < 1e-4, \
+    assert abs(fault2.Mw() - 6.83402) < 1e-4, \
            "*** Mw is wrong: %g" % fault.Mw()
 
     xlower = 162.
@@ -205,12 +202,11 @@ def test_SubdividedPlaneFault_make_dtopo(save=False):
     compare_data = dtopotools.DTopography(path=test_data_path)
     compare_data.read(path=test_data_path, dtopo_type=3)
 
-    assert len(dtopo.dz_list) == len(compare_data.dz_list), \
-        "len(dtopo.dz_list) is %s, should be %s" \
-        % (len(dtopo.dz_list), len(compare_data.dz_list))
+    assert dtopo.DZ.shape == compare_data.DZ.shape, \
+        "dtopo.DZ.shape is %s, should be %s" \
+        % (dtopo.DZ.shape, compare_data.DZ.shape)
 
-    for k in range(len(dtopo.dz_list)):
-        assert numpy.allclose(compare_data.dz_list[k], dtopo.dz_list[k])
+    assert numpy.allclose(compare_data.DZ, dtopo.DZ)
 
 
 def test_dtopo_io():
@@ -225,18 +221,16 @@ def test_dtopo_io():
                        os.path.join(temp_path, 'alaska1964.tt3')]
                        # os.path.join(temp_path, 'alaska1964.tt2'),
 
-        dtopo = []
-        for (k, path) in enumerate(dtopo_paths):
+        for path in dtopo_paths:
             test_dtopo.write(path)
             dtopo = dtopotools.DTopography(path=path)
 
-            assert len(test_dtopo.dz_list) == len(dtopo.dz_list), \
-                   "Number of dz fields not equal for topo_type = %s." % k
+            assert test_dtopo.DZ.shape == dtopo.DZ.shape, \
+                   "Shape of DZ not equal for topo_type = %s." % k
 
-            for (n, dz) in enumerate(test_dtopo.dz_list):
-                assert numpy.allclose(dz, dtopo.dz_list[n]), \
-                       "dz field not equal for topo_type = %s " + \
-                       "at time = %s." % (k, dtopo.times[n])
+            assert numpy.allclose(test_dtopo.DZ, dtopo.DZ), \
+                "DZ not equal for %s" % path
+
 
 
     except AssertionError as e:

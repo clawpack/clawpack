@@ -1,3 +1,9 @@
+r"""
+fgmax_tools module: $CLAW/geoclaw/src/python/geoclaw/fgmax_tools.py
+
+Tools to specify an fgmax grid for keeping track of maximum flow depth, etc.
+"""
+
 from clawpack.geoclaw import kmltools
 import os
 from numpy import sqrt
@@ -180,7 +186,7 @@ def make_fgmax(FG):
         print "   corner 3 = (%15.10f,%15.10f)" % (x3,y3)
         print "   corner 4 = (%15.10f,%15.10f)" % (x4,y4)
         
-        xy = [x1,x2,y1,y2,x3,y3,x4,y4]
+        xy = [x1,y1,x2,y2,x3,y3,x4,y4]
         fname_root = os.path.splitext(FG.fname)[0]
         kml_file = fname_root + '.kml'
         kmltools.quad2kml(xy, kml_file, fname_root, color='8888FF')
