@@ -913,11 +913,13 @@ class Fault(object):
             x_corners = [subfault.fault_plane_corners[2][0],
                          subfault.fault_plane_corners[3][0],
                          subfault.fault_plane_corners[0][0],
-                         subfault.fault_plane_corners[1][0]]
+                         subfault.fault_plane_corners[1][0],
+                         subfault.fault_plane_corners[2][0]]
             y_corners = [subfault.fault_plane_corners[2][1],
                          subfault.fault_plane_corners[3][1],
                          subfault.fault_plane_corners[0][1],
-                         subfault.fault_plane_corners[1][1]]
+                         subfault.fault_plane_corners[1][1],
+                         subfault.fault_plane_corners[2][1]]
     
             y_ave += y_centroid
     
