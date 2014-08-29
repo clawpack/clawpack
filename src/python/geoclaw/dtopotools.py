@@ -1356,7 +1356,7 @@ class SubFault(object):
 
         Okada model is a mapping from several fault parameters
         to a surface deformation.
-        See Okada 1985, or Okada 1992, Bull. Seism. Soc. Am.
+        See Okada 1985 [Okada85]_, or Okada 1992, Bull. Seism. Soc. Am.
         
         okadamap function riginally written in Python by Dave George for
         Clawpack 4.6 okada.py routine, with some routines adapted
