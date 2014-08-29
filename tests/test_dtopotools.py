@@ -54,11 +54,11 @@ def test_read_csv_make_dtopo(save=False):
     compare_data = dtopotools.DTopography(path=test_data_path)
     compare_data.read(path=test_data_path, dtopo_type=3)
 
-    assert dtopo.DZ.shape == compare_data.DZ.shape, \
-        "dtopo.DZ.shape is %s, should be %s" \
-        % (dtopo.DZ.shape, compare_data.DZ.shape)
+    assert dtopo.dZ.shape == compare_data.dZ.shape, \
+        "dtopo.dZ.shape is %s, should be %s" \
+        % (dtopo.dZ.shape, compare_data.dZ.shape)
 
-    assert numpy.allclose(compare_data.DZ, dtopo.DZ)
+    assert numpy.allclose(compare_data.dZ, dtopo.dZ)
 
 
 def test_read_ucsb_make_dtopo(save=False):
@@ -100,11 +100,11 @@ def test_read_ucsb_make_dtopo(save=False):
     compare_data = dtopotools.DTopography(path=test_data_path)
     compare_data.read(path=test_data_path, dtopo_type=3)
 
-    assert dtopo.DZ.shape == compare_data.DZ.shape, \
-        "dtopo.DZ.shape is %s, should be %s" \
-        % (dtopo.DZ.shape, compare_data.DZ.shape)
+    assert dtopo.dZ.shape == compare_data.dZ.shape, \
+        "dtopo.dZ.shape is %s, should be %s" \
+        % (dtopo.dZ.shape, compare_data.dZ.shape)
 
-    assert numpy.allclose(compare_data.DZ, dtopo.DZ)
+    assert numpy.allclose(compare_data.dZ, dtopo.dZ)
 
 
 def test_read_sift_make_dtopo(save=False):
@@ -140,11 +140,11 @@ def test_read_sift_make_dtopo(save=False):
     compare_data = dtopotools.DTopography(path=test_data_path)
     compare_data.read(path=test_data_path, dtopo_type=3)
 
-    assert dtopo.DZ.shape == compare_data.DZ.shape, \
-        "dtopo.DZ.shape is %s, should be %s" \
-        % (dtopo.DZ.shape, compare_data.DZ.shape)
+    assert dtopo.dZ.shape == compare_data.dZ.shape, \
+        "dtopo.dZ.shape is %s, should be %s" \
+        % (dtopo.dZ.shape, compare_data.dZ.shape)
 
-    assert numpy.allclose(compare_data.DZ, dtopo.DZ)
+    assert numpy.allclose(compare_data.dZ, dtopo.dZ)
 
 
 def test_SubdividedPlaneFault_make_dtopo(save=False):
@@ -190,11 +190,11 @@ def test_SubdividedPlaneFault_make_dtopo(save=False):
     compare_data = dtopotools.DTopography(path=test_data_path)
     compare_data.read(path=test_data_path, dtopo_type=3)
 
-    assert dtopo.DZ.shape == compare_data.DZ.shape, \
-        "dtopo.DZ.shape is %s, should be %s" \
-        % (dtopo.DZ.shape, compare_data.DZ.shape)
+    assert dtopo.dZ.shape == compare_data.dZ.shape, \
+        "dtopo.dZ.shape is %s, should be %s" \
+        % (dtopo.dZ.shape, compare_data.dZ.shape)
 
-    assert numpy.allclose(compare_data.DZ, dtopo.DZ)
+    assert numpy.allclose(compare_data.dZ, dtopo.dZ)
 
 
 def test_dtopo_io():
@@ -213,11 +213,11 @@ def test_dtopo_io():
             test_dtopo.write(path)
             dtopo = dtopotools.DTopography(path=path)
 
-            assert test_dtopo.DZ.shape == dtopo.DZ.shape, \
-                   "Shape of DZ not equal for topo_type = %s." % dtopo.topo_type
+            assert test_dtopo.dZ.shape == dtopo.dZ.shape, \
+                   "Shape of dZ not equal for topo_type = %s." % dtopo.topo_type
 
-            assert numpy.allclose(test_dtopo.DZ, dtopo.DZ), \
-                "DZ not equal for %s" % path
+            assert numpy.allclose(test_dtopo.dZ, dtopo.dZ), \
+                "dZ not equal for %s" % path
 
     except AssertionError as e:
         test_dump_path = os.path.join(os.getcwd(), "test_dtopo_io")
@@ -377,7 +377,7 @@ def test_dynamic_tohoku(verbose=False, plot=False):
     times = numpy.linspace(0,tmax,10)
     dtopo = fault.create_dtopography(x,y,times,verbose=True)
 
-    dz_final = dtopo.DZ[-1]
+    dz_final = dtopo.dZ[-1]
     dz_max = dz_final.max()
 
     if plot:

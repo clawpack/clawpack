@@ -120,17 +120,17 @@ def convert_units(value, io_units, direction=1, verbose=False):
     return converted_value
 
 
-def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False,
+def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
                                fig_kwargs={}):
-    r"""For plotting seafloor deformation dz"""
+    r"""For plotting seafloor deformation dZ"""
     import matplotlib.pyplot as plt
 
     if axes is None:
         fig = plt.figure(**fig_kwargs)
         axes = fig.add_subplot(1, 1, 1)
 
-    dzmax = max(dz.max(), -dz.min()) + dz_interval
-    clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
+    dZ_max = max(dZ.max(), -dZ.min()) + dZ_interval
+    clines1 = numpy.arange(dZ_interval, dZ_max, dZ_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
 
     # Create axes if needed
@@ -141,17 +141,17 @@ def plot_dz_contours(x, y, dz, axes=None, dz_interval=0.5, verbose=False,
     if len(clines) > 0:
         if verbose:
             print "Plotting contour lines at: ",clines
-        axes.contour(x, y, dz, clines, colors='k')
+        axes.contour(x, y, dZ, clines, colors='k')
     else:   
         print "No contours to plot"
 
     return axes
 
 
-def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
+def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
                    add_colorbar=True, verbose=False, fig_kwargs={}):
     r"""
-    Plot sea floor deformation dz as colormap with contours
+    Plot sea floor deformation dZ as colormap with contours
     """
 
     from clawpack.visclaw import colormaps
@@ -160,36 +160,36 @@ def plot_dz_colors(x, y, dz, axes=None, cmax_dz=None, dz_interval=None,
     if axes is None:
         fig = plt.figure(**fig_kwargs)
         axes = fig.add_subplot(1, 1, 1)
-    #print "+++ in plot_dz_colors, axes = ",axes
-    #print "+++ in plot_dz_colors, id(axes) = ",id(axes)
+    #print "+++ in plot_dZ_colors, axes = ",axes
+    #print "+++ in plot_dZ_colors, id(axes) = ",id(axes)
 
-    dzmax = numpy.abs(dz).max()
-    if cmax_dz is None:
-        if dzmax < 1.e-12:
-            cmax_dz = 0.1
+    dZmax = numpy.abs(dZ).max()
+    if cmax_dZ is None:
+        if dZmax < 1.e-12:
+            cmax_dZ = 0.1
         else:
-            cmax_dz = dzmax
+            cmax_dZ = dZmax
     cmap = colormaps.blue_white_red
     extent = [x.min(), x.max(), y.min(), y.max()]
-    im = axes.imshow(dz, extent=extent, cmap=cmap, origin='lower')
-    im.set_clim(-cmax_dz,cmax_dz)
+    im = axes.imshow(dZ, extent=extent, cmap=cmap, origin='lower')
+    im.set_clim(-cmax_dZ,cmax_dZ)
     if add_colorbar:
         cbar = plt.colorbar(im, ax=axes)
         cbar.set_label("Deformation (m)")
     
-    if dz_interval is None:
-        dz_interval = cmax_dz/10.
-    clines1 = numpy.arange(dz_interval, dzmax + dz_interval, dz_interval)
+    if dZ_interval is None:
+        dZ_interval = cmax_dZ/10.
+    clines1 = numpy.arange(dZ_interval, dZmax + dZ_interval, dZ_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
     if len(clines) > 0:
         if verbose:
             print "Plotting contour lines at: ",clines
-        axes.contour(x,y,dz,clines,colors='k',linestyles='solid')
+        axes.contour(x,y,dZ,clines,colors='k',linestyles='solid')
     elif verbose:
         print "No contours to plot"
 
-    y_ave = 0.5*(y.min() + y.max())
-    axes.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
+    y_ave = 0.5 * (y.min() + y.max())
+    axes.set_aspect(1. / numpy.cos(y_ave * numpy.pi / 180.))
     # axes.ticklabel_format(format='plain', useOffset=False)
     labels = axes.get_xticks().tolist()
     axes.set_xticklabels(labels, rotation=80)
@@ -239,6 +239,7 @@ def strike_direction(x1, y1, x2, y2):
     if s<0:
         s = 360+s
     return s
+
 
 def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     """
@@ -302,7 +303,7 @@ class DTopography(object):
 
         """
 
-        self.DZ = None
+        self.dZ = None
         self.times = []
         self.x = None
         self.y = None
@@ -357,24 +358,24 @@ class DTopography(object):
             Y = numpy.reshape(lastlines[:,2],(my,mx))
             Y = numpy.flipud(Y)
             if verbose:
-                print "Returning DZ as a list of mx*my arrays"
-            DZ = None
+                print "Returning dZ as a list of mx*my arrays"
+            dZ = None
             for n in range(ntimes):
                 i1 = n*mx*my
                 i2 = (n+1)*mx*my
                 dzt = numpy.reshape(data[i1:i2,3],(my,mx))
                 dzt = numpy.flipud(dzt)
                 dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
-                if DZ is None:
-                    DZ = dzt.copy()
+                if dZ is None:
+                    dZ = dzt.copy()
                 else:
-                    DZ = numpy.append(DZ, dzt, axis=0)
+                    dZ = numpy.append(dZ, dzt, axis=0)
             self.X = X
             self.Y = Y
             self.x = X[0,:]
             self.y = Y[:,0]
             self.times = t
-            self.DZ = DZ
+            self.dZ = dZ
 
         elif dtopo_type == 2 or dtopo_type == 3:
             fid = open(path)
@@ -403,9 +404,9 @@ class DTopography(object):
                     dZk = numpy.flipud(dZk)
                     dZk = numpy.array(dZk, ndmin=3)  # convert to 3d array
                     if k==0:
-                        DZ = dZk.copy()
+                        dZ = dZk.copy()
                     else:
-                        DZ = numpy.append(DZ, dZk, axis=0)
+                        dZ = numpy.append(dZ, dZk, axis=0)
             else:
                 # dtopo_type==2 ==> mx*my lines with 1 values on each
                 for k,t in enumerate(times):
@@ -413,15 +414,15 @@ class DTopography(object):
                     dZk = numpy.flipud(dZk)
                     dZk = numpy.array(dZk, ndmin=3)  # convert to 3d array
                     if k==0:
-                        DZ = dZk.copy()
+                        dZ = dZk.copy()
                     else:
-                        DZ = numpy.append(DZ, dZk, axis=0)
+                        dZ = numpy.append(dZ, dZk, axis=0)
                     
             self.x = x
             self.y = y
             self.X, self.Y = numpy.meshgrid(x,y)
             self.times = times
-            self.DZ = DZ
+            self.dZ = dZ
 
         else:
             raise ValueError("Only topography types 1, 2, and 3 are supported,",
@@ -463,7 +464,7 @@ class DTopography(object):
                 # Topography file with 3 columns, x, y, dz written from the
                 # upper left corner of the region. Only final time.
                 Y_flipped = numpy.flipud(self.Y)
-                dZ_flipped = numpy.flipud(self.DZ[-1,:,:]) 
+                dZ_flipped = numpy.flipud(self.dZ[-1,:,:]) 
 
                 for j in xrange(self.Y.shape[0]):
                     for i in xrange(self.X.shape[1]):
@@ -478,7 +479,7 @@ class DTopography(object):
                 for (n, time) in enumerate(self.times):
                     #alpha = (time - self.t[0]) / self.t[-1]
                     #dZ_flipped = numpy.flipud(alpha * self.dZ[:,:])
-                    dZ_flipped = numpy.flipud(self.DZ[n,:,:])  
+                    dZ_flipped = numpy.flipud(self.dZ[n,:,:])  
 
                     for j in xrange(self.Y.shape[0]):
                         for i in xrange(self.X.shape[1]):
@@ -508,7 +509,7 @@ class DTopography(object):
                         #alpha = (time - self.t[0]) / (self.t[-1])
                         for j in range(self.Y.shape[0]-1, -1, -1):
                             data_file.write(self.X.shape[1] * '%012.6e  ' 
-                                                  % tuple(self.DZ[n,j,:]))
+                                                  % tuple(self.dZ[n,j,:]))
                             data_file.write("\n")
 
             else:
@@ -518,49 +519,50 @@ class DTopography(object):
 
     def dZ_at_t(self, t):
         """
-        Interpolate DZ to specified time t and return deformation.
+        Interpolate dZ to specified time t and return deformation.
         """
         from matplotlib.mlab import find
         if t <= self.times[0]:
-            return self.DZ[0,:,:]
+            return self.dZ[0,:,:]
         elif t >= self.times[-1]:
-            return self.DZ[-1,:,:]
+            return self.dZ[-1,:,:]
         else:
             n = max(find(self.times <= t))
             t1 = self.times[n]
             t2 = self.times[n+1]
-            dz = (t2-t)/(t2-t1) * self.DZ[n,:,:] + \
-                 (t-t1)/(t2-t1) * self.DZ[n+1,:,:]
+            dz = (t2-t)/(t2-t1) * self.dZ[n,:,:] + \
+                 (t-t1)/(t2-t1) * self.dZ[n+1,:,:]
             return dz
 
+
     def dZ_max(self):
-        r"""Return max(abs(DZ)) over all dz in self.DZ, the maximum
+        r"""Return max(abs(dZ)) over all dz in self.dZ, the maximum
         surface deformation for this dtopo.
         DEPRECATE? -- it's now a 1-liner
         """
 
-        return abs(self.DZ).max()
+        return abs(self.dZ).max()
 
 
-    def plot_dz_colors(self, t, axes=None, cmax_dz=None, dz_interval=None, 
+    def plot_dZ_colors(self, t, axes=None, cmax_dZ=None, dZ_interval=None, 
                                 fig_kwargs={}):
         """
-        Interpolate self.DZ to specified time t and then call module function
-        plot_dz_colors.
+        Interpolate self.dZ to specified time t and then call module function
+        plot_dZ_colors.
         """
-        axes = plot_dz_colors(self.X, self.Y, self.dZ_at_t(t), axes=axes,
-                              cmax_dz=cmax_dz, dz_interval=dz_interval,
+        axes = plot_dZ_colors(self.X, self.Y, self.dZ_at_t(t), axes=axes,
+                              cmax_dZ=cmax_dZ, dZ_interval=dZ_interval,
                               fig_kwargs=fig_kwargs)
         return axes
 
 
-    def plot_dz_contours(self, t, dz_interval=0.5, axes=None, fig_kwargs={}):
+    def plot_dZ_contours(self, t, dZ_interval=0.5, axes=None, fig_kwargs={}):
         """
-        Interpolate self.DZ to specified time t and then call module function
-        plot_dz_contours.
+        Interpolate self.dZ to specified time t and then call module function
+        plot_dZ_contours.
         """
-        axes = plot_dz_contours(self.X, self.Y, self.dZ_at_t(t), 
-                                dz_interval=dz_interval)
+        axes = plot_dZ_contours(self.X, self.Y, self.dZ_at_t(t), 
+                                dZ_interval=dZ_interval)
         return axes
 
 
@@ -787,7 +789,7 @@ class Fault(object):
                 sys.stdout.write("%s.." % k)
                 sys.stdout.flush()
             subfault.okada(x,y)  # sets subfault.dtopo with times=[0]
-                                 # and subfault.dtopo.DZ.shape[0] == 1
+                                 # and subfault.dtopo.dZ.shape[0] == 1
         if verbose:
             sys.stdout.write("\nDone\n")
 
@@ -796,23 +798,23 @@ class Fault(object):
                 raise ValueError("For static deformation, need len(times) <= 2")
             dz = numpy.zeros(X.shape)
             for subfault in self.subfaults:
-                dz += subfault.dtopo.DZ[0,:,:]
+                dz += subfault.dtopo.dZ[0,:,:]
 
             if len(times) == 1:
                 # only final deformation stored:
-                dtopo.DZ = numpy.array(dz, ndmin=3) 
+                dtopo.dZ = numpy.array(dz, ndmin=3) 
             elif len(times) == 2:
                 # store 0 at first time and final deformation at second:
                 dz0 = numpy.zeros(X.shape)
-                dtopo.DZ = numpy.array([dz0, dz])
-                assert dtopo.DZ.shape == (2,dz.shape[0],dz.shape[1]), \
-                    "dtopo.DZ does not have expected shape"
+                dtopo.dZ = numpy.array([dz0, dz])
+                assert dtopo.dZ.shape == (2,dz.shape[0],dz.shape[1]), \
+                    "dtopo.dZ does not have expected shape"
 
         elif self.rupture_type in ['dynamic','kinematic']:
 
             t_prev = -1.e99
             dzt = numpy.zeros(X.shape)
-            DZ = None
+            dZ = None
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
                     t0 = getattr(subfault,'rupture_time',0)
@@ -821,14 +823,14 @@ class Fault(object):
                     rf = rise_fraction([t_prev,t],t0,t1,t2)
                     dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
-                        dzt = dzt + dfrac * subfault.dtopo.DZ[0,:,:]
+                        dzt = dzt + dfrac * subfault.dtopo.dZ[0,:,:]
                 dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
-                if DZ is None:
-                    DZ = dzt.copy()
+                if dZ is None:
+                    dZ = dzt.copy()
                 else:
-                    DZ = numpy.append(DZ, dzt, axis=0)
+                    dZ = numpy.append(dZ, dzt, axis=0)
                 t_prev = t
-            dtopo.DZ = DZ
+            dtopo.dZ = dZ
 
         else:   
             raise ValueError("Unrecognized rupture_type: %s" % self.rupture_type)
@@ -913,11 +915,13 @@ class Fault(object):
             x_corners = [subfault.fault_plane_corners[2][0],
                          subfault.fault_plane_corners[3][0],
                          subfault.fault_plane_corners[0][0],
-                         subfault.fault_plane_corners[1][0]]
+                         subfault.fault_plane_corners[1][0],
+                         subfault.fault_plane_corners[2][0]]
             y_corners = [subfault.fault_plane_corners[2][1],
                          subfault.fault_plane_corners[3][1],
                          subfault.fault_plane_corners[0][1],
-                         subfault.fault_plane_corners[1][1]]
+                         subfault.fault_plane_corners[1][1],
+                         subfault.fault_plane_corners[2][1]]
     
             y_ave += y_centroid
     
@@ -1200,10 +1204,13 @@ class SubFault(object):
 
     def __str__(self):
         output = "Subfault Characteristics:\n"
-        output += "  Coordinates: (%s, %s) (%s)\n" % (self.longitude, self.latitude, self.coordinate_specification)
+        output += "  Coordinates: (%s, %s) (%s)\n" % (self.longitude,  
+                                                      self.latitude, 
+                                                  self.coordinate_specification)
         output += "  Dimensions (L,W): (%s, %s) m\n" % (self.length, self.width)
         output += "  Depth: %s m\n" % (self.depth)
-        output += "  Rake, Strike, Dip: %s, %s, %s\n" % (self.rake, self.strike, self.dip)
+        output += "  Rake, Strike, Dip: %s, %s, %s\n" % (self.rake, self.strike,
+                                                         self.dip)
         output += "  Slip, Moment: %s m, %s N-m\n" % (self.slip, self.Mo())
         output += "  Fault Centroid: %s\n" % self.fault_plane_centers[1]
         return output
@@ -1251,21 +1258,28 @@ class SubFault(object):
            self.coordinate_specification == 'noaa sift':
 
             self._fault_plane_centers[0][2] = self.depth
-            self._fault_plane_centers[1][2] = self.depth + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
-            self._fault_plane_centers[2][2] = self.depth + self.width * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[1][2] = self.depth            \
+                              + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[2][2] = self.depth            \
+                                    + self.width * numpy.sin(self.dip * DEG2RAD)
 
         elif self.coordinate_specification == 'centroid':
-            self._fault_plane_centers[0][2] = self.depth - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[0][2] = self.depth            \
+                              - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_centers[1][2] = self.depth
-            self._fault_plane_centers[2][2] = self.depth + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[2][2] = self.depth            \
+                              + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
 
         elif self.coordinate_specification == 'bottom center':
-            self._fault_plane_centers[0][2] = self.depth - self.width * numpy.sin(self.dip * DEG2RAD)
-            self._fault_plane_centers[1][2] = self.depth - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[0][2] = self.depth            \
+                              - self.width * numpy.sin(self.dip * DEG2RAD)
+            self._fault_plane_centers[1][2] = self.depth            \
+                              - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
             self._fault_plane_centers[2][2] = self.depth
             
         else:
-            raise ValueError("Invalid coordinate specification %s." % self.coordinate_specification)
+            raise ValueError("Invalid coordinate specification %s." \
+                                                % self.coordinate_specification)
 
         self._fault_plane_corners[0][2] = self._fault_plane_centers[0][2]
         self._fault_plane_corners[3][2] = self._fault_plane_centers[0][2]
@@ -1322,21 +1336,32 @@ class SubFault(object):
             self._fault_plane_centers[2][:2] = (self.longitude, self.latitude)
 
         else:
-            raise ValueError("Unknown coordinate specification '%s'." % self.coordinate_specification)
+            raise ValueError("Unknown coordinate specification '%s'."       \
+                                                % self.coordinate_specification)
 
         # Calculate coordinates of corners
         # Vector strike goes along the top edge from point 1 to point a
-        up_strike = (0.5 * self.length * numpy.sin(self.strike * DEG2RAD) / (lat2meter * numpy.cos(self._fault_plane_centers[2][1] * DEG2RAD)),
-                     0.5 * self.length * numpy.cos(self.strike * DEG2RAD) / lat2meter)
+        up_strike = (0.5 * self.length * numpy.sin(self.strike * DEG2RAD) \
+           / (lat2meter * numpy.cos(self._fault_plane_centers[2][1] * DEG2RAD)),
+                     0.5 * self.length * numpy.cos(self.strike * DEG2RAD) \
+           / lat2meter)
         
-        self._fault_plane_corners[0][:2] = (self._fault_plane_centers[0][0] + up_strike[0],
-                                            self._fault_plane_centers[0][1] + up_strike[1])
-        self._fault_plane_corners[1][:2] = (self._fault_plane_centers[2][0] + up_strike[0], 
-                                            self._fault_plane_centers[2][1] + up_strike[1])
-        self._fault_plane_corners[2][:2] = (self._fault_plane_centers[2][0] - up_strike[0],
-                                            self._fault_plane_centers[2][1] - up_strike[1])
-        self._fault_plane_corners[3][:2] = (self._fault_plane_centers[0][0] - up_strike[0],
-                                            self._fault_plane_centers[0][1] - up_strike[1])
+        self._fault_plane_corners[0][:2] = (self._fault_plane_centers[0][0] 
+                                                                 + up_strike[0],
+                                            self._fault_plane_centers[0][1] 
+                                                                 + up_strike[1])
+        self._fault_plane_corners[1][:2] = (self._fault_plane_centers[2][0] 
+                                                                 + up_strike[0], 
+                                            self._fault_plane_centers[2][1] 
+                                                                 + up_strike[1])
+        self._fault_plane_corners[2][:2] = (self._fault_plane_centers[2][0] 
+                                                                 - up_strike[0],
+                                            self._fault_plane_centers[2][1] 
+                                                                 - up_strike[1])
+        self._fault_plane_corners[3][:2] = (self._fault_plane_centers[0][0] 
+                                                                 - up_strike[0],
+                                            self._fault_plane_centers[0][1] 
+                                                                 - up_strike[1])
 
     
     def okada(self, x, y):
@@ -1346,7 +1371,7 @@ class SubFault(object):
         :Input:
           - x,y are 1d arrays
         :Output:
-          - DTopography object with DZ array of shape (1,len(x),len(y))
+          - DTopography object with dZ array of shape (1,len(x),len(y))
                 with single static displacement and times = [0.].
 
         Currently only calculates the vertical displacement.
@@ -1388,58 +1413,57 @@ class SubFault(object):
         ang_rake = DEG2RAD * self.rake
         ang_strike = DEG2RAD * self.strike
     
-        X,Y = numpy.meshgrid(x,y)   # use convention of upper case for 2d
+        X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
     
         # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
         # meters:
-        xx = LAT2METER * numpy.cos(DEG2RAD*Y)*(X-x_bottom)   
-        yy = LAT2METER * (Y-y_bottom)
+        xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_bottom)   
+        yy = LAT2METER * (Y - y_bottom)
     
     
         # Convert to distance along strike (x1) and dip (x2):
-        x1 = xx*numpy.sin(ang_strike) + yy*numpy.cos(ang_strike) 
-        x2 = xx*numpy.cos(ang_strike) - yy*numpy.sin(ang_strike) 
+        x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
+        x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike) 
     
         # In Okada's paper, x2 is distance up the fault plane, not down dip:
         x2 = -x2
     
-        p = x2*numpy.cos(ang_dip) + depth_bottom * numpy.sin(ang_dip)
-        q = x2*numpy.sin(ang_dip) - depth_bottom * numpy.cos(ang_dip)
+        p = x2 * numpy.cos(ang_dip) + depth_bottom * numpy.sin(ang_dip)
+        q = x2 * numpy.sin(ang_dip) - depth_bottom * numpy.cos(ang_dip)
     
-        f1=self._strike_slip (x1+halfL,p,  ang_dip,q)
-        f2=self._strike_slip (x1+halfL,p-w,ang_dip,q)
-        f3=self._strike_slip (x1-halfL,p,  ang_dip,q)
-        f4=self._strike_slip (x1-halfL,p-w,ang_dip,q)
+        f1 = self._strike_slip(x1 + halfL, p,     ang_dip, q)
+        f2 = self._strike_slip(x1 + halfL, p - w, ang_dip, q)
+        f3 = self._strike_slip(x1 - halfL, p,     ang_dip, q)
+        f4 = self._strike_slip(x1 - halfL, p - w, ang_dip, q)
     
-        g1=self._dip_slip (x1+halfL,p,  ang_dip,q)
-        g2=self._dip_slip (x1+halfL,p-w,ang_dip,q)
-        g3=self._dip_slip (x1-halfL,p,  ang_dip,q)
-        g4=self._dip_slip (x1-halfL,p-w,ang_dip,q)
+        g1=self._dip_slip(x1 + halfL, p,     ang_dip, q)
+        g2=self._dip_slip(x1 + halfL, p - w, ang_dip, q)
+        g3=self._dip_slip(x1 - halfL, p,     ang_dip, q)
+        g4=self._dip_slip(x1 - halfL, p - w, ang_dip, q)
     
         # Displacement in direction of strike and dip:
-        ds = slip*numpy.cos(ang_rake)
-        dd = slip*numpy.sin(ang_rake)
+        ds = slip * numpy.cos(ang_rake)
+        dd = slip * numpy.sin(ang_rake)
     
-        us = (f1-f2-f3+f4)*ds
-        ud = (g1-g2-g3+g4)*dd
+        us = (f1 - f2 - f3 + f4) * ds
+        ud = (g1 - g2 - g3 + g4) * dd
     
         dz = (us+ud)
 
         dtopo = DTopography()
         dtopo.X = X
         dtopo.Y = Y
-        dtopo.DZ = numpy.array(dz, ndmin=3)
+        dtopo.dZ = numpy.array(dz, ndmin=3)
         dtopo.times = [0.]
         self.dtopo = dtopo
         return dtopo
 
     # Utility functions for okada:
 
-    def _strike_slip(self,y1,y2,ang_dip,q):
+    def _strike_slip(self, y1, y2, ang_dip, q):
         """
-        !.....Used for Okada's model
-        !.. ..Methods from Yoshimitsu Okada (1985)
-        !-----------------------------------------------------------------------
+        Used for Okada's model
+        Methods from Yoshimitsu Okada (1985)
         """
         sn = numpy.sin(ang_dip)
         cs = numpy.cos(ang_dip)
@@ -1452,11 +1476,10 @@ class SubFault(object):
         return f
     
     
-    def _dip_slip(self,y1,y2,ang_dip,q):
+    def _dip_slip(self, y1, y2, ang_dip, q):
         """
-        !.....Based on Okada's paper (1985)
-        !.....Added by Xiaoming Wang
-        !-----------------------------------------------------------------------
+        Based on Okada's paper (1985)
+        Added by Xiaoming Wang
         """
         sn = numpy.sin(ang_dip)
         cs = numpy.cos(ang_dip)
@@ -1468,6 +1491,7 @@ class SubFault(object):
         f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
     
         return f
+
     
     def dynamic_slip(self, t):
         r"""
@@ -1480,7 +1504,8 @@ class SubFault(object):
 
         """
         if (self.rupture_time is None) or (self.rise_time is None):
-            raise Exception("dynamic_slip method only works for dynamic ruptures")
+            raise ValueError("Computing a dynamic slip only works for dynamic ",
+                             "rupture types")
 
         t0 = self.rupture_time
         t1 = self.rise_time
@@ -1640,7 +1665,7 @@ class CSVFault(Fault):
     """
 
     def read(self, path, input_units={}, coordinate_specification="top center",
-                         rupture_type="static"):
+                         rupture_type="static", verbose=False):
         r"""Read in subfault specification at *path*.
 
         Creates a list of subfaults from the subfault specification file at
@@ -1669,7 +1694,7 @@ class CSVFault(Fault):
                     unit_end = column_heading.find(")")
                     column_name = column_heading[:unit_start].lower()
                     units = column_heading[unit_start+1:unit_end]
-                    if input_units.get(column_name,units) != units:
+                    if verbose and input_units.get(column_name,units) != units:
                         print "*** Warning: input_units[%s] reset to %s" \
                               % (column_name, units)
                         print "    based on file header"
@@ -1717,6 +1742,11 @@ class SiftFault(Fault):
     """
 
     def __init__(self, sift_slip=None):
+        r"""SiftFault initialization routine.
+        
+        See :class:`SiftFault` for more info.
+
+        """
         
         super(SiftFault, self).__init__()
         self._load_sift_unit_sources()
@@ -1805,8 +1835,12 @@ class SubdividedPlaneFault(Fault):
 
     def __init__(self, fault_plane, nstrike=1, ndip=1,
                        slip_function=None, Mo=None):
+        r"""SubdivdedPlaneFault initialization routine.
         
-        from numpy import sin,cos
+        See :class:`SubdivdedPlaneFault` for more info.
+
+        """
+
         super(SubdividedPlaneFault, self).__init__()
 
         self.fault_plane = fault_plane
@@ -1817,6 +1851,7 @@ class SubdividedPlaneFault(Fault):
 
 
     def subdivide(self, nstrike=1, ndip=1, slip_function=None, Mo=None):
+        r"""Subdivide the fault plane into nstrike * ndip subfaults."""
 
         # may have changed resolution:
         self.nstrike = nstrike
@@ -1834,11 +1869,13 @@ class SubdividedPlaneFault(Fault):
         x_corners = [fault_plane.fault_plane_corners[2][0],
                      fault_plane.fault_plane_corners[3][0],
                      fault_plane.fault_plane_corners[0][0],
-                     fault_plane.fault_plane_corners[1][0]]
+                     fault_plane.fault_plane_corners[1][0],
+                     fault_plane.fault_plane_corners[2][0]]
         y_corners = [fault_plane.fault_plane_corners[2][1],
                      fault_plane.fault_plane_corners[3][1],
                      fault_plane.fault_plane_corners[0][1],
-                     fault_plane.fault_plane_corners[1][1]]
+                     fault_plane.fault_plane_corners[1][1],
+                     fault_plane.fault_plane_corners[2][0]]
 
         # set depth at corners:
         depth_top = fault_plane.fault_plane_centers[0][2]
@@ -1962,6 +1999,11 @@ class TensorProductFault(SubdividedPlaneFault):
 
     def __init__(self, fault_plane, slip_along_strike=None, slip_down_dip=None,
                       nstrike=1, ndip=1, Mo=None):
+        r"""TensorProductFault initialization routine.
+        
+        See :class:`TensorProductFault` for more info.
+
+        """
         
         # perform the subdivision and set parameters on each subfault:
         super(TensorProductFault, self).__init__(fault_plane, nstrike, ndip)
