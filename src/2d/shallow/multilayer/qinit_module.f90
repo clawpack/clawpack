@@ -7,38 +7,30 @@ module qinit_module
     
     ! Type of q initialization
     integer, public :: qinit_type
-
-    integer, public :: min_level_qinit
-    integer, public :: max_level_qinit
-
-    ! Geometry
-    real(kind=8), public :: x_low_qinit
-    real(kind=8), public :: y_low_qinit
-    real(kind=8), public :: t_low_qinit
-    real(kind=8), public :: x_hi_qinit
-    real(kind=8), public :: y_hi_qinit
-    real(kind=8), public :: t_hi_qinit
-    real(kind=8), public :: dx_qinit
-    real(kind=8), public :: dy_qinit
     
     ! Work array
     real(kind=8), private, allocatable :: qinit(:)
 
+    ! Geometry
+    real(kind=8) :: x_low_qinit
+    real(kind=8) :: y_low_qinit
+    real(kind=8) :: t_low_qinit
+    real(kind=8) :: x_hi_qinit
+    real(kind=8) :: y_hi_qinit
+    real(kind=8) :: t_hi_qinit
+    real(kind=8) :: dx_qinit
+    real(kind=8) :: dy_qinit
+    
     integer, private :: mx_qinit
     integer, private :: my_qinit
-
-    ! Specifc types of intialization    
-    ! Type of perturbation to add
-    integer, private :: wave_family
-    real(kind=8), private :: init_location(2),epsilon
-    real(kind=8), private :: angle,sigma
+    integer :: min_level_qinit
+    integer :: max_level_qinit
 
 contains
 
     subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use geoclaw_module, only: sea_level, pi, g => grav
-        use multilayer_module, only: aux_layer_index, rho, r
+        use multilayer_module, only: num_layers, eta_init, rho
     
         implicit none
     
@@ -49,16 +41,13 @@ contains
         real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
         
         ! Local
-        integer :: i,j
-        real(kind=8) :: ximc,xim,x,xc,xip,xipc,yjmc,yjm,y,yc,yjp,yjpc,dq
-
-        real(kind=8) :: xmid,m,x_c,y_c
-        real(kind=8) :: eigen_vector(6),gamma,lambda,alpha,h_1,h_2,deta
+        integer :: i, j, layer_index
+        real(kind=8) :: ximc,xim,x,xip,xipc,yjmc,yjm,y,yjp,yjpc,dq
         
         ! Topography integral function
         real(kind=8) :: topointegral
-        
-        if (qinit_type > 0 .and. qinit_type < 5) then
+
+        if (qinit_type > 0) then
             do i=1-mbc,mx+mbc
                 x = xlower + (i-0.5d0)*dx
                 xim = x - 0.5d0*dx
@@ -74,98 +63,35 @@ contains
 
                         xipc=min(xip,x_hi_qinit)
                         ximc=max(xim,x_low_qinit)
-                        xc=0.5d0*(xipc+ximc)
 
                         yjpc=min(yjp,y_hi_qinit)
                         yjmc=max(yjm,y_low_qinit)
-                        yc=0.5d0*(yjmc+yjpc)
 
-                        dq = topointegral(ximc,xc,xipc,yjmc,yc,yjpc,x_low_qinit, &
+                        dq = topointegral(ximc,xipc,yjmc,yjpc,x_low_qinit, &
                                           y_low_qinit,dx_qinit,dy_qinit,mx_qinit, &
                                           my_qinit,qinit,1)
                         dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(2,i,j))
 
-                        if (qinit_type < 4) then 
-                            if (aux(1,i,j) <= sea_level) then
+                        if (qinit_type <= 3 * num_layers) then 
+                            if (aux(1,i,j) <= eta_init(qinit_type)) then
                                 q(qinit_type,i,j) = q(qinit_type,i,j) + dq
                             endif
-                        else if (qinit_type == 4) then
-                            q(1,i,j) = max(dq-aux(1,i,j),0.d0)
+                        else if (qinit_type > 3 * num_layers .and.             &
+                                 qinit_type <= 4 * num_layers) then
+                            layer_index = qinit_type - 3 * num_layers
+                            q(layer_index, i, j) = q(layer_index, i, j)        &
+                                                         + dq * rho(layer_index)
+                            ! modify layer above to accomodate this perturbation
+                            if (layer_index > 1) then
+                                stop "Not implemented yet"
+                            end if
                         endif
                     endif
                 enddo
             enddo
-        else if (qinit_type > 4) then
-            do i=1,mx
-                x = xlower + (i - 0.5d0) * dx
-                do j=1,my
-                    y = ylower + (j - 0.5d0) * dy
-                    
-                    ! Test perturbations - these only work in the x-direction
-                    if (qinit_type == 5 .or. qinit_type == 6) then
-                        ! Calculate wave family for perturbation
-                        gamma = aux(aux_layer_index+1,i,j) / aux(aux_layer_index,i,j)
-                        select case(wave_family)
-                            case(1) ! Shallow water, left-going
-                                alpha = 0.5d0 * (gamma - 1.d0 + sqrt((gamma-1.d0)**2+4.d0*r*gamma))
-                                lambda = -sqrt(g*aux(aux_layer_index,i,j)*(1.d0+alpha))
-                            case(2) ! Internal wave, left-going
-                                alpha = 0.5d0 * (gamma - 1.d0 - sqrt((gamma-1.d0)**2+4.d0*r*gamma))
-                                lambda = -sqrt(g*aux(aux_layer_index,i,j)*(1.d0+alpha))
-                            case(3) ! Internal wave, right-going
-                                alpha = 0.5d0 * (gamma - 1.d0 - sqrt((gamma-1.d0)**2+4.d0*r*gamma))
-                                lambda = sqrt(g*aux(aux_layer_index,i,j)*(1.d0+alpha))
-                            case(4) ! Shallow water, right-going
-                                alpha = 0.5d0 * (gamma - 1.d0 + sqrt((gamma-1.d0)**2+4.d0*r*gamma))
-                                lambda = sqrt(g*aux(aux_layer_index,i,j)*(1.d0+alpha))
-                        end select
-                        eigen_vector = [1.d0,lambda,0.d0,alpha,lambda*alpha,0.d0]
-
-                        if (qinit_type == 5) then
-                            ! Add perturbation
-                            if ((x < init_location(1)).and.(wave_family >= 3)) then
-                                q(1:3,i,j) = q(1:3,i,j) + rho(1) * epsilon * eigen_vector(1:3)
-                                q(4:6,i,j) = q(4:6,i,j) + rho(2) * epsilon * eigen_vector(4:6)
-                            else if ((x > init_location(1)).and.(wave_family < 3)) then
-                                q(1:2,i,j) = q(1:2,i,j) + rho(1) * epsilon * eigen_vector(1:2)
-                                q(4:5,i,j) = q(4:5,i,j) + rho(2) * epsilon * eigen_vector(4:5)
-                            endif
-                        ! Gaussian wave along a direction on requested wave family
-                        else if (qinit_type == 6) then
-                            ! Transform back to computational coordinates
-                            x_c = x * cos(angle) + y * sin(angle) - init_location(1)
-                            deta = epsilon * exp(-(x_c/sigma)**2)
-                            q(1,i,j) = q(1,i,j) + rho(1) * deta
-                            q(4,i,j) = q(4,i,j) + rho(2) * alpha * deta
-                        endif
-                    ! Symmetric gaussian hump
-                    else if (qinit_type == 7) then
-                        deta = epsilon * exp(-((x-init_location(1))/sigma)**2)  &
-                                       * exp(-((y-init_location(2))/sigma)**2)
-                        q(1,i,j) = q(1,i,j) + rho(1) * deta
-                    ! Shelf conditions from AN paper
-                    else if (qinit_type == 8) then
-                        alpha = 0.d0
-                        xmid = 0.5d0*(-180.e3 - 80.e3)
-                        if ((x > -130.e3).and.(x < -80.e3)) then
-                            deta = epsilon * sin((x-xmid)*pi/(-80.e3-xmid))
-                            q(4,i,j) = q(4,i,j) + rho(2) * alpha * deta
-                            q(1,i,j) = q(1,i,j) + rho(1) * deta * (1.d0 - alpha)
-                        endif
-                    ! Inundation test
-                    else if (qinit_type == 9) then
-                        x_c = (x - init_location(1)) * cos(angle) &
-                            + (y - init_location(2)) * sin(angle)
-                        deta = epsilon * exp(-(x_c/sigma)**2)
-                        q(1,i,j) = q(1,i,j) + rho(1) * deta
-                    endif
-                enddo
-            enddo
-
         endif
         
     end subroutine add_perturbation
-
 
     subroutine set_qinit(fname)
     
@@ -198,29 +124,14 @@ contains
             write(GEO_PARM_UNIT,*)  '  qinit_type = 0, no perturbation'
             print *,'  qinit_type = 0, no perturbation'
             return
-        else if (qinit_type > 0 .and. qinit_type < 5) then
-            read(unit,*) qinit_fname
-            read(unit,"(2i2)") min_level_qinit, max_level_qinit
-
-            write(GEO_PARM_UNIT,*) '   min_level, max_level, qinit_fname:'
-            write(GEO_PARM_UNIT,*)  min_level_qinit, max_level_qinit, qinit_fname
-            
-            call read_qinit(qinit_fname)
-        else if (qinit_type >= 5) then
-            read(unit,*) epsilon
-            if (qinit_type == 5 .or. qinit_type == 6) then  
-                read(unit,*) init_location
-                read(unit,*) wave_family
-                if(qinit_type == 6 .or. qinit_type == 9) then
-                    read(unit,*) angle
-                    read(unit,*) sigma
-                endif
-            else if (qinit_type == 7) then
-                read(unit,*) init_location
-                read(unit,*) sigma
-            endif
         endif
+        read(unit,*) qinit_fname
+        read(unit,"(2i2)") min_level_qinit, max_level_qinit
 
+        write(GEO_PARM_UNIT,*) '   min_level, max_level, qinit_fname:'
+        write(GEO_PARM_UNIT,*)  min_level_qinit, max_level_qinit, qinit_fname
+        
+        call read_qinit(qinit_fname)
     
     end subroutine set_qinit
 
