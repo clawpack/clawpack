@@ -1106,19 +1106,34 @@ class SubFault(object):
 
     :Coordinates of Fault Plane:
 
+    The attributes *centers* and *corners* are described by the figure below.
+
+    *centers[0,1,2]* refer to the points labeled 0,1,2 below.
+      In particular the centroid is given by *centers[1]*.
+      Each will be a tuple *(x, y, depth)*.
+
+    *corners[0,1,2,3]* refer to the points labeled a,b,c,d resp. below.
+      Each will be a tuple *(x, y, depth)*.
+    
+
     Top edge    Bottom edge
-      0 ----------- 1     ^ 
-      |             |     | 
-      |             |     | 
-      |    up_dip   |     | dist_along_strike
-      |<------------|     | 
-      0      1      2   L | 
-      |             |
-      |             |
-      |             |
-      |             |
-      3 ----------- 2
-            W
+      a ----------- b          ^ 
+      |             |          |         ^
+      |             |          |         |
+      |             |          |         | along-strike direction
+      |             |          |         |
+      0------1------2          | length  |
+      |             |          |
+      |             |          |
+      |             |          |
+      |             |          |
+      d ----------- c          v
+      <------------->
+           width
+
+      <-- up dip direction
+
+
 
     """
 
@@ -1287,24 +1302,13 @@ class SubFault(object):
         self._corners[1][2] = self._centers[2][2]
         self._corners[2][2] = self._centers[2][2]
         
-        # Locate fault plane in 3D space
-        # Note that the coodinate specification is in reference to the fault 
-        #
-        #    Top edge    Bottom edge
-        #      a ----------- b     ^ 
-        #      |             |     | 
-        #      |             |     | 
-        #      |    up_dip   |     | dist_along_strike
-        #      |<------------|     | 
-        #      1      2      3   L | 
-        #      |             |
-        #      |             |
-        #      |             |
-        #      |             |
-        #      d ----------- c
-        #            W
-        #
-        # Vector up_dip goes from bottom edge to top edge on x-y plane in meters
+        # Locate fault plane in 3D space:  
+        # See the class docstring for a guide to labeling of corners/centers.
+
+        # Vector *up_dip* goes from bottom edge to top edge, in meters,
+        # from point 2 to point 0 in the figure in the class docstring.
+
+
         up_dip = (-self.width * numpy.cos(self.dip * DEG2RAD)           \
                               * numpy.cos(self.strike * DEG2RAD)        \
                               / (LAT2METER * numpy.cos(self.latitude * DEG2RAD)),
@@ -1340,8 +1344,10 @@ class SubFault(object):
             raise ValueError("Unknown coordinate specification '%s'."       \
                                                 % self.coordinate_specification)
 
-        # Calculate coordinates of corners
-        # Vector strike goes along the top edge from point 1 to point a
+        # Calculate coordinates of corners:
+        # Vector *strike* goes along the top edge from point 1 to point a
+        # in the figure in the class docstring.
+
         up_strike = (0.5 * self.length * numpy.sin(self.strike * DEG2RAD) \
            / (lat2meter * numpy.cos(self._centers[2][1] * DEG2RAD)),
                      0.5 * self.length * numpy.cos(self.strike * DEG2RAD) \
