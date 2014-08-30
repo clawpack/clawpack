@@ -30,7 +30,8 @@ contains
 
     subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use geoclaw_module, only: sea_level
+        use geoclaw_module, only: sea_level, coordinate_system
+        use amr_module, only: mcapa
     
         implicit none
     
@@ -70,7 +71,11 @@ contains
                         dq = topointegral(ximc,xipc,yjmc,yjpc,x_low_qinit, &
                                           y_low_qinit,dx_qinit,dy_qinit,mx_qinit, &
                                           my_qinit,qinit,1)
-                        dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(2,i,j))
+                        if (coordinate_system == 2) then
+                            dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(mcapa,i,j))
+                        else
+                            dq = dq / ((xipc-ximc)*(yjpc-yjmc))
+                        endif 
 
                         if (qinit_type < 4) then 
                             if (aux(1,i,j) <= sea_level) then
