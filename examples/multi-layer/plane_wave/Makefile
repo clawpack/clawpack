@@ -73,11 +73,11 @@ MODULES = \
  $(GEOLIB)/surge/storm_module.f90 \
  $(GEOLIB)/surge/friction_module.f90 \
  $(GEOLIB)/multilayer/multilayer_module.f90 \
- $(GEOLIB)/multilayer/qinit_module.f90
+ ./qinit_module.f90
 
 SOURCES = \
   $(GEOLIB)/multilayer/setprob.f90 \
-  $(GEOLIB)/multilayer/qinit.f90 \
+  ./qinit.f90 \
   $(GEOLIB)/multilayer/setaux.f90 \
   $(GEOLIB)/multilayer/b4step2.f90 \
   $(GEOLIB)/multilayer/dumpgauge.f \
