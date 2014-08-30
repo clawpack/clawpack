@@ -36,7 +36,6 @@ class MultilayerTest(tests.GeoClawTest):
 
     """
 
-    @tests.wip
     def setUp(self):
 
         super(MultilayerTest, self).setUp()
@@ -50,7 +49,7 @@ class MultilayerTest(tests.GeoClawTest):
         topo.y = numpy.linspace(-1.16, 2.16, 166)
         topo.write(os.path.join(self.temp_path, "jump_topo.topotype2"))
 
-    @tests.wip
+
     def runTest(self, save=False):
         r"""Test multi-layer basic plane-waves."""
 

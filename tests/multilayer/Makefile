@@ -28,26 +28,26 @@ FFLAGS ?=
 # Include flags for LAPACK linking
 UNAME = $(shell uname)
 ifeq ($(UNAME), Darwin)
-    ifndef LFLAGS
-        LFLAGS = -framework accelerate $(FFLAGS)
-    else
-        LFLAGS += -framework accelerate $(FFLAGS)
-    endif
+	ifndef LFLAGS
+		LFLAGS = -framework accelerate $(FFLAGS)
+	else
+		LFLAGS += -framework accelerate $(FFLAGS)
+	endif
 else ifeq ($(shell hostname), sandy.ices.utexas.edu)
-    # Created using Intel MKL Link Line Advisor
-    # http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
-    FFLAGS += -I$(MKLROOT)/include
-    ifndef LFLAGS                                                                                                                                    
-        LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
-    else
-        LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
-    endif
+	# Created using Intel MKL Link Line Advisor
+	# http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
+	FFLAGS += -I$(MKLROOT)/include
+	ifndef LFLAGS                                                                                                                                    
+	    LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+	else
+	    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+	endif
 else ifeq ($(UNAME), Linux)
-    ifndef LFLAGS
-        LFLAGS = -llapack $(FFLAGS)
-    else
-        LFLAGS += -llapack $(FFLAGS)
-    endif
+	ifndef LFLAGS
+		LFLAGS = -llapack $(FFLAGS)
+	else
+		LFLAGS += -llapack $(FFLAGS)
+	endif
 endif
 
 # ---------------------------------
@@ -73,12 +73,11 @@ MODULES = \
  $(GEOLIB)/surge/storm_module.f90 \
  $(GEOLIB)/surge/friction_module.f90 \
  $(GEOLIB)/multilayer/multilayer_module.f90 \
- $(GEOLIB)/multilayer/qinit_module.f90 \
- $(CLAW)/riemann/src/multilayer_eigen_module.f90
+ ./qinit_module.f90
 
 SOURCES = \
   $(GEOLIB)/multilayer/setprob.f90 \
-  $(GEOLIB)/multilayer/qinit.f90 \
+  ./qinit.f90 \
   $(GEOLIB)/multilayer/setaux.f90 \
   $(GEOLIB)/multilayer/b4step2.f90 \
   $(GEOLIB)/multilayer/dumpgauge.f \
