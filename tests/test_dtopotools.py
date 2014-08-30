@@ -250,26 +250,26 @@ def test_geometry():
         coord_tests = {"top center":{'test':[geometry['x_top'], 
                                              geometry['y_top'], 
                                              geometry['depth_top']], 
-                                 'computed':subfault.fault_plane_centers[0]},
+                                 'computed':subfault.centers[0]},
                        "centroid":{'test':[geometry['x_centroid'],
                                            geometry['y_centroid']],
-                               'computed':subfault.fault_plane_centers[1][:2]},
+                               'computed':subfault.centers[1][:2]},
                        "bottom center":{"test":[geometry['x_bottom'],
                                                 geometry['y_bottom'],
                                                 geometry['depth_bottom']],
-                                    "computed":subfault.fault_plane_centers[2]},
+                                    "computed":subfault.centers[2]},
                        "Corner A":{"test":[geometry["x_corners"][2],
                                            geometry["y_corners"][2]],
-                               "computed":subfault.fault_plane_corners[0][:2]},
+                               "computed":subfault.corners[0][:2]},
                        "Corner B":{"test":[geometry["x_corners"][3],
                                            geometry["y_corners"][3]],
-                               "computed":subfault.fault_plane_corners[1][:2]},
+                               "computed":subfault.corners[1][:2]},
                        "Corner C":{"test":[geometry["x_corners"][0],
                                            geometry["y_corners"][0]],
-                               "computed":subfault.fault_plane_corners[2][:2]},
+                               "computed":subfault.corners[2][:2]},
                        "Corner D":{"test":[geometry["x_corners"][1],
                                            geometry["y_corners"][1]],
-                               "computed":subfault.fault_plane_corners[3][:2]}
+                               "computed":subfault.corners[3][:2]}
 
                     }
 

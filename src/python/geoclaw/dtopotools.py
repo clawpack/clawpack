@@ -909,20 +909,20 @@ class Fault(object):
         y_ave = 0.
         for subfault in self.subfaults:
 
-            x_top = subfault.fault_plane_centers[0][0]
-            y_top = subfault.fault_plane_centers[0][1]
-            x_centroid = subfault.fault_plane_centers[1][0]
-            y_centroid = subfault.fault_plane_centers[1][1]
-            x_corners = [subfault.fault_plane_corners[2][0],
-                         subfault.fault_plane_corners[3][0],
-                         subfault.fault_plane_corners[0][0],
-                         subfault.fault_plane_corners[1][0],
-                         subfault.fault_plane_corners[2][0]]
-            y_corners = [subfault.fault_plane_corners[2][1],
-                         subfault.fault_plane_corners[3][1],
-                         subfault.fault_plane_corners[0][1],
-                         subfault.fault_plane_corners[1][1],
-                         subfault.fault_plane_corners[2][1]]
+            x_top = subfault.centers[0][0]
+            y_top = subfault.centers[0][1]
+            x_centroid = subfault.centers[1][0]
+            y_centroid = subfault.centers[1][1]
+            x_corners = [subfault.corners[2][0],
+                         subfault.corners[3][0],
+                         subfault.corners[0][0],
+                         subfault.corners[1][0],
+                         subfault.corners[2][0]]
+            y_corners = [subfault.corners[2][1],
+                         subfault.corners[3][1],
+                         subfault.corners[0][1],
+                         subfault.corners[1][1],
+                         subfault.corners[2][1]]
     
             y_ave += y_centroid
     
@@ -998,12 +998,12 @@ class Fault(object):
     
         for subfault in self.subfaults:
 
-            x_top = subfault.fault_plane_centers[0][0]
-            y_top = subfault.fault_plane_centers[0][1]
-            depth_top = subfault.fault_plane_centers[0][2]
-            x_bottom = subfault.fault_plane_centers[2][0]
-            y_bottom = subfault.fault_plane_centers[2][1]
-            depth_bottom = subfault.fault_plane_centers[2][2]
+            x_top = subfault.centers[0][0]
+            y_top = subfault.centers[0][1]
+            depth_top = subfault.centers[0][2]
+            x_bottom = subfault.centers[2][0]
+            y_bottom = subfault.centers[2][1]
+            depth_bottom = subfault.centers[2][2]
     
             # Plot planes in x-z and y-z to see depths:
             axes[0].plot([x_top, x_bottom], [-depth_top, -depth_bottom])
@@ -1024,7 +1024,7 @@ class Fault(object):
 
         extent = [numpy.infty, -numpy.infty, numpy.infty, -numpy.infty]
         for subfault in self.subfaults:
-            for corner in subfault.fault_plane_corners:
+            for corner in subfault.corners:
                 extent[0] = min(corner[0], extent[0])
                 extent[1] = max(corner[0], extent[1])
                 extent[2] = min(corner[1], extent[2])
@@ -1123,18 +1123,18 @@ class SubFault(object):
     """
 
     @property
-    def fault_plane_corners(self):
+    def corners(self):
         r"""Coordinates of the corners of the fault plane."""
-        if self._fault_plane_corners is None:
+        if self._corners is None:
             self.calculate_geometry()
-        return self._fault_plane_corners
+        return self._corners
 
     @property
-    def fault_plane_centers(self):
+    def centers(self):
         r"""Coordinates along the center-line of the fault plane."""
-        if self._fault_plane_centers is None:
+        if self._centers is None:
             self.calculate_geometry()
-        return self._fault_plane_centers
+        return self._centers
 
     def __init__(self):
         r"""SubFault initialization routine.
@@ -1172,8 +1172,8 @@ class SubFault(object):
         self.mu = 4e10
         r"""Rigidity (== shear modulus) in Pascals."""
 
-        self._fault_plane_centers = None
-        self._fault_plane_corners = None
+        self._centers = None
+        self._corners = None
 
 
     def convert_to_standard_units(self, input_units, verbose=False):
@@ -1213,15 +1213,15 @@ class SubFault(object):
         output += "  Rake, Strike, Dip: %s, %s, %s\n" % (self.rake, self.strike,
                                                          self.dip)
         output += "  Slip, Moment: %s m, %s N-m\n" % (self.slip, self.Mo())
-        output += "  Fault Centroid: %s\n" % self.fault_plane_centers[1]
+        output += "  Fault Centroid: %s\n" % self.centers[1]
         return output
 
 
     def calculate_geometry(self):
         r"""Calculate the fault geometry.
 
-        Routine calculates the class attributes *fault_plane_corners* and 
-        *fault_plane_centers* which are the corners of the fault plane and 
+        Routine calculates the class attributes *corners* and 
+        *centers* which are the corners of the fault plane and 
         points along the centerline respecitvely in 3D space.
 
         **Note:** *self.coordinate_specification*  specifies the location on each
@@ -1246,11 +1246,11 @@ class SubFault(object):
         lat2meter = util.dist_latlong2meters(0.0, 1.0)[1]
 
         # Setup coordinate arrays
-        self._fault_plane_corners = [[None, None, None], # a 
+        self._corners = [[None, None, None], # a 
                                      [None, None, None], # b
                                      [None, None, None], # c
                                      [None, None, None]] # d
-        self._fault_plane_centers = [[None, None, None], # 1
+        self._centers = [[None, None, None], # 1
                                      [None, None, None], # 2 
                                      [None, None, None]] # 3
 
@@ -1258,34 +1258,34 @@ class SubFault(object):
         if self.coordinate_specification == 'top center' or \
            self.coordinate_specification == 'noaa sift':
 
-            self._fault_plane_centers[0][2] = self.depth
-            self._fault_plane_centers[1][2] = self.depth            \
+            self._centers[0][2] = self.depth
+            self._centers[1][2] = self.depth            \
                               + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
-            self._fault_plane_centers[2][2] = self.depth            \
+            self._centers[2][2] = self.depth            \
                                     + self.width * numpy.sin(self.dip * DEG2RAD)
 
         elif self.coordinate_specification == 'centroid':
-            self._fault_plane_centers[0][2] = self.depth            \
+            self._centers[0][2] = self.depth            \
                               - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
-            self._fault_plane_centers[1][2] = self.depth
-            self._fault_plane_centers[2][2] = self.depth            \
+            self._centers[1][2] = self.depth
+            self._centers[2][2] = self.depth            \
                               + 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
 
         elif self.coordinate_specification == 'bottom center':
-            self._fault_plane_centers[0][2] = self.depth            \
+            self._centers[0][2] = self.depth            \
                               - self.width * numpy.sin(self.dip * DEG2RAD)
-            self._fault_plane_centers[1][2] = self.depth            \
+            self._centers[1][2] = self.depth            \
                               - 0.5 * self.width * numpy.sin(self.dip * DEG2RAD)
-            self._fault_plane_centers[2][2] = self.depth
+            self._centers[2][2] = self.depth
             
         else:
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
 
-        self._fault_plane_corners[0][2] = self._fault_plane_centers[0][2]
-        self._fault_plane_corners[3][2] = self._fault_plane_centers[0][2]
-        self._fault_plane_corners[1][2] = self._fault_plane_centers[2][2]
-        self._fault_plane_corners[2][2] = self._fault_plane_centers[2][2]
+        self._corners[0][2] = self._centers[0][2]
+        self._corners[3][2] = self._centers[0][2]
+        self._corners[1][2] = self._centers[2][2]
+        self._corners[2][2] = self._centers[2][2]
         
         # Locate fault plane in 3D space
         # Note that the coodinate specification is in reference to the fault 
@@ -1312,29 +1312,29 @@ class SubFault(object):
                               * numpy.sin(self.strike * DEG2RAD) / LAT2METER)
         if self.coordinate_specification == 'top center':
 
-            self._fault_plane_centers[0][:2] = (self.longitude, self.latitude)
-            self._fault_plane_centers[1][:2] = (self.longitude - 0.5 * up_dip[0],
+            self._centers[0][:2] = (self.longitude, self.latitude)
+            self._centers[1][:2] = (self.longitude - 0.5 * up_dip[0],
                                                 self.latitude - 0.5 * up_dip[1])
-            self._fault_plane_centers[2][:2] = (self.longitude - up_dip[0],
+            self._centers[2][:2] = (self.longitude - up_dip[0],
                                                 self.latitude - up_dip[1])
 
         elif self.coordinate_specification == 'centroid':
 
-            self._fault_plane_centers[0][:2] = (self.longitude + 0.5 * up_dip[0],
+            self._centers[0][:2] = (self.longitude + 0.5 * up_dip[0],
                                                 self.latitude + 0.5 * up_dip[1])
-            self._fault_plane_centers[1][:2] = (self.longitude, self.latitude)
-            self._fault_plane_centers[2][:2] = (self.longitude - 0.5 * up_dip[0],
+            self._centers[1][:2] = (self.longitude, self.latitude)
+            self._centers[2][:2] = (self.longitude - 0.5 * up_dip[0],
                                                 self.latitude  - 0.5 * up_dip[1])
 
         elif self.coordinate_specification == 'bottom center' or \
              self.coordinate_specification == 'noaa sift':
 
             # Non-rotated lcoations of center-line coordinates
-            self._fault_plane_centers[0][:2] = (self.longitude + up_dip[0],
+            self._centers[0][:2] = (self.longitude + up_dip[0],
                                                 self.latitude + up_dip[1])
-            self._fault_plane_centers[1][:2] = (self.longitude + 0.5 * up_dip[0],
+            self._centers[1][:2] = (self.longitude + 0.5 * up_dip[0],
                                                 self.latitude + 0.5 * up_dip[1])
-            self._fault_plane_centers[2][:2] = (self.longitude, self.latitude)
+            self._centers[2][:2] = (self.longitude, self.latitude)
 
         else:
             raise ValueError("Unknown coordinate specification '%s'."       \
@@ -1343,25 +1343,25 @@ class SubFault(object):
         # Calculate coordinates of corners
         # Vector strike goes along the top edge from point 1 to point a
         up_strike = (0.5 * self.length * numpy.sin(self.strike * DEG2RAD) \
-           / (lat2meter * numpy.cos(self._fault_plane_centers[2][1] * DEG2RAD)),
+           / (lat2meter * numpy.cos(self._centers[2][1] * DEG2RAD)),
                      0.5 * self.length * numpy.cos(self.strike * DEG2RAD) \
            / lat2meter)
         
-        self._fault_plane_corners[0][:2] = (self._fault_plane_centers[0][0] 
+        self._corners[0][:2] = (self._centers[0][0] 
                                                                  + up_strike[0],
-                                            self._fault_plane_centers[0][1] 
+                                            self._centers[0][1] 
                                                                  + up_strike[1])
-        self._fault_plane_corners[1][:2] = (self._fault_plane_centers[2][0] 
+        self._corners[1][:2] = (self._centers[2][0] 
                                                                  + up_strike[0], 
-                                            self._fault_plane_centers[2][1] 
+                                            self._centers[2][1] 
                                                                  + up_strike[1])
-        self._fault_plane_corners[2][:2] = (self._fault_plane_centers[2][0] 
+        self._corners[2][:2] = (self._centers[2][0] 
                                                                  - up_strike[0],
-                                            self._fault_plane_centers[2][1] 
+                                            self._centers[2][1] 
                                                                  - up_strike[1])
-        self._fault_plane_corners[3][:2] = (self._fault_plane_centers[0][0] 
+        self._corners[3][:2] = (self._centers[0][0] 
                                                                  - up_strike[0],
-                                            self._fault_plane_centers[0][1] 
+                                            self._centers[0][1] 
                                                                  - up_strike[1])
 
     
@@ -1397,9 +1397,9 @@ class SubFault(object):
         """
 
         # Okada model assumes x,y are at bottom center:
-        x_bottom = self.fault_plane_centers[2][0]
-        y_bottom = self.fault_plane_centers[2][1]
-        depth_bottom = self.fault_plane_centers[2][2]
+        x_bottom = self.centers[2][0]
+        y_bottom = self.centers[2][1]
+        depth_bottom = self.centers[2][2]
 
         length = self.length
         width = self.width
@@ -1611,29 +1611,29 @@ class UCSBFault(Fault):
         # for
         # These are only useful in sub-faults
         # a schematic of where these points are
-        # self._fault_plane_corners = [None, # a 
+        # self._corners = [None, # a 
         #                              None, # b
         #                              None, # c
         #                              None] # d
-        # self._fault_plane_centers = [[0.0, 0.0, 0.0], # 1
+        # self._centers = [[0.0, 0.0, 0.0], # 1
         #                              [0.0, 0.0, 0.0], # 2 
         #                              [0.0, 0.0, 0.0]] # 3
         # # :TODO: Is the order of this a good assumption?
-        # self._fault_plane_corners[0] = boundary_data[0]
-        # self._fault_plane_corners[3] = boundary_data[1]
-        # self._fault_plane_corners[2] = boundary_data[2]
-        # self._fault_plane_corners[1] = boundary_data[3]
+        # self._corners[0] = boundary_data[0]
+        # self._corners[3] = boundary_data[1]
+        # self._corners[2] = boundary_data[2]
+        # self._corners[1] = boundary_data[3]
         
         # # Calculate center by averaging position of appropriate corners
-        # for (n, corner) in enumerate(self._fault_plane_corners):
+        # for (n, corner) in enumerate(self._corners):
         #     for i in xrange(3):
-        #         self._fault_plane_centers[1][i] += corner[i] / 4
+        #         self._centers[1][i] += corner[i] / 4
         #     if n == 0 or n == 4:
         #         for i in xrange(3):
-        #             self._fault_plane_centers[0][i] += corner[i] / 2
+        #             self._centers[0][i] += corner[i] / 2
         #     else:
         #         for i in xrange(3):
-        #             self._fault_plane_centers[2][i] += corner[i] / 2
+        #             self._centers[2][i] += corner[i] / 2
 
 
         if not (found_subfault_boundary and found_subfault_discretization):
@@ -1867,20 +1867,20 @@ class SubdividedPlaneFault(Fault):
         width = base_subfault.width
 
         # unpack corners from fault plane geometry:
-        x_corners = [base_subfault.fault_plane_corners[2][0],
-                     base_subfault.fault_plane_corners[3][0],
-                     base_subfault.fault_plane_corners[0][0],
-                     base_subfault.fault_plane_corners[1][0],
-                     base_subfault.fault_plane_corners[2][0]]
-        y_corners = [base_subfault.fault_plane_corners[2][1],
-                     base_subfault.fault_plane_corners[3][1],
-                     base_subfault.fault_plane_corners[0][1],
-                     base_subfault.fault_plane_corners[1][1],
-                     base_subfault.fault_plane_corners[2][0]]
+        x_corners = [base_subfault.corners[2][0],
+                     base_subfault.corners[3][0],
+                     base_subfault.corners[0][0],
+                     base_subfault.corners[1][0],
+                     base_subfault.corners[2][0]]
+        y_corners = [base_subfault.corners[2][1],
+                     base_subfault.corners[3][1],
+                     base_subfault.corners[0][1],
+                     base_subfault.corners[1][1],
+                     base_subfault.corners[2][0]]
 
         # set depth at corners:
-        depth_top = base_subfault.fault_plane_centers[0][2]
-        depth_bottom = base_subfault.fault_plane_centers[2][2]
+        depth_top = base_subfault.centers[0][2]
+        depth_bottom = base_subfault.centers[2][2]
         d_corners = [depth_bottom, depth_top, depth_top, depth_bottom,
                      depth_bottom]
 
