@@ -1811,11 +1811,11 @@ class SubdividedPlaneFault(Fault):
 
     r"""
     Define a fault by starting with a single fault plane (specified as 
-    *fault_plane* of class *SubFault*) and subdividing the fault plane
+    *base_subfault* of class *SubFault*) and subdividing the fault plane
     into a rectangular array of *nstrike* by *ndip* equally sized subfaults.
 
     By default,the slip on each subfault will be initialized to
-    *fault_plane.slip* so that the slip is uniform over the original plane
+    *base_subfault.slip* so that the slip is uniform over the original plane
     and the seismic moment is independent of the number of subdivisions.  
 
     Alternatively, the slip distribution can be specified by providing a
@@ -1834,7 +1834,7 @@ class SubdividedPlaneFault(Fault):
     """
 
 
-    def __init__(self, fault_plane, nstrike=1, ndip=1,
+    def __init__(self, base_subfault, nstrike=1, ndip=1,
                        slip_function=None, Mo=None):
         r"""SubdivdedPlaneFault initialization routine.
         
@@ -1844,7 +1844,7 @@ class SubdividedPlaneFault(Fault):
 
         super(SubdividedPlaneFault, self).__init__()
 
-        self.fault_plane = fault_plane
+        self.base_subfault = base_subfault
         self.nstrike = nstrike
         self.ndip = ndip
 
@@ -1858,29 +1858,29 @@ class SubdividedPlaneFault(Fault):
         self.nstrike = nstrike
         self.ndip = ndip
 
-        fault_plane = self.fault_plane
-        strike = fault_plane.strike
-        dip = fault_plane.dip
-        rake = fault_plane.rake
-        slip = fault_plane.slip
-        length = fault_plane.length
-        width = fault_plane.width
+        base_subfault = self.base_subfault
+        strike = base_subfault.strike
+        dip = base_subfault.dip
+        rake = base_subfault.rake
+        slip = base_subfault.slip
+        length = base_subfault.length
+        width = base_subfault.width
 
         # unpack corners from fault plane geometry:
-        x_corners = [fault_plane.fault_plane_corners[2][0],
-                     fault_plane.fault_plane_corners[3][0],
-                     fault_plane.fault_plane_corners[0][0],
-                     fault_plane.fault_plane_corners[1][0],
-                     fault_plane.fault_plane_corners[2][0]]
-        y_corners = [fault_plane.fault_plane_corners[2][1],
-                     fault_plane.fault_plane_corners[3][1],
-                     fault_plane.fault_plane_corners[0][1],
-                     fault_plane.fault_plane_corners[1][1],
-                     fault_plane.fault_plane_corners[2][0]]
+        x_corners = [base_subfault.fault_plane_corners[2][0],
+                     base_subfault.fault_plane_corners[3][0],
+                     base_subfault.fault_plane_corners[0][0],
+                     base_subfault.fault_plane_corners[1][0],
+                     base_subfault.fault_plane_corners[2][0]]
+        y_corners = [base_subfault.fault_plane_corners[2][1],
+                     base_subfault.fault_plane_corners[3][1],
+                     base_subfault.fault_plane_corners[0][1],
+                     base_subfault.fault_plane_corners[1][1],
+                     base_subfault.fault_plane_corners[2][0]]
 
         # set depth at corners:
-        depth_top = fault_plane.fault_plane_centers[0][2]
-        depth_bottom = fault_plane.fault_plane_centers[2][2]
+        depth_top = base_subfault.fault_plane_centers[0][2]
+        depth_bottom = base_subfault.fault_plane_centers[2][2]
         d_corners = [depth_bottom, depth_top, depth_top, depth_bottom,
                      depth_bottom]
 
@@ -1916,21 +1916,21 @@ class SubdividedPlaneFault(Fault):
 
                 subfault = SubFault()
 
-                if fault_plane.coordinate_specification == 'centroid':
+                if base_subfault.coordinate_specification == 'centroid':
                     subfault.longitude = x_sf[1]
                     subfault.latitude = y_sf[1]
                     subfault.depth = d_sf[1]
-                elif fault_plane.coordinate_specification == 'top center':
+                elif base_subfault.coordinate_specification == 'top center':
                     subfault.longitude = x_sf[0]
                     subfault.latitude = y_sf[0]
                     subfault.depth = d_sf[0]
-                elif fault_plane.coordinate_specification == 'noaa sift':
+                elif base_subfault.coordinate_specification == 'noaa sift':
                     subfault.longitude = x_sf[2]
                     subfault.latitude = y_sf[2]
                     subfault.depth = d_sf[0]
                 else:   
                     msg = "Unrecognized coordinate_specification: %s" \
-                            % fault_plane.coordinate_specification
+                            % base_subfault.coordinate_specification
                     raise NotImplementedError(msg)
 
                 subfault.dip = dip
@@ -1940,8 +1940,8 @@ class SubdividedPlaneFault(Fault):
                 subfault.width = width / ndip
                 subfault.slip = slip
                 subfault.coordinate_specification = \
-                        fault_plane.coordinate_specification
-                subfault.mu = fault_plane.mu
+                        base_subfault.coordinate_specification
+                subfault.mu = base_subfault.mu
 
                 self.subfaults.append(subfault)
 
