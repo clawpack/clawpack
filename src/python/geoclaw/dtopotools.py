@@ -628,7 +628,8 @@ class Fault(object):
 
           - *coordinate_specification* (str) specifies the location on each
             subfault that corresponds to the (longitude,latitude) and depth 
-            of the subfault.  See the documentation for *SubFault.set_geometry*.
+            of the subfault.  See the documentation for 
+            *SubFault.calculate_geometry*.
           - *rupture_type* (str) either "static" or "dynamic"
           - *skiprows* (int) number of header lines to skip before data
           - *delimiter* (str) e.g. ',' for csv files
@@ -1378,7 +1379,7 @@ class SubFault(object):
 
         Okada model is a mapping from several fault parameters
         to a surface deformation.
-        See Okada 1985, or Okada 1992, Bull. Seism. Soc. Am.
+        See Okada 1985 [Okada85]_, or Okada 1992, Bull. Seism. Soc. Am.
         
         okadamap function riginally written in Python by Dave George for
         Clawpack 4.6 okada.py routine, with some routines adapted
@@ -1390,7 +1391,7 @@ class SubFault(object):
         each subfault that corresponds to the (longitude,latitude) and depth 
         subfault.
 
-        See the documentation for *SubFault.set_geometry* for dicussion of the 
+        See the documentation for *SubFault.calculate_geometry* for dicussion of the 
         possible values *self.coordinate_specification* can take.
 
         """
