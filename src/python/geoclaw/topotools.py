@@ -57,8 +57,8 @@ def determine_topo_type(path, default=None):
     extension = os.path.splitext(util.strip_archive_extensions(path))[-1][1:]
     
     topo_type = default
-    if extension[:2] == "tt" or extension[:2] == 'topotype':
-        topo_type = int(extension[2])
+    if extension[:2] == "tt" or extension[:8] == 'topotype':
+        topo_type = int(extension[-1])
     elif extension == 'xyz':
         topo_type = 1
     elif extension == 'asc':
@@ -724,11 +724,18 @@ class Topography(object):
 
         # Determine topo type if not specified
         if topo_type is None:
-            if self.topo_type is not None:
+            # Look at the the suffix of the path and the object's topo_type
+            # attribute to try to deterimine which to use, default to the path
+            # version unless it did not work
+            path_topo_type = determine_topo_type(path, default=-1)
+            
+            if self.topo_type is not None and path_topo_type == -1:
                 topo_type = self.topo_type
+            elif path_topo_type != -1:
+                topo_type = path_topo_type
             else:
-                # Try to look at suffix for type
-                self.topo_type = determine_topo_type(self.path, default=3)
+                # Default to 3 if all else fails
+                topo_type = 3
 
         # Default to this object's no_data_value if the passed is None, 
         # otherwise the argument will override the object's value or it will 
