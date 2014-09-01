@@ -43,7 +43,7 @@ for lib_path in [os.path.join(CLAW,"amrclaw","src","2d"),
 
 # Work in progress test decorator
 def fail(message):
-    raise AssertionError(message)
+    raise SkipTest(message)
  
 def wip(f):
     @wraps(f)
