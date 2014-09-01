@@ -877,7 +877,6 @@ class Topography(object):
                                vmax=topo_extent[1],
                                cmap=cmap)
         else:
-            print region_extent
             plot = axes.imshow(self.Z, vmin=topo_extent[0], 
                                        vmax=topo_extent[1],
                                        extent=region_extent, 
