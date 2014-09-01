@@ -43,17 +43,56 @@ class DTopoTests(tests.GeoClawTest):
 
         # Make dtopography
         subfault_path = os.path.join(self.test_path, "dtopo1.csv")
-        fault = dtopotools.CSVFault(path=subfault_path)
-        fault.t = numpy.linspace(0.0, 1.0, 25)
-        fault.write(os.path.join(self.temp_path, "dtopo1.tt3"))
+        input_units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
+        fault = dtopotools.CSVFault()
+        fault.read(subfault_path, input_units=input_units, 
+                coordinate_specification="top center")
+        fault.rupture_type = 'dynamic'
+        times = numpy.linspace(0.0, 1.0, 25)
+        x = numpy.linspace(-0.4,0.6,151)
+        y = numpy.linspace(-0.4,0.4,121)
+        dtopo = fault.create_dtopography(x,y,times=times)
+        dtopo.write(os.path.join(self.temp_path, "dtopo1.tt3"), dtopo_type=3)
+        print "+++ writing ",os.path.join(self.temp_path, "dtopo1.tt3")
 
         subfault_path = os.path.join(self.test_path, "dtopo2.csv")
-        fault = dtopotools.CSVFault(path=subfault_path)
-        fault.t = numpy.linspace(0.5, 1.2, 25)
-        fault.write(os.path.join(self.temp_path, "dtopo2.tt3"))
+        input_units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
+        fault = dtopotools.CSVFault()
+        fault.read(subfault_path, input_units=input_units, 
+                    coordinate_specification="top center")
+        fault.rupture_type = 'dynamic'
+        times = numpy.linspace(0.5, 1.2, 25)
+        x = numpy.linspace(-0.9,0.1,201)
+        y = numpy.linspace(-0.4,0.4,161)
+        dtopo = fault.create_dtopography(x,y,times=times)
+        dtopo.write(os.path.join(self.temp_path, "dtopo2.tt3"), dtopo_type=3)
 
+        # copy existing file:
         shutil.copy(os.path.join(self.test_path, "dtopo3.tt1"),
                                  self.temp_path)
+
+
+    def runTest(self, save=False, indices=(2, 3)):
+        r"""DTopography basic regression test
+
+        :Input:
+         - *save* (bool) - If *True* will save the output from this test to 
+           the file *regresion_data.txt*.  Passed to *check_gauges*.  Default is
+           *False*.
+         - *indices* (tuple) - Contains indices to compare in the gague 
+           comparison and passed to *check_gauges*.  Defaults to *(2, 3)*.
+
+        """
+
+        # Write out data files
+        self.load_rundata()
+        self.write_rundata_objects()
+
+        # Run code
+        self.run_code()
+
+        # Perform tests
+        self.check_gauges(save=save, indices=(2, 3))
 
 
 if __name__=="__main__":

@@ -315,7 +315,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # == setgauges.data values ==
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-    rundata.gaugedata.gauges.append([1,0.5,1,0,1e10])
+    rundata.gaugedata.gauges.append([1,0.5,0.5,0,1e10])
 
     return rundata
     # end of function setrun

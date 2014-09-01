@@ -15,27 +15,6 @@ import numpy
 import clawpack.geoclaw.tests as tests
 import clawpack.geoclaw.topotools as topotools
 
-from functools import wraps
-from nose.plugins.attrib import attr
-from nose.plugins.skip import SkipTest
- 
- 
-def fail(message):
-    raise AssertionError(message)
- 
-def wip(f):
-    @wraps(f)
-    def run_test(*args, **kwargs):
-        try:
-            # Set to success so we don't save out the output when we know things
-            # are awry
-            args[0].success = True
-            f(*args, **kwargs)
-        except Exception as e:
-            raise SkipTest("WIP test failed: " + str(e))
-        fail("test passed but marked as work in progress")
-    
-    return attr('wip')(run_test)
 
 def transform_p2c(x,y,x0,y0,theta):
     return ( x*numpy.cos(theta) + y*numpy.sin(theta) - x0,
@@ -57,7 +36,7 @@ class MultilayerTest(tests.GeoClawTest):
 
     """
 
-    @wip
+    @tests.wip
     def setUp(self):
 
         super(MultilayerTest, self).setUp()
@@ -71,8 +50,10 @@ class MultilayerTest(tests.GeoClawTest):
         topo.y = numpy.linspace(-1.16, 2.16, 166)
         topo.write(os.path.join(self.temp_path, "jump_topo.topotype2"))
 
-    @wip
+
+    @tests.wip
     def runTest(self, save=False):
+        r"""Test multi-layer basic plane-waves."""
 
         # Load and write data, change init-condition's starting angle
         self.load_rundata()

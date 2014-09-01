@@ -8,10 +8,10 @@ function setplot is called to set the plot parameters.
 """ 
 
 import numpy
-from clawpack.geoclaw import dtopotools as D
+from clawpack.geoclaw import dtopotools
 
-dtopo1 = D.read_dtopo('dtopo1.tt3',3)
-dtopo2 = D.read_dtopo('dtopo2.tt3',3)
+dtopo1 = dtopotools.DTopography('dtopo1.tt3',3)
+dtopo2 = dtopotools.DTopography('dtopo2.tt3',3)
 
 #--------------------------
 def setplot(plotdata):

@@ -1,3 +1,9 @@
+r"""
+fgmax_tools module: $CLAW/geoclaw/src/python/geoclaw/fgmax_tools.py
+
+Tools to specify an fgmax grid for keeping track of maximum flow depth, etc.
+"""
+
 from clawpack.geoclaw import kmltools
 import os
 from numpy import sqrt
@@ -27,7 +33,7 @@ def make_fgmax(FG):
     x1,x2 = FG.x1, FG.x2
     y1,y2 = FG.y1, FG.y2
     point_style = FG.point_style
-    if point_style not in [1,2]:
+    if point_style not in [1,2,3]:
         raise NotImplementedError("make_fgmax not implemented for point_style %i" \
             % point_style)
 
@@ -144,3 +150,43 @@ def make_fgmax(FG):
         #kml_file = fname_root + '.kml'
         #kmltools.line2kml(xy, kml_file, fname_root, color='8888FF')
 
+    elif point_style==3:
+        # arbitrary quadrilateral
+        x3,x4 = FG.x3, FG.x4
+        y3,y4 = FG.y3, FG.y4
+        if FG.n12 is None:
+            raise NotImplementedError("Need to set n12 and n23")
+        else:
+            npts = FG.n12 * FG.n23
+    
+    
+        fid = open(FG.fname,'w')
+        fid.write("%g                 # tstart_max\n"  % FG.tstart_max)
+        fid.write("%g                 # tend_max\n"  % FG.tend_max)
+        fid.write("%g                 # dt_check\n" % FG.dt_check)
+        fid.write("%i                 # min_level_check\n" % FG.min_level_check)
+        fid.write("%g                 # arrival_tol\n" % FG.arrival_tol)
+        fid.write("%g                 # point_style\n" % FG.point_style)
+    
+        fid.write("%i  %i %s          # FG.n12,FG.n23\n" \
+                            % (FG.n12,FG.n23,10*" "))
+        fid.write("%16.10e   %20.10e            # x1, y1\n" % (x1,y1))
+        fid.write("%16.10e   %20.10e            # x2, y2\n" % (x2,y2))
+        fid.write("%16.10e   %20.10e            # x3, y3\n" % (x3,y3))
+        fid.write("%16.10e   %20.10e            # x4, y4\n" % (x4,y4))
+        fid.close()
+        
+    
+        print "Created file ", FG.fname
+        print "   specifying fixed grid as a quadrilateral"
+        print "       %i by %i, with  %i points" \
+                % (FG.n12,FG.n23,npts)
+        print "   corner 1 = (%15.10f,%15.10f)" % (x1,y1)
+        print "   corner 2 = (%15.10f,%15.10f)" % (x2,y2)
+        print "   corner 3 = (%15.10f,%15.10f)" % (x3,y3)
+        print "   corner 4 = (%15.10f,%15.10f)" % (x4,y4)
+        
+        xy = [x1,y1,x2,y2,x3,y3,x4,y4]
+        fname_root = os.path.splitext(FG.fname)[0]
+        kml_file = fname_root + '.kml'
+        kmltools.quad2kml(xy, kml_file, fname_root, color='8888FF')

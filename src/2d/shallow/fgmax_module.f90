@@ -92,7 +92,7 @@ contains
         ! Local storage
         integer, parameter :: unit = 7
         integer :: ifg
-        character*80 :: fname_fg
+        character*150 :: fname_fg
         integer :: num_fgmax_grids, num_fgmax_val
 
         ! Open data file

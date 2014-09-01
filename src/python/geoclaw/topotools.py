@@ -1,148 +1,72 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-r"""GeoClaw Topography Tools Module
+r"""
+GeoClaw topotools Module  `$CLAW/geoclaw/src/python/geoclaw/topotools.py`
 
 Module provides several functions for reading, writing and manipulating
 topography (bathymetry) files.
 
-:Functions:
- - dms2decimal - Convert (degrees, minutes, seconds) to decimal degrees
- - dist_meters2latlong - Convert dx, dy distance in meters to degrees
- - dist_latlong2meters - Convert dx, dy distance in degrees to meters
- - haversine - Calculate the haversine based great circle distance
- - inv_haversine - Inverts the haversine distance
+:Classes:
+ - Topography 
 
-:Topography Class:
+:Functions:
+
+ - determine_topo_type
+ - create_topo_func
+ - topo1writer
+ - topo2writer 
+ - topo3writer 
+ - swapheader
+
 
 :TODO:
- - Tests are implemented but not passing, should we expect the arrays to be 
-   identical?
  - Add sub and super sampling capababilities
  - Add functions for creating topography based off a topo function, incorporate
    the create_topo_func into Topography class, maybe allow more broad 
    initialization ability to the class to handle this?
  - Fix `in_poly` function
  - Add remove/fill no data value
- - Probably should better handle remote files (fetching from http)
  - Add more robust plotting capabilities
 """
 
 import os
-import urllib
-import types
 
 import numpy
 
-
-
-# Constants
-from data import Rearth
-DEG2RAD = numpy.pi / 180.0
-RAD2DEG = 180.0 / numpy.pi
-
+import clawpack.geoclaw.util as util
+import clawpack.geoclaw.data
 
 # ==============================================================================
-#  Functions
+#  Topography Related Functions
 # ==============================================================================
-def dms2decimal(d,m,s,coord='N'):
-    r"""Convert coordinates in (degrees, minutes, seconds) to decimal form.  
+def determine_topo_type(path, default=None):
+    r"""Using the file suffix of path, attempt to deterimine the topo type.
+
+    :Input:
+
+     - *path* (string) - Path to the file.  Can include archive extensions (they
+       will be stripped off). 
+     - *default* (object) - Value returned if no suitable topo type was 
+       determined.  Default is *None*.
+
+    returns integer between 1-3 or *default* if nothing matches.
     
-    If coord == 'S' or coord == 'W' then value is negated too.
-    Example: 
-        >>> topotools.dms2decimal(7,30,36,'W')
-        -7.51
-    (Note that you might want to add 360 to resulting W coordinate
-    if using E coordinates everywhere in a computation spanning date line.)
-
-    returns float
-
     """
 
-    deg = d + m / 60.0 + s / 3600.0
-    if coord in ['S','W']:
-        deg = -deg
-
-    return deg
-
-
-def dist_latlong2meters(dx, dy, latitude=0.0):
-    """Convert distance from degrees longitude-latitude to meters.
-
-    Takes the distance described by *dx* and *dy* in degrees and converts it into
-    distances in meters.
-
-    returns (float, float) 
-
-    """
-
-    dym = Rearth * DEG2RAD * dy
-    dxm = Rearth * numpy.cos(latitude * DEG2RAD) * dx * DEG2RAD
-
-    return dxm,dym
-
-
-def dist_meters2latlong(dx, dy, latitude=0.0):
-    """Convert distance from meters to degrees of longitude-latitude.
-
-    Takes the distance described by *dx* and *dy* in meters and converts it into
-    distances in the longitudinal and latitudinal directions in degrees.  
-
-    returns (float, float)
-
-    """
-
-    dxd = dx / (Rearth * numpy.cos(latitude * DEG2RAD)) * RAD2DEG
-    dyd = dy * RAD2DEG / Rearth
-
-    return dxd, dyd
-
-
-def haversine(x, y, units='degrees'):
-    r"""Compute the great circle distance on the earth between points x and y.
-
-
-    """
-    if units == 'degrees':
-        # convert to radians:
-        x *= DEG2RAD
-        y *= DEG2RAD
-
-    delta = [x[0] - y[0], x[1] - y[1]]
-
-    # angle subtended by two points, using Haversine formula:
-    dsigma = 2.0 * numpy.arcsin( numpy.sqrt( numpy.sin(0.5 * delta[1])**2   \
-            + numpy.cos(x[1]) * numpy.cos(y[1]) * numpy.sin(0.5 * delta[0])**2))
-
-    # alternative formula that may have more rounding error:
-    #dsigma2 = arccos(sin(y1)*sin(y2)+ cos(y1)*cos(y2)*cos(dx))
-    #print "max diff in dsigma: ", abs(dsigma-dsigma2).max()
-
-    return Rearth * dsigma
+    extension = os.path.splitext(util.strip_archive_extensions(path))[-1][1:]
     
+    topo_type = default
+    if extension[:2] == "tt" or extension[:8] == 'topotype':
+        topo_type = int(extension[-1])
+    elif extension == 'xyz':
+        topo_type = 1
+    elif extension == 'asc':
+        topo_type = 3
+    elif extension == 'txyz':
+        topo_type = 1
 
-def inv_haversine(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
-    r"""Invert the Haversine function to find dx given a distance and point.
-
-
-    Invert the haversine function to find dx given distance d and (x1,y1) and y2.
-    The corresponding x2 can be x1+dx or x1-dx.
-    May return NaN if no solution.
-    """
-
-    if units=='degrees':
-        # convert to radians:
-        x1 = x1 * RAD2DEG
-        y1 = y1 * RAD2DEG
-        y2 = y2 * RAD2DEG
-    elif units != 'radians':
-        raise Exception("unrecognized units")
-    dsigma = d / Rsphere
-    cos_dsigma = (numpy.cos(dsigma) - numpy.sin(y1)*numpy.sin(y2)) / (numpy.cos(y1)*numpy.cos(y2))
-    dx = numpy.arccos(cos_dsigma)
-    if units=='degrees':
-        dx = dx * RAD2DEG
-    return dx
+    return topo_type
 
 
 def create_topo_func(loc,verbose=False):
@@ -152,15 +76,18 @@ def create_topo_func(loc,verbose=False):
     topgraphy at the point (x,y).  (The resulting function is constant in y.)
     
     :Example: 
-    >>> f = create_topo_profile_func(loc)
-    >>> b = f(x,y)
+
+        >>> f = create_topo_func(loc)
+        >>> b = f(x, y)
     
     :Input:
      - *loc* (list) - Create a topography file with the profile denoted by the
        tuples inside of loc.  A sample set of points are shown below.  Note 
        that the first value of the list is the x location and the second is 
        the height of the topography.
-        
+
+       **This figure doesn't show up properly in Sphinx docs...**
+
         z (m)
         ^                                                  o loc[5]  o
         |                                                    
@@ -246,8 +173,11 @@ def topo3writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
     topography.write(outfile, topo_type=3)
 
 
-def fetch_topo_url(url, local_fname=None, force=None):
+def fetch_topo_url(url, local_fname=None, force=None, verbose=False, 
+                        ask_user=False):
     """
+    DEPRECATED:  Use *clawpack.geoclaw.util.get_remote_file* instead (see note below).
+
     Replaces get_topo function.
 
     Download a topo file from the web, provided the file does not
@@ -260,7 +190,7 @@ def fetch_topo_url(url, local_fname=None, force=None):
         - *force* (bool) If False, prompt user before downloading.
 
     For GeoClaw examples, some topo files can be found in
-        http://www.clawpack.org/geoclaw/topo
+    `http://www.geoclaw.org/topo`_
     See that website for a list of archived topo datasets.
 
     If force==False then prompt the user to make sure it's ok to download,
@@ -268,79 +198,32 @@ def fetch_topo_url(url, local_fname=None, force=None):
     If force==None then check for environment variable CLAW_TOPO_DOWNLOAD
     and if this exists use its value.  This is useful for the script
     python/run_examples.py that runs all examples so it won't stop to prompt.
+    
+    This routine has been deprecated in favor of 
+    *clawpack.geoclaw.util.get_remote_file*.  All the functionality should be 
+    the same but calls the other routine internally.
     """
-    import urllib
+
+    import clawpack.geoclaw.util
 
     if force is None:
         CTD = os.environ.get('CLAW_TOPO_DOWNLOAD', None)
         force = (CTD in [True, 'True'])
-    print 'force = ',force
 
-    remote_directory = os.path.split(url)[0]
-    topo_fname = os.path.split(url)[1]
+    if local_fname is not None:
+        output_dir = os.path.dirname(local_fname)
+        file_name = os.path.basename(local_fname)
 
-    if local_fname is None:
-        local_fname = topo_fname
-    if os.path.exists(local_fname):
-        print "*** Not downloading topo file (already exists): %s " % local_fname
-    else:
-        remote_fname = topo_fname
-        remote_fname_txt = remote_fname + '.txt'
-        local_fname_txt = local_fname + '.txt'
-
-        print "Require remote file ", remote_fname
-        print "      from ", remote_directory
-        if not force:
-            ans=raw_input("  Ok to download topo file and save as %s?  \n" \
-                            % local_fname  +\
-                          "     Type y[es], n[o] or ? to first retrieve and print metadata  ")
-            if ans.lower() not in ['y','yes','?']:
-                print "*** Aborting!   Missing: ", local_fname
-                return
-            if ans=="?":
-                try:
-                    print "Retrieving remote file ", remote_fname_txt
-                    print "      from ", remote_directory
-                    url = os.path.join(remote_directory, remote_fname_txt)
-                    urllib.urlretrieve(url, local_fname_txt)
-                    os.system("cat %s" % local_fname_txt)
-                except:
-                    print "*** Error retrieving metadata file!"
-                ans=raw_input("  Ok to download topo file?  ")
-                if ans.lower() not in ['y','yes','?']:
-                    print "*** Aborting!   Missing: ", local_fname
-                    return
-
-        if not os.path.exists(local_fname_txt):
-            try:
-                print "Retrieving metadata file ", remote_fname_txt
-                print "      from ", remote_directory
-                url = os.path.join(remote_directory, remote_fname_txt)
-                urllib.urlretrieve(url, local_fname_txt)
-            except:
-                print "*** Error retrieving metadata file!"
-
-        try:
-            print "Retrieving topo file ", remote_fname
-            print "      from ", remote_directory
-            url = os.path.join(remote_directory, remote_fname)
-            urllib.urlretrieve(url, local_fname)
-        except:
-            print "*** Error retrieving file!  Missing: ", local_fname
-            raise Exception("Error from urllib.urlretrieve")
-        try:
-            firstline = open(local_fname,'r').readline()
-            if firstline.find('DOC') > -1:
-                print "*** Possible error -- check the file ", local_fname
-            else:
-                print "Saved to ", local_fname
-        except:
-            raise Exception("Error opening file %s" % local_fname)
+    clawpack.geoclaw.util.get_remote_file(url, output_dir=output_dir, 
+                                               file_name=file_name,
+                                               force=force, 
+                                               verbose=verbose, 
+                                               ask_user=ask_user)
 
 
 def get_topo(topo_fname, remote_directory, force=None):
     """
-    DEPRECATED:  Use *fetch_topo_url* instead.
+    DEPRECATED:  Use *clawpack.geoclaw.util.get_remote_file* instead
 
     Download a topo file from the web, provided the file does not
     already exist locally.
@@ -358,7 +241,7 @@ def get_topo(topo_fname, remote_directory, force=None):
     """
 
     url = remote_directory + '/' + topo_fname
-    fetch_topo_url(url, force=force)
+    clawpack.geoclaw.util.get_remote_file(url, force=force)
 
 
 def swapheader(inputfile, outputfile):
@@ -369,6 +252,7 @@ def swapheader(inputfile, outputfile):
     """
     topo = Topography(inputfile)
     topo.write(outputfile)
+
 
 
 # ==============================================================================
@@ -655,6 +539,7 @@ class Topography(object):
          - *unstructured* (bool)
          - *mask* (bool)
          - *filter_region* (tuple)
+
         The first three might have already been set when instatiating object.
 
         """
@@ -670,8 +555,12 @@ class Topography(object):
             self.unstructured = unstructured
 
         # Check if the path is a URL and fetch data if needed or forced
-        if "http" in self.path:
-            fetch_topo_url(self.path)
+        #if "http" in self.path:
+        #    fetch_topo_url(self.path)
+        # RJL: should switch to util.get_remote_file, but after fetching
+        # still need to read it in, which that routine does not do.
+        # Do we really want to support this?  Seems better for user
+        # to fetch and store as desired filename and then read file.
             
 
         if self.topo_type is None:
@@ -679,17 +568,9 @@ class Topography(object):
                 self.topo_type = topo_type
             else:
                 # Try to look at suffix for type
-                extension = os.path.splitext(self.path)[1][1:]
-                if extension[:2] == "tt":
-                    self.topo_type = int(extension[2])
-                elif extension == 'xyz':
-                    self.topo_type = 1
-                elif extension == 'asc':
+                self.topo_type = determine_topo_type(self.path)
+                if self.topo_type is None:
                     self.topo_type = 3
-                else:
-                    # Default to 3
-                    self.topo_type = 3
-
 
         if self.unstructured:
             # Read in the data as series of tuples
@@ -731,9 +612,7 @@ class Topography(object):
                         break
                 N[0] = data.shape[0] / N[1]
 
-                #self._X = data[:,0].reshape(N)
                 self._x = data[:N[1],0]
-                #self._Y = data[:,1].reshape(N)
                 self._y = data[::N[1],1]
                 self._Z = numpy.flipud(data[:,2].reshape(N))
                 self._delta = self.X[0,1] - self.X[0,0]
@@ -763,6 +642,9 @@ class Topography(object):
                 # topo_type's, contrary to our convention, so negate:
                 self._Z = -self._Z
                 
+            # Make sure these are set to None to force re-generating:
+            self._X = None
+            self._Y = None
                 
             # Perform region filtering
             if filter_region is not None:
@@ -842,18 +724,18 @@ class Topography(object):
 
         # Determine topo type if not specified
         if topo_type is None:
-            if self.topo_type is not None:
+            # Look at the the suffix of the path and the object's topo_type
+            # attribute to try to deterimine which to use, default to the path
+            # version unless it did not work
+            path_topo_type = determine_topo_type(path, default=-1)
+            
+            if self.topo_type is not None and path_topo_type == -1:
                 topo_type = self.topo_type
+            elif path_topo_type != -1:
+                topo_type = path_topo_type
             else:
-                # Try to look at suffix for type
-                extension = os.path.splitext(path)[1][1:]
-                if extension[:2] == "tt" or extension[:2] == 'topotype':
-                    topo_type = int(extension[2])
-                elif extension == 'xyz':
-                    topo_type = 1
-                else:
-                    # Default to 3
-                    topo_type = 3
+                # Default to 3 if all else fails
+                topo_type = 3
 
         # Default to this object's no_data_value if the passed is None, 
         # otherwise the argument will override the object's value or it will 
@@ -948,14 +830,9 @@ class Topography(object):
         plt.xticks(rotation=20)
 
         # Generate limits if need be
-        if (region_extent is None) and (not self.unstructured):
-            dx = self.x[1] - self.x[0]
-            dy = self.y[1] - self.y[0]
-            x1 = self.x.min() - dx/2
-            x2 = self.x.max() + dx/2
-            y1 = self.y.min() - dy/2
-            y2 = self.y.max() + dy/2
-            region_extent = (x1,x2,y1,y2)
+        if region_extent is None:
+            region_extent = self.extent
+
         mean_lat = 0.5 * (region_extent[3] + region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
 
@@ -993,19 +870,23 @@ class Topography(object):
             plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             # Adjust coordinates so color pixels centered at X,Y locations
-            plot = axes.pcolor(self.X - dx/2., self.Y - dx/2., self.Z, 
-                                       vmin=topo_extent[0], 
-                                       vmax=topo_extent[1],
-                                       cmap=cmap)
+            plot = axes.pcolor(self.X - self.delta / 2.0, 
+                               self.Y - self.delta / 2.0, 
+                               self.Z, 
+                               vmin=topo_extent[0], 
+                               vmax=topo_extent[1],
+                               cmap=cmap)
         else:
+            print region_extent
             plot = axes.imshow(self.Z, vmin=topo_extent[0], 
                                        vmax=topo_extent[1],
                                        extent=region_extent, 
                                        cmap=cmap,
                                        origin='lower',
                                        interpolation='nearest')
-        cbar = plt.colorbar(plot, ax=axes)
-        cbar.set_label("Topography (m)")
+        if add_colorbar:
+            cbar = plt.colorbar(plot, ax=axes)
+            cbar.set_label("Topography (m)")
         # levels = range(0,int(-numpy.min(Z)),500)
 
         # Plot coastlines
@@ -1018,8 +899,8 @@ class Topography(object):
         return axes
 
 
-    def interp_unstructured(self, fill_topo, extent=None,
-                                   method='nearest', delta_limit=20.0, 
+    def interp_unstructured(self, fill_topo, extent=None, method='nearest',
+                                   delta=None, delta_limit=20.0, 
                                    no_data_value=-9999, buffer_length=100.0,
                                    proximity_radius=100.0, 
                                    resolution_limit=2000):
@@ -1049,17 +930,20 @@ class Topography(object):
            Must be in the form (x lower,x upper,y lower, y upper).
          - *method* (string) - Method used for interpolation, valid methods are
            found in *scipy.interpolate.griddata*.  Default is *nearest*.
+         - *delta* (float) - Directly set the grid spacing of the interpolation
+           rather than determining it from the data itself.  Defaults to *None*
+           which causes the method to determine this value itself.
          - *delta_limit* (float) - Limit of finest horizontal resolution, 
            default is 20 meters.
          - *no_data_value* (float) - Value to use if no data was found to fill in a 
            missing value, ignored if `method = 'nearest'`. Default is `-9999`.
          - *buffer_length* (float) - Buffer around bounding box, only applicable
-           when *extent* is None.  Default is *100.0* meters.
+           when *extent* is None.  Default is `100.0` meters.
          - *proximity_radius* (float) - Radius every unstructured data point
-           used to mask the fill data with.  Default is *100.0* meters.
+           used to mask the fill data with.  Default is `100.0` meters.
          - *resolution_limit* (int) - Limit the number of grid points in a
            single dimension.  Raises a *ValueError* if the limit is violated.
-           Default value is ``2000''.
+           Default value is `2000`.
 
         Sets this object's *unstructured* attribute to *False* if successful.
 
@@ -1069,11 +953,14 @@ class Topography(object):
 
         # Convert meter inputs to degrees
         mean_latitude = numpy.mean(self.y)
-        buffer_degrees = dist_meters2latlong(buffer_length, 0.0, mean_latitude)[0]
-        delta_degrees = dist_meters2latlong(delta_limit, 0.0, mean_latitude)[0]
+        buffer_degrees = util.dist_meters2latlong(buffer_length, 0.0, 
+                                                  mean_latitude)[0]
+        delta_degrees = util.dist_meters2latlong(delta_limit, 0.0, 
+                                                 mean_latitude)[0]
         if proximity_radius > 0.0:
-            proximity_radius_deg = dist_meters2latlong(proximity_radius, 0.0,
-                                                        mean_latitude)[0]
+            proximity_radius_deg = util.dist_meters2latlong(proximity_radius, 
+                                                            0.0,
+                                                            mean_latitude)[0]
             
         # Calculate new grid coordinates
         if extent is None:
@@ -1081,9 +968,10 @@ class Topography(object):
                        numpy.max(self.x) + buffer_degrees, 
                        numpy.min(self.y) - buffer_degrees, 
                        numpy.max(self.y) + buffer_degrees ]
-        delta = max( min(numpy.min(numpy.abs(self.x[1:] - self.x[:-1])), 
-                         numpy.min(numpy.abs(self.y[1:] - self.y[:-1])) ),
-                    delta_degrees)
+        if delta is None:
+            delta = max( min(numpy.min(numpy.abs(self.x[1:] - self.x[:-1])), 
+                             numpy.min(numpy.abs(self.y[1:] - self.y[:-1])) ),
+                        delta_degrees)
         N = ( numpy.ceil((extent[1] - extent[0]) / delta),
               numpy.ceil((extent[3] - extent[2]) / delta) )
         assert numpy.all(N[:] < numpy.ones((2)) * resolution_limit), \
@@ -1098,7 +986,7 @@ class Topography(object):
 
         # Mask fill topography and flatten the arrays if needed
         if not isinstance(fill_topo, list):
-            fill_topo = list(fill_topo)
+            fill_topo = [fill_topo]
         for topo in fill_topo:
             if topo.unstructured:
                 x_fill = topo.x
@@ -1188,14 +1076,14 @@ class Topography(object):
 
         Uses simple ray casting algorithm for speed so beware of corner cases!
 
-        Input
-        -----
+        :Input:
+        
          - *polygon* (list) List of points that comprise the polygon.  Note that
            order of the points will effect if this works (positive versus negative
            winding order).  Points should be in counter-clockwise arrangement.
 
-        Returns
-        -------
+        :Returns:
+        
          - *X_mask* (numpy.ma.MaskedArray) Masked array of X coordinates where those
            points outside of the polygon have been masked.
          - *Y* (numpy.ndarray) Coordinates in y direction in a meshgrid type of
@@ -1266,7 +1154,7 @@ class Topography(object):
                                 summation += self.Z[i,j]
                                 num_points += 1
                     if num_points > 0:
-                        Z[index[0], index[1]] = summation / num_points
+                        self.Z[index[0], index[1]] = summation / num_points
                         point_replaced = True
 
         elif method == "nearest":
@@ -1278,10 +1166,12 @@ class Topography(object):
 
         self.no_data_value
 
-        :Methods:
-         - *fill* - Fill in all *no_data_value*s with *value*
-         - *nearest* - Fill in *no_data_value*s with average of nearest
-           neighbors.
+        :Input:
+         - *method* can be one of:
+
+             - *fill* - Fill in all *no_data_value* locations with *value*
+             - *nearest* - Fill in *no_data_value* locations with 
+               average of nearest neighbors.
 
         """
         raise NotImplemented("This functionality has not been added yet.")
@@ -1383,3 +1273,38 @@ class Topography(object):
 
         # print "Cropped to %s by %s array"  % (len(newtopo.x),len(newtopo.y))
         return newtopo
+
+    def make_shoreline_xy(self, sea_level=0):
+        r"""
+        Returns an array *shoreline_xy* with 2 columns containing x and y values
+        for all segements of the shoreline (defined to be the contour 
+        where self.z = sea_level) separated by [nan,nan] pairs.  
+        This allows all shorelines to be quickly plotted via:
+
+            >>> plot(shoreline_xy[:,0], shoreline_xy[:,1])
+
+        The shoreline can be saved as a binary *.npy* file via:
+
+            >>> numpy.save(filename, shoreline_xy)
+
+        which is much smaller than the original topography file. 
+        Reload via:
+
+            >>> shoreline_xy = numpy.load(filename)
+        """
+
+        import matplotlib.pyplot as plt
+
+        x = self.x
+        y = self.y
+        Z = self.Z
+        c = plt.contour(x,y,Z,[sea_level])  
+        # c is the level 0 contour as list of arrays, one for each segement
+        # catenate these together separated by array([nan,nan]):
+        shoreline_xy = c.allsegs[0][0]  # first segment
+        for k in range(1,len(c.allsegs[0])):
+            shoreline_xy = numpy.vstack((shoreline_xy, \
+                           numpy.array([numpy.nan,numpy.nan]), c.allsegs[0][k]))
+        return shoreline_xy
+
+

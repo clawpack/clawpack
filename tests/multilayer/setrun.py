@@ -84,8 +84,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 150
-    clawdata.num_cells[1] = 150
+    clawdata.num_cells[0] = 75
+    clawdata.num_cells[1] = 75
 
     # ---------------
     # Size of system:
@@ -133,7 +133,7 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 40
+        clawdata.num_output_times = 1
         clawdata.tfinal = 1.0
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
@@ -418,14 +418,8 @@ def setgeo(rundata):
     #   [topotype, minlevel,maxlevel,fname]
 
     # == setqinit.data values ==
-    # Use multilayer qinit data object
-    rundata.replace_data('qinit_data', multilayer.QinitMultilayerData())
-    rundata.qinit_data.qinit_type = 6
-    rundata.qinit_data.epsilon = 0.02
-    rundata.qinit_data.angle = 0.0
-    rundata.qinit_data.sigma = 0.02
-    rundata.qinit_data.wave_family = 4
-    rundata.qinit_data.init_location = [-0.1,0.0]
+    qinit_data = rundata.qinit_data
+
 
 
     return rundata
@@ -455,6 +449,15 @@ def set_multilayer(rundata):
     data.richardson_tolerance = 0.95
     # data.wave_tolerance = [0.1,0.1]
     # data.dry_limit = True
+
+    # Set special initial conditions for qinit
+    rundata.replace_data('qinit_data', multilayer.QinitMultilayerData())
+    rundata.qinit_data.qinit_type = 6
+    rundata.qinit_data.epsilon = 0.02
+    rundata.qinit_data.angle = 0.0
+    rundata.qinit_data.sigma = 0.02
+    rundata.qinit_data.wave_family = 4
+    rundata.qinit_data.init_location = [-0.1,0.0]
 
 
 def set_storm(rundata):
