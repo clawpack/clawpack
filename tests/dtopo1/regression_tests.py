@@ -53,7 +53,6 @@ class DTopoTests(tests.GeoClawTest):
         y = numpy.linspace(-0.4,0.4,121)
         dtopo = fault.create_dtopography(x,y,times=times)
         dtopo.write(os.path.join(self.temp_path, "dtopo1.tt3"), dtopo_type=3)
-        print "+++ writing ",os.path.join(self.temp_path, "dtopo1.tt3")
 
         subfault_path = os.path.join(self.test_path, "dtopo2.csv")
         input_units = {'slip': 'm', 'depth': 'km', 'length': 'km', 'width': 'km'}
