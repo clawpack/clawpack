@@ -26,11 +26,6 @@ dtopo files, and calculating Okada based deformations.
   - strike_direction
   - rise_fraction
 
-
-:TODO:
- - This file contains both the older dtopo functionality and a new class, should
-   merge as much functionality into the class as possible ensuring nothing is
-   left behind.
 """
 
 import os
@@ -45,8 +40,9 @@ import clawpack.geoclaw.util as util
 # ==============================================================================
 #  Constants
 # ==============================================================================
+from clawpack.geoclaw.data import DEG2RAD, LAT2METER
+
 # Poisson ratio for Okada 
-from clawpack.geoclaw.util import DEG2RAD, LAT2METER
 poisson = 0.25
 
 # ==============================================================================
