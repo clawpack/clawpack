@@ -5,10 +5,6 @@ GeoClaw util Module  `$CLAW/geoclaw/src/python/geoclaw/util.py`
 
 Module provides provides utility functions.
 
-:Constants:
- - DEG2RAD factor to convert degrees to radians
- - RAD2DEG factor to convert radians to degrees
- - LAT2METER factor to convert degrees in latitude to meters
 
 :Functions:
 
@@ -30,10 +26,7 @@ import clawpack.geoclaw.data
 # ==============================================================================
 #  Constants
 # ==============================================================================
-from data import Rearth
-DEG2RAD = numpy.pi / 180.0
-RAD2DEG = 180.0 / numpy.pi
-LAT2METER = clawpack.geoclaw.data.Rearth * DEG2RAD
+from data import Rearth, DEG2RAD, RAD2DEG, LAT2METER
 
 # ======================
 #  Remote file handling

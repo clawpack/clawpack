@@ -1,15 +1,40 @@
 #!/usr/bin/env python
 
-"""Classes representing parameters for GeoClaw runs"""
+"""
+
+Classes representing parameters for GeoClaw runs
+
+:Classes:
+
+ - GeoClawData
+ - RefinementData
+ - TopographyData
+ - RefinementData
+ - FixedGridData
+ - FGmaxData
+ - DTopoData
+ - QinitData
+
+:Constants:
+
+ - Rearth - Radius of earth in meters
+ - DEG2RAD factor to convert degrees to radians
+ - RAD2DEG factor to convert radians to degrees
+ - LAT2METER factor to convert degrees in latitude to meters
+"""
 
 import os
-
+import numpy
 import clawpack.clawutil.data
 
 # Radius of earth in meters.  
 # For consistency, should always use this value when needed, e.g.
 # in setrun.py or topotools:
 Rearth = 6367.5e3  # average of polar and equatorial radii
+
+DEG2RAD = numpy.pi / 180.0
+RAD2DEG = 180.0 / numpy.pi
+LAT2METER = Rearth * DEG2RAD
 
 class GeoClawData(clawpack.clawutil.data.ClawData):
     r"""
