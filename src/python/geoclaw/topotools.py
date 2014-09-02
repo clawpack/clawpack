@@ -281,7 +281,7 @@ class Topography(object):
     def z(self):
         r"""A representation of the data as an 1d array."""
         if (self._z is None) and self.unstructured:
-            self.read(mask=True)
+            self.read(mask=False)
         return self._z
     @z.setter
     def z(self, value):
@@ -294,7 +294,7 @@ class Topography(object):
     def Z(self):
         r"""A representation of the data as a 2d array."""
         if self._Z is None:
-            self.generate_2d_topo(mask=True)
+            self.generate_2d_topo(mask=False)
         return self._Z
     @Z.setter
     def Z(self, value):
@@ -307,7 +307,7 @@ class Topography(object):
     def x(self):
         r"""One dimensional coorindate array in x direction."""
         if self._x is None:
-            self.read(mask=True)
+            self.read(mask=False)
         return self._x
     @x.setter
     def x(self, value):
@@ -321,7 +321,7 @@ class Topography(object):
     def X(self):
         r"""Two dimensional coordinate array in x direction."""
         if self._X is None:
-            self.generate_2d_coordinates(mask=True)
+            self.generate_2d_coordinates(mask=False)
         return self._X
     @X.deleter
     def X(self):
@@ -331,7 +331,7 @@ class Topography(object):
     def y(self):
         r"""One dimensional coordinate array in y direction."""
         if self._y is None:
-            self.read(mask=True)
+            self.read(mask=False)
         return self._y
     @y.setter
     def y(self, value):
@@ -345,7 +345,7 @@ class Topography(object):
     def Y(self):
         r"""Two dimensional coordinate array in y direction."""
         if self._Y is None:
-            self.generate_2d_coordinates(mask=True)
+            self.generate_2d_coordinates(mask=False)
         return self._Y
     @Y.deleter
     def Y(self):
@@ -429,7 +429,7 @@ class Topography(object):
         #     mask=mask, filter_region=filter_region)
 
 
-    def generate_2d_topo(self, mask=True):
+    def generate_2d_topo(self, mask=False):
         r"""Generate a 2d array of the topo."""
 
         # Check to see if we need to generate these
@@ -469,7 +469,7 @@ class Topography(object):
                 self._Z = self.topo_func(self.X, self.Y)
 
 
-    def generate_2d_coordinates(self, mask=True):
+    def generate_2d_coordinates(self, mask=False):
         r"""Generate 2d coordinate arrays."""
 
         # Check to see if we need to generate these
@@ -527,17 +527,18 @@ class Topography(object):
 
 
     def read(self, path=None, topo_type=None, unstructured=False, 
-             mask=True, filter_region=None, force=False):
+             mask=False, filter_region=None, force=False):
         r"""Read in the data from the object's *path* attribute.
 
         Stores the resulting data in one of the sets of *x*, *y*, and *z* or 
         *X*, *Y*, and *Z*.  
 
         :Input:
-         - *path* (str)  file to read, or url
-         - *topo_type* (int)
-         - *unstructured* (bool)
-         - *mask* (bool)
+         - *path* (str)  file to read
+         - *topo_type* (int) - GeoClaw format topo_type 
+         - *unstructured* (bool) - default is False for lat-long grids.
+         - *mask* (bool) - whether to store as masked array for missing
+           values (default if False)
          - *filter_region* (tuple)
 
         The first three might have already been set when instatiating object.
@@ -801,20 +802,35 @@ class Topography(object):
                 raise NotImplemented("Output type %s not implemented." % topo_type)
 
 
-    def plot(self, axes=None, region_extent=None, contours=None, 
-             coastlines=True, limits=None, cmap=None, add_colorbar=True, 
-             fig_kwargs={}):
+    def plot(self, axes=None, contour_levels=None, contour_kwargs={}, 
+             limits=None, cmap=None, add_colorbar=True, 
+             plot_box=False, fig_kwargs={}):
         r"""Plot the topography.
 
         :Input:
-         - *axes* (matplotlib.pyplot.axes) - 
-         - *region_extent* (tuple) - 
-         - *contours* (list) - 
-         - *coastlines* (bool) - 
-         - *limits* (list) - 
-         - *cmap* (matplotlib.colors.Colormap) - 
-         - *fig_kawargs* (dict) - 
+         - *axes* (matplotlib.pyplot.axes) - If passed in, plot will be
+           added to this axes.  Otherwise a new plot figure will be created
+           (using *fig_kwargs*) and a new *axes* object created and returned.
+         - *contour_levels* (list) - levels for contour lines if these are 
+           to be added (default *None*).  Set to [0.] to plot shoreline.
+         - *contour_kwargs* (dict) - keyword arguments to be passed to
+           contour command, e.g. {'colors':'r', 'linestyles': '-'}.
+           Default is empty dict.
+         - *limits* (list) - (min, max) of topo values for color map.  
+           Defaults to None, in which case (self.Z.min(), self.Z.max()) used.
+         - *cmap* (matplotlib.colors.Colormap) - colormap, defaults to
+           specialized map with blues for bathymetry and green/browns for topo.
+         - *fig_kwargs* (dict) - keyword arguments to be passed to figure.
+         - *plot_box* (bool or color specifier) - If evaluates to True, plot
+           a box around limits of this topo. 
 
+        :Output:
+         - *axes* (matplotlib.pyplot.axes) - the axes on which plot created.
+
+        Note that:
+          - if *type(self.Z)* is *numpy.ma.MaskedArray* then *pcolor* is used,
+          - if *type(self.Z)* is *numpy.ndarray* then *imshow* is used.
+            (This is faster for large files)
         """
 
         import matplotlib.pyplot as plt
@@ -829,9 +845,7 @@ class Topography(object):
         axes.ticklabel_format(format="plain", useOffset=False)
         plt.xticks(rotation=20)
 
-        # Generate limits if need be
-        if region_extent is None:
-            region_extent = self.extent
+        region_extent = self.extent
 
         mean_lat = 0.5 * (region_extent[3] + region_extent[2])
         axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
@@ -866,8 +880,6 @@ class Topography(object):
                                     vmin=topo_extent[0],
                                     vmax=topo_extent[1],
                                     marker=',', linewidths=(0.0,))
-        elif contours is not None:
-            plot = axes.contourf(self.X, self.Y, self.Z, contours,cmap=cmap)
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             # Adjust coordinates so color pixels centered at X,Y locations
             plot = axes.pcolor(self.X - self.delta / 2.0, 
@@ -888,12 +900,22 @@ class Topography(object):
             cbar.set_label("Topography (m)")
         # levels = range(0,int(-numpy.min(Z)),500)
 
-        # Plot coastlines
-        if coastlines and not self.unstructured:
-            axes.contour(self.X, self.Y, self.Z, levels=[0.0],colors='r')
+        if (contour_levels is not None) and (not self.unstructured):
+            axes.contour(self.X, self.Y, self.Z, levels=contour_levels,
+                 **contour_kwargs)
 
         axes.set_xlim(region_extent[0:2])
         axes.set_ylim(region_extent[2:])
+
+        x1,x2,y1,y2 = self.extent
+        if plot_box:
+            # plot a box around this topography region
+            if type(plot_box) is bool:
+                color = 'm'
+            else:
+                # assume plot_box is a valid color:
+                color = plot_box
+            plt.plot([x1,x2,x2,x1,x1], [y1,y1,y2,y2,y1], color=color)
 
         return axes
 
