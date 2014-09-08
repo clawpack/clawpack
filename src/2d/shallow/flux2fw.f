@@ -208,7 +208,7 @@ c
 c
        if (method(3).eq.0) go to 999   !# no transverse propagation
 c
-       if (method(3).eq.2) then
+       if (method(2).gt.1 .and. method(3).eq.2) then
 c         # incorporate cqxx into amdq and apdq so that it is split also.
           do 150 i = 1, mx+1
              do 150 m=1,meqn
