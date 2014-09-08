@@ -12,7 +12,7 @@ from numpy import sqrt, ma
 import numpy
 
 
-class fgmax(object):
+class FGmaxGrid(object):
 
     """
     New class introduced in 5.2.1 to keep store information both about the
