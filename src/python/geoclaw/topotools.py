@@ -386,9 +386,10 @@ class Topography(object):
                                            abs(self.y[1] - self.y[0])])
                 end_delta =   numpy.array([abs(self.x[-2] - self.x[-1]), 
                                            abs(self.y[-2] - self.y[-1])])
-                assert numpy.allclose(begin_delta, end_delta, 1e-8),   \
-                       "Grid spacing delta not constant, %s != %s." %  \
-                       (begin_delta, end_delta)
+                if not numpy.allclose(begin_delta, end_delta, 1e-8):
+                    raise ValueError("Grid spacing delta not constant, ",
+                                     "%s != %s." % (begin_delta, end_delta))
+                       
                 self._delta = numpy.round(begin_delta[0], 15) 
         return self._delta
 
@@ -995,8 +996,8 @@ class Topography(object):
                         delta_degrees)
         N = ( numpy.ceil((extent[1] - extent[0]) / delta),
               numpy.ceil((extent[3] - extent[2]) / delta) )
-        assert numpy.all(N[:] < numpy.ones((2)) * resolution_limit), \
-               ValueError("Calculated resolution too high, N=%s!" % str(N))
+        if numpy.all(N[:] < numpy.ones((2)) * resolution_limit):
+            ValueError("Calculated resolution too high, N=%s!" % str(N))
         self._X, self._Y = numpy.meshgrid( 
                                      numpy.linspace(extent[0], extent[1], N[0]),
                                      numpy.linspace(extent[2], extent[3], N[1]))
