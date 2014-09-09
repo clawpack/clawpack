@@ -996,7 +996,7 @@ class Topography(object):
                         delta_degrees)
         N = ( numpy.ceil((extent[1] - extent[0]) / delta),
               numpy.ceil((extent[3] - extent[2]) / delta) )
-        if numpy.all(N[:] < numpy.ones((2)) * resolution_limit):
+        if not numpy.all(N[:] < numpy.ones((2)) * resolution_limit):
             ValueError("Calculated resolution too high, N=%s!" % str(N))
         self._X, self._Y = numpy.meshgrid( 
                                      numpy.linspace(extent[0], extent[1], N[0]),
