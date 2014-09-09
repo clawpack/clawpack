@@ -53,7 +53,7 @@ class FGmaxGrid(object):
         self.hss_time = None
         self.hmin = None
         self.hmin_time = None
-        self.arr_time = None
+        self.arrival_time = None
 
     def read_input_data(self, input_file_name=None):
         r"""
@@ -292,12 +292,12 @@ class FGmaxGrid(object):
         ind_h = 3
         if ncols == 6:
             ind_h_time = 4
-            ind_arr_time = 5
+            ind_arrival_time = 5
         elif ncols == 8:
             ind_s = 4
             ind_h_time = 5
             ind_s_time = 6
-            ind_arr_time = 7
+            ind_arrival_time = 7
         elif ncols == 14:
             ind_s = 4
             ind_hs = 5
@@ -308,7 +308,7 @@ class FGmaxGrid(object):
             ind_hs_time = 10
             ind_hss_time = 11
             ind_hmin_time = 12
-            ind_arr_time = 13
+            ind_arrival_time = 13
     
         if point_style in [0,1]:
             fg_shape = (self.npts,)
@@ -363,10 +363,10 @@ class FGmaxGrid(object):
             self.hmin, self.hmin_time = set_q_time(ind_hmin, ind_hmin_time)
     
         # last column is arrival times:
-        arr_time = numpy.reshape(d[:,ind_arr_time],fg_shape,order='F')
-        arr_time = ma.masked_where(arr_time < -1e50, arr_time)  
-        arr_time = ma.masked_where(zeta == 0., arr_time)
-        self.arr_time = arr_time
+        arrival_time = numpy.reshape(d[:,ind_arrival_time],fg_shape,order='F')
+        arrival_time = ma.masked_where(arrival_time < -1e50, arrival_time)  
+        arrival_time = ma.masked_where(zeta == 0., arrival_time)
+        self.arrival_time = arrival_time
     
         self.level = level
         self.x = x
