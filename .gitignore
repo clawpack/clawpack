@@ -16,3 +16,5 @@ _plots/
 *.tt3
 *.tt1
 *.xyz
+scratch/*
+!scratch/README.txt
