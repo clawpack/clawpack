@@ -43,7 +43,6 @@ class FGmaxGrid(object):
         self.dy = None
         self.B = None
         self.h = None
-        self.zeta = None
         self.h_time = None
         self.s = None
         self.s_time = None
@@ -325,7 +324,7 @@ class FGmaxGrid(object):
         y0 = 0.5*(y.min() + y.max())   # mid-latitude for scaling plots
         h = numpy.reshape(d[:,ind_h],fg_shape,order='F')
     
-        # AMR level used for each zeta value:
+        # AMR level used for each fgmax value:
         level = numpy.reshape(d[:,ind_level].astype('int'),fg_shape,order='F')
         
         topo = []
@@ -340,18 +339,15 @@ class FGmaxGrid(object):
         for i in range(levelmax):
             B = numpy.where(level==i+1, topo[i], B)
     
-        # zeta is defined as maximum depth h onshore and maximum elevation
-        # relative to MHW offshore:
-        zeta = numpy.where(B > 0, h, h+B)
-    
-        inundated = numpy.logical_and((B>0), (h>0))
+        mask = (h < -1e50)  # points that were never set
+        B = ma.masked_where(mask, B)
+        h = ma.masked_where(mask, h)
 
         def set_q_time(ind_q, ind_q_time):  
             q = numpy.reshape(d[:,ind_q],fg_shape,order='F')
-            q = ma.masked_where(zeta==0.,q) 
+            q = ma.masked_where(mask,q) 
             q_time = numpy.reshape(d[:,ind_q_time],fg_shape,order='F')  
-            q_time = ma.masked_where(q_time < -1e50, q_time)      
-            q_time = ma.masked_where(zeta == 0., q_time)
+            q_time = ma.masked_where(mask, q_time)      
             return q, q_time
     
         self.h, self.h_time = set_q_time(ind_h, ind_h_time)
@@ -365,7 +361,7 @@ class FGmaxGrid(object):
         # last column is arrival times:
         arrival_time = numpy.reshape(d[:,ind_arrival_time],fg_shape,order='F')
         arrival_time = ma.masked_where(arrival_time < -1e50, arrival_time)  
-        arrival_time = ma.masked_where(zeta == 0., arrival_time)
+        arrival_time = ma.masked_where(mask, arrival_time)
         self.arrival_time = arrival_time
     
         self.level = level
@@ -373,7 +369,6 @@ class FGmaxGrid(object):
         self.y = y
         self.B = B
         self.h = h
-        self.zeta = zeta
     
 
 
