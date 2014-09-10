@@ -181,6 +181,7 @@ topo:
 
 all: 
 	$(MAKE) topo
+	python make_fgmax_grid.py
 	$(MAKE) .plots
 	$(MAKE) .htmls
 
