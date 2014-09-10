@@ -303,6 +303,38 @@ class GeoClawTest(unittest.TestCase):
         self.success = True
 
 
+    def check_fgmax(self, save=False):
+        r"""Basic test to assert fgmax equality
+        Currently just records sum of fg.h and of fg.s.
+
+        :Input:
+         - *save* (bool) - If *True* will save the output from this test to 
+           the file *regresion_data.txt*.  Default is *False*.
+        """
+
+        from clawpack.geoclaw import fgmax_tools
+
+        fg = fgmax_tools.FGmaxGrid()
+        fg.read_input_data('fgmax1.txt')
+        fg.read_output()
+
+        data_sum = numpy.array([fg.h.sum(), fg.s.sum()])
+
+        # Get (and save) regression comparison data
+        regression_data_file = os.path.join(self.test_path, \
+                "regression_data_fgmax.txt")
+        if save:
+            numpy.savetxt(regression_data_file, data_sum)
+        regression_sum = numpy.loadtxt(regression_data_file)
+
+        # Compare data
+        tolerance = 1e-14
+        assert numpy.allclose(data_sum, regression_sum, tolerance), \
+                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
+
+        # If we have gotten here then we do not need to copy the run results
+        self.success = True
+
     def tearDown(self):
         r"""Tear down test infrastructure.
 
