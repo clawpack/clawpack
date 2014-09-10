@@ -287,6 +287,45 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.close_data_file()
 
 
+    def read(self, path, force=False):
+        r"""Read a dtopography data file."""
+
+        print self.dtopofiles
+
+        with open(os.path.abspath(path), 'r') as data_file:
+
+            file_name = None
+            
+            # Forward to first parameter
+            for line in data_file:
+
+                # Regular parameter setting
+                if "=:" in line:
+                    value, tail = line.split("=:")
+                    varname = tail.split()[0]
+
+                    if varname == "mdtopofiles":
+                        num_dtopo_files = int(value)
+                    elif varname == "dt_max_dtopo":
+                        self.dt_max_dtopo = float(value)
+
+                # Assume this is the second line of a record, complete and add
+                # to dtopofiles list
+                elif file_name is not None:
+                    base_values = [int(value) for value in line.split()]
+                    base_values.append(file_name)
+                    self.dtopofiles.append(base_values)
+                    file_name = None
+
+                # Non-empty line, assume start of dtopo_file record
+                elif line[0] == "'":
+                    file_name = line.strip()[1:-1]
+
+        # Check to make sure we have all the dtopofiles
+        if len(self.dtopofiles) != num_dtopo_files:
+            raise IOError("The number of dtopo files specified does not equal ",
+                          "the number found.")
+
 
 class QinitData(clawpack.clawutil.data.ClawData):
 
