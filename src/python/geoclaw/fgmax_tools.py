@@ -37,8 +37,8 @@ class FGmaxGrid(object):
 
         self.outdir = '_output'    # where to find GeoClaw output fort.FG*
         self.level = None
-        self.x = None
-        self.y = None
+        self.X = None
+        self.Y = None
         self.dx = None
         self.dy = None
         self.B = None
@@ -79,7 +79,7 @@ class FGmaxGrid(object):
             self.n12 = n12 = int(fgmax_input[6].split()[0])
             self.n23 = n23 = int(fgmax_input[6].split()[1])
         if point_style == 1:
-            self.x, self.y = numpy.loadtxt(fgmax_input, skiprows=7, unpack=True)
+            self.X, self.Y = numpy.loadtxt(fgmax_input, skiprows=7, unpack=True)
 
 
     def write_input_data(self, input_file_name=None):
@@ -319,9 +319,9 @@ class FGmaxGrid(object):
             raise NotImplemented("Not implemented for point_style %s" \
                 % point_style)
     
-        x = numpy.reshape(d[:,0],fg_shape,order='F')
-        y = numpy.reshape(d[:,1],fg_shape,order='F')
-        y0 = 0.5*(y.min() + y.max())   # mid-latitude for scaling plots
+        X = numpy.reshape(d[:,0],fg_shape,order='F')
+        Y = numpy.reshape(d[:,1],fg_shape,order='F')
+        y0 = 0.5*(Y.min() + Y.max())   # mid-latitude for scaling plots
         h = numpy.reshape(d[:,ind_h],fg_shape,order='F')
     
         # AMR level used for each fgmax value:
@@ -365,8 +365,8 @@ class FGmaxGrid(object):
         self.arrival_time = arrival_time
     
         self.level = level
-        self.x = x
-        self.y = y
+        self.X = X
+        self.Y = Y
         self.B = B
         self.h = h
     
