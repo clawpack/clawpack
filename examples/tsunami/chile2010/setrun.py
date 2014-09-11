@@ -92,7 +92,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 4
+    clawdata.num_aux = 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -292,7 +292,7 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    amrdata.aux_type = ['center','capacity','yleft','center']
+    amrdata.aux_type = ['center','capacity','yleft']
 
 
     # Flag using refinement routine flag2refine rather than richardson error

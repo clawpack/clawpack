@@ -34,17 +34,29 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     ! Lat-Long coordinate system in use, check input variables
     if (coordinate_system == 2) then
         if (mcapa /= 2 .or. maux < 3) then
-            print *,'ERROR in setaux:  for coordinate_system=2'
-            print *,'     need mcapa = 2 and maux >= 3'
+            print *,'ERROR in setaux:  for coordinate_system==2'
+            print *,'     need mcapa == 2 and maux >= 3'
             print *,'     have mcapa = ',mcapa,'  maux = ',maux
             stop
         endif
     endif
 
-    ! Set default values for aux variables
-    !aux(1,:,:) = 0.d0 ! Bathymetry
-    aux(2,:,:) = 1.d0 ! Grid cell area
-    aux(3,:,:) = 1.d0 ! Length ratio for edge
+    ! Check below is new in 5.2.1 -- need to rethink for storm surge
+    ! and other applications where other aux arrays might be used?
+    if (coordinate_system == 1) then
+        if (mcapa > 0) then
+            print *,'ERROR in setaux:  for coordinate_system==1'
+            print *,'     need mcapa == 0 and maux == 1'
+            print *,'     have mcapa = ',mcapa,'  maux = ',maux
+            stop
+        else if (maux > 1) then
+            ! Should not need to set aux(2,:,:) in this case, but 
+            ! for some reason it bombs, e.g. in bowl-radial if maux>1.
+            aux(2,:,:) = 1.d0 
+            !aux(3,:,:) = 1.d0
+        endif
+    endif
+
 
     ! Set analytical bathymetry here if requested
     if (test_topography > 0) then
@@ -112,7 +124,11 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                     mxtopo,mytopo,mtopo,i0topo,mtopoorder, &
                     mtopofiles,mtoposize,topowork)
 
+                if (coordinate_system == 2) then
                     aux(1,ii,jj) = topo_integral / (dx * dy * aux(2,ii,jj))
+                else
+                    aux(1,ii,jj) = topo_integral / (dx * dy)
+                endif
             endif
         enddo
     enddo

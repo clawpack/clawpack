@@ -278,12 +278,18 @@ contains
             ! Check that topo arrays cover full domain:
             call topoarea(xlower,xupper,ylower,yupper,1,area)
             area_domain = (yupper-ylower)*(xupper-xlower)
-            if (abs(area - area_domain) > 1e-12*area_domain) then
+            if (abs(area - area_domain) > 1e-2*area_domain) then
                 write(6,*) '**** topo arrays do not cover domain'
                 write(6,*) '**** area of overlap = ', area
                 write(6,*) '**** area of domain  = ', area_domain
                 stop
-                endif
+            else if (abs(area - area_domain) > 1e-12*area_domain) then
+                write(6,*) '**** WARNING'
+                write(6,*) '**** topo arrays do not quite cover domain'
+                write(6,*) '**** area of overlap = ', area
+                write(6,*) '**** area of domain  = ', area_domain
+                write(6,*) '**** error is less than 1% so proceeding...'
+            endif
 
         !---------------tests for analytic bathymetry-------------------
         ! Simple jump discontinuity in bathymetry
