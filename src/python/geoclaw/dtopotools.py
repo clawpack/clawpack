@@ -84,8 +84,8 @@ unit_conversion_factor['dyne-cm'] = 1.e-7
 # Check that these are consistent:
 check = [unit_conversion_factor[standard_units[param]] is 1. for param in \
          standard_units.keys()]
-assert numpy.alltrue(check), \
-        """Conversion factors should be 1 for all standard_units"""
+if not numpy.alltrue(check):
+    raise ValueError("Conversion factors should be 1 for all standard_units")
 
 
 # ==============================================================================
@@ -449,8 +449,8 @@ class DTopography(object):
         y = self.Y[:,0]
         dx = x[1] - x[0]
         dy = y[1] - y[0]
-        assert abs(dx-dy) <1e-12, \
-            "*** dx = %g not equal to dy = %g" % (dx,dy)
+        if abs(dx - dy) >= 1e-12:
+            raise ValueError("dx = %g not equal to dy = %g" % (dx,dy))
 
         # Construct each interpolating function and evaluate at new grid
         ## Shouldn't need to interpolate in time.
@@ -804,8 +804,8 @@ class Fault(object):
                 # store 0 at first time and final deformation at second:
                 dz0 = numpy.zeros(X.shape)
                 dtopo.dZ = numpy.array([dz0, dz])
-                assert dtopo.dZ.shape == (2,dz.shape[0],dz.shape[1]), \
-                    "dtopo.dZ does not have expected shape"
+                if dtopo.dZ.shape != (2, dz.shape[0], dz.shape[1]):
+                    raise ValueError("dtopo.dZ does not have expected shape")
 
         elif self.rupture_type in ['dynamic','kinematic']:
 
