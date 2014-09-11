@@ -4,9 +4,10 @@ Create fgmax_grid.txt input file
 """
 
 from clawpack.geoclaw import fgmax_tools
+import os
 
 
-def make_fgmax_grid1():
+def make_fgmax_grid1(datadir):
     fg = fgmax_tools.FGmaxGrid()
     fg.point_style = 2       # will specify a 2d grid of points
     fg.x1 = -2.
@@ -21,7 +22,7 @@ def make_fgmax_grid1():
     fg.min_level_check = 2    # which levels to monitor max on
     fg.arrival_tol = 1.e-2    # tolerance for flagging arrival
 
-    fg.input_file_name = 'fgmax1.txt'
+    fg.input_file_name = os.path.join(datadir, 'fgmax1.txt')
     fg.write_input_data()
 
 
