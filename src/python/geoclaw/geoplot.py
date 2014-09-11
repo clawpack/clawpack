@@ -201,3 +201,37 @@ def surface_or_depth(current_data):
     surface_or_depth = where(topo<0, surface, depth)
     return surface_or_depth
 
+# Some discrete color maps useful for contourf plots of fgmax results:
+
+def discrete_cmap_1(clines):
+    """
+    Construct a discrete color map for the regions between the contour lines
+    given in clines. Colors go from turqouise through yellow to red.
+    Good for zeta.
+    """
+    from numpy import floor, linspace, hstack, ones, zeros
+    nlines = len(clines)
+    n1 = int(floor((nlines-1)/2.))
+    n2 = nlines - 1 - n1
+    Green = hstack([linspace(1,1,n1),linspace(1,0,n2)])
+    Red = hstack([linspace(0,0.8,n1), ones(n2)])
+    Blue = hstack([linspace(1,0.2,n1), zeros(n2)])
+    colors = zip(Red,Green,Blue)
+    return colors
+
+def discrete_cmap_2(clines):
+    """
+    Construct a discrete color map for the regions between the contour lines
+    given in clines.  Colors go from red to turquoise.
+    Good for arrival times.
+    """
+    from numpy import floor, linspace, hstack, ones, zeros
+    nlines = len(clines)
+    n1 = int(floor((nlines-1)/2.))
+    n2 = nlines - 1 - n1
+    Green = flipud(hstack([linspace(1,1,n1),linspace(1,0,n2)]))
+    Red = flipud(hstack([linspace(0,0.8,n1), ones(n2)]))
+    Blue = flipud(hstack([linspace(1,0.2,n1), zeros(n2)]))
+    colors = zip(Red,Green,Blue)
+    return colors
+

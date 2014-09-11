@@ -621,7 +621,7 @@ class Topography(object):
 
             elif abs(self.topo_type) in [2,3]:
                 # Get header information
-                N = self.read_header()
+                N = self.read_header()  # note this also sets self._extent
                 self._x = numpy.linspace(self.extent[0], self.extent[1], N[0])
                 self._y = numpy.linspace(self.extent[2], self.extent[3], N[1])
 
@@ -706,8 +706,8 @@ class Topography(object):
                 self._delta = float(topo_file.readline().split()[value_index])
                 self.no_data_value = float(topo_file.readline().split()[value_index])
                 
-                self._extent[1] = self._extent[0] + num_cells[0] * self.delta
-                self._extent[3] = self._extent[2] + num_cells[1] * self.delta
+                self._extent[1] = self._extent[0] + (num_cells[0]-1)*self.delta
+                self._extent[3] = self._extent[2] + (num_cells[1]-1)*self.delta
 
         else:
             raise IOError("Cannot read header for topo_type %s" % self.topo_type)
