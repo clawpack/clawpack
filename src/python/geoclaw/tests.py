@@ -265,6 +265,8 @@ class GeoClawTest(unittest.TestCase):
         # Perform tests
         self.check_gauges(save=save, indices=(2, 3))
 
+        # If we have gotten here then we do not need to copy the run results
+        self.success = True
 
     def check_gauges(self, save=False, indices=(2, 3)):
         r"""Basic test to assert gauge equality
@@ -299,8 +301,6 @@ class GeoClawTest(unittest.TestCase):
         assert numpy.allclose(data, regression_data, tolerance), \
                 "Full gauge match failed."
 
-        # If we have gotten here then we do not need to copy the run results
-        self.success = True
 
 
     def check_fgmax(self, save=False):
@@ -315,8 +315,9 @@ class GeoClawTest(unittest.TestCase):
         from clawpack.geoclaw import fgmax_tools
 
         fg = fgmax_tools.FGmaxGrid()
-        fg.read_input_data('fgmax1.txt')
-        fg.read_output()
+        fname = os.path.join(self.temp_path, 'fgmax1.txt')
+        fg.read_input_data(fname)
+        fg.read_output(outdir=self.temp_path)
 
         data_sum = numpy.array([fg.h.sum(), fg.s.sum()])
 
@@ -332,8 +333,6 @@ class GeoClawTest(unittest.TestCase):
         assert numpy.allclose(data_sum, regression_sum, tolerance), \
                 "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
 
-        # If we have gotten here then we do not need to copy the run results
-        self.success = True
 
     def tearDown(self):
         r"""Tear down test infrastructure.

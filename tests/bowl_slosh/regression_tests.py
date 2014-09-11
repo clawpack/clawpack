@@ -56,6 +56,7 @@ class BowlSloshTest(tests.GeoClawTest):
         # Perform tests
         self.check_gauges(save=save, indices=(2, 3))
         self.check_fgmax(save=save)
+        self.success = True
 
 
 if __name__=="__main__":

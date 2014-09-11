@@ -93,6 +93,9 @@ class DTopoTests(tests.GeoClawTest):
         # Perform tests
         self.check_gauges(save=save, indices=(2, 3))
 
+        # If we have gotten here then we do not need to copy the run results
+        self.success = True
+
 
 if __name__=="__main__":
     if len(sys.argv) > 1:

@@ -64,6 +64,8 @@ class MultilayerTest(tests.GeoClawTest):
         self.run_code()
         self.check_gauges(save=save)
 
+        # If we have gotten here then we do not need to copy the run results
+        self.success = True
 
 
 if __name__=="__main__":
