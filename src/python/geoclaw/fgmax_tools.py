@@ -376,7 +376,7 @@ class FGmaxGrid(object):
 
 class fgmax_grid_parameters(object):
 
-    """Deprecated -- use class fgmax """
+    """Deprecated -- use class FGmaxGrid """
 
     def __init__(self):
         self.point_style = 2      # expect 1 or 2
@@ -400,6 +400,7 @@ class fgmax_grid_parameters(object):
         self.fname = 'fgmax_grid.txt'
 
 def make_fgmax(FG):
+    """Deprecated -- use FGmaxGrid.write_input_data"""
     print "---------------------------------------------- "
     x1,x2 = FG.x1, FG.x2
     y1,y2 = FG.y1, FG.y2
