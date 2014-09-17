@@ -266,7 +266,7 @@ def setplot(plotdata):
     plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
     plotfigure.show = True   # Don't show this file in the html version
     plotfigure.use_for_kml = True
-    plotfigure.kml_dpi = 1600
+    plotfigure.kml_dpi = 200
     plotfigure.kml_xlimits = [-124.68, -124.55]
     plotfigure.kml_ylimits = [47.86, 47.96]
     # plotfigure.kml_xlimits = [-126,-124]
