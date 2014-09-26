@@ -18,7 +18,7 @@ class IkeTest(tests.GeoClawTest):
         super(IkeTest, self).setUp()
 
         # Download topography
-        self.get_remote_file("http://users.ices.utexas.edu/~kyle/bathy/" + \
+        self.get_remote_file("http://www.columbia.edu/~ktm2132/bathy/" + \
                                      "gulf_caribbean.tt3.tar.bz2")
         # Download storm data
         # Eventually probably want to do this
