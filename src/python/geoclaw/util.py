@@ -47,7 +47,7 @@ def strip_archive_extensions(path, extensions=["tar", "tgz", "bz2", "gz"]):
 
 
 def get_remote_file(url, output_dir=None, file_name=None, force=False,  
-                         verbose=False, ask_user=False):
+                         verbose=False, ask_user=False, unpack=True):
     r"""Fetch file located at *url* and store at *output_dir*.
 
     :Input:
@@ -106,7 +106,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
         elif verbose:
             print "File already exists, not downloading"
 
-        if tarfile.is_tarfile(output_path):
+        if tarfile.is_tarfile(output_path) and unpack:
             if verbose:
                 print "Un-archiving %s to %s..." % (output_path, 
                                                     unarchived_output_path)
@@ -114,14 +114,16 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                 tar_file.extractall(path=output_dir)
             if verbose:
                 print "Done un-archiving."
-        # TODO: Should check here if a file is a bare compressed file (no tar)
     else:
         if verbose:
             print "Skipping %s " % url
             print "  because file already exists: %s" % output_path
         return None
 
-    return unarchived_output_path
+    if unpack:
+        return unarchived_output_path
+    else:
+        return output_path
 
 
 # ==============================================================================
