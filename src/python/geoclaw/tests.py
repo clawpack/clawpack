@@ -110,7 +110,7 @@ class GeoClawTest(unittest.TestCase):
              self.test_path = "./"
         self.rundata = None
 
-    def get_remote_file(self, url, force=False, verbose=False):
+    def get_remote_file(self, url, **kwargs):
         r"""Fetch file located at *url* and store in object's *temp_path*.
 
         Will check downloaded file's suffix to see if the file needs to be
@@ -125,9 +125,9 @@ class GeoClawTest(unittest.TestCase):
 
         output_path = clawpack.geoclaw.util.get_remote_file(url, 
                                                       output_dir=self.temp_path, 
-                                                      force=force, 
-                                                      verbose=verbose)
+                                                      **kwargs)
         self.remote_files.append(output_path)
+        return output_path
 
 
     def setUp(self):

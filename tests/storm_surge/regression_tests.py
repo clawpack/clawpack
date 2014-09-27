@@ -5,9 +5,12 @@
 import sys
 import os
 import unittest
-import shutil
+import gzip
+
+import numpy
 
 import clawpack.geoclaw.tests as tests
+import clawpack.geoclaw.topotools
 
 class IkeTest(tests.GeoClawTest):
 
@@ -17,15 +20,28 @@ class IkeTest(tests.GeoClawTest):
 
         super(IkeTest, self).setUp()
 
-        # Download topography
-        self.get_remote_file("http://users.ices.utexas.edu/~kyle/bathy/" + \
-                                     "gulf_caribbean.tt3.tar.bz2")
         # Download storm data
-        # Eventually probably want to do this
-        # self.get_remote_file("http://ftp.nhc.noaa.gov/atcf/archive/2008/" + \
-        #                      "aal082008.dat.gz")
-        #
-        shutil.copy(os.path.join(self.test_path, 'ike.storm'), self.temp_path)
+        remote_url = "http://ftp.nhc.noaa.gov/atcf/archive/2008/bal092008.dat.gz"
+        path = self.get_remote_file(remote_url, unpack=False)
+        storm_path = os.path.join(os.path.dirname(path), 'ike.storm')
+
+        # Need to additionally deal with the fact the file is gzipped
+        with gzip.GzipFile(path, 'r') as gzip_file:
+            file_content = gzip_file.read()
+        
+        with open(storm_path, 'w') as out_file:
+            out_file.write(file_content)
+
+        # Download file
+        self.get_remote_file(
+           "http://www.columbia.edu/~ktm2132/bathy/gulf_caribbean.tt3.tar.bz2")
+
+        # Create synthetic bathymetry - needs more work
+        topo = clawpack.geoclaw.topotools.Topography()
+        topo.x = numpy.linspace(-100, -69, 124)
+        topo.y = numpy.linspace(7.0, 33.0, 104)
+        topo.Z = 25.0 * ((topo.X + 84.5)**2 + (topo.Y - 20.0)**2) - 4000.0
+        topo.write(os.path.join(self.temp_path, 'gulf_caribbean.tt3'))
 
 
     def runTest(self, save=False, indices=(2, 3)):
