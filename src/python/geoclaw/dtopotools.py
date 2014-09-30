@@ -173,6 +173,8 @@ def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
         cbar = plt.colorbar(im, ax=axes)
         cbar.set_label("Deformation (m)")
     
+    plt.sca(axes)
+
     if dZ_interval is None:
         dZ_interval = cmax_dZ/10.
     clines1 = numpy.arange(dZ_interval, dZmax + dZ_interval, dZ_interval)
@@ -186,10 +188,9 @@ def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
 
     y_ave = 0.5 * (y.min() + y.max())
     axes.set_aspect(1. / numpy.cos(y_ave * numpy.pi / 180.))
-    # axes.ticklabel_format(format='plain', useOffset=False)
-    #labels = axes.get_xticks().tolist()
-    #axes.set_xticklabels(labels, rotation=80)
+    axes.ticklabel_format(format='plain', useOffset=False)
     axes.set_title('Seafloor deformation')
+    plt.xticks(rotation=20)
     return axes
 
 
@@ -953,19 +954,20 @@ class Fault(object):
         slipax.set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
 
         if xylim is not None:
-            axes.set_xlim(xylim[:2])
-            axes.set_ylim(xylim[2:])
+            slipax.set_xlim(xylim[:2])
+            slipax.set_ylim(xylim[2:])
         if slip_color:
             if slip_time is None:
-                axes.set_title('Slip on fault')
+                slipax.set_title('Slip on fault')
             else:
-                axes.set_title('Slip on fault at time %6.1fs' % slip_time)
+                slipax.set_title('Slip on fault at time %6.1fs' % slip_time)
         else:
-            axes.set_title('Fault planes')
+            slipax.set_title('Fault planes')
 
-        axes.ticklabel_format(format='plain', useOffset=False)
-        #labels = axes.get_xticks().tolist()
-        #axes.set_xticklabels(labels, rotation=80)
+        slipax.ticklabel_format(format='plain', useOffset=False)
+        plt.sca(slipax)
+        plt.xticks(rotation=20)
+        
 
         if slip_color:
             cax,kw = matplotlib.colorbar.make_axes(slipax)
