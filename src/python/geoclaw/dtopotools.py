@@ -190,7 +190,9 @@ def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
     axes.set_aspect(1. / numpy.cos(y_ave * numpy.pi / 180.))
     axes.ticklabel_format(format='plain', useOffset=False)
     axes.set_title('Seafloor deformation')
-    plt.xticks(rotation=20)
+    for label in axes.get_xticklabels():
+        label.set_rotation(20)
+
     return axes
 
 
@@ -965,8 +967,8 @@ class Fault(object):
             slipax.set_title('Fault planes')
 
         slipax.ticklabel_format(format='plain', useOffset=False)
-        plt.sca(slipax)
-        plt.xticks(rotation=20)
+        for label in slipax.get_xticklabels():
+            label.set_rotation(20)
         
 
         if slip_color:
