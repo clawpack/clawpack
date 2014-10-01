@@ -173,7 +173,6 @@ def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
         cbar = plt.colorbar(im, ax=axes)
         cbar.set_label("Deformation (m)")
     
-    plt.sca(axes)
 
     if dZ_interval is None:
         dZ_interval = cmax_dZ/10.
