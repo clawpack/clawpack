@@ -844,7 +844,8 @@ class Topography(object):
         
         # Turn off annoying offset
         axes.ticklabel_format(format="plain", useOffset=False)
-        plt.xticks(rotation=20)
+        for label in axes.get_xticklabels():
+            label.set_rotation(20)
 
         region_extent = self.extent
 
