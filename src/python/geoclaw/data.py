@@ -9,7 +9,6 @@ Classes representing parameters for GeoClaw runs
  - GeoClawData
  - RefinementData
  - TopographyData
- - RefinementData
  - FixedGridData
  - FGmaxData
  - DTopoData
@@ -60,10 +59,6 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         self.add_attribute('friction_depth',1.0e6)
         self.add_attribute('sea_level',0.0)
 
-        # Refinement behavior
-        self.add_attribute('variable_dt_refinement_ratios', False)
-
-
 
     def write(self,data_source='setrun.py'):
 
@@ -93,7 +88,7 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
 
         self.data_write()
 
-        self.data_write('dry_tolerance',1e-3)
+        self.data_write('dry_tolerance')
  
         self.close_data_file()
 
@@ -106,15 +101,14 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         super(RefinementData,self).__init__()
 
         # Refinement controls
-        self.add_attribute('dry_tolerance',1.0e-3)
         self.add_attribute('wave_tolerance',1.0e-1)
         self.add_attribute('speed_tolerance',[1.0e12]*6)
         self.add_attribute('deep_depth',1.0e2)
         self.add_attribute('max_level_deep',3)
+        self.add_attribute('variable_dt_refinement_ratios',False)
 
 
-    def write(self, data_source="setrun.py"):
-        
+    def write(self,data_source='setrun.py'):
         # Refinement controls
         self.open_data_file('refinement.data',data_source)
         self.data_write('wave_tolerance')
@@ -124,9 +118,10 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         self.data_write('deep_depth')
         self.data_write('max_level_deep')
         self.data_write()
-        self.data_write('variable_dt_refinement_ratios')
-
+        self.data_write('variable_dt_refinement_ratios',
+                        description="(Set dt refinement ratios automatically)")
         self.close_data_file()
+
 
 
 class TopographyData(clawpack.clawutil.data.ClawData):
@@ -180,35 +175,6 @@ class TopographyData(clawpack.clawutil.data.ClawData):
             raise NotImplementedError("Test topography type %s has not been"
                                         " implemented." % self.test_topography)
 
-        self.close_data_file()
-
-
-class RefinementData(clawpack.clawutil.data.ClawData):
-
-    def __init__(self):
-
-        super(RefinementData,self).__init__()
-
-        # Refinement controls
-        self.add_attribute('wave_tolerance',1.0e-1)
-        self.add_attribute('speed_tolerance',[1.0e12]*6)
-        self.add_attribute('deep_depth',1.0e2)
-        self.add_attribute('max_level_deep',3)
-        self.add_attribute('variable_dt_refinement_ratios',False)
-
-
-    def write(self,data_source='setrun.py'):
-        # Refinement controls
-        self.open_data_file('refinement.data',data_source)
-        self.data_write('wave_tolerance')
-        if not isinstance(self.speed_tolerance,list):
-            self.speed_tolerance = [self.speed_tolerance]
-        self.data_write('speed_tolerance')
-        self.data_write('deep_depth')
-        self.data_write('max_level_deep')
-        self.data_write()
-        self.data_write('variable_dt_refinement_ratios',
-                        description="(Set dt refinement ratios automatically)")
         self.close_data_file()
 
 
