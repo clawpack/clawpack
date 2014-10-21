@@ -36,17 +36,30 @@ subroutine topo_update(t)
 
    !first find t related values to avoid calculation for every i,j
    do m=1,num_dtopo
-      !find t indices
-      kdtopo1(m) = int(floor((t-t0dtopo(m))/dtdtopo(m)))+1
-      kdtopo2(m) = int(ceiling((t-t0dtopo(m))/dtdtopo(m)))+1
-      kdtopo1(m) = min(kdtopo1(m),mtdtopo(m))
-      kdtopo2(m) = min(kdtopo2(m),mtdtopo(m))
-      kdtopo1(m) = max(kdtopo1(m),1)
-      kdtopo2(m) = max(kdtopo2(m),1)
-      tdtopo1(m) = t0dtopo(m)+ dtdtopo(m)*real(kdtopo1(m)-1,kind=8) ! tdtopo1<= t
-      tdtopo2(m) = t0dtopo(m)+ dtdtopo(m)*real(kdtopo2(m)-1,kind=8) ! tdtopo2>= t
-      taudtopo(m) = 1.d0-max(0.d0,((t-tdtopo1(m))/dtdtopo(m)))
-      taudtopo(m) = max(taudtopo(m),0.d0)
+      ! Find indices and times of dtopo arrays bracketing time t, and
+      ! also taudtopo, the fraction of step between, used for interpolation.
+      ! Note that if t < t0dtopo(m) then index is set to 1 but later 
+      ! this dtopo array is skipped altogether in this case and doesn't
+      ! affect topography at time t.
+      if (mtdtopo(m) == 1) then
+          ! Special case: instantaneous displacement at one instant in time
+          kdtopo1(m) = 1
+          kdtopo2(m) = 1
+          tdtopo1(m) = t
+          tdtopo2(m) = t
+          taudtopo(m) = 0.d0
+        else
+          kdtopo1(m) = int(floor((t-t0dtopo(m))/dtdtopo(m)))+1
+          kdtopo2(m) = int(ceiling((t-t0dtopo(m))/dtdtopo(m)))+1
+          kdtopo1(m) = min(kdtopo1(m),mtdtopo(m))
+          kdtopo2(m) = min(kdtopo2(m),mtdtopo(m))
+          kdtopo1(m) = max(kdtopo1(m),1)
+          kdtopo2(m) = max(kdtopo2(m),1)
+          tdtopo1(m) = t0dtopo(m)+ dtdtopo(m)*real(kdtopo1(m)-1,kind=8) ! <= t
+          tdtopo2(m) = t0dtopo(m)+ dtdtopo(m)*real(kdtopo2(m)-1,kind=8) ! >= t
+          taudtopo(m) = 1.d0-max(0.d0,((t-tdtopo1(m))/dtdtopo(m)))
+          taudtopo(m) = max(taudtopo(m),0.d0)
+        endif
       index0_dtopowork1(m) = i0dtopo(m) + (kdtopo1(m)-1)*mxdtopo(m)*mydtopo(m)
       index0_dtopowork2(m) = i0dtopo(m) + (kdtopo2(m)-1)*mxdtopo(m)*mydtopo(m)
    enddo

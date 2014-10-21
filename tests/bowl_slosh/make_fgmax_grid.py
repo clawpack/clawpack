@@ -27,6 +27,6 @@ def make_fgmax_grid1(datadir):
 
 
 if __name__ == "__main__":
-    make_fgmax_grid1()
+    make_fgmax_grid1('.')
 
 
