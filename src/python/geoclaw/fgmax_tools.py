@@ -188,7 +188,7 @@ class FGmaxGrid(object):
             print "Creating 1d fixed grid with %s points" % npts
             print "   dx = %g" % dx
         
-            fid = open(self.fname,'w')
+            fid = open(self.input_file_name,'w')
             fid.write("%g                 # tstart_max\n"  % self.tstart_max)
             fid.write("%g                 # tend_max\n"  % self.tend_max)
             fid.write("%g                 # dt_check\n" % self.dt_check)
@@ -202,7 +202,7 @@ class FGmaxGrid(object):
             fid.close()
             
         
-            print "Created file ", self.fname
+            print "Created file ", self.input_file_name
             print "   specifying fixed grid with %i points equally spaced from " \
                     % npts
             print "   (%g,%g)  to  (%g,%g)" % (x1,y1,x2,y2)
@@ -222,7 +222,7 @@ class FGmaxGrid(object):
                 npts = self.n12 * self.n23
         
         
-            fid = open(self.fname,'w')
+            fid = open(self.input_file_name,'w')
             fid.write("%g                 # tstart_max\n"  % self.tstart_max)
             fid.write("%g                 # tend_max\n"  % self.tend_max)
             fid.write("%g                 # dt_check\n" % self.dt_check)
@@ -239,7 +239,7 @@ class FGmaxGrid(object):
             fid.close()
             
         
-            print "Created file ", self.fname
+            print "Created file ", self.input_file_name
             print "   specifying fixed grid as a quadrilateral"
             print "       %i by %i, with  %i points" \
                     % (self.n12,self.n23,npts)
