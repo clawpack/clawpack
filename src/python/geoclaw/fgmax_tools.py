@@ -70,16 +70,33 @@ class FGmaxGrid(object):
         self.min_level_check = int(fgmax_input[3].split()[0])
         self.arrival_tol = float(fgmax_input[4].split()[0])
         self.point_style = point_style = int(fgmax_input[5].split()[0])
-        if point_style in [0,1]:
+        if point_style == 0:
             self.npts = npts = int(fgmax_input[6].split()[0])
+            self.X, self.Y = numpy.loadtxt(fgmax_input, skiprows=7, unpack=True)
+        elif point_style == 1:
+            self.npts = npts = int(fgmax_input[6].split()[0])
+            self.x1 = float(fgmax_input[7].split()[0])
+            self.y1 = float(fgmax_input[7].split()[1])
+            self.x2 = float(fgmax_input[8].split()[0])
+            self.y2 = float(fgmax_input[8].split()[1])
         elif point_style == 2:
             self.nx = nx = int(fgmax_input[6].split()[0])
             self.ny = ny = int(fgmax_input[6].split()[1])
+            self.x1 = float(fgmax_input[7].split()[0])
+            self.y1 = float(fgmax_input[7].split()[1])
+            self.x2 = float(fgmax_input[8].split()[0])
+            self.y2 = float(fgmax_input[8].split()[1])
         elif point_style == 3:
             self.n12 = n12 = int(fgmax_input[6].split()[0])
             self.n23 = n23 = int(fgmax_input[6].split()[1])
-        if point_style == 1:
-            self.X, self.Y = numpy.loadtxt(fgmax_input, skiprows=7, unpack=True)
+            self.x1 = float(fgmax_input[7].split()[0])
+            self.y1 = float(fgmax_input[7].split()[1])
+            self.x2 = float(fgmax_input[8].split()[0])
+            self.y2 = float(fgmax_input[8].split()[1])
+            self.x3 = float(fgmax_input[9].split()[0])
+            self.y3 = float(fgmax_input[9].split()[1])
+            self.x4 = float(fgmax_input[10].split()[0])
+            self.y4 = float(fgmax_input[10].split()[1])
 
 
     def write_input_data(self, input_file_name=None):
@@ -92,15 +109,83 @@ class FGmaxGrid(object):
             self.input_file_name = input_file_name
 
         print "---------------------------------------------- "
-        x1,x2 = self.x1, self.x2
-        y1,y2 = self.y1, self.y2
         point_style = self.point_style
-        if point_style not in [1,2,3]:
+        if point_style not in [0,1,2,3]:
             raise NotImplementedError("make_fgmax not implemented for point_style %i" \
                 % point_style)
 
+        # write header, independent of point_style:
+        fid = open(self.input_file_name,'w')
+        fid.write("%16.10e            # tstart_max\n"  % self.tstart_max)
+        fid.write("%16.10e            # tend_max\n"  % self.tend_max)
+        fid.write("%16.10e            # dt_check\n" % self.dt_check)
+        fid.write("%i %s              # min_level_check\n" \
+                            % (self.min_level_check,16*" "))
+
+        fid.write("%16.10e            # arrival_tol\n" % self.arrival_tol)
+        fid.write("%i %s              # point_style\n" \
+                            % (self.point_style,16*" "))
+
+
+        if point_style == 0:
+            # list of points
+            npts = self.npts
+        
+            print "Creating unstructured grid of %s points" % npts
+        
+            fid.write("%i                 # npts\n" % (npts))
+            for k in range(npts):
+                fid.write("%g   %g \n" % (self.X[k],self.Y[k]))
+            fid.close()
+            
+            print "Created file ", self.input_file_name
+            
+
+        elif point_style==1:
+            # 1d transect of points
+            x1,x2 = self.x1, self.x2
+            y1,y2 = self.y1, self.y2
+            if self.npts is None:
+                dx = self.dx
+                npts = int(round(sqrt((x2-x1)**2 + (y2-y1)**2)/dx)) + 1
+                if abs((npts-1)*dx + x1 - x2) > 1e-6:
+                    print "Warning: abs((npts-1)*dx + x1 - x2) = ", \
+                          abs((npts-1)*dx + x1 - x2)
+                    x2 = x1 + dx*(npts-1)
+                    y2 = y1 + dx*(npts-1)
+                    print "         resetting x2 to %g" % x2
+                    print "         resetting y2 to %g" % y2
+            else:
+                npts = self.npts
+                dx = sqrt((x2-x1)**2 + (y2-y1)**2)/(npts+1.)
+                if self.dx is not None:
+                    print "*** Warning: dx specified over-ridden by: ",dx
+        
+        
+            print "Creating 1d fixed grid with %s points" % npts
+            print "   dx = %g" % dx
+        
+        
+            fid.write("%i                 # npts\n" % (npts))
+            fid.write("%g   %g            # x1, y1\n" % (x1,y1))
+            fid.write("%g   %g            # x2, y2\n" % (x2,y2))
+            fid.close()
+            
+        
+            print "Created file ", self.input_file_name
+            print "   specifying fixed grid with %i points equally spaced from " \
+                    % npts
+            print "   (%g,%g)  to  (%g,%g)" % (x1,y1,x2,y2)
+            
+            # not yet implemented:
+            #fname_root = os.path.splitext(self.input_file_name)[0]
+            #kml_file = fname_root + '.kml'
+            #kmltools.line2kml(xy, kml_file, fname_root, color='8888FF')
+
         if point_style == 2:
             # 2d grid of points
+            x1,x2 = self.x1, self.x2
+            y1,y2 = self.y1, self.y2
             if self.nx is None:
                 dx = self.dx
                 nx = int(round((x2-x1)/dx)) + 1  
@@ -136,16 +221,6 @@ class FGmaxGrid(object):
         
             npts = nx*ny
         
-            fid = open(self.input_file_name,'w')
-            fid.write("%16.10e            # tstart_max\n"  % self.tstart_max)
-            fid.write("%16.10e            # tend_max\n"  % self.tend_max)
-            fid.write("%16.10e            # dt_check\n" % self.dt_check)
-            fid.write("%i %s              # min_level_check\n" \
-                                % (self.min_level_check,16*" "))
-
-            fid.write("%16.10e            # arrival_tol\n" % self.arrival_tol)
-            fid.write("%i %s              # point_style\n" \
-                                % (self.point_style,16*" "))
         
             fid.write("%i  %i %s          # nx,ny\n" \
                                 % (nx,ny,10*" "))
@@ -166,69 +241,16 @@ class FGmaxGrid(object):
             kml_file = fname_root + '.kml'
             kmltools.box2kml(xy, kml_file, fname_root, color='8888FF')
 
-        elif point_style==1:
-            # 1d transect of points
-            if self.npts is None:
-                dx = self.dx
-                npts = int(round(sqrt((x2-x1)**2 + (y2-y1)**2)/dx)) + 1
-                if abs((npts-1)*dx + x1 - x2) > 1e-6:
-                    print "Warning: abs((npts-1)*dx + x1 - x2) = ", \
-                          abs((npts-1)*dx + x1 - x2)
-                    x2 = x1 + dx*(npts-1)
-                    y2 = y1 + dx*(npts-1)
-                    print "         resetting x2 to %g" % x2
-                    print "         resetting y2 to %g" % y2
-            else:
-                npts = self.npts
-                dx = sqrt((x2-x1)**2 + (y2-y1)**2)/(npts+1.)
-                if self.dx is not None:
-                    print "*** Warning: dx specified over-ridden by: ",dx
-        
-        
-            print "Creating 1d fixed grid with %s points" % npts
-            print "   dx = %g" % dx
-        
-            fid = open(self.input_file_name,'w')
-            fid.write("%g                 # tstart_max\n"  % self.tstart_max)
-            fid.write("%g                 # tend_max\n"  % self.tend_max)
-            fid.write("%g                 # dt_check\n" % self.dt_check)
-            fid.write("%i                 # min_level_check\n" % self.min_level_check)
-            fid.write("%g                 # arrival_tol\n" % self.arrival_tol)
-            fid.write("%g                 # point_style\n" % self.point_style)
-        
-            fid.write("%i                 # npts\n" % (npts))
-            fid.write("%g   %g            # x1, y1\n" % (x1,y1))
-            fid.write("%g   %g            # x2, y2\n" % (x2,y2))
-            fid.close()
-            
-        
-            print "Created file ", self.input_file_name
-            print "   specifying fixed grid with %i points equally spaced from " \
-                    % npts
-            print "   (%g,%g)  to  (%g,%g)" % (x1,y1,x2,y2)
-            
-            # not yet implemented:
-            #fname_root = os.path.splitext(self.fname)[0]
-            #kml_file = fname_root + '.kml'
-            #kmltools.line2kml(xy, kml_file, fname_root, color='8888FF')
-
         elif point_style==3:
             # arbitrary quadrilateral
+            x1,x2 = self.x1, self.x2
+            y1,y2 = self.y1, self.y2
             x3,x4 = self.x3, self.x4
             y3,y4 = self.y3, self.y4
             if self.n12 is None:
                 raise NotImplementedError("Need to set n12 and n23")
             else:
                 npts = self.n12 * self.n23
-        
-        
-            fid = open(self.input_file_name,'w')
-            fid.write("%g                 # tstart_max\n"  % self.tstart_max)
-            fid.write("%g                 # tend_max\n"  % self.tend_max)
-            fid.write("%g                 # dt_check\n" % self.dt_check)
-            fid.write("%i                 # min_level_check\n" % self.min_level_check)
-            fid.write("%g                 # arrival_tol\n" % self.arrival_tol)
-            fid.write("%g                 # point_style\n" % self.point_style)
         
             fid.write("%i  %i %s          # self.n12,self.n23\n" \
                                 % (self.n12,self.n23,10*" "))
@@ -249,7 +271,7 @@ class FGmaxGrid(object):
             print "   corner 4 = (%15.10f,%15.10f)" % (x4,y4)
             
             xy = [x1,y1,x2,y2,x3,y3,x4,y4]
-            fname_root = os.path.splitext(self.fname)[0]
+            fname_root = os.path.splitext(self.input_file_name)[0]
             kml_file = fname_root + '.kml'
             kmltools.quad2kml(xy, kml_file, fname_root, color='8888FF')
 
