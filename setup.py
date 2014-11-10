@@ -62,8 +62,8 @@ SUBPACKAGES = {
                            (join('pyclaw','examples'), '..')]
     },
     'riemann': {
-        'python_src_dir': [('riemann', join('src', 'python'))],
-        'fortran_src_dir': join('src')
+        'python_src_dir': [('','src')]
+        #'python_src_dir': [('riemann', join('src', 'python'))]
     },
     'visclaw': {
         'python_src_dir': [('visclaw', join('src', 'python'))]
@@ -242,8 +242,12 @@ which allows for a consistent clawpack.package namespace.
 def make_symlinks(subpackages):
     for package, package_dict in subpackages.items():
         for subpackage, src_dir in package_dict['python_src_dir']:
-            symlink(os.path.join(package, src_dir, subpackage),
-                    os.path.join('clawpack', subpackage))
+            if subpackage != '':
+                symlink(os.path.join(package, src_dir, subpackage),
+                        os.path.join('clawpack', subpackage))
+            else:
+                symlink(os.path.join(package, src_dir, subpackage),
+                        os.path.join('clawpack', package))
         if 'fortran_src_dir' in package_dict:
             symlink(os.path.join(package, package_dict['fortran_src_dir']), 
                     os.path.join('clawpack', package, 'src'))
