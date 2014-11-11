@@ -62,8 +62,7 @@ SUBPACKAGES = {
                            (join('pyclaw','examples'), '..')]
     },
     'riemann': {
-        'python_src_dir': [('riemann', join('src', 'python'))],
-        'fortran_src_dir': join('src')
+        'python_src_dir': [(None,'src')]
     },
     'visclaw': {
         'python_src_dir': [('visclaw', join('src', 'python'))]
@@ -242,11 +241,12 @@ which allows for a consistent clawpack.package namespace.
 def make_symlinks(subpackages):
     for package, package_dict in subpackages.items():
         for subpackage, src_dir in package_dict['python_src_dir']:
-            symlink(os.path.join(package, src_dir, subpackage),
-                    os.path.join('clawpack', subpackage))
-        if 'fortran_src_dir' in package_dict:
-            symlink(os.path.join(package, package_dict['fortran_src_dir']), 
-                    os.path.join('clawpack', package, 'src'))
+            if subpackage:
+                symlink(os.path.join(package, src_dir, subpackage),
+                        os.path.join('clawpack', subpackage))
+            else:
+                symlink(os.path.join(package, src_dir),
+                        os.path.join('clawpack', package))
                 
 
 @contextmanager
@@ -280,17 +280,12 @@ def setup_package(setup_dict, subpackages, symlink_only=False):
         # the finally clause here undoes a potentially dangerous 
         # recursive symbolic link that is needed for the numpy.distutils
         # machinery to properly understand some Fortran source paths
-        try:
-            if os.path.exists('.git'):
-                dev_setup(subpackages)
-            make_symlinks(subpackages)
-            if not symlink_only:
-                setup(configuration=configuration,
-                      **setup_dict)
-        finally:
-            for package, package_dict in subpackages.items(): 
-                if 'fortran_src_dir' in package_dict:
-                    unsymlink(os.path.join('clawpack', package, 'src'))
+        if os.path.exists('.git'):
+            dev_setup(subpackages)
+        make_symlinks(subpackages)
+        if not symlink_only:
+            setup(configuration=configuration,
+                  **setup_dict)
 
 
 if __name__ == '__main__':
