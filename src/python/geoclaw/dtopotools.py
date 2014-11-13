@@ -606,7 +606,7 @@ class Fault(object):
                 raise ValueError("Input parameter subfaults must be a list.")
             self.subfaults = subfaults
             for subfault in self.subfaults:
-                subfault.convert_to_standard_units(input_units)
+                subfault.convert_to_standard_units(self.input_units)
 
 
     def read(self, path, column_map, coordinate_specification="centroid",
