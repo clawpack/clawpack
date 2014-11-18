@@ -401,6 +401,10 @@ contains
 
     subroutine read_topo_file(mx,my,topo_type,fname,topo)
 
+#ifdef NETCDF
+        use netcdf
+#endif
+
         use geoclaw_module
         use utility_module, only: parse_values
 
@@ -420,16 +424,20 @@ contains
         real(kind=8) :: values(10)
         character(len=20) :: str
 
+        integer(kind=4) :: nc_unit
+        character(len=50) :: var_name
+        integer(kind=4) :: var_type, var_id, num_dims, dim_ids(2)
+        integer(kind=4), allocatable :: nc_topo_temp(:)
+
         print *, ' '
         print *, 'Reading topography file  ', fname
-
-        open(unit=iunit, file=fname, status='unknown',form='formatted')
 
         select case(abs(topo_type))
             ! ASCII file with x,y,z values on each line.
             ! (progressing from upper left corner across rows, then down)
             ! Assumes a uniform rectangular grid of data values.
             case(1)
+                open(unit=iunit, file=fname, status='unknown',form='formatted')
                 i = 0
                 status = 0
                 do i=1,mx*my
@@ -449,6 +457,8 @@ contains
                         topo(i) = topo_temp
                     endif
                 enddo
+                
+                close(unit=iunit)
 
             ! ================================================================
             ! ASCII file with header followed by z data
@@ -457,6 +467,7 @@ contains
             ! mx values per line if topo_type=3
             ! ================================================================
             case(2:3)
+                open(unit=iunit, file=fname, status='unknown',form='formatted')
                 ! Read header
                 do i=1,5
                     read(iunit,*)
@@ -497,9 +508,36 @@ contains
                     print *, '   These values have arbitrarily been set to ',&
                         topo_missing
                 endif
-        end select
 
-        close(unit=iunit)
+                close(unit=iunit)
+            
+            ! NetCDF
+            case(4)
+#ifdef NETCDF
+                ! Allocate temporary array for storage of input data
+                allocate(nc_topo_temp(mx * my))
+
+                call check(nf90_open(fname, nf90_nowrite, nc_unit))
+
+                call check(nf90_inquire_variable(nc_unit, 6, var_name, var_type, num_dims, dim_ids))
+                call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                call check(nf90_get_var(nc_unit, var_id, nc_topo_temp))
+                
+                call check(nf90_close(nc_unit))
+                    
+                ! Caste topography data to real(kind=8)
+                topo = real(nc_topo_temp, kind=8)
+
+                ! Deallocate temporary array
+                deallocate(nc_topo_temp)
+
+
+#else
+                print *, "ERROR:  NetCDF library was not included in this build"
+                print *, "  of GeoClaw."
+                stop
+#endif
+        end select
 
         ! Handle negative topo types
         if (topo_type < 0) then
@@ -552,6 +590,10 @@ contains
     ! ========================================================================
     subroutine read_topo_header(fname,topo_type,mx,my,xll,yll,xhi,yhi,dx,dy)
 
+#ifdef NETCDF
+        use netcdf
+#endif
+
         use geoclaw_module
         use utility_module, only: parse_values
 
@@ -571,6 +613,12 @@ contains
         real(kind=8) :: values(10)
         character(len=80) :: str
 
+        integer(kind=4) :: nc_unit
+        character(len=50) :: xname, yname, var_name
+        integer(kind=4) :: num_dims, dim_ids(2), var_type, var_id, z_range(2)
+        integer(kind=4) :: dims(2)
+        real(kind=8) :: x_range(2), y_range(2), delta(2)
+
         inquire(file=fname,exist=found_file)
         if (.not. found_file) then
             print *, 'Missing topography file:'
@@ -578,12 +626,12 @@ contains
             stop
         endif
 
-        open(unit=iunit, file=fname, status='unknown',form='formatted')
-
         select case(abs(topo_type))
             ! ASCII file with 3 columns
             ! determine data size
             case(1)
+                open(unit=iunit, file=fname, status='unknown',form='formatted')
+
                 ! Initial size variables
                 topo_size = 0
                 mx = 0
@@ -621,6 +669,7 @@ contains
 
             ! ASCII file with header followed by z data
             case(2:3)
+<<<<<<< HEAD
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 mx = nint(values(1))
@@ -650,8 +699,76 @@ contains
                 call parse_values(str, n, values)
                 nodata_value = values(1)
 
+=======
+                open(unit=iunit, file=fname, status='unknown',form='formatted')
+
+                read(iunit,*) mx
+                read(iunit,*) my
+                read(iunit,*) xll
+                read(iunit,*) yll
+                read(iunit,*) dx
+                read(iunit,*) nodata_value
+                dy = dx
+>>>>>>> Add NetCDF topography capability
                 xhi = xll + (mx-1)*dx
                 yhi = yll + (my-1)*dy
+                
+            ! NetCDF
+            case(4)
+#ifdef NETCDF
+                call check(nf90_open(fname, nf90_nowrite, nc_unit))
+                ! First dimension is always 2 and called side, second is 
+                ! total size of array, only used to check that something has not
+                ! gone awry
+                call check(nf90_inquire_dimension(nc_unit, 1, xname, mx))
+                call check(nf90_inquire_dimension(nc_unit, 2, xname, mx))
+
+                ! Get range of longitude values 
+                call check(nf90_inquire_variable(nc_unit, 1, var_name, var_type, num_dims, dim_ids))
+                call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                call check(nf90_get_var(nc_unit, var_id, x_range))
+                xll = x_range(1)
+                xhi = x_range(2)
+
+                ! Get range of latitude values
+                call check(nf90_inquire_variable(nc_unit, 2, var_name, var_type, num_dims, dim_ids))
+                call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                call check(nf90_get_var(nc_unit, var_id, y_range))
+                yll = y_range(1)
+                yhi = y_range(2)
+
+                ! Skip z range, we do not use if for anything 
+!                 call check(nf90_inquire_variable(nc_unit, 3, var_name, var_type, num_dims, dim_ids))
+!                 call check(nf90_inq_varid(nc_unit, var_name, var_id))
+!                 call check(nf90_get_var(nc_unit, var_id, z_range))
+
+                ! Fetch dx and dy
+                call check(nf90_inquire_variable(nc_unit, 4, var_name, var_type, num_dims, dim_ids))
+                call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                call check(nf90_get_var(nc_unit, var_id, delta))
+                dx = delta(1)
+                dy = delta(2)
+
+                ! Get actual grid dimensions, also check to make sure it agrees
+                ! with the size fetched above
+                call check(nf90_inquire_variable(nc_unit, 5, var_name, var_type, num_dims, dim_ids))
+                call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                call check(nf90_get_var(nc_unit, var_id, dims))
+                if (mx /= dims(1) * dims(2)) then
+                    print *, "ERROR:  Total size of topography array ", mx
+                    print *, "  does not agree with seperate dimensions"
+                    print *, "  mx = ", dims(1), ", my = ", dims(2)
+                    stop
+                end if
+                mx = dims(1)
+                my = dims(2)
+
+                call check(nf90_close(nc_unit))
+#else
+                print *, "ERROR:  NetCDF library was not included in this build"
+                print *, "  of GeoClaw."
+                stop
+#endif
 
             case default
                 print *, 'ERROR:  Unrecognized topo_type'
@@ -1196,5 +1313,20 @@ subroutine intersection(indicator,area,xintlo,xinthi, &
       endif
 
 end subroutine intersection
+
+#ifdef NETCDF
+    subroutine check(istatus)
+        
+        use netcdf
+    
+        implicit none
+    
+        integer, intent (in) :: istatus
+        
+        if (istatus /= nf90_noerr) then
+            print *, trim(adjustl(nf90_strerror(istatus)))
+        end if
+    end subroutine check
+#endif
 
 end module topo_module
