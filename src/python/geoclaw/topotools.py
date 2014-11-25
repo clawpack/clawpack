@@ -67,6 +67,8 @@ def determine_topo_type(path, default=None):
         topo_type = 3
     elif extension == 'txyz':
         topo_type = 1
+    elif extension == 'nc':
+        topo_type = 4
 
     return topo_type
 
@@ -635,6 +637,19 @@ class Topography(object):
         
                 if mask:
                     self._Z = numpy.ma.masked_values(self._Z, self.no_data_value, copy=False)
+
+            elif abs(self.topo_type) == 4:
+                import netCDF4
+
+                # NetCDF4 topography
+                with netCDF4.Dataset(self.path, 'r', format="NETCDF4") as nc_file:
+                    self._x = nc_file.variables['x'][:]
+                    self._y = nc_file.variables['y'][:]
+                    self._Z = nc_file.variables['ny_smls_f'][:, :]
+                    self.no_data_value = nc_file.variables['ny_smls_f'].getncattr('missing_value')
+
+                if mask:
+                    self._Z = numpy.ma.masked_values(self._Z, self.no_data_value, copy=False)
                     
             else:
                 raise IOError("Unrecognized topo_type: %s" % self.topo_type)
@@ -771,20 +786,23 @@ class Topography(object):
         else:
             pass
 
-        with open(path, 'w') as outfile:
-            if self.unstructured:
+        if self.unstructured:
+            with open(path, 'w') as outfile:
                 for (i, topo) in enumerate(self.z):
                     outfile.write("%s %s %s\n" % (self.x[i], self.y[i], topo))
 
-            elif topo_type == 1:
-                # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
-                # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
+        elif topo_type == 1:
+            # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
+            # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
+
+            with open(path, 'w') as outfile:
                 for j in range(len(self.y)-1, -1, -1):
                     latitude = self.y[j]
                     for (i, longitude) in enumerate(self.x):
                         outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
 
-            elif topo_type == 2 or topo_type == 3:
+        elif topo_type == 2 or topo_type == 3:
+            with open(path, 'w') as outfile:
                 # Write out header
                 outfile.write('%6i                              ncols\n' % self.Z.shape[1])
                 outfile.write('%6i                              nrows\n' % self.Z.shape[0])
@@ -817,9 +835,28 @@ class Topography(object):
                         outfile.write("\n")
                     if masked_Z:
                         del Z_flipped
+        elif topo_type == 4:
+            # Write out netCDF4 topography
+            import netCDF4
+            
+            with netCDF4.Dataset(path, 'w') as outfile:
+                outfile.createDimension("x", self.x.shape[0])
+                outfile.createDimension("y", self.y.shape[0])
+                x = outfile.createVariable('x', 'f8', ('x',))
+                y = outfile.createVariable('y', 'f8', ('y',))
+                Z = outfile.createVariable('Z', 'f8', ('y', 'x',))
 
-            else:
-                raise NotImplemented("Output type %s not implemented." % topo_type)
+                x.units = 'latitude'
+                y.units = 'longitude'
+                Z.units = 'meters'
+                Z.no_data_value = self.no_data_value
+
+                x[:] = self.x
+                y[:] = self.y
+                Z[:, :] = self.Z
+
+        else:
+            raise NotImplemented("Output type %s not implemented." % topo_type)
 
 
     def plot(self, axes=None, contour_levels=None, contour_kwargs={}, 
