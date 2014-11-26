@@ -325,6 +325,11 @@ class Topography(object):
         if self._X is None:
             self.generate_2d_coordinates(mask=False)
         return self._X
+    @X.setter
+    def X(self, value):
+        self._extent = None
+        self._X = value
+        self._x = numpy.nan
     @X.deleter
     def X(self):
         del self._X
@@ -349,6 +354,11 @@ class Topography(object):
         if self._Y is None:
             self.generate_2d_coordinates(mask=False)
         return self._Y
+    @Y.setter
+    def Y(self, value):
+        self._extent = None
+        self._Y = value
+        self._y = numpy.nan
     @Y.deleter
     def Y(self):
         del self._Y
