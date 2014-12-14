@@ -53,9 +53,9 @@ c
          write(outunit,*)" at start of stepgrid: dumping grid ",mptr
          do i = 1, mitot
          do j = 1, mjtot
-            write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar)
-c            write(*,545) i,j,(q(ivar,i,j),ivar=1,nvar)
- 545        format(2i4,4e15.7)
+            write(outunit,545) i,j,(q(ivar,i,j),ivar=1,nvar),
+     .                         (aux(iaux,i,j),iaux=1,maux)
+ 545        format(2i4,4e15.7,/,8x,4e15.7)
          end do
          end do
       endif
@@ -222,8 +222,8 @@ c
 c            
         mptr_level = node(nestlevel,mptr)
 
-        write(outunit,811) mptr, mptr_level, cflgrid
- 811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
+c       write(outunit,811) mptr, mptr_level, cflgrid
+c811    format(" Courant # of grid ",i5," level",i3," is ",d12.4)
 c
 
 !$OMP  CRITICAL (cflm)
@@ -238,28 +238,33 @@ c
 c       # update q
         dtdx = dt/dx
         dtdy = dt/dy
-        do 50 m=1,nvar
-        do 50 i=mbc+1,mitot-mbc
-        do 50 j=mbc+1,mjtot-mbc
          if (mcapa.eq.0) then
+          do 50 j=mbc+1,mjtot-mbc
+          do 50 i=mbc+1,mitot-mbc
+          do 50 m=1,nvar
 c
 c            # no capa array.  Standard flux differencing:
 
            q(m,i,j) = q(m,i,j)
      &           - dtdx * (fm(m,i+1,j) - fp(m,i,j))
      &           - dtdy * (gm(m,i,j+1) - gp(m,i,j))
+ 50       continue
          else
+          do 51 j=mbc+1,mjtot-mbc
+          do 51 i=mbc+1,mitot-mbc
+          do 51 m=1,nvar
 c            # with capa array.
            q(m,i,j) = q(m,i,j)
      &           - (dtdx * (fm(m,i+1,j) - fp(m,i,j))
      &           +  dtdy * (gm(m,i,j+1) - gp(m,i,j))) / aux(mcapa,i,j)
+ 51       continue
 !           write(outunit,543) m,i,j,q(m,i,j),fm(m,i+1,j),fp(m,i,j),
 !     .        gm(m,i,j+1), gp(m,i,j)
 543       format(3i4,5e25.16)
 
          endif
 
- 50      continue
+c 50      continue
 c
 c     # Copied here from b4step2 since need to do before saving to qc1d:
       forall(i=1:mitot, j=1:mjtot, q(1,i,j) < dry_tolerance)

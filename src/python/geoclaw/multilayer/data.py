@@ -60,11 +60,11 @@ class QinitMultilayerData(clawpack.geoclaw.data.QinitData):
         super(QinitMultilayerData, self).__init__()
 
         # Test qinit data > 4
-        self.add_attribute("init_location")
-        self.add_attribute("wave_family")
-        self.add_attribute("epsilon")
-        self.add_attribute("angle")
-        self.add_attribute("sigma")
+        self.add_attribute("init_location", [0.0, 0.0])
+        self.add_attribute("wave_family", 1)
+        self.add_attribute("epsilon", 0.02)
+        self.add_attribute("angle", 0.0)
+        self.add_attribute("sigma", 0.02)
 
     def write(self, data_source='setrun.py'):
 
@@ -87,15 +87,10 @@ class QinitMultilayerData(clawpack.geoclaw.data.QinitData):
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         elif self.qinit_type >= 5 and self.qinit_type <= 9:
             self.data_write('epsilon')
-            if self.qinit_type == 5 or self.qinit_type == 6:
-                self.data_write("init_location")
-                self.data_write("wave_family")
-                if self.qinit_type == 6 or self.qinit_type == 9:
-                    self.data_write("angle")
-                    self.data_write("sigma")
-            elif self.qinit_type == 7:
-                self.data_write("init_location")
-                self.data_write("sigma")
+            self.data_write("init_location")
+            self.data_write("wave_family")
+            self.data_write("angle")
+            self.data_write("sigma")
         else:
             raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
         self.close_data_file()

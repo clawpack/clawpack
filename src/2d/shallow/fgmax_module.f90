@@ -57,7 +57,7 @@ module fgmax_module
 
     ! declare array fgrids of fixed grids, each of type fgrid.
     ! allow them to be targets of pointers for shorthand in code.
-    integer, parameter :: FG_MAXNUM_FGRIDS = 2  ! max number of fixed grids
+    integer, parameter :: FG_MAXNUM_FGRIDS = 5  ! max number of fixed grids
     type(fgrid), target :: FG_fgrids(FG_MAXNUM_FGRIDS)
 
     ! special value to flag unset portions of arrays:
@@ -66,9 +66,8 @@ module fgmax_module
     ! unit to use for reading input data and writing fgrid results:
     integer, parameter :: FG_UNIT = 45
 
-    ! number of max vals to monitor
-    ! these are specified in fgmax_values
-    integer, parameter :: FG_NUM_VAL = 1
+    ! number of max vals to monitor: Set in set_fgmax
+    integer :: FG_NUM_VAL   
     ! number of aux vals to monitor
     integer, parameter :: FG_NUM_AUX = 1
 
@@ -93,24 +92,21 @@ contains
         ! Local storage
         integer, parameter :: unit = 7
         integer :: ifg
-        character*80 :: fname_fg
-        integer :: num_fgmax
-
-        write(parmunit,*) ' '
-        write(parmunit,*) '--------------------------------------------'
-        write(parmunit,*) 'SETFGMAX:'
-        write(parmunit,*) '-----------'
+        character*150 :: fname_fg
+        integer :: num_fgmax_grids, num_fgmax_val
 
         ! Open data file
         call opendatafile(unit,fname)
 
         ! Read in data
-        read(unit,'(i2)') num_fgmax ! name used in setrun.py
-        FG_num_fgrids = num_fgmax   ! module variable name
+        read(unit,'(i2)') num_fgmax_val   ! name used in setrun.py
+        FG_NUM_VAL = num_fgmax_val        ! module variable name
+        read(unit,'(i2)') num_fgmax_grids ! name used in setrun.py
+        FG_num_fgrids = num_fgmax_grids   ! module variable name
 
         if (FG_num_fgrids > FG_MAXNUM_FGRIDS) then
            write(6,601) FG_num_fgrids
- 601       format('*** Too many fixed grids specified: FG_num_fgrids = i3',/, &
+ 601       format('*** Too many fixed grids specified: FG_num_fgrids = ',i3,/, &
                '*** Increase FG_MAXNUM_FGRIDS in fgmax_module.f90')
            stop
            endif
@@ -119,6 +115,14 @@ contains
             read(unit,*) fname_fg
             call fgmax_read(fname_fg, ifg)
             enddo
+        write(parmunit,*) ' '
+        write(parmunit,*) '--------------------------------------------'
+        write(parmunit,*) 'SETFGMAX:'
+        write(parmunit,*) '-----------'
+
+        write(parmunit,*) 'FG_NUM_VAL = ', FG_NUM_VAL
+        write(parmunit,*) 'FG_num_fgrids = ', FG_num_fgrids
+
     
         end subroutine set_fgmax
 

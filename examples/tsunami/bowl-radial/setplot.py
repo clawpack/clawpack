@@ -295,11 +295,12 @@ def setplot(plotdata):
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Scatter', figno=200)
     plotfigure.show = False
+    # Note: will not look very good unless more of domain is refined
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = [0., 100.]
-    plotaxes.ylimits = [-.5, 1.]
+    plotaxes.ylimits = [-1.5, 2.]
     plotaxes.title = 'Scatter plot of surface'
 
     # Set up for item on these axes:
@@ -315,7 +316,7 @@ def setplot(plotdata):
     plotitem.map_2d_to_1d = q_vs_radius
     plotitem.plotstyle = 'o'
     plotitem.amr_color=['b','r','g']
-    plotaxes.afteraxes = "pylab.legend(['Level 1','Level 2'])"
+    plotaxes.afteraxes = "import pylab; pylab.legend(['Level 1','Level 2'])"
     
 
     #-----------------------------------------

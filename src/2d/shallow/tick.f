@@ -14,6 +14,7 @@ c
 
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
+      integer clock_start, clock_finish, clock_rate
 
 c
 c :::::::::::::::::::::::::::: TICK :::::::::::::::::::::::::::::
@@ -164,7 +165,7 @@ c     all aux arrays are consistent with the final topography.
 c     The variable aux_finalized is incremented so that we can check
 c     if this is true by checking if aux_finalized == 2 elsewhere in code.
 
-	  if (aux_finalized .eq. 1) then
+	  if (aux_finalized .eq. 1 .and. num_dtopo > 0) then
 c         # this is only true once, and only if there was moving topo
           deallocate(topo0work)
           endif 
@@ -205,7 +206,12 @@ c level 'lbase' stays fixed.
 c
           if (rprint) write(outunit,101) lbase
 101       format(8h  level ,i5,32h  stays fixed during regridding )
+
+          call system_clock(clock_start,clock_rate)
           call regrid(nvar,lbase,cut,naux,start_time)
+          call system_clock(clock_finish,clock_rate)
+          timeRegridding = timeRegridding + clock_finish - clock_start
+
           call setbestsrc()     ! need at every grid change
 c         call conck(1,nvar,naux,time,rest)
 c         call outtre(lstart(lbase+1),.true.,nvar,naux)
@@ -318,7 +324,10 @@ c                   adjust time steps for this and finer levels
                  go to 60
               else
                  level = level - 1
+                 call system_clock(clock_start,clock_rate)
                  call update(level,nvar,naux)
+                 call system_clock(clock_finish,clock_rate)
+                 timeUpdating=timeUpdating+clock_finish-clock_start
               endif
           go to 105
 c

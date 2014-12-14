@@ -1,7 +1,12 @@
 #!/usr/bin/python
 """
 okada
-============================
+========================================================
+This version of the Okada routines is deprecated but is
+being kept around to test geoclaw/examples/tsunami/chile2010
+Going forward, dtopotools.okadamap should be used instead.
+========================================================
+
     python module for getting Okada maps.
 
     Okada model is a mapping from several fault parameters

@@ -7,8 +7,11 @@ env:
 before_install:
   - sudo apt-get update
   - sudo apt-get install gfortran
+  # - sudo apt-get install lapack
   # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print numpy.__version__"
+  - pip install --use-mirrors matplotlib
+  - python -c "import matplotlib; print matplotlib.__version__"
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - python setup.py symlink-only
@@ -31,8 +34,9 @@ before_script:
   - echo "FC="$FC
   
 script:
-  - cd $CLAW/geoclaw/tests
-  - nosetests */
+  - cd $CLAW/geoclaw
+  - nosetests -s
+  - if [ -d *_output ] ; then for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done ; fi
   
 notifications:
   email: false

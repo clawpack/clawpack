@@ -1,10 +1,39 @@
 #!/usr/bin/env python
 
-"""Classes representing parameters for GeoClaw runs"""
+"""
+
+Classes representing parameters for GeoClaw runs
+
+:Classes:
+
+ - GeoClawData
+ - RefinementData
+ - TopographyData
+ - FixedGridData
+ - FGmaxData
+ - DTopoData
+ - QinitData
+
+:Constants:
+
+ - Rearth - Radius of earth in meters
+ - DEG2RAD factor to convert degrees to radians
+ - RAD2DEG factor to convert radians to degrees
+ - LAT2METER factor to convert degrees in latitude to meters
+"""
 
 import os
-
+import numpy
 import clawpack.clawutil.data
+
+# Radius of earth in meters.  
+# For consistency, should always use this value when needed, e.g.
+# in setrun.py or topotools:
+Rearth = 6367.5e3  # average of polar and equatorial radii
+
+DEG2RAD = numpy.pi / 180.0
+RAD2DEG = 180.0 / numpy.pi
+LAT2METER = Rearth * DEG2RAD
 
 class GeoClawData(clawpack.clawutil.data.ClawData):
     r"""
@@ -17,7 +46,7 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
 
         # GeoClaw physics parameters
         self.add_attribute('gravity',9.8)
-        self.add_attribute('earth_radius',6367500.0)
+        self.add_attribute('earth_radius',Rearth)
         self.add_attribute('coordinate_system',1)
         self.add_attribute('coriolis_forcing',True)
         self.add_attribute('theta_0',45.0)
@@ -29,10 +58,6 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         self.add_attribute('dry_tolerance',1e-3)
         self.add_attribute('friction_depth',1.0e6)
         self.add_attribute('sea_level',0.0)
-
-        # Refinement behavior
-        self.add_attribute('variable_dt_refinement_ratios', False)
-
 
 
     def write(self,data_source='setrun.py'):
@@ -63,7 +88,7 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
 
         self.data_write()
 
-        self.data_write('dry_tolerance',1e-3)
+        self.data_write('dry_tolerance')
  
         self.close_data_file()
 
@@ -76,15 +101,14 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         super(RefinementData,self).__init__()
 
         # Refinement controls
-        self.add_attribute('dry_tolerance',1.0e-3)
         self.add_attribute('wave_tolerance',1.0e-1)
         self.add_attribute('speed_tolerance',[1.0e12]*6)
         self.add_attribute('deep_depth',1.0e2)
         self.add_attribute('max_level_deep',3)
+        self.add_attribute('variable_dt_refinement_ratios',False)
 
 
-    def write(self, data_source="setrun.py"):
-        
+    def write(self,data_source='setrun.py'):
         # Refinement controls
         self.open_data_file('refinement.data',data_source)
         self.data_write('wave_tolerance')
@@ -94,9 +118,10 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         self.data_write('deep_depth')
         self.data_write('max_level_deep')
         self.data_write()
-        self.data_write('variable_dt_refinement_ratios')
-
+        self.data_write('variable_dt_refinement_ratios',
+                        description="(Set dt refinement ratios automatically)")
         self.close_data_file()
+
 
 
 class TopographyData(clawpack.clawutil.data.ClawData):
@@ -132,11 +157,7 @@ class TopographyData(clawpack.clawutil.data.ClawData):
             ntopofiles = len(self.topofiles)
             self.data_write(value=ntopofiles,alt_name='ntopofiles')
             for tfile in self.topofiles:
-                try:
-                    fname = os.path.abspath(tfile[-1])
-                except:
-                    print "*** Error: file not found: ",tfile[-1]
-                    raise ("file not found")
+                fname = os.path.abspath(tfile[-1])
                 self._out_file.write("\n'%s' \n " % fname)
                 self._out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
         elif self.test_topography == 1:
@@ -154,35 +175,6 @@ class TopographyData(clawpack.clawutil.data.ClawData):
             raise NotImplementedError("Test topography type %s has not been"
                                         " implemented." % self.test_topography)
 
-        self.close_data_file()
-
-
-class RefinementData(clawpack.clawutil.data.ClawData):
-
-    def __init__(self):
-
-        super(RefinementData,self).__init__()
-
-        # Refinement controls
-        self.add_attribute('wave_tolerance',1.0e-1)
-        self.add_attribute('speed_tolerance',[1.0e12]*6)
-        self.add_attribute('deep_depth',1.0e2)
-        self.add_attribute('max_level_deep',3)
-        self.add_attribute('variable_dt_refinement_ratios',False)
-
-
-    def write(self,data_source='setrun.py'):
-        # Refinement controls
-        self.open_data_file('refinement.data',data_source)
-        self.data_write('wave_tolerance')
-        if not isinstance(self.speed_tolerance,list):
-            self.speed_tolerance = [self.speed_tolerance]
-        self.data_write('speed_tolerance')
-        self.data_write('deep_depth')
-        self.data_write('max_level_deep')
-        self.data_write()
-        self.data_write('variable_dt_refinement_ratios',
-                        description="(Set dt refinement ratios automatically)")
         self.close_data_file()
 
 
@@ -215,17 +207,21 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         
         # File name for fgmax points and parameters:
         self.add_attribute('fgmax_files',[])
+        self.add_attribute('num_fgmax_val',1)
 
 
     def write(self,data_source='setrun.py'):
         self.open_data_file('fgmax.data',data_source)
-        num_fgmax = len(self.fgmax_files)
-        self.data_write(value=num_fgmax,alt_name='num_fgmax')
+        num_fgmax_val = self.num_fgmax_val
+        if num_fgmax_val not in [1,2,5]:
+            raise NotImplementedError( \
+                    "Expecting num_fgmax_val in [1,2,5], got %s" % num_fgmax_val)
+        self.data_write(value=num_fgmax_val,alt_name='num_fgmax_val')
+        num_fgmax_grids = len(self.fgmax_files)
+        self.data_write(value=num_fgmax_grids,alt_name='num_fgmax_grids')
         self.data_write()
         for fgmax_file in self.fgmax_files:
             fname = os.path.abspath(fgmax_file)
-            if not os.path.isfile(fname):
-                raise IOError("***fgmax input file not found: %s" % fgmax_file)
             self._out_file.write("\n'%s' \n" % fname)
         self.close_data_file()
 
@@ -250,14 +246,51 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.data_write()
         for tfile in self.dtopofiles:
             fname = os.path.abspath(tfile[-1])
-            if not os.path.isfile(fname):
-                raise IOError("*** dtopo input file not found: %s" % tfile[-1])
             self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.data_write()
         self.data_write(value=self.dt_max_dtopo,alt_name='dt_max_dtopo')
         self.close_data_file()
 
+
+    def read(self, path, force=False):
+        r"""Read a dtopography data file."""
+
+        print self.dtopofiles
+
+        with open(os.path.abspath(path), 'r') as data_file:
+
+            file_name = None
+            
+            # Forward to first parameter
+            for line in data_file:
+
+                # Regular parameter setting
+                if "=:" in line:
+                    value, tail = line.split("=:")
+                    varname = tail.split()[0]
+
+                    if varname == "mdtopofiles":
+                        num_dtopo_files = int(value)
+                    elif varname == "dt_max_dtopo":
+                        self.dt_max_dtopo = float(value)
+
+                # Assume this is the second line of a record, complete and add
+                # to dtopofiles list
+                elif file_name is not None:
+                    base_values = [int(value) for value in line.split()]
+                    base_values.append(file_name)
+                    self.dtopofiles.append(base_values)
+                    file_name = None
+
+                # Non-empty line, assume start of dtopo_file record
+                elif line[0] == "'":
+                    file_name = line.strip()[1:-1]
+
+        # Check to make sure we have all the dtopofiles
+        if len(self.dtopofiles) != num_dtopo_files:
+            raise IOError("The number of dtopo files specified does not equal ",
+                          "the number found.")
 
 
 class QinitData(clawpack.clawutil.data.ClawData):
@@ -281,11 +314,7 @@ class QinitData(clawpack.clawutil.data.ClawData):
         elif 0 < self.qinit_type < 5:
             # Check to see if each qinit file is present and then write the data
             for tfile in self.qinitfiles:
-                try:
-                    fname = "'%s'" % os.path.abspath(tfile[-1])
-                except:
-                    raise Warning("File %s was not found." % fname)
-                    # raise MissingFile("file not found")
+                fname = "'%s'" % os.path.abspath(tfile[-1])
                 self._out_file.write("\n%s  \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         else:
