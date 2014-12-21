@@ -5,7 +5,7 @@ set ext = png
 
 setenv GDAL_DATA /opt/local/share/gdal
 
-# gdalinfo $file.$ext
+gdalinfo $file.$ext
 
 gdal_translate -of VRT \
     -a_srs EPSG:4326 \
@@ -21,4 +21,4 @@ gdalwarp -of VRT \
 	"$file"_tmp.vrt $file.vrt
 
 
-gdal2tiles.py --profile=geodetic  --force-kml --resampling=near $file.vrt
+gdal2tiles.py --zoom=2-6 --profile=geodetic  --force-kml --resampling=near $file.vrt
