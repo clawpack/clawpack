@@ -7,6 +7,9 @@ def configuration(parent_package='',top_path=None):
     config.add_subpackage('visclaw')
     config.add_subpackage('pyclaw')
     config.add_subpackage('petclaw')
+    config.add_subpackage('classic')
+    config.add_subpackage('amrclaw')
+    config.add_subpackage('geoclaw')
     return config
 
 if __name__ == '__main__':
