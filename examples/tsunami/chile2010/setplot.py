@@ -101,18 +101,20 @@ def setplot(plotdata):
 
 
 
-    #-------------------------------------------------------------------
+    #-----------------------------------------------------------
     # Figure for KML files
     # This is a very limited set of items that can
     # be controlled.
-    #--------------------------------------------------------------------
+    #----------------------------------------------------------
     plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
     plotfigure.show = True   # Don't show this file in the html version
     plotfigure.use_for_kml = True
-    plotfigure.kml_dpi = 500
+    plotfigure.kml_dpi = 1200
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
-    plotfigure.kml_starttime = [2015,2,5,13,55,36]  # [year, month, day, hours, minutes,seconds]
+    plotfigure.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC
+    plotfigure.kml_tz_offset = -3    # Time zone offset (in hours) of event.
+    plotfigure.kml_notiles = True
 
 
     # Set up for axes in this figure:
@@ -122,7 +124,7 @@ def setplot(plotdata):
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.pcolor_cmap = geoplot.tsunami_colormap
+    plotitem.pcolor_cmap = geoplot.googleearth_colormap
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
     plotitem.amr_celledges_show = [0,0,0]
@@ -199,12 +201,12 @@ def setplot(plotdata):
 
     plotdata.printfigs = True                # print figures
     plotdata.print_format = 'png'            # file format
-    plotdata.print_framenos = 'all'          # list of frames to print
+    plotdata.print_framenos = [0,1,2,3]          # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
-    plotdata.print_fignos = 'all'            # list of figures to print
-    plotdata.html = True                     # create html files of plots?
+    plotdata.print_fignos = [1]           # list of figures to print
+    plotdata.html = False                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
-    plotdata.latex = True                    # create latex file of plots?
+    plotdata.latex = False                    # create latex file of plots?
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
