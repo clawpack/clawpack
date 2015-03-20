@@ -37,6 +37,9 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! friction source term
     real(kind=8), parameter :: depth_tolerance = 1.0d-30
 
+    ! Physics
+    real(kind=8), parameter :: rho = 1025.d0
+
     ! Friction source term
     if (friction_forcing) then
         do j=1,my
