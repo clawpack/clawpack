@@ -71,7 +71,7 @@ MODULES = \
  $(GEOLIB)/surge/constant_storm_module.f90 \
  $(GEOLIB)/surge/stommel_storm_module.f90 \
  $(GEOLIB)/surge/storm_module.f90 \
- $(GEOLIB)/surge/friction_module.f90 \
+ $(GEOLIB)/friction_module.f90 \
  $(GEOLIB)/multilayer/multilayer_module.f90 \
  ./qinit_module.f90
 
