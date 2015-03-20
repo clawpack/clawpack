@@ -15,7 +15,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     use storm_module, only: rho_air, wind_drag
     use storm_module, only: wind_index, pressure_index
 
-    use friction_module, only: friction_index
+    use friction_module, only: variable_friction, friction_index
 
     implicit none
 
@@ -60,11 +60,15 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
             
             ! Apply friction source term only if in shallower water
             if (h <= friction_depth) then
-                do nman = num_manning, 1, -1
-                    if (aux1d(1,i) .lt. manning_break(nman)) then
-                        coeff = manning_coefficient(nman)
-                    endif
-                enddo
+                if (.not.variable_friction) then
+                    do nman = num_manning, 1, -1
+                        if (aux1d(1,i) .lt. manning_break(nman)) then
+                            coeff = manning_coefficient(nman)
+                        endif
+                    enddo
+                else
+                    coeff = aux1d(friction_index, i)
+                end if
 
                 ! Calculate source term
                 gamma = sqrt(hu**2 + hv**2) * (g * coeff**2) / h**(7.d0/3.d0)
