@@ -38,8 +38,8 @@ class IkeTest(tests.GeoClawTest):
 
         # Create synthetic bathymetry - needs more work
         topo = clawpack.geoclaw.topotools.Topography()
-        topo.x = numpy.linspace(-100, -69, 124)
-        topo.y = numpy.linspace(7.0, 33.0, 104)
+        topo.x = numpy.linspace(-100, -69, 125)
+        topo.y = numpy.linspace(7.0, 33.0, 105)
         topo.Z = 25.0 * ((topo.X + 84.5)**2 + (topo.Y - 20.0)**2) - 4000.0
         topo.write(os.path.join(self.temp_path, 'gulf_caribbean.tt3'))
 
