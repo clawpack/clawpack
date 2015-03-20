@@ -32,13 +32,6 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     real(kind=8) :: tau, wind_speed, theta, phi, psi, P_gradient(2), S(2)
     real(kind=8) :: Ddt, sloc(2)
 
-    ! Physics
-    real(kind=8), parameter :: fric_coefficient = 7.d0 / 3.d0
-    real(kind=8), parameter :: rho = 1025.d0
-    real(kind=8), parameter :: H_break = 2.d0
-    real(kind=8), parameter :: theta_f = 10.d0
-    real(kind=8), parameter :: gamma_f = 4.d0 / 3.d0
-
     ! Algorithm parameters
     ! Parameter controls when to zero out the momentum at a depth in the
     ! friction source term
