@@ -458,7 +458,10 @@ contains
                 do i=1,5
                     read(iunit,*)
                 enddo
-                read(iunit,*) no_data_value
+                
+                read(iunit,'(a)') str
+                call parse_values(str, n, values)
+                no_data_value = values(1)
 
                 ! Read in data
                 missing = 0
@@ -639,8 +642,11 @@ contains
                   else
                     dy = dx
                   endif
+
+                read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 nodata_value = values(1)
+
                 xhi = xll + (mx-1)*dx
                 yhi = yll + (my-1)*dy
 
