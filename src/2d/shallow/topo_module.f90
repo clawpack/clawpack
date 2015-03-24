@@ -547,6 +547,7 @@ contains
     subroutine read_topo_header(fname,topo_type,mx,my,xll,yll,xhi,yhi,dx,dy)
 
         use geoclaw_module
+        use utility_module, only: parse_values
 
         implicit none
 
