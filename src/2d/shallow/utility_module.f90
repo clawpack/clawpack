@@ -65,6 +65,9 @@ Contains
     character(len=80) :: word(10), str2
     real(kind=8) :: x
 
+    ! First break into words / tokens based on white space.  
+    ! Each might be character or numerical:
+
     nw = 0
     str2 = trim(adjustl(str))
     do while (len(trim(adjustl(str2))) > 0) 
@@ -81,6 +84,7 @@ Contains
         str2 = trim(adjustl(str2(pos2+1:)))
         enddo
 
+    ! now extract numerical values:
     n = 0
     do i=1,nw
         read(word(i),*,IOSTAT=e) x
