@@ -619,6 +619,10 @@ contains
         integer(kind=4) :: dims(2)
         real(kind=8) :: x_range(2), y_range(2), delta(2)
 
+        ! New
+        real(kind=8), allocatable :: lat(:), long(:)
+        character(len=80) :: temp(6)
+
         inquire(file=fname,exist=found_file)
         if (.not. found_file) then
             print *, 'Missing topography file:'
@@ -716,52 +720,80 @@ contains
             ! NetCDF
             case(4)
 #ifdef NETCDF
+    
                 call check(nf90_open(fname, nf90_nowrite, nc_unit))
-                ! First dimension is always 2 and called side, second is 
-                ! total size of array, only used to check that something has not
-                ! gone awry
-                call check(nf90_inquire_dimension(nc_unit, 1, xname, mx))
-                call check(nf90_inquire_dimension(nc_unit, 2, xname, mx))
+                if (.false.) then
+                    ! First dimension is always 2 and called side, second is 
+                    ! total size of array, only used to check that something has not
+                    ! gone awry
+                    call check(nf90_inquire_dimension(nc_unit, 1, xname, mx))
+                    call check(nf90_inquire_dimension(nc_unit, 2, xname, mx))
 
-                ! Get range of longitude values 
-                call check(nf90_inquire_variable(nc_unit, 1, var_name, var_type, num_dims, dim_ids))
-                call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                call check(nf90_get_var(nc_unit, var_id, x_range))
-                xll = x_range(1)
-                xhi = x_range(2)
+                    ! Get range of longitude values 
+                    call check(nf90_inquire_variable(nc_unit, 1, var_name, var_type, num_dims, dim_ids))
+                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                    call check(nf90_get_var(nc_unit, var_id, x_range))
+                    xll = x_range(1)
+                    xhi = x_range(2)
 
-                ! Get range of latitude values
-                call check(nf90_inquire_variable(nc_unit, 2, var_name, var_type, num_dims, dim_ids))
-                call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                call check(nf90_get_var(nc_unit, var_id, y_range))
-                yll = y_range(1)
-                yhi = y_range(2)
+                    ! Get range of latitude values
+                    call check(nf90_inquire_variable(nc_unit, 2, var_name, var_type, num_dims, dim_ids))
+                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                    call check(nf90_get_var(nc_unit, var_id, y_range))
+                    yll = y_range(1)
+                    yhi = y_range(2)
 
-                ! Skip z range, we do not use if for anything 
-!                 call check(nf90_inquire_variable(nc_unit, 3, var_name, var_type, num_dims, dim_ids))
-!                 call check(nf90_inq_varid(nc_unit, var_name, var_id))
-!                 call check(nf90_get_var(nc_unit, var_id, z_range))
+                    ! Skip z range, we do not use if for anything 
+    !                 call check(nf90_inquire_variable(nc_unit, 3, var_name, var_type, num_dims, dim_ids))
+    !                 call check(nf90_inq_varid(nc_unit, var_name, var_id))
+    !                 call check(nf90_get_var(nc_unit, var_id, z_range))
 
-                ! Fetch dx and dy
-                call check(nf90_inquire_variable(nc_unit, 4, var_name, var_type, num_dims, dim_ids))
-                call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                call check(nf90_get_var(nc_unit, var_id, delta))
-                dx = delta(1)
-                dy = delta(2)
+                    ! Fetch dx and dy
+                    call check(nf90_inquire_variable(nc_unit, 4, var_name, var_type, num_dims, dim_ids))
+                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                    call check(nf90_get_var(nc_unit, var_id, delta))
+                    dx = delta(1)
+                    dy = delta(2)
 
-                ! Get actual grid dimensions, also check to make sure it agrees
-                ! with the size fetched above
-                call check(nf90_inquire_variable(nc_unit, 5, var_name, var_type, num_dims, dim_ids))
-                call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                call check(nf90_get_var(nc_unit, var_id, dims))
-                if (mx /= dims(1) * dims(2)) then
-                    print *, "ERROR:  Total size of topography array ", mx
-                    print *, "  does not agree with seperate dimensions"
-                    print *, "  mx = ", dims(1), ", my = ", dims(2)
+                    ! Get actual grid dimensions, also check to make sure it agrees
+                    ! with the size fetched above
+                    call check(nf90_inquire_variable(nc_unit, 5, var_name, var_type, num_dims, dim_ids))
+                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                    call check(nf90_get_var(nc_unit, var_id, dims))
+                    if (mx /= dims(1) * dims(2)) then
+                        print *, "ERROR:  Total size of topography array ", mx
+                        print *, "  does not agree with seperate dimensions"
+                        print *, "  mx = ", dims(1), ", my = ", dims(2)
+                        stop
+                    end if
+                    mx = dims(1)
+                    my = dims(2)
+                else
+                    ! GDAL NGDC output
+                    ! Get size of array
+                    call check(nf90_inquire_dimension(nc_unit, 1, xname, mx))
+                    call check(nf90_inquire_dimension(nc_unit, 2, xname, my))
+                    allocate(lat(my), long(mx))
+
+                    ! Find extents in lat-long
+                    call check(nf90_inquire_variable(nc_unit, 2, var_name, var_type, num_dims, dim_ids))
+                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                    call check(nf90_get_var(nc_unit, var_id, lat))
+
+                    call check(nf90_inquire_variable(nc_unit, 3, var_name, var_type, num_dims, dim_ids))
+                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                    call check(nf90_get_var(nc_unit, var_id, long))
+
+                    ! Find delta
+                    call check(nf90_inquire_variable(nc_unit, 1, var_name, var_type, num_dims, dim_ids))
+                    print *,var_name, num_dims, dim_ids
+                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
+                    call check(nf90_get_var(nc_unit, var_id, temp))
+
                     stop
+
+
                 end if
-                mx = dims(1)
-                my = dims(2)
 
                 call check(nf90_close(nc_unit))
 #else
