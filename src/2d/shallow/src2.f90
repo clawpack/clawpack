@@ -38,6 +38,7 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     real(kind=8), parameter :: depth_tolerance = 1.0d-30
 
     ! Physics
+    ! Nominal density of water
     real(kind=8), parameter :: rho = 1025.d0
 
     ! Friction source term
@@ -97,8 +98,9 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
     ! wind -----------------------------------------------------------
     if (wind_forcing) then
-        ! Force only the top layer of water, assumes top most layer is last
-        ! to go dry
+        ! Need storm location and direction for sector based wind drag
+        sloc = storm_location(t)
+        theta = storm_direction(t)
         do j=1,my
             yc = ylower + (j - 0.5d0) * dy
             do i=1,mx
