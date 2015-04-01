@@ -14,6 +14,7 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: rho_air, wind_drag
     use storm_module, only: wind_index, pressure_index
+    use storm_module, only: storm_direction, storm_location
 
     use friction_module, only: variable_friction, friction_index
 
@@ -36,11 +37,8 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     real(kind=8), parameter :: depth_tolerance = 1.0d-30
 
     ! Physics
-    real(kind=8), parameter :: fric_coefficient = 7.d0 / 3.d0
+    ! Nominal density of water
     real(kind=8), parameter :: rho = 1025.d0
-    real(kind=8), parameter :: H_break = 2.d0
-    real(kind=8), parameter :: theta_f = 10.d0
-    real(kind=8), parameter :: gamma_f = 4.d0 / 3.d0
     
     ! Friction forcing
     if (friction_forcing) then
@@ -99,11 +97,11 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
 
     ! = Wind Forcing =========================================================
     if (wind_forcing) then
-        ! Force only the top layer of water
-        ! Assumes that the top-most layer goes dry last
+        ! Cannot use sector based wind mappings here due to lack of information
+        ! sloc = storm_location(t)
+        ! theta = storm_direction(t)
         do i=1,mx1d
             if (q1d(1,i) > dry_tolerance) then
-                theta = 0.d0
                 wind_speed = sqrt(aux1d(wind_index,i)**2 &
                                 + aux1d(wind_index+1,i)**2)
                 tau = wind_drag(wind_speed,theta) * rho_air * wind_speed / rho
