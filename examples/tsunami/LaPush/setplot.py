@@ -263,14 +263,20 @@ def setplot(plotdata):
     #-------------------------------------------------------------------
     # Figure for KML files
     #--------------------------------------------------------------------
+
+    ge_transparent = colormaps.make_colormap({-1.0: [0.0,0.0,1.0,1.0], \
+                                              -0.5: [0.5,0.5,1.0,1.0], \
+                                              0.0: [1.0,1.0,1.0,0.0], \
+                                              0.5: [1.0,0.5,0.5,1.0], \
+                                              1.0: [1.0,0.0,0.0,1.0]})
+
     plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
     plotfigure.show = True   # Don't show this file in the html version
     plotfigure.use_for_kml = True
     plotfigure.kml_dpi = 1600
     plotfigure.kml_xlimits = [-124.68, -124.55]
     plotfigure.kml_ylimits = [47.86, 47.96]
-    # plotfigure.kml_xlimits = [-126,-124]
-    # plotfigure.kml_ylimits = [47,49]
+    plotfigure.kml_notiles = True
 
 
     # Set up for axes in this figure:
@@ -281,7 +287,7 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
     # plotitem.plot_var = geoplot.surface
-    plotitem.pcolor_cmap = my_cmap
+    plotitem.pcolor_cmap = ge_transparent
     plotitem.pcolor_cmin = cmin_coast
     plotitem.pcolor_cmax = cmax_coast
     plotitem.amr_celledges_show = [0,0,0]
