@@ -417,10 +417,6 @@ def setgeo(rundata):
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
 
-    # == setqinit.data values ==
-    # Use multilayer qinit data object
-
-
 
     return rundata
     # end of function setgeo
