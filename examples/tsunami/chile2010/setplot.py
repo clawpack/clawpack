@@ -114,7 +114,7 @@ def setplot(plotdata):
     plotfigure.kml_ylimits = [-60, 0.0];
     plotfigure.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC
     plotfigure.kml_tz_offset = -3    # Time zone offset (in hours) of event.
-    plotfigure.kml_notiles = True
+    plotfigure.kml_tile_images = True
 
 
     # Set up for axes in this figure:
