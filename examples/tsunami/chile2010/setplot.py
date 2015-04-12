@@ -109,7 +109,7 @@ def setplot(plotdata):
     plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
     plotfigure.show = True   # Don't show this file in the html version
     plotfigure.use_for_kml = True
-    plotfigure.kml_dpi = 1200
+    plotfigure.kml_dpi = 200
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
     plotfigure.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC
@@ -125,6 +125,7 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.googleearth_transparent
+    #plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
     plotitem.amr_celledges_show = [0,0,0]
@@ -204,7 +205,7 @@ def setplot(plotdata):
     plotdata.print_framenos = 'all'          # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
     plotdata.print_fignos = [1]           # list of figures to print
-    plotdata.html = False                     # create html files of plots?
+    plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
     plotdata.latex = False                    # create latex file of plots?
     plotdata.latex_figsperline = 2           # layout of plots
