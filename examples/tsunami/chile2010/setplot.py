@@ -113,8 +113,9 @@ def setplot(plotdata):
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
     plotfigure.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC
-    plotfigure.kml_tz_offset = -3    # Time zone offset (in hours) of event.
+    plotfigure.kml_tz_offset = 3    # Time zone offset (in hours) of event.
     plotfigure.kml_tile_images = True
+    plotfigure.kml_url = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/chile2010'
 
 
     # Set up for axes in this figure:
@@ -124,6 +125,7 @@ def setplot(plotdata):
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
+    plotitem.pcolor_cmap = geoplot.googleearth_lightblue
     plotitem.pcolor_cmap = geoplot.googleearth_transparent
     #plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2
@@ -162,7 +164,7 @@ def setplot(plotdata):
 
     # Plot topo as green curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
-    plotitem.show = False
+    plotitem.show = True
 
     def gaugetopo(current_data):
         q = current_data.q
@@ -204,7 +206,7 @@ def setplot(plotdata):
     plotdata.print_format = 'png'            # file format
     plotdata.print_framenos = 'all'          # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
-    plotdata.print_fignos = [1]           # list of figures to print
+    plotdata.print_fignos = [1,300]           # list of figures to print
     plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
     plotdata.latex = False                    # create latex file of plots?
