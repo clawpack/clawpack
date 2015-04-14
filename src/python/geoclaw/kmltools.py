@@ -24,6 +24,9 @@ the full 8 digits if you want it transparent).
  - strip_archive_extensions - strip off things like .tar or .gz
 """
 
+from lxml import etree
+from pykml.factory import KML_ElementMaker as KML
+
 
 def deg2dms(dy):
     r"""
@@ -87,7 +90,7 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
     x1,y1 = clawdata.lower[0:]
     x2,y2 = clawdata.upper[0:]
     description = "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g\n" % (y1,y2) 
+            + "  y1 = %g, y2 = %g\n" % (y1,y2)
 
     mx,my = clawdata.num_cells[0:]
     dx = (x2-x1)/float(mx)
@@ -129,31 +132,37 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         print "Allowing maximum of %i levels" % amr_levels_max
 
     elev = 0.
-    kml_text = kml_header()
-    
+    #kml_text = kml_header()
+    kml_doc = KML.kml(KML.Document())
+
     mapping = {}
     mapping['x1'] = x1
     mapping['x2'] = x2
     mapping['y1'] = y1
     mapping['y2'] = y2
     mapping['elev'] = elev
+    mapping['rnum'] = None
     mapping['name'] = 'Computational Domain'
     mapping['desc'] = description
     mapping['color'] = "0000FF"  # red
 
-    region_text = kml_region(mapping)
-    kml_text = kml_text + region_text
+    #region_text = kml_region(mapping)
+    #kml_text = kml_text + region_text
+    style_folder = KML.Folder()
+    placemark_folder = KML.Folder()
+    path_style,placemark = kml_region(mapping)
+    style_folder.append(path_style)
+    placemark_folder.append(placemark)
 
     regions = rundata.regiondata.regions
     if len(regions)==0 and verbose:
         print "No regions found in setrun.py"
 
-
     for rnum,region in enumerate(regions):
         minlevel,maxlevel = region[0:2]
         t1,t2 = region[2:4]
         x1,x2,y1,y2 = region[4:]
-    
+
         if verbose:
             print "Region %i: %10.6f  %10.6f  %10.6f  %10.6f" \
                     % (rnum,x1,x2,y1,y2)
@@ -170,11 +179,12 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         mapping['y1'] = y1
         mapping['y2'] = y2
         mapping['elev'] = elev
+        mapping['rnum'] = rnum
         mapping['name'] = 'Region %i' % rnum
         description = "minlevel = %i, maxlevel = %i\n" % (minlevel,maxlevel) \
             + "  t1 = %g, t2 = %g\n" % (t1,t2) \
             + "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g\n\n" % (y1,y2) 
+            + "  y1 = %g, y2 = %g\n\n" % (y1,y2)
         if len(dy_levels) >= minlevel:
             dy = dy_levels[minlevel-1]
             dy_deg,dy_min,dy_sec = deg2dms(dy)
@@ -192,28 +202,38 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         mapping['desc'] = description
         mapping['color'] = "FFFFFF"  # white
 
-        region_text = kml_region(mapping)
-        kml_text = kml_text + region_text
-    kml_text = kml_text + kml_footer()
+        #region_text = kml_region(mapping)
+        #kml_text = kml_text + region_text
+        path_style,placemark = kml_region(mapping)
+        style_folder.append(path_style)
+        placemark_folder.append(placemark)
+
+    kml_doc.Document.append(style_folder)
+    kml_doc.Document.append(placemark_folder)
+    #kml_text = kml_text + kml_footer()
     kml_file = open(fname,'w')
-    kml_file.write(kml_text)
+    kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+
+    #kml_file.write(kml_text)
+    kml_file.write(etree.tostring(etree.ElementTree(kml_doc),pretty_print=True))
+
     kml_file.close()
     if verbose:
         print "Created ",fname
-        
+
 
 
 def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
     """
     Make a KML box with default color blue.
-    
+
     :Inputs:
 
      - *xy* a tuple (x1,x2,y1,y2)
      - *fname* (str) name of resulting kml file
      - *name* (str) name to appear in box on Google Earth
      - *color* (str) Color in format aaggbbrr
-     - *verbose* (bool) - If *True*, print out info 
+     - *verbose* (bool) - If *True*, print out info
 
     """
 
@@ -222,8 +242,8 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
         print "Box:   %10.6f  %10.6f  %10.6f  %10.6f" % (x1,x2,y1,y2)
 
     elev = 0.
-    kml_text = kml_header() 
-    
+    kml_text = kml_header()
+
     mapping = {}
     mapping['x1'] = x1
     mapping['x2'] = x2
@@ -232,7 +252,7 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
     mapping['elev'] = elev
     mapping['name'] = name
     mapping['desc'] = "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g" % (y1,y2) 
+            + "  y1 = %g, y2 = %g" % (y1,y2)
     mapping['color'] = color
 
     region_text = kml_region(mapping)
@@ -243,7 +263,7 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
     kml_file.close()
     if verbose:
         print "Created ",fname
-        
+
 
 def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
     """
@@ -255,7 +275,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
      - *fname* (str) name of resulting kml file
      - *name* (str) name to appear in box on Google Earth
      - *color* (str) Color in format aaggbbrr
-     - *verbose* (bool) - If *True*, print out info 
+     - *verbose* (bool) - If *True*, print out info
 
     """
 
@@ -267,8 +287,8 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
         print "                 %10.6f  %10.6f" % (x4,y4)
 
     elev = 0.
-    kml_text = kml_header() 
-    
+    kml_text = kml_header()
+
     mapping = {}
     mapping['x1'] = x1
     mapping['x2'] = x2
@@ -283,7 +303,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
     mapping['desc'] = "  x1 = %g, y1 = %g\n" % (x1,y1) \
             + "  x2 = %g, y2 = %g" % (x2,y2) \
             + "  x3 = %g, y3 = %g" % (x3,y3) \
-            + "  x4 = %g, y4 = %g" % (x4,y4) 
+            + "  x4 = %g, y4 = %g" % (x4,y4)
     mapping['color'] = color
 
     region_text = kml_region(mapping)
@@ -294,7 +314,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
     kml_file.close()
     if verbose:
         print "Created ",fname
-        
+
 
 def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
 
@@ -341,8 +361,11 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
             raise IOError("*** cannot execute setrun file")
 
     elev = 0.
-    kml_text = kml_header()
-    
+    #kml_text = kml_header()
+    kml_doc = KML.kml(KML.Document())
+    kml_doc.Document.append(KML.Style(
+        KML.BalloonStyle(KML.text("<![CDATA[$[name]</br><pre><b>$[address]</b></pre></br>$[description]]]>")),
+        id="gauge_style"))
 
     gauges = rundata.gaugedata.gauges
     if len(gauges)==0 and verbose:
@@ -365,18 +388,32 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
         mapping['elev'] = elev
         mapping['name'] = 'Gauge %i' % rnum
         description = "  t1 = %g, t2 = %g\n" % (t1,t2) \
-            + "  x1 = %g, y1 = %g\n" % (x1,y1)
+                    + "  x1 = %g, y1 = %g\n" % (x1,y1)
         mapping['desc'] = description
 
-        gauge_text = kml_gauge(mapping)
-        kml_text = kml_text + gauge_text
-    kml_text = kml_text + kml_footer()
+        fignum = 300  # ToDo : Get correct figure number for this gauge
+        mapping['figname'] = "gauge%dfig%d" % (gaugeno,fignum)
+
+
+        #gauge_text = kml_gauge(mapping)
+        #kml_text = kml_text + gauge_text
+        placemark = kml_gauge(mapping)
+        kml_doc.Document.append(placemark)
+
+    #kml_text = kml_text + kml_footer()
     kml_file = open(fname,'w')
+    kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+
+    #kml_file.write(kml_text)
+    kml_text = etree.tostring(etree.ElementTree(kml_doc),pretty_print=True)
+    kml_text = kml_text.replace("&gt;",">")
+    kml_text = kml_text.replace("&lt;","<")
     kml_file.write(kml_text)
+
     kml_file.close()
     if verbose:
         print "Created ",fname
-        
+
 
 
 def kml_header():
@@ -384,7 +421,7 @@ def kml_header():
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document><name>My document</name>
 <description>Content</description>
-""" 
+"""
     return header
 
 def kml_footer():
@@ -414,10 +451,33 @@ def kml_region(mapping):
 {x1:10.4f},{y2:10.4f},{elev:10.4f}
 {x1:10.4f},{y1:10.4f},{elev:10.4f}
 """.format(**mapping).replace(' ','')
-    
+
     mapping['region'] = region_text
-    if len(mapping['color'])==6: 
+    if len(mapping['color'])==6:
         mapping['color'] = 'FF' + mapping['color']
+
+    if (mapping['rnum'] == None):
+        pathstr = "Path_domain"
+    else:
+        pathstr = "Path_region%d"%regnum
+
+    path_style = KML.Style(
+        KML.LineStyle(
+            KML.color(mapping['color']),
+            KML.width(3)),
+        KML.PolyStyle(KML.color("00000000")),
+        id=pathstr)
+
+    placemark = KML.Placemark(
+            KML.name(mapping['name']),
+            KML.description(mapping['desc']),
+            KML.styleUrl(chr(35) + pathstr),
+            KML.Polygon(
+                KML.tessellate(1),
+                KML.altitudeMode("clampToGround"),
+                KML.outerBoundaryIs(
+                    KML.LinearRing(
+                        KML.coordinates(mapping['region'])))))
 
     kml_text = """
 <Style id="Path">
@@ -437,12 +497,28 @@ def kml_region(mapping):
 </Placemark>
 """.format(**mapping)
 
-    return kml_text
+    #return kml_text
+    return path_style, placemark
 
 def kml_gauge(mapping):
     gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
-    
+
+    # Is this used?
     mapping['gauge'] = gauge_text
+
+    import os
+    address_str = "%s" % mapping['desc']
+    address_str = mapping['desc']
+    figfile = os.path.join("_plots",mapping['figname']+".png")
+    desc_str = "<![CDATA[<img style=\"width:400\" src=\"%s\">]]>" % figfile
+
+    placemark = KML.Placemark(
+        KML.name("Gauge %d" % mapping['gaugeno']),
+        KML.address(address_str),
+        KML.description(desc_str),
+        KML.styleUrl(chr(35) + "gauge_style"),
+        KML.Point(
+            KML.coordinates(mapping['gauge'])))
 
     kml_text = """
 <Placemark><name>Gauge {gaugeno:d}</name>
@@ -456,4 +532,5 @@ def kml_gauge(mapping):
 </Placemark>
 """.format(**mapping)
 
-    return kml_text
+    #return kml_text
+    return placemark
