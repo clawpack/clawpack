@@ -364,7 +364,7 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
     #kml_text = kml_header()
     kml_doc = KML.kml(KML.Document())
     kml_doc.Document.append(KML.Style(
-        KML.BalloonStyle(KML.text("<![CDATA[$[name]</br><pre><b>$[address]</b></pre></br>$[description]]]>")),
+        KML.BalloonStyle(KML.text("<![CDATA[$[name]</br>$[description]]]>")),
         id="gauge_style"))
 
     gauges = rundata.gaugedata.gauges
@@ -510,11 +510,10 @@ def kml_gauge(mapping):
     address_str = "%s" % mapping['desc']
     address_str = mapping['desc']
     figfile = os.path.join("_plots",mapping['figname']+".png")
-    desc_str = "<![CDATA[<img style=\"width:400\" src=\"%s\">]]>" % figfile
+    desc_str = "<![CDATA[<pre><b>%s</b></pre></br><img style=\"width:400\" src=\"%s\">]]>" % (mapping['desc'],figfile)
 
     placemark = KML.Placemark(
         KML.name("Gauge %d" % mapping['gaugeno']),
-        KML.address(address_str),
         KML.description(desc_str),
         KML.styleUrl(chr(35) + "gauge_style"),
         KML.Point(
