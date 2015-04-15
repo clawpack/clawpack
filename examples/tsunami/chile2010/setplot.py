@@ -107,16 +107,16 @@ def setplot(plotdata):
     # be controlled.
     #----------------------------------------------------------
     plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
-    plotfigure.show = True   # Don't show this file in the html version
+    plotfigure.show = True
     plotfigure.use_for_kml = True
     plotfigure.kml_dpi = 200
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
     plotfigure.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC
+    #plotfigure.kml_starttime = None   # To start at Midnight, 1/1/1970
     plotfigure.kml_tz_offset = 3    # Time zone offset (in hours) of event.
-    plotfigure.kml_tile_images = True
+    plotfigure.kml_tile_images = False
     plotfigure.kml_url = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/chile2010'
-
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('kml')
@@ -128,10 +128,14 @@ def setplot(plotdata):
     plotitem.pcolor_cmap = geoplot.googleearth_lightblue
     plotitem.pcolor_cmap = geoplot.googleearth_transparent
     #plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    plotitem.pcolor_cmin = -0.2
+    plotitem.pcolor_cmin = -0.2  # ignored?
     plotitem.pcolor_cmax = 0.2
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 0
+
+    # Build a colormap. I am sure there is a better place for this, but all of the
+    # information is here.  Pass in plotdata to get location to store the colorbar
+    geoplot.build_ge_colorbar(plotdata,plotitem.pcolor_cmap)
 
     # add contour lines of bathy if desired:
     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
@@ -204,7 +208,7 @@ def setplot(plotdata):
 
     plotdata.printfigs = True                # print figures
     plotdata.print_format = 'png'            # file format
-    plotdata.print_framenos = 'all'          # list of frames to print
+    plotdata.print_framenos = 'all'         # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
     plotdata.print_fignos = [1,300]           # list of figures to print
     plotdata.html = True                     # create html files of plots?
