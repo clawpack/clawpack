@@ -461,7 +461,7 @@ def kml_region(mapping):
     if (mapping['rnum'] == None):
         pathstr = "Path_domain"
     else:
-        pathstr = "Path_region%d"%regnum
+        pathstr = "Path_region%d"%mapping['rnum']
 
     path_style = KML.Style(
         KML.LineStyle(
@@ -505,7 +505,6 @@ def kml_region(mapping):
 def kml_gauge(mapping):
     gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
 
-    # Is this used?
     mapping['gauge'] = gauge_text
 
     import os
