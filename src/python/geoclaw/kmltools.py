@@ -364,7 +364,9 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
     #kml_text = kml_header()
     kml_doc = KML.kml(KML.Document())
     kml_doc.Document.append(KML.Style(
-        KML.BalloonStyle(KML.text("<![CDATA[$[name]</br>$[description]]]>")),
+        KML.BalloonStyle(KML.text("<![CDATA[<center><b><font " \
+                                  "style=\"font-size:16pt\">$[name]" \
+                                  "</font></b></center>$[description]]]>")),
         id="gauge_style"))
 
     gauges = rundata.gaugedata.gauges
