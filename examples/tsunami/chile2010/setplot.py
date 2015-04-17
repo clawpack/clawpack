@@ -112,11 +112,10 @@ def setplot(plotdata):
     plotfigure.kml_dpi = 200
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
-    plotfigure.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC
-    #plotfigure.kml_starttime = None   # To start at Midnight, 1/1/1970
-    plotfigure.kml_tz_offset = 3    # Time zone offset (in hours) of event.
-    plotfigure.kml_tile_images = False
-    plotfigure.kml_url = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/chile2010'
+    plotfigure.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC [None]
+    plotfigure.kml_tz_offset = 3    # Time zone offset (in hours) of event. [None]
+    plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
+    #plotfigure.kml_url = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/chile2010'
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('kml')
@@ -126,7 +125,7 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.googleearth_lightblue
-    plotitem.pcolor_cmap = geoplot.googleearth_transparent
+    #plotitem.pcolor_cmap = geoplot.googleearth_transparent
     #plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2  # ignored?
     plotitem.pcolor_cmax = 0.2
