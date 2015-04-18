@@ -117,6 +117,14 @@ def setplot(plotdata):
     plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
     #plotfigure.kml_url = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/chile2010'
 
+    def kml_colorbar():
+        kml_cmin = -0.2
+        kml_cmax = 0.2
+        geoplot.kml_build_colorbar(geoplot.googleearth_lightblue,
+                                   kml_cmin,kml_cmax)
+
+    plotfigure.kml_colorbar = kml_colorbar
+
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('kml')
     plotaxes.scaled = True
@@ -124,17 +132,13 @@ def setplot(plotdata):
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.pcolor_cmap = geoplot.googleearth_lightblue
     #plotitem.pcolor_cmap = geoplot.googleearth_transparent
-    #plotitem.pcolor_cmap = geoplot.tsunami_colormap
+    plotitem.pcolor_cmap = geoplot.googleearth_lightblue
+    plotitem.add_colorbar = True
     plotitem.pcolor_cmin = -0.2  # ignored?
     plotitem.pcolor_cmax = 0.2
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 0
-
-    # Build a colormap. I am sure there is a better place for this, but all of the
-    # information is here.  Pass in plotdata to get location to store the colorbar
-    geoplot.build_ge_colorbar(plotdata,plotitem.pcolor_cmap)
 
     # add contour lines of bathy if desired:
     plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
@@ -146,6 +150,18 @@ def setplot(plotdata):
     plotitem.amr_contour_show = [1,0,0]
     plotitem.celledges_show = 0
     plotitem.patchedges_show = [1,1,1]
+
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.show = False
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 0
+
 
     #-----------------------------------------
     # Figures for gauges
@@ -209,7 +225,7 @@ def setplot(plotdata):
     plotdata.print_format = 'png'            # file format
     plotdata.print_framenos = 'all'         # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
-    plotdata.print_fignos = [1,300]           # list of figures to print
+    plotdata.print_fignos = [0,1,300]           # list of figures to print
     plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
     plotdata.latex = False                    # create latex file of plots?
