@@ -315,8 +315,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
     if verbose:
         print "Created ",fname
 
-
-def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None):
+def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None,kml_url=None):
 
     """
 
@@ -362,10 +361,18 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None):
     elev = 0.
     #kml_text = kml_header()
     kml_doc = KML.kml(KML.Document())
+    import os
+    if kml_url is not None:
+        bpath = os.path.join(kml_url,'images','')
+    else:
+        bpath = os.path.join('..','..','images','')
+
+    bstr = "<base href=\"%s\">" % bpath  # add trailing slash
+
     kml_doc.Document.append(KML.Style(
-        KML.BalloonStyle(KML.text("<![CDATA[<center><b><font " \
+        KML.BalloonStyle(KML.text("<![CDATA[%s<center><b><font " \
                                   "style=\"font-size:16pt\">$[name]" \
-                                  "</font></b></center>$[description]]]>")),
+                                  "</font></b></center>$[description]]]>" % bstr)),
         id="gauge_style"))
 
     gauges = rundata.gaugedata.gauges
@@ -401,8 +408,9 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None):
             for k in gauge_pngfile.keys():
                 if k[0] == gaugeno:
                     mapping['figname'] = gauge_pngfile[k]
-
-        #mapping['figname'] = "gauge" + str(gaugeno).rjust(4,'0') + "fig%d" % fignum
+        else:
+            fignum = 300    # Just a guess
+            mapping['figname'] = "gauge" + str(gaugeno).rjust(4,'0') + "fig%d" % fignum
 
 
         #gauge_text = kml_gauge(mapping)
@@ -423,7 +431,6 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None):
     kml_file.close()
     if verbose:
         print "Created ",fname
-
 
 
 def kml_header():
@@ -514,6 +521,9 @@ def kml_gauge(mapping):
     gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
     mapping['gauge'] = gauge_text
 
+    # As per new GE 6.0, the image has to be located one file up from where it
+    # it seems it should be.
+    #      https://support.google.com/earth/answer/1061393
     desc_str = "<![CDATA[<pre><b>%s</b></pre></br><img style=\"width:500\" "\
                "src=\"%s\">]]>" % (mapping['desc'],mapping['figname'])
 
