@@ -117,10 +117,10 @@ def setplot(plotdata):
     plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
     #plotfigure.kml_url = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/chile2010'
 
-    def kml_colorbar():
+    def kml_colorbar(filename):
         kml_cmin = -0.2
         kml_cmax = 0.2
-        geoplot.kml_build_colorbar(geoplot.googleearth_lightblue,
+        geoplot.kml_build_colorbar(filename,geoplot.googleearth_lightblue,
                                    kml_cmin,kml_cmax)
 
     plotfigure.kml_colorbar = kml_colorbar
@@ -132,8 +132,8 @@ def setplot(plotdata):
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
-    #plotitem.pcolor_cmap = geoplot.googleearth_transparent
-    plotitem.pcolor_cmap = geoplot.googleearth_lightblue
+    plotitem.pcolor_cmap = geoplot.googleearth_transparent
+    #plotitem.pcolor_cmap = geoplot.googleearth_lightblue
     plotitem.add_colorbar = True
     plotitem.pcolor_cmin = -0.2  # ignored?
     plotitem.pcolor_cmax = 0.2
