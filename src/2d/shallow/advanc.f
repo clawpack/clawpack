@@ -227,8 +227,9 @@ c        # now has boundary conditions filled in.
 c     should change the way print_gauges does io - right now is critical section
 
       if (num_gauges > 0) then
-           call print_gauges(alloc(locnew),alloc(locaux),xlow,ylow,
-     .                    nvar,mitot,mjtot,naux,mptr)
+           call print_gauges(alloc(locnew:mitot*nvar*mjtot), 
+     .                       alloc(locaux:mitot*nvar*mjtot),xlow,ylow,
+     .                       nvar,mitot,mjtot,naux,mptr)
            endif
 
 c
