@@ -200,6 +200,7 @@ contains
 !     by indices from mbestg1(mptr) to mbestg2(mptr)
 
       use amr_module
+      use geoclaw_module, only: dry_tolerance
 
       implicit none
 
@@ -212,6 +213,8 @@ contains
       real(kind=8) :: var(maxvar)
       real(kind=8) :: xcent,ycent,xoff,yoff,tgrid,hx,hy
       integer :: level,i,j,ioff,joff,iindex,jindex,ivar, ii,i1,i2
+      real(kind=8) :: h(4),drytol2,topo,eta
+      integer :: icell,jcell
 
 !     write(*,*) '+++ in print_gauges with num_gauges, mptr = ',num_gauges,mptr
 
@@ -271,13 +274,13 @@ contains
            write(6,*)" BIG PROBLEM in DUMPGAUGE", i
         endif
 
-c ## Modified below from amrclaw/src/2d/gauges_module.f90 
-c ## to interpolate only where all four cells are
-c ## wet, otherwise just take this cell value:
+     ! ## Modified below from amrclaw/src/2d/gauges_module.f90 
+     ! ## to interpolate only where all four cells are
+     ! ## wet, otherwise just take this cell value:
 
-c Check for dry cells by comparing h to drytol2, which should be smaller
-c than drytolerance to avoid oscillations since when h < drytolerance the
-c velocities are zeroed out which can then lead to increase in h again.
+     ! Check for dry cells by comparing h to drytol2, which should be smaller
+     ! than drytolerance to avoid oscillations since when h < drytolerance the
+     ! velocities are zeroed out which can then lead to increase in h again.
 
         drytol2 = 0.1d0 * dry_tolerance
 
@@ -293,8 +296,8 @@ c velocities are zeroed out which can then lead to increase in h again.
             ! One of the cells is dry, so just use value from grid cell
             ! that contains gauge rather than interpolating
             
-            icell = int(1.d0 + (xgauge(i) - xlow) / hx)
-            jcell = int(1.d0 + (ygauge(i) - ylow) / hy)
+            icell = int(1.d0 + (xgauge(ii) - xlow) / hx)
+            jcell = int(1.d0 + (ygauge(ii) - ylow) / hy)
             do ivar=1,3
                 var(ivar) = q(ivar,icell,jcell) 
             enddo
@@ -328,7 +331,7 @@ c velocities are zeroed out which can then lead to increase in h again.
         if (abs(eta) < 1d-90) eta = 0.d0
 
 !$OMP CRITICAL (gaugeio)
-        write(OUTGAUGEUNIT,100) igauge(i),level,tgrid, &
+        write(OUTGAUGEUNIT,100) igauge(ii),level,tgrid, &
                     (var(j),j=1,3),eta
 
 !       # if you want to modify number of digits printed, modify this...
