@@ -9,6 +9,8 @@ c
       use amr_module
       use topo_module, only: dt_max_dtopo, num_dtopo, topo_finalized,
      &                       aux_finalized, topo0work
+      use gauges_module, only: setbestsrc
+
 
       implicit double precision (a-h,o-z)
 

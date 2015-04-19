@@ -139,7 +139,7 @@ def setplot(plotdata):
         if gaugeno == 32412:
             try:
                 plot(TG32412[:,0], TG32412[:,1], 'r')
-                legend(['GeoClaw','Obs'],'lower right')
+                legend(['GeoClaw','Obs'],loc='lower right')
             except: pass
             axis((0,t.max(),-0.3,0.3))
 
