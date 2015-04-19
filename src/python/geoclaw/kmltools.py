@@ -316,7 +316,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
         print "Created ",fname
 
 
-def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
+def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None):
 
     """
 
@@ -351,7 +351,6 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
 
     """
 
-
     if rundata is None:
         try:
             import setrun
@@ -373,6 +372,9 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
     if len(gauges)==0 and verbose:
         print "No gauges found in setrun.py"
 
+    if plotdata is not None:
+        gauge_pngfile = plotdata._gauge_pngfile
+
 
     for rnum,gauge in enumerate(gauges):
         t1,t2 = gauge[3:5]
@@ -393,8 +395,14 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
                     + "  x1 = %g, y1 = %g\n" % (x1,y1)
         mapping['desc'] = description
 
-        fignum = 300  # ToDo : Get correct figure number for this gauge
-        mapping['figname'] = "gauge%dfig%d" % (gaugeno,fignum)
+        if plotdata is not None:
+            # try to figure out the plot number associated with this gauge
+            mapping['figname'] = None
+            for k in gauge_pngfile.keys():
+                if k[0] == gaugeno:
+                    mapping['figname'] = gauge_pngfile[k]
+
+        #mapping['figname'] = "gauge" + str(gaugeno).rjust(4,'0') + "fig%d" % fignum
 
 
         #gauge_text = kml_gauge(mapping)
@@ -504,14 +512,10 @@ def kml_region(mapping):
 
 def kml_gauge(mapping):
     gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
-
     mapping['gauge'] = gauge_text
 
-    import os
-    address_str = "%s" % mapping['desc']
-    address_str = mapping['desc']
-    figfile = os.path.join("_plots",mapping['figname']+".png")
-    desc_str = "<![CDATA[<pre><b>%s</b></pre></br><img style=\"width:400\" src=\"%s\">]]>" % (mapping['desc'],figfile)
+    desc_str = "<![CDATA[<pre><b>%s</b></pre></br><img style=\"width:500\" "\
+               "src=\"%s\">]]>" % (mapping['desc'],mapping['figname'])
 
     placemark = KML.Placemark(
         KML.name("Gauge %d" % mapping['gaugeno']),
