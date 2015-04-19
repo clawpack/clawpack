@@ -20,7 +20,7 @@ SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FFLAGS ?= -W -Wall -fbounds-check -pedantic-errors -Wunderflow -ffpe-trap=zero,overflow -g
+FFLAGS ?= 
 
 # ---------------------------------
 # List of sources for this program:
@@ -34,16 +34,16 @@ MODULES = \
  $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
  $(AMRLIB)/regions_module.f90 \
- $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
+ $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
- $(GEOLIB)/holland_storm_module.f90 \
- $(GEOLIB)/constant_storm_module.f90 \
- $(GEOLIB)/stommel_storm_module.f90 \
- $(GEOLIB)/storm_module.f90 \
+ $(GEOLIB)/surge/holland_storm_module.f90 \
+ $(GEOLIB)/surge/constant_storm_module.f90 \
+ $(GEOLIB)/surge/stommel_storm_module.f90 \
+ $(GEOLIB)/surge/storm_module.f90 \
  $(GEOLIB)/friction_module.f90 \
  $(GEOLIB)/fgmax_module.f90
 
@@ -71,7 +71,6 @@ SOURCES = \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
