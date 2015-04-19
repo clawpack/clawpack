@@ -120,7 +120,7 @@ def setplot(plotdata):
     def kml_colorbar(filename):
         kml_cmin = -0.2
         kml_cmax = 0.2
-        geoplot.kml_build_colorbar(filename,geoplot.googleearth_lightblue,
+        geoplot.kml_build_colorbar(filename,geoplot.googleearth_transparent,
                                    kml_cmin,kml_cmax)
 
     plotfigure.kml_colorbar = kml_colorbar
