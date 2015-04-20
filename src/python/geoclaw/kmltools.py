@@ -135,6 +135,9 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
     #kml_text = kml_header()
     kml_doc = KML.kml(KML.Document())
 
+    # collect all the placemarks in a folder and append later
+    placemark_folder = []
+
     mapping = {}
     mapping['x1'] = x1
     mapping['x2'] = x2
@@ -148,10 +151,10 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
 
     #region_text = kml_region(mapping)
     #kml_text = kml_text + region_text
-    style_folder = KML.Folder()
-    placemark_folder = KML.Folder()
+
     path_style,placemark = kml_region(mapping)
-    style_folder.append(path_style)
+
+    kml_doc.Document.append(path_style)
     placemark_folder.append(placemark)
 
     regions = rundata.regiondata.regions
@@ -205,11 +208,12 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         #region_text = kml_region(mapping)
         #kml_text = kml_text + region_text
         path_style,placemark = kml_region(mapping)
-        style_folder.append(path_style)
+        kml_doc.Document.append(path_style)
         placemark_folder.append(placemark)
 
-    kml_doc.Document.append(style_folder)
-    kml_doc.Document.append(placemark_folder)
+    for p in placemark_folder:
+        kml_doc.Document.append(p)
+
     #kml_text = kml_text + kml_footer()
     kml_file = open(fname,'w')
     kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
@@ -367,7 +371,7 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None,kml_
     else:
         bpath = os.path.join('..','..','images','')
 
-    bstr = "<base href=\"%s\">" % bpath  # add trailing slash
+    bstr = "<base href=\"%s\">" % bpath
 
     kml_doc.Document.append(KML.Style(
         KML.BalloonStyle(KML.text("<![CDATA[%s<center><b><font " \
@@ -475,8 +479,10 @@ def kml_region(mapping):
 
     if (mapping['rnum'] == None):
         pathstr = "Path_domain"
+        vis = 1
     else:
         pathstr = "Path_region%d"%mapping['rnum']
+        vis = 0
 
     path_style = KML.Style(
         KML.LineStyle(
@@ -486,15 +492,16 @@ def kml_region(mapping):
         id=pathstr)
 
     placemark = KML.Placemark(
-            KML.name(mapping['name']),
-            KML.description(mapping['desc']),
-            KML.styleUrl(chr(35) + pathstr),
-            KML.Polygon(
-                KML.tessellate(1),
-                KML.altitudeMode("clampToGround"),
-                KML.outerBoundaryIs(
-                    KML.LinearRing(
-                        KML.coordinates(mapping['region'])))))
+        KML.name(mapping['name']),
+        KML.visibility(vis),
+        KML.description(mapping['desc']),
+        KML.styleUrl(chr(35) + pathstr),
+        KML.Polygon(
+            KML.tessellate(1),
+            KML.altitudeMode("clampToGround"),
+            KML.outerBoundaryIs(
+                KML.LinearRing(
+                    KML.coordinates(mapping['region'])))))
 
     kml_text = """
 <Style id="Path">
@@ -521,11 +528,8 @@ def kml_gauge(mapping):
     gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
     mapping['gauge'] = gauge_text
 
-    # As per new GE 6.0, the image has to be located one file up from where it
-    # it seems it should be.
-    #      https://support.google.com/earth/answer/1061393
-    desc_str = "<![CDATA[<pre><b>%s</b></pre></br><img style=\"width:500\" "\
-               "src=\"%s\">]]>" % (mapping['desc'],mapping['figname'])
+    desc_str = "<![CDATA[<pre><b>%s</b></pre></br><center><img style=\"width:500\" "\
+               "src=\"%s\"></center>]]>" % (mapping['desc'],mapping['figname'])
 
     placemark = KML.Placemark(
         KML.name("Gauge %d" % mapping['gaugeno']),
