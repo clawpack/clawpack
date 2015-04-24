@@ -45,6 +45,17 @@ def setplot(plotdata):
              gaugenos='all', format_string='ko', add_labels=True)
 
 
+
+    #-----------------------------------------
+    # Some global kml flags
+    #-----------------------------------------
+    plotdata.kml_name = "Chile 2010"
+    plotdata.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC [None]
+    plotdata.kml_tz_offset = 3    # Time zone offset (in hours) of event. [None]
+
+    plotdata.kml_index_fname = "Chile_2010"  # name for .kmz and .kml files ["_GoogleEarth"]
+    plotdata.kml_publish = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/kmz/'
+
     #-----------------------------------------
     # Figure for surface
     #-----------------------------------------
@@ -106,24 +117,19 @@ def setplot(plotdata):
     # This is a very limited set of items that can
     # be controlled.
     #----------------------------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
+    plotfigure = plotdata.new_plotfigure(name='Sea Surface',figno=1)
     plotfigure.show = True
+
     plotfigure.use_for_kml = True
-    plotfigure.kml_dpi = 200
+    plotfigure.kml_use_for_initial_view = True
+
+    # These override axes limits set below in plotitems
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
-    plotfigure.kml_starttime = [2010,2,27,6,34,0]  # Time of event in UTC [None]
-    plotfigure.kml_tz_offset = 3    # Time zone offset (in hours) of event. [None]
-    plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
-    #plotfigure.kml_url = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/chile2010'
 
-    def kml_colorbar(filename):
-        kml_cmin = -0.2
-        kml_cmax = 0.2
-        geoplot.kml_build_colorbar(filename,geoplot.googleearth_transparent,
-                                   kml_cmin,kml_cmax)
-
-    plotfigure.kml_colorbar = kml_colorbar
+    # Resolution
+    plotfigure.kml_dpi = 400
+    plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('kml')
@@ -140,28 +146,14 @@ def setplot(plotdata):
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 0
 
-    # add contour lines of bathy if desired:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.show = False
-    plotitem.plot_var = geoplot.topo
-    plotitem.contour_levels = linspace(-3000,-3000,1)
-    plotitem.amr_contour_colors = ['y']  # color on each level
-    plotitem.kwargs = {'linestyles':'solid','linewidths':2}
-    plotitem.amr_contour_show = [1,0,0]
-    plotitem.celledges_show = 0
-    plotitem.patchedges_show = [1,1,1]
+    def kml_colorbar(filename):
+        cmin = plotitem.pcolor_cmin
+        cmax = plotitem.pcolor_cmax
+        geoplot.kml_build_colorbar(filename,
+                                   plotitem.pcolor_cmap,
+                                   cmin,cmax)
 
-    # Land
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.show = False
-    plotitem.plot_var = geoplot.land
-    plotitem.pcolor_cmap = geoplot.land_colors
-    plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 100.0
-    plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.patchedges_show = 0
-
+    plotfigure.kml_colorbar = kml_colorbar
 
     #-----------------------------------------
     # Figures for gauges
@@ -225,7 +217,7 @@ def setplot(plotdata):
     plotdata.print_format = 'png'            # file format
     plotdata.print_framenos = 'all'         # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
-    plotdata.print_fignos = [0,1,300]           # list of figures to print
+    plotdata.print_fignos = [1,300]           # list of figures to print
     plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
     plotdata.latex = False                    # create latex file of plots?
