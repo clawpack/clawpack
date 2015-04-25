@@ -402,6 +402,7 @@ contains
     subroutine read_topo_file(mx,my,topo_type,fname,topo)
 
         use geoclaw_module
+        use utility_module, only: parse_values
 
         implicit none
 
@@ -414,8 +415,10 @@ contains
         integer, parameter :: iunit = 19, miss_unit = 17
         real(kind=8), parameter :: topo_missing = -150.d0
         logical, parameter :: maketype2 = .false.
-        integer :: i,j,num_points,missing,status,topo_start
+        integer :: i,j,num_points,missing,status,topo_start,n
         real(kind=8) :: no_data_value,x,y,z,topo_temp
+        real(kind=8) :: values(10)
+        character(len=20) :: str
 
         print *, ' '
         print *, 'Reading topography file  ', fname
