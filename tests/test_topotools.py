@@ -249,7 +249,7 @@ def test_unstructured_topo(save=False, plot=False):
         topo.plot(axes=axes, region_extent=[0, 1, 0, 1])
         axes.set_title("Unstructured Field")
 
-    topo.interp_unstructured(fill_topo, extent=[0, 1, 0, 1], delta=1e-2)
+    topo.interp_unstructured(fill_topo, extent=[0, 1, 0, 1], delta=(1e-2,1e-2))
     assert not topo.unstructured
 
     # Load (and save) test data and make the comparison

@@ -953,9 +953,10 @@ class Topography(object):
            Must be in the form (x lower,x upper,y lower, y upper).
          - *method* (string) - Method used for interpolation, valid methods are
            found in *scipy.interpolate.griddata*.  Default is *nearest*.
-         - *delta* (float) - Directly set the grid spacing of the interpolation
+         - *delta* (tuple) - Directly set the grid spacing of the interpolation
            rather than determining it from the data itself.  Defaults to *None*
            which causes the method to determine this value itself.
+           Should be a 2-tuple of floats (delta_x, delta_y).
          - *delta_limit* (float) - Limit of finest horizontal resolution, 
            default is 20 meters.
          - *no_data_value* (float) - Value to use if no data was found to fill in a 
@@ -992,11 +993,16 @@ class Topography(object):
                        numpy.min(self.y) - buffer_degrees, 
                        numpy.max(self.y) + buffer_degrees ]
         if delta is None:
-            delta = max( min(numpy.min(numpy.abs(self.x[1:] - self.x[:-1])), 
-                             numpy.min(numpy.abs(self.y[1:] - self.y[:-1])) ),
-                        delta_degrees)
-        N = ( numpy.ceil((extent[1] - extent[0]) / delta),
-              numpy.ceil((extent[3] - extent[2]) / delta) )
+            delta_x = max( numpy.abs(self.x[1:] - self.x[:-1]), delta_degrees)
+            delta_y = max( numpy.abs(self.y[1:] - self.y[:-1]), delta_degrees)
+        else:   
+            try:
+                delta_x, delta_y = delta   # tuple provided
+            except:
+                delta_x = delta_y = delta  # assume float provided
+                
+        N = ( numpy.ceil((extent[1] - extent[0]) / delta_x),
+              numpy.ceil((extent[3] - extent[2]) / delta_y) )
         if not numpy.all(N[:] < numpy.ones((2)) * resolution_limit):
             ValueError("Calculated resolution too high, N=%s!" % str(N))
         self._X, self._Y = numpy.meshgrid( 
@@ -1090,7 +1096,7 @@ class Topography(object):
                                                                   method=method)
 
         self._extent = extent
-        self._delta = delta
+        self._delta = (delta_x, delta_y)
         self.unstructured = False
 
 
