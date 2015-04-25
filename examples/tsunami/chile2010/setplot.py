@@ -147,10 +147,10 @@ def setplot(plotdata):
     plotitem.patchedges_show = 0
 
     def kml_colorbar(filename):
-        cmin = plotitem.pcolor_cmin
-        cmax = plotitem.pcolor_cmax
+        cmin = -0.2
+        cmax = 0.2
         geoplot.kml_build_colorbar(filename,
-                                   plotitem.pcolor_cmap,
+                                   geoplot.googleearth_transparent,
                                    cmin,cmax)
 
     plotfigure.kml_colorbar = kml_colorbar
