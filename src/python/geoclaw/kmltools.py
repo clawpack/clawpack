@@ -133,7 +133,9 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
 
     elev = 0.
     #kml_text = kml_header()
-    kml_doc = KML.kml(KML.Document())
+    kml_doc = KML.kml(
+        KML.Document(
+            KML.name("Regions")))
 
     # collect all the placemarks in a folder and append later
     placemark_folder = []
@@ -219,7 +221,10 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
     kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
 
     #kml_file.write(kml_text)
-    kml_file.write(etree.tostring(etree.ElementTree(kml_doc),pretty_print=True))
+    kml_text = etree.tostring(etree.ElementTree(kml_doc),pretty_print=True)
+    kml_text = kml_text.replace("&gt;",">")   # Needed for CDATA blocks
+    kml_text = kml_text.replace("&lt;","<")
+    kml_file.write(kml_text)
 
     kml_file.close()
     if verbose:
@@ -363,14 +368,16 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None,kml_
 
     elev = 0.
     #kml_text = kml_header()
-    kml_doc = KML.kml(KML.Document())
+    doc_gauges = KML.kml(
+        KML.Document(
+            KML.name("Gauges")))
     import os
-    basehref = "<base href=\"%s\">" % os.path.join('..','..','images','')  # need trailing "\"
 
-    name_style = "<center><b><font style=\"font-size:12pt\">$[name]</font></b></center>"
-    desc_style = "$[description]" # Don't put CDATA here
-    kml_doc.Document.append(KML.Style(
-        KML.BalloonStyle(KML.text("<![CDATA[%s%s%s]]>" %(basehref,name_style,desc_style))),
+    bstyle = "<![CDATA[<b><center>$[name]</center></b>$[description]]]>"
+    doc_gauges.Document.append(
+        KML.Style(
+            KML.BalloonStyle(
+                KML.text(bstyle)),
         id="gauge_style"))
 
     gauges = rundata.gaugedata.gauges
@@ -396,45 +403,18 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None,kml_
         mapping['y1'] = y1
         mapping['elev'] = elev
         mapping['name'] = 'Gauge %i' % rnum
-        snippet = "t1 = %g, t2 = %g\n" % (t1,t2) +\
-                      "x1 = %g, y1 = %g\n" % (x1,y1)
-        mapping['snippet'] = snippet
-
-        if plotdata is not None:
-            # try to figure out the plot number associated with this gauge
-            mapping['figname'] = None
-            for k in gauge_pngfile.keys():
-                if k[0] == gaugeno:
-                    mapping['figname'] = gauge_pngfile[k]
-        else:
-            fignum = 300    # Just a guess
-            mapping['figname'] = "gauge" + str(gaugeno).rjust(4,'0') + "fig%d" % fignum
-
-        event_time = plotdata.kml_starttime
-        tz = plotdata.kml_tz_offset
-        sbegin, send = kml_timespan(mapping["t1"],mapping["t2"],event_time,tz)
-        TS = KML.TimeSpan(
-            KML.begin(sbegin),
-            KML.end(send))
-        c = TS.getchildren()
-        #"From (UTC) : %s\n" % sbegin + \     # The start time/end time = (0,1+10)
-        #"To   (UTC) : %s\n" % send + \
-        #"\n" \
-
-        desc = "Time     : t1 = %g, t2 = %g\n" % (t1,t2) +\
-               "Location : x1 = %g, y1 = %g\n" % (x1,y1)
-
-        mapping['desc'] = desc
+        mapping['desc'] = "t1 = %g, t2 = %g\n" % (t1,t2) +\
+                          "x1 = %g, y1 = %g\n" % (x1,y1)
 
         placemark = kml_gauge(mapping)
-        kml_doc.Document.append(placemark)
+        doc_gauges.Document.append(placemark)
 
     #kml_text = kml_text + kml_footer()
     kml_file = open(fname,'w')
     kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
 
     #kml_file.write(kml_text)
-    kml_text = etree.tostring(etree.ElementTree(kml_doc),pretty_print=True)
+    kml_text = etree.tostring(etree.ElementTree(doc_gauges),pretty_print=True)
     kml_text = kml_text.replace("&gt;",">")
     kml_text = kml_text.replace("&lt;","<")
     kml_file.write(kml_text)
@@ -459,7 +439,7 @@ def kml_footer():
 """
     return footer
 
-def kml_region(mapping,event_time=None,tz=None):
+def kml_region(mapping):
     if mapping.has_key('x3'):
         # quadrilateral with 4 corners specified
         region_text = """
@@ -486,44 +466,30 @@ def kml_region(mapping,event_time=None,tz=None):
 
     if (mapping['rnum'] == None):
         pathstr = "Path_domain"
-        vis = 1
+        title = "Computational domain"
     else:
-        pathstr = "Path_region%d"%mapping['rnum']
-        vis = 0
+        pathstr = "Path_region%d"% mapping['rnum']
+        title = "Region %d" % mapping['rnum']
 
-    sbegin, send = kml_timespan(mapping["t1"],mapping["t2"],event_time,tz)
-    TS = KML.TimeSpan(
-        KML.begin(sbegin),
-        KML.end(send))
-    c = TS.getchildren()
-
-
-    name_style = "<center><b><font style=\"font-size:12pt\">$[name]</font></b></center>"
-    desc_style = "$[description]" # Don't put CDATA here
     path_style = KML.Style(
         KML.LineStyle(
             KML.color(mapping['color']),
             KML.width(3)),
         KML.PolyStyle(KML.color("00000000")),
         KML.BalloonStyle(
-            KML.text("<![CDATA[%s%s]]>" %(name_style,desc_style)),
+            KML.text("<![CDATA[<center><b>$[name]</b></center>$[description]]]>"),
             KML.displayMode("default")),
         id=pathstr)
 
     # Put CDATA here
-    tstr = mapping['desc']
-    format_str = "<![CDATA[<b><font style=\"font-size:%dpt\"><pre>%s" \
-                 "\nFrom (UTC) : %s"\
-                 "\nTo   (UTC) : %s</b></pre></font>]]>"
-    desc_str = format_str % (10,mapping['desc'],c[0],c[1])
-    snippet_str = format_str % (12,mapping['snippet'],c[0],c[1])
+    desc = "<b><pre>%s</pre></b>" % mapping['desc']
+    desc_str = "<![CDATA[%s]]>" % desc
 
     placemark = KML.Placemark(
-        KML.name("Region %d" % mapping['rnum']),
-        KML.visibility(vis),
-        KML.Snippet(snippet_str,maxLines="2"),
+        KML.name(title),
+        KML.visibility(1),
+        KML.Snippet(desc_str,maxLines="2"),
         KML.description(desc_str),
-        TS,
         KML.styleUrl(chr(35) + pathstr),
         KML.Polygon(
             KML.tessellate(1),
@@ -553,46 +519,22 @@ def kml_region(mapping,event_time=None,tz=None):
     #return kml_text
     return path_style, placemark
 
-def kml_gauge(mapping,event_time=None,tz=None):
+def kml_gauge(mapping):
     gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
     mapping['gauge'] = gauge_text
 
-
-    figname = mapping['figname']
-    format_str = "<font style=\"font-size:%dpt\"><pre><b>%s</b></pre></font>"
-    img_str = "<center><img style=\"width:500\" src=\"%s\"></center>" % figname
-    label_str = "<pre><b>File : %s</pre></b>" % figname
-
-    desc_str = "<![CDATA[%s%s%s]]>" % (format_str % (10,mapping['desc']),img_str,label_str)
-    snippet_str = "<![CDATA[%s]]>" % format_str % (12,mapping['snippet'])
-
-    sbegin, send = kml_timespan(mapping["t1"],mapping["t2"],event_time,tz)
-    TS = KML.TimeSpan(
-        KML.begin(sbegin),
-        KML.end(send))
+    desc = "<b><pre>%s</pre></b>" % mapping['desc']
+    desc_str = "<![CDATA[%s]]>" % desc
 
     placemark = KML.Placemark(
         KML.name("Gauge %d" % mapping['gaugeno']),
-        KML.Snippet(snippet_str),
+        KML.Snippet(desc_str,maxLines="2"),
         KML.description(desc_str),
-        KML.altitudeMode("clampToGround"),
         KML.styleUrl(chr(35) + "gauge_style"),
         KML.Point(
-            KML.coordinates(mapping['gauge'])))
+            KML.coordinates(mapping['gauge']),
+            KML.altitudeMode("clampToGround")))
 
-    kml_text = """
-<Placemark><name>Gauge {gaugeno:d}</name>
-<description>{desc:s}</description>
-<styleUrl>#markerstyle</styleUrl>
-<Point>
-<coordinates>
-{gauge:s}
-</coordinates>
-</Point>
-</Placemark>
-""".format(**mapping)
-
-    #return kml_text
     return placemark
 
 
