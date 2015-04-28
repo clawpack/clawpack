@@ -307,19 +307,17 @@ def setplot(plotdata):
 
 
 
-    # if article:
-    #     plotfigure.kwargs['figsize'] =
-
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.title = 'Surface'
     plotaxes.scaled = True
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
-    #plotaxes.afteraxes = houston_after_axes
-    #surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
-    #                                           contours=surface_contours,
-    #                                           shrink=houston_shrink)
+
+
+    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
+                                               contours=surface_contours,
+                                               shrink=houston_shrink)
 
 
     # Plot using jet and 0.0 to 5.0 to match figgen generated ADCIRC results
