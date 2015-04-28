@@ -45,7 +45,7 @@ def setplot(plotdata):
     plotdata.clearfigures()  # clear any old figures,axes,items dat
     plotdata.format = 'binary'
 
-    clim_ocean = 8.0
+    clim_ocean = 0.2
     clim_coast = 8.0
 
     sealevel = 0.  # Level of tide in run relative to MHW
@@ -84,20 +84,19 @@ def setplot(plotdata):
     plotdata.kml_index_fname = "LaPush"     # Name for .kmz and .kml files.
     plotdata.kml_name = "LaPush"
     plotdata.kml_publish = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/kmz/'
-    kml_dpi = 800
+    kml_dpi = 400
 
-    my_cmap = colormaps.make_colormap({-1.0: [0.0,0.0,1.0], \
-                                     -0.5: [0.5,0.5,1.0], \
-                                      0.0: [1.0,1.0,1.0], \
-                                      0.5: [1.0,0.5,0.5], \
-                                      1.0: [1.0,0.0,0.0]})
 
+    light_green_a = [0.0,1.0,1.0,1.0];
+    transparent = [0.0,0.0,0.0,0.0]
+    red_a = [1.0,0.0,0.0,1.0]
+    mycmap = colormaps.make_colormap({-1:light_green_a,
+                                      0.0:transparent,
+                                      1:red_a})
     def kml_colorbar(filename):
-        cmin = -8.0
-        cmax = 8.0
         geoplot.kml_build_colorbar(filename,
-                                   my_cmap,
-                                   cmin,cmax)
+                                   mycmap,
+                                   cmin_ocean,cmax_ocean)
 
 
 
@@ -142,7 +141,7 @@ def setplot(plotdata):
 
 
 
-    plotitem.imshow_cmap = my_cmap
+    plotitem.imshow_cmap = mycmap
     plotitem.imshow_cmin = cmin_ocean
     plotitem.imshow_cmax = cmax_ocean
     plotitem.add_colorbar = True
@@ -214,7 +213,7 @@ def setplot(plotdata):
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.imshow_cmap = my_cmap
+    plotitem.imshow_cmap = mycmap
     plotitem.imshow_cmin = cmin_coast
     plotitem.imshow_cmax = cmax_coast
     plotitem.add_colorbar = True
@@ -264,7 +263,7 @@ def setplot(plotdata):
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.imshow_cmap = my_cmap
+    plotitem.imshow_cmap = mycmap
     plotitem.imshow_cmin = cmin_coast
     plotitem.imshow_cmax = cmax_coast
     plotitem.add_colorbar = True
@@ -312,7 +311,7 @@ def setplot(plotdata):
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.imshow_cmap = my_cmap
+    plotitem.imshow_cmap = mycmap
     plotitem.imshow_cmin = cmin_coast
     plotitem.imshow_cmax = cmax_coast
     plotitem.add_colorbar = True
@@ -361,7 +360,7 @@ def setplot(plotdata):
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
     # plotitem.plot_var = geoplot.surface
-    plotitem.pcolor_cmap = my_cmap
+    plotitem.pcolor_cmap = mycmap
     plotitem.pcolor_cmin = cmin_coast
     plotitem.pcolor_cmax = cmax_coast
     plotitem.amr_celledges_show = [0,0,0]
