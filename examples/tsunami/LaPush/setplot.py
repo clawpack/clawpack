@@ -45,7 +45,7 @@ def setplot(plotdata):
     plotdata.clearfigures()  # clear any old figures,axes,items dat
     plotdata.format = 'binary'
 
-    clim_ocean = 8.0
+    clim_ocean = 0.2
     clim_coast = 8.0
 
     sealevel = 0.  # Level of tide in run relative to MHW
@@ -78,13 +78,43 @@ def setplot(plotdata):
         timestr = timeformat(t)
         title('%s after earthquake' % timestr)
 
+    # ---------------------------------------
+    # Some KML info
+    # ---------------------------------------
+    plotdata.kml_index_fname = "LaPush"     # Name for .kmz and .kml files.
+    plotdata.kml_name = "LaPush"
+    plotdata.kml_publish = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/kmz/'
+    kml_dpi = 400
+
+
+    light_green_a = [0.0,1.0,1.0,1.0];
+    transparent = [0.0,0.0,0.0,0.0]
+    red_a = [1.0,0.0,0.0,1.0]
+    mycmap = colormaps.make_colormap({-1:light_green_a,
+                                      0.0:transparent,
+                                      1:red_a})
+    def kml_colorbar(filename):
+        geoplot.kml_build_colorbar(filename,
+                                   mycmap,
+                                   cmin_ocean,cmax_ocean)
+
+
 
     #-----------------------------------------
     # Figure for big area
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Pacific', figno=0)
     plotfigure.kwargs = {'figsize': (8,10)}
-    plotfigure.show = False
+    plotfigure.show = True
+
+    plotfigure.use_for_kml = True
+    plotfigure.kml_use_for_initial_view = True
+
+    plotfigure.kml_xlimits = [-126, -124]
+    plotfigure.kml_ylimits = [47,49]
+
+    plotfigure.kml_dpi = kml_dpi
+    plotfigure.kml_tile_images = False
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -100,32 +130,34 @@ def setplot(plotdata):
         xticks(rotation=20)
         a = gca()
         a.set_aspect(1./cos(48*pi/180.))
-    plotaxes.afteraxes = aa
+    #plotaxes.afteraxes = aa
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.surface_or_depth
-    my_cmap = colormaps.make_colormap({-1.0: [0.0,0.0,1.0], \
-                                     -0.5: [0.5,0.5,1.0], \
-                                      0.0: [1.0,1.0,1.0], \
-                                      0.5: [1.0,0.5,0.5], \
-                                      1.0: [1.0,0.0,0.0]})
-    plotitem.imshow_cmap = my_cmap
+
+
+    plotfigure.kml_colorbar = kml_colorbar
+
+
+
+    plotitem.imshow_cmap = mycmap
     plotitem.imshow_cmin = cmin_ocean
     plotitem.imshow_cmax = cmax_ocean
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1]
+    plotitem.amr_patchedges_show = [0]
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.land
+    plotitem.show = False
     plotitem.imshow_cmap = geoplot.land_colors
     plotitem.imshow_cmin = 0.0
     plotitem.imshow_cmax = 100.0
     plotitem.add_colorbar = False
     plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1]
+    plotitem.amr_patchedges_show = [0]
     #plotaxes.afteraxes = addgauges
 
     # Add contour lines of bathymetry:
@@ -157,20 +189,31 @@ def setplot(plotdata):
     # Figure for zoom1
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name="Olympics", figno=11)
-    plotfigure.show = False
+    plotfigure.show = True
     plotfigure.kwargs = {'figsize': (10,9)}
+
+    plotfigure.use_for_kml = True
+    plotfigure.kml_use_for_initial_view = False
+
+    plotfigure.kml_xlimits = [-125, -124.3]
+    plotfigure.kml_ylimits = [47.5,48.5]
+
+    plotfigure.kml_dpi = kml_dpi
+    plotfigure.kml_tile_images = True
+
+    plotfigure.kml_colorbar = kml_colorbar
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.scaled = False
     plotaxes.xlimits = [-125, -124.3]
     plotaxes.ylimits = [47.5, 48.5]
-    plotaxes.afteraxes = aa
+    #plotaxes.afteraxes = aa
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.imshow_cmap = my_cmap
+    plotitem.imshow_cmap = mycmap
     plotitem.imshow_cmin = cmin_coast
     plotitem.imshow_cmax = cmax_coast
     plotitem.add_colorbar = True
@@ -179,6 +222,7 @@ def setplot(plotdata):
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+    plotitem.show = False
     plotitem.plot_var = geoplot.land
     plotitem.imshow_cmap = geoplot.land_colors
     plotitem.imshow_cmin = 0.0
@@ -193,8 +237,20 @@ def setplot(plotdata):
     # Figure for zoom2
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name="LaPush", figno=12)
-    plotfigure.show = False
+    plotfigure.show = True
     plotfigure.kwargs = {'figsize': (10,9)}
+
+    plotfigure.use_for_kml = True
+    plotfigure.kml_use_for_initial_view = False
+
+    plotfigure.kml_xlimits = [-124.68, -124.55]
+    plotfigure.kml_ylimits = [47.86, 47.96]
+
+    plotfigure.kml_dpi = kml_dpi
+    plotfigure.kml_tile_images = True
+
+    plotfigure.kml_colorbar = kml_colorbar
+
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -202,12 +258,12 @@ def setplot(plotdata):
     plotaxes.scaled = False
     plotaxes.xlimits = [-124.68, -124.55]
     plotaxes.ylimits = [47.86, 47.96]
-    plotaxes.afteraxes = aa
+    #plotaxes.afteraxes = aa
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.imshow_cmap = my_cmap
+    plotitem.imshow_cmap = mycmap
     plotitem.imshow_cmin = cmin_coast
     plotitem.imshow_cmax = cmax_coast
     plotitem.add_colorbar = True
@@ -217,6 +273,7 @@ def setplot(plotdata):
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.land
+    plotitem.show = False
     plotitem.imshow_cmap = geoplot.land_colors
     plotitem.imshow_cmin = 0.0
     plotitem.imshow_cmax = 100.0
@@ -232,18 +289,29 @@ def setplot(plotdata):
     plotfigure.show = False
     plotfigure.kwargs = {'figsize': (12,8)}
 
+    plotfigure.use_for_kml = True
+    plotfigure.kml_use_for_initial_view = False
+
+    plotfigure.kml_xlimits = [-124.68, -124.55]
+    plotfigure.kml_ylimits = [47.86, 47.96]
+
+    plotfigure.kml_dpi = kml_dpi
+    plotfigure.kml_tile_images = True
+
+    plotfigure.kml_colorbar = kml_colorbar
+
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.title = "LaPush"
     plotaxes.scaled = False
     plotaxes.xlimits = [-124.68, -124.55]
     plotaxes.ylimits = [47.86, 47.96]
-    plotaxes.afteraxes = aa
+    #plotaxes.afteraxes = aa
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
     plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.imshow_cmap = my_cmap
+    plotitem.imshow_cmap = mycmap
     plotitem.imshow_cmin = cmin_coast
     plotitem.imshow_cmax = cmax_coast
     plotitem.add_colorbar = True
@@ -264,34 +332,41 @@ def setplot(plotdata):
     # Figure for KML files
     #--------------------------------------------------------------------
 
-    ge_transparent = colormaps.make_colormap({-1.0: [0.0,0.0,1.0,1.0], \
-                                              -0.5: [0.5,0.5,1.0,1.0], \
-                                              0.0: [1.0,1.0,1.0,0.0], \
-                                              0.5: [1.0,0.5,0.5,1.0], \
-                                              1.0: [1.0,0.0,0.0,1.0]})
-
-    plotfigure = plotdata.new_plotfigure(name='kml_figure',figno=1)
+    plotfigure = plotdata.new_plotfigure(name='LaPush 2',figno=14)
     plotfigure.show = True   # Don't show this file in the html version
+
+
     plotfigure.use_for_kml = True
-    plotfigure.kml_dpi = 1600
+    plotfigure.kml_use_for_initial_view = False
+
+
     plotfigure.kml_xlimits = [-124.68, -124.55]
     plotfigure.kml_ylimits = [47.86, 47.96]
-    plotfigure.kml_notiles = True
 
+
+    plotfigure.kml_dpi = kml_dpi
+    plotfigure.kml_tile_images = True
+
+
+    plotfigure.kml_colorbar = kml_colorbar
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('kml')
+    plotaxes.xlimits =  [-124.68, -124.55]
+    plotaxes.ylimits = [47.86, 47.96]
     plotaxes.scaled = True
 
     # Water
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
     # plotitem.plot_var = geoplot.surface
-    plotitem.pcolor_cmap = ge_transparent
+    plotitem.pcolor_cmap = mycmap
     plotitem.pcolor_cmin = cmin_coast
     plotitem.pcolor_cmax = cmax_coast
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 0
+
+
 
 #     #-----------------------------------------
 #     # Figures for gauges
@@ -320,7 +395,7 @@ def setplot(plotdata):
     plotdata.printfigs = True                # print figures
     plotdata.print_format = 'png'            # file format
     plotdata.print_framenos = 'all'          # list of frames to print
-    plotdata.print_fignos = 'all'           # list of figures to print
+    plotdata.print_fignos = [0,11,12]           # list of figures to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
     plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
