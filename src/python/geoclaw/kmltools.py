@@ -24,9 +24,6 @@ the full 8 digits if you want it transparent).
  - strip_archive_extensions - strip off things like .tar or .gz
 """
 
-from lxml import etree
-from pykml.factory import KML_ElementMaker as KML
-
 
 def deg2dms(dy):
     r"""
@@ -132,13 +129,7 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         print "Allowing maximum of %i levels" % amr_levels_max
 
     elev = 0.
-    #kml_text = kml_header()
-    kml_doc = KML.kml(
-        KML.Document(
-            KML.name("Regions")))
-
-    # collect all the placemarks in a folder and append later
-    placemark_folder = []
+    kml_text = kml_header()
 
     mapping = {}
     mapping['x1'] = x1
@@ -146,22 +137,17 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
     mapping['y1'] = y1
     mapping['y2'] = y2
     mapping['elev'] = elev
-    mapping['rnum'] = None
     mapping['name'] = 'Computational Domain'
     mapping['desc'] = description
     mapping['color'] = "0000FF"  # red
 
-    #region_text = kml_region(mapping)
-    #kml_text = kml_text + region_text
-
-    path_style,placemark = kml_region(mapping)
-
-    kml_doc.Document.append(path_style)
-    placemark_folder.append(placemark)
+    region_text = kml_region(mapping)
+    kml_text = kml_text + region_text
 
     regions = rundata.regiondata.regions
     if len(regions)==0 and verbose:
         print "No regions found in setrun.py"
+
 
     for rnum,region in enumerate(regions):
         minlevel,maxlevel = region[0:2]
@@ -184,7 +170,6 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         mapping['y1'] = y1
         mapping['y2'] = y2
         mapping['elev'] = elev
-        mapping['rnum'] = rnum
         mapping['name'] = 'Region %i' % rnum
         description = "minlevel = %i, maxlevel = %i\n" % (minlevel,maxlevel) \
             + "  t1 = %g, t2 = %g\n" % (t1,t2) \
@@ -207,28 +192,15 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         mapping['desc'] = description
         mapping['color'] = "FFFFFF"  # white
 
-        #region_text = kml_region(mapping)
-        #kml_text = kml_text + region_text
-        path_style,placemark = kml_region(mapping)
-        kml_doc.Document.append(path_style)
-        placemark_folder.append(placemark)
-
-    for p in placemark_folder:
-        kml_doc.Document.append(p)
-
-    #kml_text = kml_text + kml_footer()
+        region_text = kml_region(mapping)
+        kml_text = kml_text + region_text
+    kml_text = kml_text + kml_footer()
     kml_file = open(fname,'w')
-    kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-
-    #kml_file.write(kml_text)
-    kml_text = etree.tostring(etree.ElementTree(kml_doc),pretty_print=True)
-    kml_text = kml_text.replace("&gt;",">")   # Needed for CDATA blocks
-    kml_text = kml_text.replace("&lt;","<")
     kml_file.write(kml_text)
-
     kml_file.close()
     if verbose:
         print "Created ",fname
+
 
 
 def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
@@ -323,7 +295,8 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
     if verbose:
         print "Created ",fname
 
-def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None,kml_url=None):
+
+def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
 
     """
 
@@ -358,6 +331,7 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None,kml_
 
     """
 
+
     if rundata is None:
         try:
             import setrun
@@ -367,25 +341,12 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None,kml_
             raise IOError("*** cannot execute setrun file")
 
     elev = 0.
-    #kml_text = kml_header()
-    doc_gauges = KML.kml(
-        KML.Document(
-            KML.name("Gauges")))
-    import os
+    kml_text = kml_header()
 
-    bstyle = "<![CDATA[<b><center>$[name]</center></b>$[description]]]>"
-    doc_gauges.Document.append(
-        KML.Style(
-            KML.BalloonStyle(
-                KML.text(bstyle)),
-        id="gauge_style"))
 
     gauges = rundata.gaugedata.gauges
     if len(gauges)==0 and verbose:
         print "No gauges found in setrun.py"
-
-    if plotdata is not None:
-        gauge_pngfile = plotdata._gauge_pngfile
 
 
     for rnum,gauge in enumerate(gauges):
@@ -403,25 +364,19 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True,plotdata=None,kml_
         mapping['y1'] = y1
         mapping['elev'] = elev
         mapping['name'] = 'Gauge %i' % rnum
-        mapping['desc'] = "t1 = %g, t2 = %g\n" % (t1,t2) +\
-                          "x1 = %g, y1 = %g\n" % (x1,y1)
+        description = "  t1 = %g, t2 = %g\n" % (t1,t2) \
+            + "  x1 = %g, y1 = %g\n" % (x1,y1)
+        mapping['desc'] = description
 
-        placemark = kml_gauge(mapping)
-        doc_gauges.Document.append(placemark)
-
-    #kml_text = kml_text + kml_footer()
+        gauge_text = kml_gauge(mapping)
+        kml_text = kml_text + gauge_text
+    kml_text = kml_text + kml_footer()
     kml_file = open(fname,'w')
-    kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-
-    #kml_file.write(kml_text)
-    kml_text = etree.tostring(etree.ElementTree(doc_gauges),pretty_print=True)
-    kml_text = kml_text.replace("&gt;",">")
-    kml_text = kml_text.replace("&lt;","<")
     kml_file.write(kml_text)
-
     kml_file.close()
     if verbose:
         print "Created ",fname
+
 
 
 def kml_header():
@@ -464,40 +419,6 @@ def kml_region(mapping):
     if len(mapping['color'])==6:
         mapping['color'] = 'FF' + mapping['color']
 
-    if (mapping['rnum'] == None):
-        pathstr = "Path_domain"
-        title = "Computational domain"
-    else:
-        pathstr = "Path_region%d"% mapping['rnum']
-        title = "Region %d" % mapping['rnum']
-
-    path_style = KML.Style(
-        KML.LineStyle(
-            KML.color(mapping['color']),
-            KML.width(3)),
-        KML.PolyStyle(KML.color("00000000")),
-        KML.BalloonStyle(
-            KML.text("<![CDATA[<center><b>$[name]</b></center>$[description]]]>"),
-            KML.displayMode("default")),
-        id=pathstr)
-
-    # Put CDATA here
-    desc = "<b><pre>%s</pre></b>" % mapping['desc']
-    desc_str = "<![CDATA[%s]]>" % desc
-
-    placemark = KML.Placemark(
-        KML.name(title),
-        KML.visibility(1),
-        KML.Snippet(desc_str,maxLines="2"),
-        KML.description(desc_str),
-        KML.styleUrl(chr(35) + pathstr),
-        KML.Polygon(
-            KML.tessellate(1),
-            KML.altitudeMode("clampToGround"),
-            KML.outerBoundaryIs(
-                KML.LinearRing(
-                    KML.coordinates(mapping['region'])))))
-
     kml_text = """
 <Style id="Path">
 <LineStyle><color>{color:s}</color><width>3</width></LineStyle>
@@ -516,26 +437,27 @@ def kml_region(mapping):
 </Placemark>
 """.format(**mapping)
 
-    #return kml_text
-    return path_style, placemark
+    return kml_text
 
 def kml_gauge(mapping):
     gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
+
     mapping['gauge'] = gauge_text
 
-    desc = "<b><pre>%s</pre></b>" % mapping['desc']
-    desc_str = "<![CDATA[%s]]>" % desc
+    kml_text = """
+<Placemark><name>Gauge {gaugeno:d}</name>
+<description>{desc:s}</description>
+<styleUrl>#markerstyle</styleUrl>
+<Point>
+<coordinates>
+{gauge:s}
+</coordinates>
+</Point>
+</Placemark>
+""".format(**mapping)
 
-    placemark = KML.Placemark(
-        KML.name("Gauge %d" % mapping['gaugeno']),
-        KML.Snippet(desc_str,maxLines="2"),
-        KML.description(desc_str),
-        KML.styleUrl(chr(35) + "gauge_style"),
-        KML.Point(
-            KML.coordinates(mapping['gauge']),
-            KML.altitudeMode("clampToGround")))
+    return kml_text
 
-    return placemark
 
 
 def kml_timespan(t1,t2,event_time=None,tz=None):
@@ -554,13 +476,23 @@ def kml_timespan(t1,t2,event_time=None,tz=None):
           <end>2010-02-27T07:04:00+03:00</end>
         </TimeSpan>
 
+    As for how well this handles  Daylight  Savings time, here is what the documentation
+    on the Python 'time' module has to say :
+
+    "DST is Daylight Saving Time, an adjustment of the timezone by (usually) one hour
+    during part of the year. DST rules are magic (determined by local law) and can
+    change from year to year. The C library has a table containing the local rules
+    (often it is read from a system file for flexibility) and is the only source of
+    True Wisdom in this respect."
+
     """
 
     import time
     # to adjust time from UTC to time in event locale.
     if event_time == None:
-        starttime = time.mktime(time.gmtime()) - time.timezone - time.mktime(time.localtime())
-        tz_offset = 0 # time.timezone/(60.*60.)
+        # This may or may not take into account day light savings time correctly.
+        starttime = time.mktime(time.gmtime()) - time.altzone
+        tz_offset = time.timezone/(60.*60.)
     else:
         ev = event_time + [0,0,0]    # Extend to 9 tuple.
         starttime = time.mktime(ev) - time.timezone  # UTC time, in seconds
