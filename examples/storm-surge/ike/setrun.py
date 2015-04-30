@@ -478,9 +478,4 @@ if __name__ == '__main__':
     else:
         rundata = setrun()
 
-    rundata.add_data(surge.SurgeData(),'stormdata')
-    set_storm(rundata)
-    rundata.add_data(surge.FrictionData(),'frictiondata')
-    set_friction(rundata)
-
     rundata.write()
