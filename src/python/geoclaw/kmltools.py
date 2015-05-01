@@ -464,7 +464,10 @@ def kml_timespan(t1,t2,event_time=None,tz=None):
 
     r"""
     Create time strings necessary for sliders in Google Earth.  The time
-    span will cover time [t1,t2].
+    span will cover time [t1,t2], with the start of the event given by
+    event_time.
+
+    [t1,t2]    : time span,
 
     event_time : Start of event in UTC :  [Y,M,D,H,M,S], e.g. [2010,2,27,3,34,0]
     tz         : time zone offset to UTC.  e.g. +3 for Chile; -9 for Japan.
@@ -490,12 +493,21 @@ def kml_timespan(t1,t2,event_time=None,tz=None):
     import time
     # to adjust time from UTC to time in event locale.
     if event_time == None:
-        # This may or may not take into account day light savings time correctly.
-        starttime = time.mktime(time.gmtime()) - time.altzone
-        tz_offset = time.timezone/(60.*60.)
+        # Use local time.
+        starttime = time.mktime(time.localtime())  # seconds UTC
+        tz_offset = time.timezone/3600.0   # in seconds
     else:
-        ev = event_time + [0,0,0]    # Extend to 9 tuple.
-        starttime = time.mktime(ev) - time.timezone  # UTC time, in seconds
+        ev = event_time + [0,0,0]   # Extend to 9 tuple; no DST
+        # mktime returns time in seconds + timezone offset, i.e. seconds UTC
+        # Subtract out the timezone offset here, since it will get added back
+        # in when we do gmtime(starttime + ...) below.
+        starttime = time.mktime(ev) - time.timezone
+        if tz is None:
+            print "===> Time zone offset not defined;  assuming zero offset. " \
+                "Set plotdata.kml_tz_offset to define an offset (in hours) from "\
+                "UTC (positive west of UTC; negative east of UTC)"
+            tz = 0
+
         tz_offset = tz
 
     if (tz_offset == None):
@@ -503,7 +515,7 @@ def kml_timespan(t1,t2,event_time=None,tz=None):
     else:
         # Google Earth will show time slider time in local time, where
         # local + offset = UTC.
-        tz_offset = tz_offset*60*60  # Offset in seconds
+        tz_offset = tz_offset*3600.0    # Offset in seconds
         tz = time.gmtime(abs(tz_offset))
         if (tz_offset > 0):
             tzstr = time.strftime("+%H:%M",tz)  # Time to UTC
