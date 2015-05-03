@@ -12,14 +12,15 @@ import datetime
 
 import numpy as np
 
-import clawpack.geoclaw.surge.data as surge
-
 # Need to adjust the date a bit due to weirdness with leap year (I think)
 ike_landfall = datetime.datetime(2008,9,13 - 1,7) - datetime.datetime(2008,1,1,0)
 
 #                           days   s/hour    hours/day            
 days2seconds = lambda days: days * 60.0**2 * 24.0
 seconds2days = lambda seconds: seconds / (60.0**2 * 24.0)
+
+# Scratch directory for storing topo and dtopo files:
+scratch_dir = os.path.join(os.environ["CLAW"], 'geoclaw', 'scratch')
 
 #------------------------------
 def setrun(claw_pkg='geoclaw'):
@@ -393,7 +394,8 @@ def setgeo(rundata):
     # See regions for control over these regions, need better bathy data for the
     # smaller domains
     topo_data.topofiles.append([3, 1, 5, rundata.clawdata.t0, rundata.clawdata.tfinal, 
-                              'gulf_caribbean.tt3'])
+                                os.path.join(scratch_dir, 'gulf_caribbean.tt3')])
+
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
     dtopo_data.dtopofiles = []
@@ -473,10 +475,5 @@ if __name__ == '__main__':
         rundata = setrun(sys.argv[1])
     else:
         rundata = setrun()
-
-    rundata.add_data(surge.SurgeData(),'stormdata')
-    set_storm(rundata)
-    rundata.add_data(surge.FrictionData(),'frictiondata')
-    set_friction(rundata)
 
     rundata.write()

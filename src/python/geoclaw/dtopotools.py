@@ -104,8 +104,10 @@ def convert_units(value, io_units, direction=1, verbose=False):
     try:
         factor = unit_conversion_factor[io_units]
     except:
-        raise ValueError("Unrecognized io_units %s, must be one of %s" \
-              % (io_units, unit_conversion_factor.keys()))
+        factor = 1.
+        print "*** Warning: unrecoginized units in convert_units, not converting"
+        #raise ValueError("Unrecognized io_units %s, must be one of %s" \
+        #      % (io_units, unit_conversion_factor.keys()))
     if direction == 1:
         converted_value = value * factor
     elif direction == 2:
@@ -604,7 +606,7 @@ class Fault(object):
                 raise ValueError("Input parameter subfaults must be a list.")
             self.subfaults = subfaults
             for subfault in self.subfaults:
-                subfault.convert_to_standard_units(input_units)
+                subfault.convert_to_standard_units(self.input_units)
 
 
     def read(self, path, column_map, coordinate_specification="centroid",
@@ -1195,7 +1197,7 @@ class SubFault(object):
         Convert parameters from the units used for input into the standard
         units used in this module.
         """
-        params = standard_units.keys()
+        params = input_units.keys()
         for param in params:
             value = getattr(self, param)
             converted_value = convert_units(value, input_units[param], 1)

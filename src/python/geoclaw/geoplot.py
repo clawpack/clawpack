@@ -225,7 +225,7 @@ def discrete_cmap_2(clines):
     given in clines.  Colors go from red to turquoise.
     Good for arrival times.
     """
-    from numpy import floor, linspace, hstack, ones, zeros
+    from numpy import floor, linspace, hstack, ones, zeros, flipud
     nlines = len(clines)
     n1 = int(floor((nlines-1)/2.))
     n2 = nlines - 1 - n1

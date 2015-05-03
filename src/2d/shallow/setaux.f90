@@ -12,9 +12,17 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !
 !
 
+    use amr_module, only: mcapa, xupper, yupper, xlower, ylower, NEEDS_TO_BE_SET
+
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: sea_level
-    use amr_module, only: mcapa, xupper, yupper, xlower, ylower, NEEDS_TO_BE_SET
+
+    use storm_module, only: wind_forcing, pressure_forcing
+    use storm_module, only: wind_index, pressure_index, set_storm_fields
+    use storm_module, only: ambient_pressure
+
+    use friction_module, only: variable_friction, friction_index
+    use friction_module, only: set_friction_field
 
     use topo_module
 
@@ -57,6 +65,20 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         endif
     endif
 
+
+    ! If using a variable friction field initialize the coefficients to 0
+    if (variable_friction) then
+        aux(friction_index,:,:) = 0.d0
+    endif
+
+    ! Storm fields if used
+    if (wind_forcing) then
+        aux(wind_index, :, :) = 0.d0
+        aux(wind_index + 1, :, :) = 0.d0
+    endif
+    if (pressure_forcing) then
+        aux(pressure_index, :, :) = ambient_pressure
+    endif
 
     ! Set analytical bathymetry here if requested
     if (test_topography > 0) then
@@ -166,6 +188,10 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     enddo
 
 
+    ! Set friction coefficient based on a set of depth levels
+    if (friction_index > 0) then
+        call set_friction_field(mx,my,mbc,maux,xlow,ylow,dx,dy,aux)
+    endif
 
     ! Output for debugging to fort.23
     if (.false.) then
