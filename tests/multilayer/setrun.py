@@ -9,7 +9,6 @@ that will be read in by the Fortran code.
 import numpy as numpy
 
 import clawpack.geoclaw.multilayer.data as multilayer
-import clawpack.geoclaw.surge.data as surge
 import clawpack.geoclaw.topotools as tt
 
 # Rotation transformations
