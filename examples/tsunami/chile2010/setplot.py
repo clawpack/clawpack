@@ -128,8 +128,12 @@ def setplot(plotdata):
     plotfigure.kml_ylimits = [-60, 0.0];
 
     # Resolution
-    plotfigure.kml_dpi = 400
+    # Refinement levels : [2,6]; max level = 3
+    # num_cells = [30,30]
+    plotfigure.kml_size_inches = [10,10]
+    plotfigure.kml_dpi = 2*6*3
     plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
+
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('kml')
