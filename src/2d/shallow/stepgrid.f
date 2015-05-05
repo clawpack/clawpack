@@ -46,7 +46,7 @@ c      dimension work(mwork)
       logical :: debug = .false.
       logical :: dump = .false.
 c
-      
+      tcfmax = -rinfinity
       level = node(nestlevel,mptr)
 
       if (dump) then
