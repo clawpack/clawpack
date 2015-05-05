@@ -130,8 +130,10 @@ def setplot(plotdata):
     # Resolution
     # Refinement levels : [2,6]; max level = 3
     # num_cells = [30,30]
-    plotfigure.kml_size_inches = [10,10]
-    plotfigure.kml_dpi = 2*6*3
+    # rcl : resolution of the coarsest level in this figure
+    rcl = 5
+    plotfigure.kml_figsize = [6.0,6.0]
+    plotfigure.kml_dpi = rcl*2*6      # Resolve all three levels
     plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
 
 
