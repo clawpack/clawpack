@@ -33,20 +33,24 @@ ifeq ($(UNAME), Darwin)
 	else
 		LFLAGS += -framework accelerate $(FFLAGS)
 	endif
-else ifeq ($(shell hostname), sandy.ices.utexas.edu)
-	# Created using Intel MKL Link Line Advisor
-	# http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
-	FFLAGS += -I$(MKLROOT)/include
-	ifndef LFLAGS                                                                                                                                    
-	    LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
-	else
-	    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
-	endif
 else ifeq ($(UNAME), Linux)
-	ifndef LFLAGS
-		LFLAGS = -llapack $(FFLAGS)
-	else
-		LFLAGS += -llapack $(FFLAGS)
+	ifeq ($(FC), ifort)
+		# Created using Intel MKL Link Line Advisor
+		# Please refer to 
+		# http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
+		# for other installation types
+		FFLAGS += -I$(MKLROOT)/include
+		ifndef LFLAGS                                                                                                                                    
+		    LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+		else
+		    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+		endif
+	else ifeq($(FC), gfortran)
+		ifndef LFLAGS
+			LFLAGS = -llapack $(FFLAGS)
+		else
+			LFLAGS += -llapack $(FFLAGS)
+		endif
 	endif
 endif
 
@@ -62,17 +66,17 @@ MODULES = \
  $(AMRLIB)/amr_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(AMRLIB)/regions_module.f90 \
- $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
  $(GEOLIB)/fgmax_module.f90 \
- $(GEOLIB)/holland_storm_module.f90 \
- $(GEOLIB)/constant_storm_module.f90 \
- $(GEOLIB)/stommel_storm_module.f90 \
- $(GEOLIB)/storm_module.f90 \
- $(GEOLIB)/friction_module.f90 \
+ $(GEOLIB)/surge/holland_storm_module.f90 \
+ $(GEOLIB)/surge/constant_storm_module.f90 \
+ $(GEOLIB)/surge/stommel_storm_module.f90 \
+ $(GEOLIB)/surge/storm_module.f90 \
  $(GEOLIB)/multilayer/multilayer_module.f90 \
+ $(GEOLIB)/multilayer/gauges_module.f90 \
+ $(GEOLIB)/friction_module.f90 \
  ./qinit_module.f90
 
 SOURCES = \
@@ -80,7 +84,6 @@ SOURCES = \
   ./qinit.f90 \
   $(GEOLIB)/multilayer/setaux.f90 \
   $(GEOLIB)/multilayer/b4step2.f90 \
-  $(GEOLIB)/multilayer/dumpgauge.f \
   $(GEOLIB)/topo_update.f90 \
   $(GEOLIB)/multilayer/getmaxspeed.f90 \
   $(GEOLIB)/multilayer/stepgrid.f \
