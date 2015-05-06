@@ -16,11 +16,11 @@ CLAW_PKG = geoclaw                  # Clawpack package to use
 EXE = xgeoclaw                 # Executable to create
 SETRUN_FILE = setrun.py        # File containing function to make data
 OUTDIR = _output               # Directory for output
-SETPLOT_FILE = setplot.py      # File containing function to set plots
+SETPLOT_FILE = setplot_ge.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-FFLAGS ?= 
+FFLAGS ?=
 
 # ---------------------------------
 # List of sources for this program:
@@ -184,11 +184,10 @@ gulf_caribbean.tt3:
 
 topo: gulf_caribbean.tt3
 
-all: 
+all:
 	$(MAKE) topo
 	$(MAKE) .plots
 	$(MAKE) .htmls
 
 
 ### DO NOT remove this line - make depends on it ###
-

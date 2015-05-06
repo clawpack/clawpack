@@ -121,7 +121,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
              aux(1,:,:) = NEEDS_TO_BE_SET  ! will indicate fine cells not yet set
              if (xperdom .or. yperdom) then
                 call preicall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
-                              jlo-nghost,jhi+nghost,level,1,1,fliparray)  
+                              jlo-nghost,jhi+nghost,level,fliparray)  
              else
                 call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
                            jlo-nghost,jhi+nghost,level,1,1)   

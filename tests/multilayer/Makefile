@@ -62,7 +62,6 @@ MODULES = \
  $(AMRLIB)/amr_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
  $(AMRLIB)/regions_module.f90 \
- $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
@@ -73,6 +72,7 @@ MODULES = \
  $(GEOLIB)/surge/storm_module.f90 \
  $(GEOLIB)/friction_module.f90 \
  $(GEOLIB)/multilayer/multilayer_module.f90 \
+ $(GEOLIB)/multilayer/gauges_module.f90 \
  ./qinit_module.f90
 
 SOURCES = \
@@ -80,7 +80,6 @@ SOURCES = \
   ./qinit.f90 \
   $(GEOLIB)/multilayer/setaux.f90 \
   $(GEOLIB)/multilayer/b4step2.f90 \
-  $(GEOLIB)/multilayer/dumpgauge.f \
   $(GEOLIB)/topo_update.f90 \
   $(GEOLIB)/multilayer/getmaxspeed.f90 \
   $(GEOLIB)/multilayer/stepgrid.f \

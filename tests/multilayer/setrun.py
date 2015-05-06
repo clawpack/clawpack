@@ -9,7 +9,6 @@ that will be read in by the Fortran code.
 import numpy as numpy
 
 import clawpack.geoclaw.multilayer.data as multilayer
-import clawpack.geoclaw.surge.data as surge
 import clawpack.geoclaw.topotools as tt
 
 # Rotation transformations
@@ -51,10 +50,6 @@ def setrun(claw_pkg='geoclaw'):
 
     rundata.add_data(multilayer.MultilayerData(), 'multilayer_data')
     set_multilayer(rundata)
-    rundata.add_data(surge.FrictionData(),'frictiondata')
-    set_friction(rundata)
-    rundata.add_data(surge.SurgeData(),'stormdata')
-    set_storm(rundata)
 
     #------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
@@ -96,8 +91,6 @@ def setrun(claw_pkg='geoclaw'):
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
     clawdata.num_aux = 4 + rundata.multilayer_data.num_layers
-    if rundata.stormdata.storm_type > 0:
-        clawdata.num_aux += 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 0
@@ -426,13 +419,6 @@ def setgeo(rundata):
     # end of function setgeo
     # ----------------------
 
-def set_friction(rundata):
-
-    data = rundata.frictiondata
-
-    # Variable friction
-    data.variable_friction = False
-
 
 def set_multilayer(rundata):
 
@@ -459,11 +445,6 @@ def set_multilayer(rundata):
     rundata.qinit_data.wave_family = 4
     rundata.qinit_data.init_location = [-0.1,0.0]
 
-
-def set_storm(rundata):
-
-    # No storm
-    rundata.stormdata.storm_type = 0
 
 
 def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
