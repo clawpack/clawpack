@@ -152,7 +152,7 @@ def setplot(plotdata):
     plotdata.kml_tz_offset = 5    # Time zone offset (in hours) of event. [None]
 
     plotdata.kml_index_fname = "Ike"  # name for .kmz and .kml files ["_GoogleEarth"]
-    plotdata.kml_publish = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/kmz/'
+    plotdata.kml_publish = 'http://www.yourdomain.here'
 
     # ========================================================================
     #  Entire Gulf
@@ -166,7 +166,7 @@ def setplot(plotdata):
     #
 
     plotfigure = plotdata.new_plotfigure(name='Surface - Entire Domain',
-                                         figno=200)
+                                         figno=0)
     plotfigure.show = True
 
     plotfigure.use_for_kml = True
@@ -176,20 +176,17 @@ def setplot(plotdata):
     plotfigure.kml_xlimits = gulf_xlimits
     plotfigure.kml_ylimits = gulf_ylimits
 
-    # Resolution
-    plotfigure.kml_dpi = 200
+    # Resolution - needs to be set carefully for the transparent colormap
+    # numcells = [116, 96];  refinement levels : [2,2]  maxlevels = 2
+    rcl = 10  # Resolution of coarsest level, rcl*figsize = num_cells
+    plotfigure.kml_dpi = rcl*2
+    plotfigure.kml_figsize = [11.6, 9.6]
     plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.title = 'Surface'
-    plotaxes.scaled = True
-    plotaxes.xlimits = gulf_xlimits
-    plotaxes.ylimits = gulf_ylimits
-
     plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
-
     plotitem.pcolor_cmap = geoplot.googleearth_transparent
     plotitem.pcolor_cmin = -surface_range
     plotitem.pcolor_cmax = surface_range
@@ -204,12 +201,11 @@ def setplot(plotdata):
     plotfigure.kml_colorbar = kml_colorbar
 
 
-
     # -----------------------------------------------------
     #  Water Speed
     # -----------------------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Currents - Entire Domain',
-                                         figno=201)
+                                         figno=1)
     plotfigure.show = True
 
     plotfigure.use_for_kml = True
@@ -218,17 +214,10 @@ def setplot(plotdata):
     # These override axes limits set below in plotitems
     plotfigure.kml_xlimits = gulf_xlimits
     plotfigure.kml_ylimits = gulf_ylimits
-
-    # Resolution
-    plotfigure.kml_dpi = 200
     plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.title = 'Currents'
-    plotaxes.scaled = True
-    plotaxes.xlimits = gulf_xlimits
-    plotaxes.ylimits = gulf_ylimits
 
     plotitem = plotaxes.new_plotitem(name='surface', plot_type='2d_contourf')
     plotitem.plot_var = geoplot.surface_or_depth
@@ -242,117 +231,54 @@ def setplot(plotdata):
 
 
     # ========================================================================
-    #  Entire Gulf
-    # ========================================================================
-    gulf_xlimits = [clawdata.lower[0],clawdata.upper[0]]
-    gulf_ylimits = [clawdata.lower[1],clawdata.upper[1]]
-    gulf_shrink = 1.0
-
-    #
-    #  Surface
-    #
-    plotfigure = plotdata.new_plotfigure(name='Surface',
-                                         figno=202)
-
-    plotfigure.show = False
-    plotfigure.kml_use_for_initial_view = False
-
-    plotfigure.use_for_kml = True
-    plotfigure.kml_xlimits = gulf_xlimits
-    plotfigure.kml_ylimits = gulf_ylimits
-
-    plotfigure.kml_dpi = 200
-    plotfigure.kml_tile_images = True
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.title = 'Surface'
-    plotaxes.scaled = True
-
-    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
-                                     contours=surface_contours)
-
-
-    # ========================================================================
     #  Houston/Galveston
     # ========================================================================
     houston_xlimits = [-(95.0 + 26.0 / 60.0), -(94.0 + 25.0 / 60.0)]
     houston_ylimits = [29.1, 29.0 + 55.0 / 60.0]
     houston_shrink = 0.9
 
-    def houston_after_axes(cd):
-        if article:
-            plt.subplots_adjust(left=0.05, bottom=0.07, right=0.99, top=0.92)
-        else:
-            plt.subplots_adjust(left=0.12, bottom=0.06, right=0.97, top=0.97)
-        surge_afteraxes(cd)
-        # surge.plot.gauge_locations(cd)
-
     #
     # Surface Elevations
     #
     plotfigure = plotdata.new_plotfigure(name='Surface - Houston/Galveston',
-                                         figno=203)
-    plotfigure.show = False
+                                         figno=2)
+    plotfigure.show = True
+    plotfigure.use_for_kml = True
 
+    plotfigure.kml_xlimits = houston_xlimits
+    plotfigure.kml_ylimits = houston_ylimits
+    plotfigure.kml_tile_images = True
+
+
+    # pcolor for water
+    plotaxes = plotfigure.new_plotaxes()
+    plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_contourf')
+    plotitem.contour_levels = surface_contours
+    plotitem.fill_cmin = min(surface_contours)
+    plotitem.fill_cmax = max(surface_contours)
+
+    #
+    # Water Speed - Houston/Galveston
+    #
+    plotfigure = plotdata.new_plotfigure(name='Currents - Houston/Galveston',
+                                         figno=3)
+    plotfigure.show = True
     plotfigure.use_for_kml = True
 
     # These override axes limits set below in plotitems
     plotfigure.kml_xlimits = houston_xlimits
     plotfigure.kml_ylimits = houston_ylimits
 
-    # Resolution
-    plotfigure.kml_dpi = 200
+    # Resolution - this should be fixed to prevent aliasing with the transparent map
     plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
 
-
-
-    # Set up for axes in this figure:
+    # Water
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.title = 'Surface'
-    plotaxes.scaled = True
-    plotaxes.xlimits = houston_xlimits
-    plotaxes.ylimits = houston_ylimits
-
-
-    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
-                                               contours=surface_contours,
-                                               shrink=houston_shrink)
-
-
-    # Plot using jet and 0.0 to 5.0 to match figgen generated ADCIRC results
-    # plotaxes.plotitem_dict['surface'].pcolor_cmin = 0.0
-    # plotaxes.plotitem_dict['surface'].pcolor_cmax = 5.0
-    # plotaxes.plotitem_dict['surface'].pcolor_cmap = plt.get_cmap('jet')
-
-    #
-    # Water Speed
-    #
-    plotfigure = plotdata.new_plotfigure(name='Currents - Houston/Galveston',
-                                         figno=fig_num_counter.get_counter())
-    plotfigure.show = False
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.title = 'Currents'
-    plotaxes.scaled = True
-    plotaxes.xlimits = houston_xlimits
-    plotaxes.ylimits = houston_ylimits
-    #plotaxes.afteraxes = houston_after_axes
-    surgeplot.add_speed(plotaxes, plot_type='contourf',
-                                   contours=speed_contours,
-                                   shrink=houston_shrink)
-
-    if article:
-        plotaxes.plotitem_dict['speed'].add_colorbar = False
-    else:
-        add_custom_colorbar_ticks_to_axes(plotaxes, 'speed', speed_ticks, speed_labels)
-    surgeplot.add_land(plotaxes)
-    # surge.plot.add_bathy_contours(plotaxes)
-    # plotaxes.plotitem_dict['speed'].amr_patchedges_show = [1,1,1,1,1,1,1,1]
-    # plotaxes.plotitem_dict['land'].amr_patchedges_show = [1,1,1,1,1,1,1,1]
-    plotaxes.plotitem_dict['speed'].amr_patchedges_show = [0,0,0,0,0,0,0]
-    plotaxes.plotitem_dict['land'].amr_patchedges_show = [0,0,0,0,0,0,0]
+    plotitem = plotaxes.new_plotitem(name='surface', plot_type='2d_contourf')
+    plotitem.plot_var = geoplot.surface_or_depth
+    plotitem.contour_levels = speed_contours
+    plotitem.fill_cmin = min(speed_contours)
+    plotitem.fill_cmax = max(speed_contours)
 
     # ========================================================================
     #  Figures for gauges
@@ -414,168 +340,6 @@ def setplot(plotdata):
     plotitem.plot_var = 3
     plotitem.plotstyle = 'b-'
 
-    # =====================
-    #  Gauge Location Plot
-    # =====================
-    gauge_xlimits = [-95.5, -94]
-    gauge_ylimits = [29.0, 30.0]
-    gauge_location_shrink = 0.75
-    def gauge_after_axes(cd):
-        plt.subplots_adjust(left=0.12, bottom=0.06, right=0.97, top=0.97)
-        surge_afteraxes(cd)
-        surgeplot.gauge_locations(cd, gaugenos=[1, 2, 3, 4])
-        plt.title("Gauge Locations")
-
-    plotfigure = plotdata.new_plotfigure(name='Gauge Locations',
-                                         figno=fig_num_counter.get_counter())
-    plotfigure.show = False
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.title = 'Surface'
-    plotaxes.scaled = True
-    plotaxes.xlimits = gauge_xlimits
-    plotaxes.ylimits = gauge_ylimits
-    plotaxes.afteraxes = gauge_after_axes
-    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
-                                               contours=surface_contours,
-                                               shrink=gauge_location_shrink)
-    # surge.plot.add_surface_elevation(plotaxes, plot_type="contourf")
-    add_custom_colorbar_ticks_to_axes(plotaxes, 'surface', surface_ticks, surface_labels)
-    surgeplot.add_land(plotaxes)
-    # plotaxes.plotitem_dict['surface'].amr_patchedges_show = [0,0,0,0,0,0,0]
-    # plotaxes.plotitem_dict['surface'].add_colorbar = False
-    # plotaxes.plotitem_dict['surface'].pcolor_cmap = plt.get_cmap('jet')
-    # plotaxes.plotitem_dict['surface'].pcolor_cmap = plt.get_cmap('gist_yarg')
-    # plotaxes.plotitem_dict['surface'].pcolor_cmin = 0.0
-    # plotaxes.plotitem_dict['surface'].pcolor_cmax = 5.0
-    plotaxes.plotitem_dict['surface'].amr_patchedges_show = [0,0,0,0,0,0,0]
-    plotaxes.plotitem_dict['land'].amr_patchedges_show = [0,0,0,0,0,0,0]
-
-    # ==============================================================
-    #  Debugging Plots, only really work if using interactive plots
-    # ==============================================================
-    #
-    # Water Velocity Components
-    #
-    plotfigure = plotdata.new_plotfigure(name='Velocity Components - Entire Domain',
-                                         figno=fig_num_counter.get_counter())
-    plotfigure.show = False
-
-    # X-Component
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.axescmd = "subplot(121)"
-    plotaxes.title = 'Velocity, X-Component'
-    plotaxes.scaled = True
-    plotaxes.xlimits = gulf_xlimits
-    plotaxes.ylimits = gulf_ylimits
-    #plotaxes.afteraxes = gulf_after_axes
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = surgeplot.water_u
-    plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
-    plotitem.pcolor_cmin = -speed_limits[1]
-    plotitem.pcolor_cmax = speed_limits[1]
-    plotitem.colorbar_shrink = gulf_shrink
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1]
-
-    surgeplot.add_land(plotaxes)
-
-    # Y-Component
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.axescmd = "subplot(122)"
-    plotaxes.title = 'Velocity, Y-Component'
-    plotaxes.scaled = True
-    plotaxes.xlimits = gulf_xlimits
-    plotaxes.ylimits = gulf_ylimits
-    #plotaxes.afteraxes = gulf_after_axes
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = surgeplot.water_v
-    plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
-    plotitem.pcolor_cmin = -speed_limits[1]
-    plotitem.pcolor_cmax = speed_limits[1]
-    plotitem.colorbar_shrink = gulf_shrink
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1]
-    surgeplot.add_land(plotaxes)
-
-    #
-    # Depth
-    #
-    plotfigure = plotdata.new_plotfigure(name='Depth - Entire Domain',
-                                         figno=fig_num_counter.get_counter())
-    plotfigure.show = False
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.title = 'depth'
-    plotaxes.scaled = True
-    plotaxes.xlimits = gulf_xlimits
-    plotaxes.ylimits = gulf_ylimits
-    #plotaxes.afteraxes = gulf_after_axes
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
-    plotitem.plot_var = 0
-    plotitem.imshow_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
-    plotitem.imshow_cmin = 0
-    plotitem.imshow_cmax = 100
-    plotitem.colorbar_shrink = gulf_shrink
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1,1,1,1,1,1,1]
-
-    # Surge field
-    plotfigure = plotdata.new_plotfigure(name='Surge Field',
-                                         figno=fig_num_counter.get_counter())
-    plotfigure.show = ((surge_data.wind_forcing or surge_data.pressure_forcing)
-                        and False)
-
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = gulf_xlimits
-    plotaxes.ylimits = gulf_ylimits
-    plotaxes.title = "Storm Surge Source Term S"
-    #plotaxes.afteraxes = gulf_after_axes
-    plotaxes.scaled = True
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = surgeplot.pressure_field + 1
-    plotitem.pcolor_cmap = plt.get_cmap('PuBu')
-    plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 1e-3
-    plotitem.add_colorbar = True
-    plotitem.colorbar_shrink = gulf_shrink
-    plotitem.colorbar_label = "Source Strength"
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
-    surgeplot.add_land(plotaxes)
-
-    plotfigure = plotdata.new_plotfigure(name='Friction/Coriolis Source',
-                                         figno=fig_num_counter.get_counter())
-    plotfigure.show = False
-
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = gulf_xlimits
-    plotaxes.ylimits = gulf_ylimits
-    plotaxes.title = "Friction/Coriolis Source"
-    plotaxes.afteraxes = surge_afteraxes
-    plotaxes.scaled = True
-
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = surgeplot.pressure_field + 2
-    plotitem.pcolor_cmap = plt.get_cmap('PuBu')
-    plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 1e-3
-    plotitem.add_colorbar = True
-    plotitem.colorbar_shrink = gulf_shrink
-    plotitem.colorbar_label = "Source Strength"
-    plotitem.amr_celledges_show = [0,0,0]
-    plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
-    surgeplot.add_land(plotaxes)
-
     #-----------------------------------------
 
     # Parameters used only when creating html and/or latex hardcopy
@@ -583,14 +347,15 @@ def setplot(plotdata):
 
     plotdata.printfigs = True                # print figures
     plotdata.print_format = 'png'            # file format
-    plotdata.print_framenos = 'all'            # list of frames to print
-    plotdata.print_gaugenos = [1,2,3,4]          # list of gauges to print
-    plotdata.print_fignos = [200, 201, 300]            # list of figures to print
+    plotdata.print_framenos = 'all'          # list of frames to print
+    plotdata.print_gaugenos = 'all'          # list of gauges to print
+    plotdata.print_fignos = 'all'            # list of figures to print
     plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
     plotdata.latex = True                    # create latex file of plots?
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
+    plotdata.kml = True
 
     return plotdata
