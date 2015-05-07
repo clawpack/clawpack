@@ -64,7 +64,7 @@ def setplot(plotdata):
     plotdata.kml_publish = 'http://math.boisestate.edu/~calhoun/visclaw/GoogleEarth/kmz/'
 
 
-    light_green_a = [0.0,1.0,1.0,1.0];
+    light_green_a = [0.0,1.0,1.0,1.0]
     transparent = [0.0,0.0,0.0,0.0]
     red_a = [1.0,0.0,0.0,1.0]
     lightblue = "#4E6498"  # Matches region fill color for comp. domain
