@@ -16,24 +16,6 @@ import numpy
 # Plot customization
 import matplotlib
 
-# Use LaTeX for all text
-matplotlib.rcParams['text.usetex'] = True
-
-# Markers and line widths
-#matplotlib.rcParams['lines.linewidth'] = 2.0
-matplotlib.rcParams['lines.markersize'] = 6
-matplotlib.rcParams['lines.markersize'] = 8
-
-# Font Sizes
-matplotlib.rcParams['font.size'] = 16
-matplotlib.rcParams['axes.labelsize'] = 16
-matplotlib.rcParams['legend.fontsize'] = 12
-matplotlib.rcParams['xtick.labelsize'] = 16
-matplotlib.rcParams['ytick.labelsize'] = 16
-
-# DPI of output images
-matplotlib.rcParams['savefig.dpi'] = 100
-
 import matplotlib.pyplot as plt
 import datetime
 
@@ -100,10 +82,6 @@ def setplot(plotdata):
     landfall_dt = datetime.datetime(2008,9,13,7) - datetime.datetime(2008,1,1,0)
     landfall = (landfall_dt.days - 1.0) * 24.0 * 60**2 + landfall_dt.seconds
 
-    # Set afteraxes function
-    surge_afteraxes = lambda cd: surgeplot.surge_afteraxes(cd,
-                                        track, landfall, plot_direction=False)
-
     # Color limits
     surface_range = 5.0
     speed_range = 3.0
@@ -113,30 +91,15 @@ def setplot(plotdata):
     surface_limits = [eta[0]-surface_range,eta[0]+surface_range]
     # surface_contours = numpy.linspace(-surface_range, surface_range,11)
     surface_contours = [-5,-4.5,-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5]
-    surface_ticks = [-5,-4,-3,-2,-1,0,1,2,3,4,5]
-    surface_labels = [str(value) for value in surface_ticks]
+
     speed_limits = [0.0,speed_range]
     speed_contours = numpy.linspace(0.0,speed_range,13)
-    speed_ticks = [0,1,2,3]
-    speed_labels = [str(value) for value in speed_ticks]
 
     wind_limits = [0,64]
     # wind_limits = [-0.002,0.002]
     pressure_limits = [935,1013]
     friction_bounds = [0.01,0.04]
     # vorticity_limits = [-1.e-2,1.e-2]
-
-    # def pcolor_afteraxes(current_data):
-    #     surge_afteraxes(current_data)
-    #     surge.plot.gauge_locations(current_data,gaugenos=[6])
-
-    def contour_afteraxes(current_data):
-        surge_afteraxes(current_data)
-
-    def add_custom_colorbar_ticks_to_axes(axes, item_name, ticks, tick_labels=None):
-        pass
-        #axes.plotitem_dict[item_name].colorbar_ticks = ticks
-        #axes.plotitem_dict[item_name].colorbar_tick_labels = tick_labels
 
     # ==========================================================================
     # ==========================================================================
@@ -161,9 +124,9 @@ def setplot(plotdata):
     gulf_ylimits = [clawdata.lower[1],clawdata.upper[1]]
     gulf_shrink = 1.0
 
-    #
-    #  Surface
-    #
+    # --------------------------
+    #  Surface - entire gulf
+    # --------------------------
 
     plotfigure = plotdata.new_plotfigure(name='Surface - Entire Domain',
                                          figno=0)
@@ -177,19 +140,18 @@ def setplot(plotdata):
     plotfigure.kml_ylimits = gulf_ylimits
 
     # Resolution - needs to be set carefully for the transparent colormap
-    # numcells = [116, 96];  refinement levels : [2,2]  maxlevels = 2
-    rcl = 10  # Resolution of coarsest level, rcl*figsize = num_cells
+    rcl = 20
     plotfigure.kml_dpi = rcl*2
     plotfigure.kml_figsize = [11.6, 9.6]
-    plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
+    plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
 
-    # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_pcolor')
     plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.googleearth_transparent
     plotitem.pcolor_cmin = -surface_range
     plotitem.pcolor_cmax = surface_range
+
 
     def kml_colorbar(filename):
         cmin = -surface_range
@@ -201,9 +163,9 @@ def setplot(plotdata):
     plotfigure.kml_colorbar = kml_colorbar
 
 
-    # -----------------------------------------------------
-    #  Water Speed
-    # -----------------------------------------------------
+    # --------------------------
+    #  Water Speed - entire gulf
+    # --------------------------
     plotfigure = plotdata.new_plotfigure(name='Currents - Entire Domain',
                                          figno=1)
     plotfigure.show = True
@@ -214,7 +176,7 @@ def setplot(plotdata):
     # These override axes limits set below in plotitems
     plotfigure.kml_xlimits = gulf_xlimits
     plotfigure.kml_ylimits = gulf_ylimits
-    plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
+    plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -233,13 +195,30 @@ def setplot(plotdata):
     # ========================================================================
     #  Houston/Galveston
     # ========================================================================
-    houston_xlimits = [-(95.0 + 26.0 / 60.0), -(94.0 + 25.0 / 60.0)]
-    houston_ylimits = [29.1, 29.0 + 55.0 / 60.0]
+    # houston_xlimits = [-(95.0 + 26.0 / 60.0), -(94.0 + 25.0 / 60.0)]
+    # houston_ylimits = [29.1, 29.0 + 55.0 / 60.0]
     houston_shrink = 0.9
 
-    #
-    # Surface Elevations
-    #
+    num_cells = [116, 96]
+    dx = (gulf_xlimits[1] - float(gulf_xlimits[0]))/num_cells[0]   # = 0.25
+    dy = (gulf_ylimits[1] - float(gulf_ylimits[0]))/num_cells[1]   # = 0.25
+    houston_xlimits = [gulf_xlimits[0] + 14*dx, gulf_xlimits[0] + 21*dx]  # [-95.25, -94.5]
+    houston_ylimits = [gulf_ylimits[0] + 82*dy, gulf_ylimits[0] + 88*dy]  # [-95.25, -94.5]
+    figsize = [(21-14)*dx,(88-82)*dy]  # relative to [11.6, 9.6] occupied by larger grid
+    dpi = 200
+
+
+    light_green_a = [0.0,1.0,1.0,1.0]
+    transparent = [0.0,0.0,0.0,0.0]
+    red_a = [1.0,0.0,0.0,1.0]
+    lightblue = "#4E6498"  # Matches region fill color for comp. domain
+
+    lightblue_cmap = colormaps.make_colormap({-1:light_green_a,
+                                              0.0:lightblue,
+                                              1:red_a})
+    # --------------------------------------
+    # Surface Elevations - Houston/Galveston
+    # --------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Surface - Houston/Galveston',
                                          figno=2)
     plotfigure.show = True
@@ -247,19 +226,31 @@ def setplot(plotdata):
 
     plotfigure.kml_xlimits = houston_xlimits
     plotfigure.kml_ylimits = houston_ylimits
-    plotfigure.kml_tile_images = True
-
+    plotfigure.kml_dpi = dpi     # data is not more resolve than this
+    plotfigure.kml_figsize = figsize
+    plotfigure.kml_tile_images = False
 
     # pcolor for water
     plotaxes = plotfigure.new_plotaxes()
     plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_contourf')
     plotitem.contour_levels = surface_contours
+    #plotitem.fill_cmap = lightblue_cmap
     plotitem.fill_cmin = min(surface_contours)
     plotitem.fill_cmax = max(surface_contours)
 
-    #
+    def cbar_houston(filename):
+        cmin = -surface_range
+        cmax = surface_range
+        geoplot.kml_build_colorbar(filename,
+                                   lightblue_cmap,
+                                   min(surface_contours),max(surface_contours))
+
+    #plotfigure.kml_colorbar = cbar_houston
+
+
+    # --------------------------------
     # Water Speed - Houston/Galveston
-    #
+    # --------------------------------
     plotfigure = plotdata.new_plotfigure(name='Currents - Houston/Galveston',
                                          figno=3)
     plotfigure.show = True
@@ -268,9 +259,9 @@ def setplot(plotdata):
     # These override axes limits set below in plotitems
     plotfigure.kml_xlimits = houston_xlimits
     plotfigure.kml_ylimits = houston_ylimits
-
-    # Resolution - this should be fixed to prevent aliasing with the transparent map
-    plotfigure.kml_tile_images = True    # Tile images for faster loading.  Requires GDAL [False]
+    plotfigure.kml_figsize = figsize
+    plotfigure.kml_dpi = 10*dpi     # data is not more resolve than this
+    plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
 
     # Water
     plotaxes = plotfigure.new_plotaxes()
@@ -349,7 +340,7 @@ def setplot(plotdata):
     plotdata.print_format = 'png'            # file format
     plotdata.print_framenos = 'all'          # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
-    plotdata.print_fignos = 'all'            # list of figures to print
+    plotdata.print_fignos = [0,2]            # list of figures to print
     plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
     plotdata.latex = True                    # create latex file of plots?
