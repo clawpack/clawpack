@@ -140,7 +140,7 @@ def setplot(plotdata):
     plotfigure.kml_ylimits = gulf_ylimits
 
     # Resolution - needs to be set carefully for the transparent colormap
-    rcl = 20
+    rcl = 40
     plotfigure.kml_dpi = rcl*2
     plotfigure.kml_figsize = [11.6, 9.6]
     plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
@@ -176,6 +176,8 @@ def setplot(plotdata):
     # These override axes limits set below in plotitems
     plotfigure.kml_xlimits = gulf_xlimits
     plotfigure.kml_ylimits = gulf_ylimits
+    plotfigure.kml_figsize = [11.6,9.6]
+    plotfigure.kml_dpi = 80   # size not so important with contourf
     plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
 
     # Set up for axes in this figure:
@@ -191,31 +193,33 @@ def setplot(plotdata):
     cmap._rgba_under = (0.0,0.0,0.0,0.0)
     plotitem.fill_cmap = cmap
 
+    def cbar_speeds(filename):
+        cmin = min(speed_contours)
+        cmax = max(speed_contours)
+        geoplot.kml_build_colorbar(filename,cmap,cmin,cmax)
+
+    plotfigure.kml_colorbar = cbar_speeds
+
 
     # ========================================================================
     #  Houston/Galveston
     # ========================================================================
-    # houston_xlimits = [-(95.0 + 26.0 / 60.0), -(94.0 + 25.0 / 60.0)]
-    # houston_ylimits = [29.1, 29.0 + 55.0 / 60.0]
+    houston_xlimits = [-(95.0 + 26.0 / 60.0), -(94.0 + 25.0 / 60.0)]
+    houston_ylimits = [29.1, 29.0 + 55.0 / 60.0]
     houston_shrink = 0.9
 
-    num_cells = [116, 96]
-    dx = (gulf_xlimits[1] - float(gulf_xlimits[0]))/num_cells[0]   # = 0.25
-    dy = (gulf_ylimits[1] - float(gulf_ylimits[0]))/num_cells[1]   # = 0.25
-    houston_xlimits = [gulf_xlimits[0] + 14*dx, gulf_xlimits[0] + 21*dx]  # [-95.25, -94.5]
-    houston_ylimits = [gulf_ylimits[0] + 82*dy, gulf_ylimits[0] + 88*dy]  # [-95.25, -94.5]
-    figsize = [(21-14)*dx,(88-82)*dy]  # relative to [11.6, 9.6] occupied by larger grid
-    dpi = 200
+    #No need to worry about fitting the plot exactly if we are not using
+    # the transparent colormap with pcolor.
+    #num_cells = [116, 96]
+    #dx = (gulf_xlimits[1] - float(gulf_xlimits[0]))/num_cells[0]   # = 0.25
+    #dy = (gulf_ylimits[1] - float(gulf_ylimits[0]))/num_cells[1]   # = 0.25
+    #houston_xlimits = [gulf_xlimits[0] + 14*dx, gulf_xlimits[0] + 21*dx]  # [-95.25, -94.5]
+    #houston_ylimits = [gulf_ylimits[0] + 82*dy, gulf_ylimits[0] + 88*dy]  # [-95.25, -94.5]
+    #figsize = [(21-14)*dx,(88-82)*dy]  # relative to [11.6, 9.6] occupied by larger grid
 
+    figsize = [houston_xlimits[1]-houston_xlimits[0],houston_ylimits[1]-houston_ylimits[0]]
+    dpi = 400
 
-    light_green_a = [0.0,1.0,1.0,1.0]
-    transparent = [0.0,0.0,0.0,0.0]
-    red_a = [1.0,0.0,0.0,1.0]
-    lightblue = "#4E6498"  # Matches region fill color for comp. domain
-
-    lightblue_cmap = colormaps.make_colormap({-1:light_green_a,
-                                              0.0:lightblue,
-                                              1:red_a})
     # --------------------------------------
     # Surface Elevations - Houston/Galveston
     # --------------------------------------
@@ -230,21 +234,14 @@ def setplot(plotdata):
     plotfigure.kml_figsize = figsize
     plotfigure.kml_tile_images = False
 
-    # pcolor for water
+    # pcolor for water.
     plotaxes = plotfigure.new_plotaxes()
     plotitem = plotaxes.new_plotitem(name='surface',plot_type='2d_contourf')
     plotitem.contour_levels = surface_contours
-    #plotitem.fill_cmap = lightblue_cmap
     plotitem.fill_cmin = min(surface_contours)
     plotitem.fill_cmax = max(surface_contours)
 
-    def cbar_houston(filename):
-        cmin = -surface_range
-        cmax = surface_range
-        geoplot.kml_build_colorbar(filename,
-                                   lightblue_cmap,
-                                   min(surface_contours),max(surface_contours))
-
+    # what is the colormap used here?
     #plotfigure.kml_colorbar = cbar_houston
 
 
@@ -260,8 +257,8 @@ def setplot(plotdata):
     plotfigure.kml_xlimits = houston_xlimits
     plotfigure.kml_ylimits = houston_ylimits
     plotfigure.kml_figsize = figsize
-    plotfigure.kml_dpi = 10*dpi     # data is not more resolve than this
-    plotfigure.kml_tile_images = False    # Tile images for faster loading.  Requires GDAL [False]
+    plotfigure.kml_dpi = dpi     # data is not more resolve than this
+    plotfigure.kml_tile_images = False  # Tile images for faster loading.  Requires GDAL [False]
 
     # Water
     plotaxes = plotfigure.new_plotaxes()
@@ -270,6 +267,10 @@ def setplot(plotdata):
     plotitem.contour_levels = speed_contours
     plotitem.fill_cmin = min(speed_contours)
     plotitem.fill_cmax = max(speed_contours)
+
+    cmap= plt.get_cmap('OrRd')
+    cmap._rgba_under = (0.0,0.0,0.0,0.0)
+    plotitem.fill_cmap = cmap
 
     # ========================================================================
     #  Figures for gauges
@@ -340,13 +341,14 @@ def setplot(plotdata):
     plotdata.print_format = 'png'            # file format
     plotdata.print_framenos = 'all'          # list of frames to print
     plotdata.print_gaugenos = 'all'          # list of gauges to print
-    plotdata.print_fignos = [0,2]            # list of figures to print
-    plotdata.html = True                     # create html files of plots?
+    plotdata.print_fignos = [0,1,2,3]            # list of figures to print
     plotdata.html_homelink = '../README.html'   # pointer for top of index
-    plotdata.latex = True                    # create latex file of plots?
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
+
+    plotdata.html = False                     # create html files of plots?
+    plotdata.latex = False                    # create latex file of plots?
     plotdata.kml = True
 
     return plotdata
