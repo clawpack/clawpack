@@ -109,7 +109,9 @@ def setplot(plotdata):
     plotdata.kml_tz_offset = 3    # Time zone offset (in hours) of event. [None]
 
     plotdata.kml_index_fname = "Chile_2010"  # name for .kmz and .kml files ["_GoogleEarth"]
-    plotdata.kml_publish = 'http://www.yourserver.edu/path/to/kmz/files'
+
+    # set this a URL where KMZ files are stored.
+    # plotdata.kml_publish = "http://www.yourdomain.com/path/to/kmz/files"
 
     # Used for both figures
     cmin = -0.2
