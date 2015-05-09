@@ -28,8 +28,8 @@ class MultilayerData(clawpack.clawutil.data.ClawData):
         self.add_attribute('richardson_tolerance',0.95)
 
         # Need to adjust refinement module for this, dry_limit is in geodata
-        # self.add_attribute('wave_tolerance',[1e-1,2e-1])
-        # self.add_attribute('dry_limit',False)
+        self.add_attribute('wave_tolerance',[1e-1,2e-1])
+        self.add_attribute('dry_limit',False)
     
 
     def write(self,out_file='./multilayer.data',datasource="setrun.py"):
