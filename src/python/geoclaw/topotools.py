@@ -703,11 +703,30 @@ class Topography(object):
                 num_cells[1] = int(topo_file.readline().split()[value_index])
                 self._extent[0] = float(topo_file.readline().split()[value_index])
                 self._extent[2] = float(topo_file.readline().split()[value_index])
-                self._delta = float(topo_file.readline().split()[value_index])
+                # parse line allowing possibility of dx and dy (or just dx=dy)
+                line = topo_file.readline()
+                tokens = line.split() 
+                values = []
+                for token in tokens:
+                    try:
+                        v = float(token)
+                        values.append(v)
+                    except:
+                        pass
+                if len(values) == 1:
+                    self._delta = (values[0], values[0]) # if only dx given
+                elif len(values) == 2:
+                    self._delta = (values[0], values[1])  # if dx,dy on line
+                else:
+                    raise IOError("Cannot parse dx,dy line: %s" % line)
+                    
+                        
                 self.no_data_value = float(topo_file.readline().split()[value_index])
                 
-                self._extent[1] = self._extent[0] + (num_cells[0]-1)*self.delta
-                self._extent[3] = self._extent[2] + (num_cells[1]-1)*self.delta
+                self._extent[1] = self._extent[0] + \
+                                    (num_cells[0]-1)*self._delta[0]
+                self._extent[3] = self._extent[2] + \
+                                    (num_cells[1]-1)*self._delta[1]
 
         else:
             raise IOError("Cannot read header for topo_type %s" % self.topo_type)
