@@ -303,8 +303,9 @@ contains
                 
                 icell = int(1.d0 + (xgauge(ii) - xlow) / hx)
                 jcell = int(1.d0 + (ygauge(ii) - ylow) / hy)
-                do ivar=1,3*num_layers
-                    var(ivar) = q(ivar + layer_index, icell, jcell) / rho(m)
+                do ivar=1,3
+                    var(ivar + layer_index) =           &
+                                   q(ivar + layer_index, icell, jcell) / rho(m)
                 enddo
                 ! This is the bottom layer and we should figure out the
                 ! topography
