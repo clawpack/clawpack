@@ -115,7 +115,10 @@ def setplot(plotdata):
     plotdata.kml_tz_offset = 5    # Time zone offset (in hours) of event. [None]
 
     plotdata.kml_index_fname = "Ike"  # name for .kmz and .kml files ["_GoogleEarth"]
-    plotdata.kml_publish = 'http://www.yourdomain.here'
+
+    # Set to path where KMZ files will be stored;   KML file will then
+    # link to this path.
+    # plotdata.kml_publish = 'http://www.domain.edu/path/to/kmz/files'
 
     # ========================================================================
     #  Entire Gulf

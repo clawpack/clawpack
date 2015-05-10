@@ -75,9 +75,8 @@ def setplot(plotdata):
     plotfigure.kml_xlimits = [-120,-60]
     plotfigure.kml_ylimits = [-60, 0.0];
 
-    # Resolution
-    # Refinement levels : [2,6]; max level = 3
-    # num_cells = [30,30]
+    # Resolution (should be consistent with data)
+    # Refinement levels : [2,6]; max level = 3; num_cells = [30,30]
     # rcl : resolution of the coarsest level in this figure
     rcl = 1    # rcl*figsize = num_cells
     plotfigure.kml_figsize = [30.0,30.0]
