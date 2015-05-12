@@ -184,7 +184,7 @@ gulf_caribbean.tt3:
 
 topo: gulf_caribbean.tt3
 
-all: 
+-all: 
 	$(MAKE) topo
 	$(MAKE) .plots
 	$(MAKE) .htmls

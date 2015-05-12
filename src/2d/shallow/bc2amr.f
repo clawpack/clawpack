@@ -5,8 +5,7 @@ c
       subroutine bc2amr(val,aux,nrow,ncol,meqn,naux,
      1                  hx, hy, level, time,
      2                  xleft,  xright,  ybot, ytop,
-     3                  xlower, ylower,xupper,yupper,
-     4                  xperiodic, yperiodic,spheredom)
+     3                  xperiodic, yperiodic,spheredom)
 
 c
 c    Specific to geoclaw:  extrapolates aux(i,j,1) at boundaries
@@ -80,7 +79,8 @@ c     that no slope in topography occurs at the physical boundary.
 c
 c ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::;
 
-      use amr_module, only: mthbc
+      use amr_module, only: mthbc, xlower, ylower, xupper, yupper
+
 
       implicit double precision (a-h,o-z)
 

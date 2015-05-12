@@ -45,4 +45,57 @@ Contains
     end function convert2days
 
 
+    !======================================
+    subroutine parse_values(str, n, values)
+    !======================================
+
+    ! Take the input string `str` and parse it to extract any numerical values,
+    ! ignoring any character strings. 
+    ! Returns `n` values in array `values`. 
+    ! Assumes n <= 10.
+    ! If you expect value(i) to be an integer, evaluate as nint(value(i)).
+
+    implicit none
+
+    character(len=*), intent(in) :: str
+    integer, intent(out) :: n
+    real(kind=8), intent(out) :: values(10)
+
+    integer :: pos2,nw,i,e
+    character(len=80) :: word(10), str2
+    real(kind=8) :: x
+
+    ! First break into words / tokens based on white space.  
+    ! Each might be character or numerical:
+
+    nw = 0
+    str2 = trim(adjustl(str))
+    do while (len(trim(adjustl(str2))) > 0) 
+        pos2 = index(str2, " ")
+        
+        if (pos2 == 0) then
+           nw = nw + 1
+           word(nw) = trim(adjustl(str2))
+           exit
+           endif
+
+        nw = nw + 1
+        word(nw) = trim(adjustl(str2(1:pos2-1)))
+        str2 = trim(adjustl(str2(pos2+1:)))
+        enddo
+
+    ! now extract numerical values:
+    n = 0
+    do i=1,nw
+        read(word(i),*,IOSTAT=e) x
+        if (e == 0) then
+            ! this token is numerical
+            n = n+1
+            values(n) = x
+            endif
+        enddo
+
+
+    end subroutine parse_values
+
 end module utility_module

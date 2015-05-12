@@ -36,7 +36,6 @@ class MultilayerTest(tests.GeoClawTest):
 
     """
 
-    @tests.wip
     def setUp(self):
 
         super(MultilayerTest, self).setUp()
@@ -51,7 +50,6 @@ class MultilayerTest(tests.GeoClawTest):
         topo.write(os.path.join(self.temp_path, "jump_topo.topotype2"))
 
 
-    @tests.wip
     def runTest(self, save=False):
         r"""Test multi-layer basic plane-waves."""
 
@@ -62,7 +60,7 @@ class MultilayerTest(tests.GeoClawTest):
 
         # Run code and check
         self.run_code()
-        self.check_gauges(save=save)
+        self.check_gauges(save=save, indices=(3, 6))
 
         # If we have gotten here then we do not need to copy the run results
         self.success = True

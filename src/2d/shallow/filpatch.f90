@@ -12,8 +12,7 @@
 !
 ! :::::::::::::::::::::::::::::::::::::::;:::::::::::::::::::::::;
 recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
-                              nrowst,ncolst,ilo,ihi,jlo,jhi)
-!                              nrowst,ncolst,fill_indices)
+                              nrowst,ncolst,ilo,ihi,jlo,jhi,patchOnly)
 
     use amr_module, only: nghost, xlower, ylower, xupper, yupper, outunit
     use amr_module, only: xperdom, yperdom, spheredom, hxposs, hyposs
@@ -28,8 +27,8 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     ! Input
     integer, intent(in) :: level, nvar, naux, mx, my, nrowst, ncolst
     integer, intent(in) :: ilo,ihi,jlo,jhi
-!    integer, intent(in) :: fill_indices(4)
     real(kind=8), intent(in) :: t
+    logical  :: patchOnly
 
     ! Output
     real(kind=8), intent(in out) :: valbig(nvar,mx,my)
@@ -46,25 +45,17 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     integer :: unset_indices(4), coarse_indices(4)
     integer :: refinement_ratio_x, refinement_ratio_y
     real(kind=8) :: dx_fine, dy_fine, dx_coarse, dy_coarse
-    real(kind=8) :: xlow_coarse,ylow_coarse, xlow_fine, ylow_fine, xhi_fine,yhi_fine   !coarse_rect(4), fill_rect(4)
+    real(kind=8) :: xlow_coarse,ylow_coarse, xlow_fine, ylow_fine, xhi_fine,yhi_fine   
     real(kind=8) :: h, b, eta_fine, eta1, eta2, up_slope, down_slope
     real(kind=8) :: hv_fine, v_fine, v_new, divide_mass
     real(kind=8) :: h_fine_average, h_fine, h_count, h_coarse
-!    integer(kind=1) :: flaguse(fill_indices(2)-fill_indices(1)+1,fill_indices(4)-fill_indices(3)+1)
     integer(kind=1) :: flaguse(ihi-ilo+1, jhi-jlo+1)
 
     ! Scratch arrays for interpolation
-!    logical :: fine_flag(nvar, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
     logical :: fine_flag(nvar, ihi-ilo+2,jhi-jlo + 2)
 
     logical :: reloop
 
-!!$    real(kind=8) :: fine_mass(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
-!!$    real(kind=8) :: eta_coarse(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
-!!$    real(kind=8) :: vel_max(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
-!!$    real(kind=8) :: vel_min(fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
-!!$    real(kind=8) :: slope(2, fill_indices(2) - fill_indices(1) + 2, fill_indices(4) - fill_indices(3) + 2)
-!!$    integer :: fine_cell_count(fill_indices(2)-fill_indices(1)+2, fill_indices(4)-fill_indices(3)+2)
 
     ! these are dimensioned at fine size since coarse grid size cant be larger (incl. the +3 that is )
     real(kind=8) ::  fine_mass(ihi-ilo + 3, jhi-jlo + 3)
@@ -85,13 +76,9 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     !  when pass it in to subroutines they treat it as having di_fineerent
     !  dimensions than the max size need to allocate here
     ! the +2 is to expand on coarse grid to enclose fine
-!!$    real(kind=8) :: valcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * nvar)  
-!!$    real(kind=8) :: auxcrse((fill_indices(2)-fill_indices(1)+2) * (fill_indices(4)-fill_indices(3)+2) * num_aux)  
-    real(kind=8) :: valcrse((ihi-ilo+3) * (jhi-jlo+3) * nvar)  
+    real(kind=8) :: valcrse((ihi-ilo+3) * (jhi-jlo+3) * nvar)   ! NB this is a 1D array 
     real(kind=8) :: auxcrse((ihi-ilo+3) * (jhi-jlo+3) * naux)  
-    ! We begin by filling values for grids at level level.
-!!$    mx_patch = fill_indices(2) - fill_indices(1) + 1 ! nrowp
-!!$    my_patch = fill_indices(4) - fill_indices(3) + 1 ! ncolp
+ 
 
     mx_patch = ihi-ilo + 1 ! nrowp
     my_patch = jhi-jlo + 1 
@@ -100,17 +87,10 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     dy_fine     = hyposs(level)
 
     ! Coordinates of edges of patch (xlp,xrp,ybp,ytp)
-!!$    fill_rect = [xlower + ilo * dx_fine, &
-!!$                 xlower + (ihi + 1) * dx_fine, &
-!!$                 ylower + jlo * dy_fine, &
-!!$                 ylower + (jhi + 1) * dy_fine]
-
     xlow_fine = xlower + ilo * dx_fine
     ylow_fine = ylower + jlo * dy_fine
 
     ! Fill in the patch as much as possible using values at this level
-!!$    call intfil(valbig,mx,my,t,flaguse,nrowst,ncolst,fill_indices(1), &
-!!$                fill_indices(2),fill_indices(3),fill_indices(4),level,nvar,naux)
     call intfil(valbig,mx,my,t,flaguse,nrowst,ncolst, ilo,  &
                 ihi,jlo,jhi,level,nvar,naux)
 
@@ -168,10 +148,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                                                 / refinement_ratio_y - nghost
         jphi = (unset_indices(4) + refinement_ratio_y) / refinement_ratio_y
                                                 
-!!$     coarse_rect = [xlower +iplo * dx_coarse, &
-!!$                       xlower + (iphi + 1) * dx_coarse, &
-!!$                       ylower + jplo * dy_coarse, &
-!!$                       ylower + (jphi + 1) * dy_coarse]
+
         xlow_coarse = xlower + iplo * dx_coarse
         ylow_coarse = ylower + jplo * dy_coarse
 
@@ -222,10 +199,10 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
         ! Fill in the edges of the coarse grid
         if ((xperdom .or. (yperdom .or. spheredom)) .and. sticksout(iplo,iphi,jplo,jphi)) then
             call prefilrecur(level-1,nvar,valcrse,auxcrse,naux,t, &
-                             mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi)
+                             mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi,iplo,iphi,jplo,jphi,.true.)
         else
             call filrecur(level-1,nvar,valcrse,auxcrse,naux,t,  &
-                          mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi)
+                          mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi,.true.)
         endif
 
         ! loop through coarse cells determining intepolation slopes
@@ -434,13 +411,13 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
         enddo
     endif   ! end if patch not set
 
-    ! set bcs, whether or not recursive calls needed. set any part of patch that
-    ! stuck out
+    ! set bcs, whether or not recursive calls needed. set any part of patch that stuck out
     xhi_fine = xlower + (ihi + 1) * dx_fine
     yhi_fine = ylower + (jhi + 1) * dy_fine
-    call bc2amr(valbig,aux,mx,my,nvar,naux,dx_fine,dy_fine,level,t,xlow_fine, &
-               xhi_fine,ylow_fine,yhi_fine,xlower,ylower,xupper, &
-                yupper,xperdom,yperdom,spheredom)
+    if (patchOnly) then
+       call bc2amr(valbig,aux,mx,my,nvar,naux,dx_fine,dy_fine,level,t,xlow_fine,xhi_fine,  &
+                   ylow_fine,yhi_fine,xlower,ylower,xupper,yupper,xperdom,yperdom,spheredom)
+    endif
 
 contains
 
