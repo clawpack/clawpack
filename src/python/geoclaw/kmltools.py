@@ -87,7 +87,7 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
     x1,y1 = clawdata.lower[0:]
     x2,y2 = clawdata.upper[0:]
     description = "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g\n" % (y1,y2) 
+            + "  y1 = %g, y2 = %g\n" % (y1,y2)
 
     mx,my = clawdata.num_cells[0:]
     dx = (x2-x1)/float(mx)
@@ -130,7 +130,7 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
 
     elev = 0.
     kml_text = kml_header()
-    
+
     mapping = {}
     mapping['x1'] = x1
     mapping['x2'] = x2
@@ -153,7 +153,7 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         minlevel,maxlevel = region[0:2]
         t1,t2 = region[2:4]
         x1,x2,y1,y2 = region[4:]
-    
+
         if verbose:
             print "Region %i: %10.6f  %10.6f  %10.6f  %10.6f" \
                     % (rnum,x1,x2,y1,y2)
@@ -174,7 +174,7 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         description = "minlevel = %i, maxlevel = %i\n" % (minlevel,maxlevel) \
             + "  t1 = %g, t2 = %g\n" % (t1,t2) \
             + "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g\n\n" % (y1,y2) 
+            + "  y1 = %g, y2 = %g\n\n" % (y1,y2)
         if len(dy_levels) >= minlevel:
             dy = dy_levels[minlevel-1]
             dy_deg,dy_min,dy_sec = deg2dms(dy)
@@ -200,20 +200,20 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
     kml_file.close()
     if verbose:
         print "Created ",fname
-        
+
 
 
 def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
     """
     Make a KML box with default color blue.
-    
+
     :Inputs:
 
      - *xy* a tuple (x1,x2,y1,y2)
      - *fname* (str) name of resulting kml file
      - *name* (str) name to appear in box on Google Earth
      - *color* (str) Color in format aaggbbrr
-     - *verbose* (bool) - If *True*, print out info 
+     - *verbose* (bool) - If *True*, print out info
 
     """
 
@@ -222,8 +222,8 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
         print "Box:   %10.6f  %10.6f  %10.6f  %10.6f" % (x1,x2,y1,y2)
 
     elev = 0.
-    kml_text = kml_header() 
-    
+    kml_text = kml_header()
+
     mapping = {}
     mapping['x1'] = x1
     mapping['x2'] = x2
@@ -232,7 +232,7 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
     mapping['elev'] = elev
     mapping['name'] = name
     mapping['desc'] = "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g" % (y1,y2) 
+            + "  y1 = %g, y2 = %g" % (y1,y2)
     mapping['color'] = color
 
     region_text = kml_region(mapping)
@@ -243,7 +243,7 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
     kml_file.close()
     if verbose:
         print "Created ",fname
-        
+
 
 def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
     """
@@ -255,7 +255,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
      - *fname* (str) name of resulting kml file
      - *name* (str) name to appear in box on Google Earth
      - *color* (str) Color in format aaggbbrr
-     - *verbose* (bool) - If *True*, print out info 
+     - *verbose* (bool) - If *True*, print out info
 
     """
 
@@ -267,8 +267,8 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
         print "                 %10.6f  %10.6f" % (x4,y4)
 
     elev = 0.
-    kml_text = kml_header() 
-    
+    kml_text = kml_header()
+
     mapping = {}
     mapping['x1'] = x1
     mapping['x2'] = x2
@@ -283,7 +283,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
     mapping['desc'] = "  x1 = %g, y1 = %g\n" % (x1,y1) \
             + "  x2 = %g, y2 = %g" % (x2,y2) \
             + "  x3 = %g, y3 = %g" % (x3,y3) \
-            + "  x4 = %g, y4 = %g" % (x4,y4) 
+            + "  x4 = %g, y4 = %g" % (x4,y4)
     mapping['color'] = color
 
     region_text = kml_region(mapping)
@@ -294,7 +294,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
     kml_file.close()
     if verbose:
         print "Created ",fname
-        
+
 
 def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
 
@@ -342,7 +342,7 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
 
     elev = 0.
     kml_text = kml_header()
-    
+
 
     gauges = rundata.gaugedata.gauges
     if len(gauges)==0 and verbose:
@@ -376,7 +376,7 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
     kml_file.close()
     if verbose:
         print "Created ",fname
-        
+
 
 
 def kml_header():
@@ -384,7 +384,7 @@ def kml_header():
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document><name>My document</name>
 <description>Content</description>
-""" 
+"""
     return header
 
 def kml_footer():
@@ -414,9 +414,9 @@ def kml_region(mapping):
 {x1:10.4f},{y2:10.4f},{elev:10.4f}
 {x1:10.4f},{y1:10.4f},{elev:10.4f}
 """.format(**mapping).replace(' ','')
-    
+
     mapping['region'] = region_text
-    if len(mapping['color'])==6: 
+    if len(mapping['color'])==6:
         mapping['color'] = 'FF' + mapping['color']
 
     kml_text = """
@@ -441,7 +441,7 @@ def kml_region(mapping):
 
 def kml_gauge(mapping):
     gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
-    
+
     mapping['gauge'] = gauge_text
 
     kml_text = """
@@ -457,3 +457,76 @@ def kml_gauge(mapping):
 """.format(**mapping)
 
     return kml_text
+
+
+
+def kml_timespan(t1,t2,event_time=None,tz=None):
+
+    r"""
+    Create time strings necessary for sliders in Google Earth.  The time
+    span will cover time [t1,t2], with the start of the event given by
+    event_time.
+
+    [t1,t2]    : time span,
+
+    event_time : Start of event in UTC :  [Y,M,D,H,M,S], e.g. [2010,2,27,3,34,0]
+    tz         : time zone offset to UTC.  e.g. +3 for Chile; -9 for Japan.
+
+    Time span element looks like :
+
+        <TimeSpan>
+          <begin>2010-02-27T06:34:00+03:00</begin>
+          <end>2010-02-27T07:04:00+03:00</end>
+        </TimeSpan>
+
+    As for how well this handles  Daylight  Savings time, here is what the documentation
+    on the Python 'time' module has to say :
+
+    "DST is Daylight Saving Time, an adjustment of the timezone by (usually) one hour
+    during part of the year. DST rules are magic (determined by local law) and can
+    change from year to year. The C library has a table containing the local rules
+    (often it is read from a system file for flexibility) and is the only source of
+    True Wisdom in this respect."
+
+    """
+
+    import time
+    # to adjust time from UTC to time in event locale.
+    if event_time == None:
+        # Use local time.
+        starttime = time.mktime(time.localtime())  # seconds UTC
+        tz_offset = time.timezone/3600.0   # in seconds
+    else:
+        ev = event_time + [0,0,0]   # Extend to 9 tuple; no DST
+        # mktime returns time in seconds + timezone offset, i.e. seconds UTC
+        # Subtract out the timezone offset here, since it will get added back
+        # in when we do gmtime(starttime + ...) below.
+        starttime = time.mktime(ev) - time.timezone
+        if tz is None:
+            print "===> Time zone offset not defined;  assuming zero offset. " \
+                "Set plotdata.kml_tz_offset to define an offset (in hours) from "\
+                "UTC (positive west of UTC; negative east of UTC)"
+            tz = 0
+
+        tz_offset = tz
+
+    if (tz_offset == None):
+        tzstr = "Z"  # no offset; could also just set to "+00:00"
+    else:
+        # Google Earth will show time slider time in local time, where
+        # local + offset = UTC.
+        tz_offset = tz_offset*3600.0    # Offset in seconds
+        tz = time.gmtime(abs(tz_offset))
+        if (tz_offset > 0):
+            tzstr = time.strftime("+%H:%M",tz)  # Time to UTC
+        else:
+            tzstr = time.strftime("-%H:%M",tz)
+
+    # Get time strings for start and end of time span
+    gbegin = time.gmtime(starttime + t1)
+    timestrbegin = "%s%s" % (time.strftime("%Y-%m-%dT%H:%M:%S", gbegin),tzstr)
+
+    gend = time.gmtime(starttime + t2)
+    timestrend = "%s%s" % (time.strftime("%Y-%m-%dT%H:%M:%S", gend),tzstr)
+
+    return timestrbegin,timestrend
