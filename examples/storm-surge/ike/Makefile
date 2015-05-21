@@ -83,7 +83,7 @@ SOURCES = \
   $(AMRLIB)/trimbd.f90 \
   $(AMRLIB)/bound.f90 \
   $(AMRLIB)/intfil.f90 \
-  $(AMRLIB)/amr2.f90 \
+  $(GEOLIB)/amr2.f90 \
   $(GEOLIB)/fgmax_read.f90 \
   $(GEOLIB)/fgmax_frompatch.f90 \
   $(GEOLIB)/fgmax_interpolate.f90 \

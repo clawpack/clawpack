@@ -342,17 +342,6 @@ c
           ncycle  = ncycle + 1
           call conck(1,nvar,naux,time,rest)
 
-       if ((checkpt_style.eq.3 .and. 
-     &      mod(ncycle,checkpt_interval).eq.0) .or. dumpchk) then
-                call check(ncycle,time,nvar,naux)
-                dumpchk = .true.
-       endif
-
-       if ((mod(ncycle,iout).eq.0) .or. dumpout) then
-         call valout(1,lfine,time,nvar,naux)
-         if (printout) call outtre(mstart,.true.,nvar,naux)
-       endif
-
       if ( .not.vtime) goto 201
 
         ! Adjust time steps if variable time step and/or variable
@@ -387,7 +376,18 @@ c             ! use same alg. as when setting refinement when first make new fin
 
       endif
 
- 201  go to 20
+ 201  if ((checkpt_style.eq.3 .and. 
+     &      mod(ncycle,checkpt_interval).eq.0) .or. dumpchk) then
+                call check(ncycle,time,nvar,naux)
+                dumpchk = .true.
+       endif
+
+       if ((mod(ncycle,iout).eq.0) .or. dumpout) then
+         call valout(1,lfine,time,nvar,naux)
+         if (printout) call outtre(mstart,.true.,nvar,naux)
+       endif
+
+      go to 20
 c
 999   continue
 
