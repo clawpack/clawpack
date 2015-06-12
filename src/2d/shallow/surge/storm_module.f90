@@ -46,9 +46,9 @@ module storm_module
     integer :: storm_type
     real(kind=8) :: landfall = 0.d0
     real(kind=8) :: ramp_width
-    type(holland_storm_type) :: holland_storm
-    type(constant_storm_type) :: constant_storm
-    type(stommel_storm_type) :: stommel_storm
+    type(holland_storm_type), save :: holland_storm
+    type(constant_storm_type), save :: constant_storm
+    type(stommel_storm_type), save :: stommel_storm
 
     ! Store physics here for ease of use
     ! WARNING:  If these do not agree with the storm data objects things will break!
