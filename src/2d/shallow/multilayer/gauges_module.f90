@@ -39,7 +39,7 @@ module gauges_module
 
 contains
 
-    subroutine set_gauges(fname)
+    subroutine set_gauges(restart, fname)
 
         use amr_module
 
@@ -47,6 +47,7 @@ contains
 
         ! Input
         character(len=*), intent(in), optional :: fname
+        logical, intent(in) :: restart
 
         ! Locals
         integer :: i
@@ -79,8 +80,14 @@ contains
         ! open file for output of gauge data 
         ! ascii file with format determined by the write(OUTGAUGEUNIT,100)
         ! statement in print_gauges
-        open(unit=OUTGAUGEUNIT, file='fort.gauge', status='unknown', &
-                                form='formatted')
+        ! for restarts, add to end instead of clobbering original file
+        if (restart) then
+           open(unit=OUTGAUGEUNIT, file='fort.gauge', status='unknown', &
+                position='append', form='formatted')
+        else
+           open(unit=OUTGAUGEUNIT, file='fort.gauge', status='unknown', &
+                                   form='formatted')
+        endif
 
     end subroutine set_gauges
 
