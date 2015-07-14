@@ -12,11 +12,11 @@ import unittest
 
 import numpy
 
-import clawpack.geoclaw.tests as tests
+import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
 
 
-class BowlSloshTest(tests.GeoClawTest):
+class BowlSloshTest(test.GeoClawRegressionTest):
 
     r"""Bowl-Slosh regression test for GeoClaw"""
 
