@@ -49,7 +49,7 @@ class GeoClawRegressionTest(clawpack.clawutil.test.ClawpackRegressionTest):
         """
 
         super(GeoClawRegressionTest, self).build_executable(
-                                                     executable_name="xgeoclaw")
+                                                executable_name=executable_name)
 
 
     def check_fgmax(self, save=False):
