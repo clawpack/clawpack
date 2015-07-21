@@ -167,7 +167,7 @@ c     all aux arrays are consistent with the final topography.
 c     The variable aux_finalized is incremented so that we can check
 c     if this is true by checking if aux_finalized == 2 elsewhere in code.
 
-	  if (aux_finalized .eq. 1 .and. num_dtopo > 0) then
+      if (aux_finalized .eq. 1 .and. num_dtopo > 0) then
 c         # this is only true once, and only if there was moving topo
           deallocate(topo0work)
           endif 
