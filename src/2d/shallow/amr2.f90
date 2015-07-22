@@ -582,6 +582,9 @@ program amr2
 
     ! Print out the fgmax files
     if (FG_num_fgrids > 0) call fgmax_finalize()
+    
+    
+    print *,'Testing'
 
 
     call system_clock(clock_finish,clock_rate)
@@ -592,60 +595,60 @@ program amr2
             real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8), maxthreads
 
     do level = 1, mxnest            
-      format_string = "('Total advanc time on level ',i3,' = ',1f16.8,' s')"
+      format_string = "('Total advanc time on level',i3,':',1f16.8,' s')"
       write(outunit,format_string) level, &
              real(tvoll(level),kind=8) / real(clock_rate,kind=8)
       write(*,format_string) level, &
              real(tvoll(level),kind=8) / real(clock_rate,kind=8)
     end do
-    format_string = "('Total updating   time            ',1f16.8,' s')"
+    format_string = "('Total updating time:          ',1f16.8,' s')"
     write(outunit,format_string)  real(timeUpdating,kind=8) / real(clock_rate,kind=8)
     write(*,format_string) real(timeUpdating,kind=8) / real(clock_rate,kind=8)
-    format_string = "('Total valout     time            ',1f16.8,' s')"
+    format_string = "('Total valout time:            ',1f16.8,' s')"
     write(outunit,format_string)  real(timeValout,kind=8) / real(clock_rate,kind=8)
     write(*,format_string) real(timeValout,kind=8) / real(clock_rate,kind=8)
 
     write(*,*)
-    format_string = "('Total regridding time (clock)    ',1f16.8,' s')"
+    format_string = "('Total regridding time (clock):',1f16.8,' s')"
     write(outunit,format_string)  real(timeRegridding,kind=8) / real(clock_rate,kind=8)
     write(*,format_string) real(timeRegridding,kind=8) / real(clock_rate,kind=8)
  
-    format_string = "('   Total Grdfit     time (clock)     ',1f16.8,' s')"
-    write(outunit,format_string)  real(timeGrdfitAll,kind=8) / real(clock_rate,kind=8)
-    write(*,format_string) real(timeGrdfitAll,kind=8) / real(clock_rate,kind=8)
-   format_string = "('      Total Flglvl  time                ',1f16.8,' s')"
-    write(outunit,format_string)  real(timeFlglvl,kind=8) / real(clock_rate,kind=8)
-    write(*,format_string) real(timeFlglvl,kind=8) / real(clock_rate,kind=8)
+    format_string = "('   Total Grdfit     time (clock):    ',1f16.8,' s')"
+    !write(outunit,format_string)  real(timeGrdfitAll,kind=8) / real(clock_rate,kind=8)
+    !write(*,format_string) real(timeGrdfitAll,kind=8) / real(clock_rate,kind=8)
+    format_string = "('      Total Flglvl  time                ',1f16.8,' s')"
+    !write(outunit,format_string)  real(timeFlglvl,kind=8) / real(clock_rate,kind=8)
+    !write(*,format_string) real(timeFlglvl,kind=8) / real(clock_rate,kind=8)
     format_string = "('         Total    Flagger     time (clock)     ',1f16.8,' s')"
-    write(outunit,format_string)  real(timeFlagger,kind=8) / real(clock_rate,kind=8)
-    write(*,format_string) real(timeFlagger,kind=8) / real(clock_rate,kind=8)
+    !write(outunit,format_string)  real(timeFlagger,kind=8) / real(clock_rate,kind=8)
+    !write(*,format_string) real(timeFlagger,kind=8) / real(clock_rate,kind=8)
     format_string = "('         Total    Bufnst     time (clock)     ',1f16.8,' s')"
-    write(outunit,format_string)  real(timeBufnst,kind=8) / real(clock_rate,kind=8)
-    write(*,format_string) real(timeBufnst,kind=8) / real(clock_rate,kind=8)
+    !write(outunit,format_string)  real(timeBufnst,kind=8) / real(clock_rate,kind=8)
+    !write(*,format_string) real(timeBufnst,kind=8) / real(clock_rate,kind=8)
 
     format_string = "('   Total gfixup     time  (clock)   ',1f16.8,' s')"
-    write(outunit,format_string)  real(timeGrdfit2,kind=8) / real(clock_rate,kind=8)
-    write(*,format_string) real(timeGrdfit2,kind=8) / real(clock_rate,kind=8)
+    !write(outunit,format_string)  real(timeGrdfit2,kind=8) / real(clock_rate,kind=8)
+    !write(*,format_string) real(timeGrdfit2,kind=8) / real(clock_rate,kind=8)
     format_string = "('      Total filval (wall) time      ',1f16.8,' s')"
-    write(outunit,format_string)  real(timeFilvalTot,kind=8) / real(clock_rate,kind=8)
-    write(*,format_string) real(timeFilvalTot,kind=8) / real(clock_rate,kind=8)
+    !write(outunit,format_string)  real(timeFilvalTot,kind=8) / real(clock_rate,kind=8)
+    !write(*,format_string) real(timeFilvalTot,kind=8) / real(clock_rate,kind=8)
 
-   format_string = "('          Total filval (all cores) time     ',1f16.8,' s')"
-    write(outunit,format_string)  real(timeFilval,kind=8) / real(clock_rate,kind=8)
-    write(*,format_string) real(timeFilval,kind=8) / real(clock_rate,kind=8)
+    format_string = "('          Total filval (all cores) time     ',1f16.8,' s')"
+    !write(outunit,format_string)  real(timeFilval,kind=8) / real(clock_rate,kind=8)
+    !write(*,format_string) real(timeFilval,kind=8) / real(clock_rate,kind=8)
 
     write(*,*)
-    format_string = "('Total setaux (all cores) time     ',1f16.8,' s')"
+    format_string = "('Total setaux (all cores) time:',1f16.8,' s')"
     write(outunit,format_string)  real(timeSetaux,kind=8) / real(clock_rate,kind=8)
     write(*,format_string) real(timeSetaux,kind=8) / real(clock_rate,kind=8)
 
 
     write(*,*)
-    write(*,*)" integration time, still not counting saveqc"
-    format_string = "('Total Bound (all levels) wall time      ',1f16.8,' s')"
+    write(*,*)"Integration time, still not counting saveqc"
+    format_string = "('Total Bound (all levels) wall time:   ',1f16.8,' s')"
     write(outunit,format_string)  real(timeBound,kind=8) / real(clock_rate,kind=8)
     write(*,format_string) real(timeBound,kind=8) / real(clock_rate,kind=8)
-    format_string = "('Total stepgrid (all levels) wall time   ',1f16.8,' s')"
+    format_string = "('Total stepgrid (all levels) wall time:',1f16.8,' s')"
     write(outunit,format_string)  real(timeStepgrid,kind=8) / real(clock_rate,kind=8)
     write(*,format_string) real(timeStepgrid,kind=8) / real(clock_rate,kind=8)
 
