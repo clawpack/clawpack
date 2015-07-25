@@ -598,7 +598,7 @@ class Fault(object):
         self.dtopo = None
 
         # Default units of each parameter type
-        self.input_units = standard_units
+        self.input_units = standard_units.copy()
         self.input_units.update(input_units)
         
         if subfaults is not None:
@@ -649,7 +649,7 @@ class Fault(object):
             data = numpy.array([data])
 
         self.coordinate_specification = coordinate_specification
-        self.input_units = standard_units
+        self.input_units = standard_units.copy()
         self.input_units.update(input_units)
         self.subfaults = []
         for n in xrange(data.shape[0]):
@@ -703,11 +703,11 @@ class Fault(object):
 
         """
 
-        self.output_units = standard_units
+        self.output_units = standard_units.copy()
         self.output_units.update(output_units)
 
         if style is not None:
-            msg =  "style option not yet implemented, use column_map"
+            msg =  "style option not yet implemented, use column_list"
             raise NotImplementedError(msg)
 
         if column_list is None:
@@ -731,7 +731,7 @@ class Fault(object):
             data_file.write('Units: %s, \n' % str(output_units))
             s = ""
             for param in column_list:
-                s = s + delimiter + param.rjust(15)
+                s = s + param.rjust(15) + delimiter
             data_file.write(s + '\n')
             for subfault in self.subfaults:
                 s = ""
@@ -740,7 +740,7 @@ class Fault(object):
                     if output_units.has_key(param):
                         converted_value = convert_units(value, 
                                     self.output_units[param], direction=2)
-                    s = s + delimiter + format[param] % value
+                    s = s + format[param] % value + delimiter 
                 data_file.write(s + '\n')
                 
 
