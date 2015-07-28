@@ -9,10 +9,10 @@ import gzip
 
 import numpy
 
-import clawpack.geoclaw.tests as tests
+import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools
 
-class IkeTest(tests.GeoClawTest):
+class IkeTest(test.GeoClawRegressionTest):
 
     r"""Hurricane Ike regression test"""
 
