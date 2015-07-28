@@ -540,7 +540,7 @@ class Topography(object):
 
 
     def read(self, path=None, topo_type=None, unstructured=False, 
-             mask=False, filter_region=None, force=False):
+             mask=False, filter_region=None, force=False, stride=[1, 1]):
         r"""Read in the data from the object's *path* attribute.
 
         Stores the resulting data in one of the sets of *x*, *y*, and *z* or 
@@ -553,6 +553,9 @@ class Topography(object):
          - *mask* (bool) - whether to store as masked array for missing
            values (default if False)
          - *filter_region* (tuple)
+         - *stride* (list) - List of strides for the x and y dimensions
+           respectively.  Default is *[1, 1]*.  Note that this is only
+           implemented for NetCDF reading currently.
 
         The first three might have already been set when instatiating object.
 
@@ -651,12 +654,21 @@ class Topography(object):
             elif abs(self.topo_type) == 4:
                 import netCDF4
 
-                # NetCDF4 topography
+                # NetCDF4 GEBCO topography
                 with netCDF4.Dataset(self.path, 'r', format="NETCDF4") as nc_file:
-                    self._x = nc_file.variables['x'][:]
-                    self._y = nc_file.variables['y'][:]
-                    self._Z = nc_file.variables['ny_smls_f'][:, :]
-                    self.no_data_value = nc_file.variables['ny_smls_f'].getncattr('missing_value')
+                    for (key, var) in nc_file.variables.iteritems():
+                        if 'axis' in var.ncattrs():
+                            if var.axis.lower() == "x":
+                                x_var = key
+                            elif var.axis.lower() == "y":
+                                y_var = key
+                        else:
+                            z_var = key
+
+                    self._x = nc_file.variables[x_var][::stride[0]]
+                    self._y = nc_file.variables[y_var][::stride[1]]
+                    self._Z = nc_file.variables[z_var][::stride[0], 
+                                                       ::stride[1]]
 
                 if mask:
                     self._Z = numpy.ma.masked_values(self._Z, self.no_data_value, copy=False)
@@ -850,20 +862,48 @@ class Topography(object):
             import netCDF4
             
             with netCDF4.Dataset(path, 'w') as outfile:
-                outfile.createDimension("x", self.x.shape[0])
-                outfile.createDimension("y", self.y.shape[0])
-                x = outfile.createVariable('x', 'f8', ('x',))
-                y = outfile.createVariable('y', 'f8', ('y',))
-                Z = outfile.createVariable('Z', 'f8', ('y', 'x',))
+                # Add root attributes
+                outfile.Conventions = "CF-1.6"
+                outfile.title = "Topography Data"
+                outfile.institution = "Unknown"
+                outfile.source = "Unknown"
+                outfile.history = "" # TODO: Add current date here
+                outfile.references = ""
+                outfile.comment = "Created by GeoClaw"
 
-                x.units = 'latitude'
-                y.units = 'longitude'
-                Z.units = 'meters'
-                Z.no_data_value = self.no_data_value
+                outfile.createDimension("lon", self.x.shape[0])
+                outfile.createDimension("lat", self.y.shape[0])
+                
+                lon = outfile.createVariable('lon', 'f8', ('lon',))
+                lon.standard_name = "longitude"
+                lon.long_name = "longitude"
+                lon.units = "degrees_east"
+                lon.axis = "X"
+                lon[:] = self.x
 
-                x[:] = self.x
-                y[:] = self.y
-                Z[:, :] = self.Z
+                lat = outfile.createVariable('lat', 'f8', ('lat',))
+                lat.standard_name = "latitude"
+                lat.long_name = "latitude"
+                lat.units = "degrees_north"
+                lat.axis = "Y"
+                lat[:] = self.y
+
+                elevation = outfile.createVariable('elevation', 'f8',
+                    ('lat','lon',))
+                elevation.standard_name  = "height_above_reference_ellipsoid"
+                elevation.long_name  = "Elevation relative to sea level"
+                elevation.units  = "m"
+                elevation.scale_factor  = 1.0
+                elevation.add_offset  = 0.0
+                elevation.sdn_parameter_urn  = "SDN:P01::BATHHGHT"
+                elevation.sdn_parameter_name  = "Sea floor height (above mean sea level) {bathymetric height}"
+                elevation.sdn_uom_urn  = "SDN:P06:ULAA"
+                elevation.sdn_uom_name  = "Metres"
+                elevation.positive = "up"
+                elevation[:, :] = self.Z
+
+                elevation.no_data_value = self.no_data_value
+
 
         else:
             raise NotImplemented("Output type %s not implemented." % topo_type)
