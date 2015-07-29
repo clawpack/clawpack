@@ -540,7 +540,8 @@ class Topography(object):
 
 
     def read(self, path=None, topo_type=None, unstructured=False, 
-             mask=False, filter_region=None, force=False, stride=[1, 1]):
+             mask=False, filter_region=None, force=False, stride=[1, 1],
+             nc_params={}):
         r"""Read in the data from the object's *path* attribute.
 
         Stores the resulting data in one of the sets of *x*, *y*, and *z* or 
@@ -556,6 +557,7 @@ class Topography(object):
          - *stride* (list) - List of strides for the x and y dimensions
            respectively.  Default is *[1, 1]*.  Note that this is only
            implemented for NetCDF reading currently.
+         - *nc_params* (dict) - 
 
         The first three might have already been set when instatiating object.
 
@@ -656,14 +658,27 @@ class Topography(object):
 
                 # NetCDF4 GEBCO topography
                 with netCDF4.Dataset(self.path, 'r', format="NETCDF4") as nc_file:
+                    x_var = nc_params.get('x_var', None)
+                    y_var = nc_params.get('y_var', None)
+                    z_var = nc_params.get('z_var', None)
                     for (key, var) in nc_file.variables.iteritems():
                         if 'axis' in var.ncattrs():
-                            if var.axis.lower() == "x":
+                            if var.axis.lower() == "x" and x_var is None:
                                 x_var = key
-                            elif var.axis.lower() == "y":
+                            elif var.axis.lower() == "y" and y_var is None:
                                 y_var = key
                         else:
-                            z_var = key
+                            if z_var is None:
+                                z_var = key
+
+                    if x_var is None or y_var is None or z_var is None:
+                        raise IOError("Could not automatically determine ",
+                                      "variable ids.  Please check if the file",
+                                      " has the 'axis' attribute attached to",
+                                      " the appropriate x and y variables or ",
+                                      "specify the variables directly via the",
+                                      " *nc_params* dictionary.")
+
 
                     self._x = nc_file.variables[x_var][::stride[0]]
                     self._y = nc_file.variables[y_var][::stride[1]]
