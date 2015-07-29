@@ -22,7 +22,8 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?=
+FFLAGS += -DNETCDF -lnetcdf -I$(NETCDF4_DIR)/include
+LFLAGS += -lnetcdff
 
 
 # ---------------------------------
@@ -179,13 +180,7 @@ SOURCES = \
 include $(CLAWMAKE)
 
 # Construct the topography data
-.PHONY: topo all
-topo:
-	python maketopo.py
+.PHONY: netcdf_test
 
-all: 
-	$(MAKE) topo
-	python make_fgmax_grid.py
-	$(MAKE) .plots
-	$(MAKE) .htmls
-
+netcdf_test: netcdf_test.f90
+	$(FC) netcdf_test.f90 $(FFLAGS) $(LFLAGS) -o netcdf_test
