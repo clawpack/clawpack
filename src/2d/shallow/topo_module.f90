@@ -47,6 +47,9 @@ module topo_module
     real(kind=8), private :: topo_x0,topo_x1,topo_x2,topo_basin_depth
     real(kind=8), private :: topo_shelf_depth,topo_shelf_slope,topo_beach_slope
 
+    ! NetCDF4 support
+    real(kind=4), parameter :: CONVENTION_REQUIREMENT = 1.0
+
     ! dtopo variables
     ! Work array
     real(kind=8), allocatable :: dtopowork(:)
@@ -406,7 +409,7 @@ contains
 #endif
 
         use geoclaw_module
-        use utility_module, only: parse_values
+        use utility_module, only: parse_values, to_lower
 
         implicit none
 
@@ -424,10 +427,10 @@ contains
         real(kind=8) :: values(10)
         character(len=20) :: str
 
-        integer(kind=4) :: nc_unit
-        character(len=50) :: var_name
-        integer(kind=4) :: var_type, var_id, num_dims, dim_ids(2)
-        integer(kind=4), allocatable :: nc_topo_temp(:)
+        ! NetCDF Support
+        character(len=10) :: direction
+        character(len=1) :: axis_string
+        integer :: ios, root_id, z_var_id, var_ids(10), num_vars, row_index
 
         print *, ' '
         print *, 'Reading topography file  ', fname
@@ -514,24 +517,46 @@ contains
             ! NetCDF
             case(4)
 #ifdef NETCDF
-                ! Allocate temporary array for storage of input data
-                allocate(nc_topo_temp(mx * my))
-
-                call check(nf90_open(fname, nf90_nowrite, nc_unit))
-
-                call check(nf90_inquire_variable(nc_unit, 6, var_name, var_type, num_dims, dim_ids))
-                call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                call check(nf90_get_var(nc_unit, var_id, nc_topo_temp))
+                ! Open file    
+                call check_netcdf_error(nf90_open(fname, nf90_nowrite, root_id))
                 
-                call check(nf90_close(nc_unit))
-                    
-                ! Caste topography data to real(kind=8)
-                topo = real(nc_topo_temp, kind=8)
+                ! Find z_var_id
+                call check_netcdf_error(nf90_inq_varids(root_id, num_vars, var_ids))
+                z_var_id = -1
+                do n=1,num_vars
+                    ios = nf90_get_att(root_id, var_ids(n), 'Axis', axis_string)
+                    if (ios /= NF90_NOERR) then
+                        ios = nf90_get_att(root_id, var_ids(n), 'axis', axis_string)
+                    end if
+                    if (ios /= NF90_NOERR) then
+                        z_var_id = var_ids(n)
+                    end if
+                end do
 
-                ! Deallocate temporary array
-                deallocate(nc_topo_temp)
+                ! Load in data
+                ! TODO: Provide striding into data if need be
+                ! TODO: Only grab section of data within the domain
+                row_index = my
+                do j=1, my
+                    row_index = row_index - 1
+!                     print *,row_index * mx, (row_index + 1) * mx
+!                     print *,(row_index - 1) * mx + 1, (row_index - 1) * mx + mx
+                    call check_netcdf_error(nf90_get_var(root_id, z_var_id, &
+                             topo(row_index * mx + 1:(row_index + 1) * mx), &
+                             start=(/ 1, j /), count=(/ mx, 1 /)))
+                end do
 
-
+                ! Check if the topography was defined positive down and flip the
+                ! sign if need be.  Just in case this is true but topo_type < 0
+                ! we do not do anything here on this to avoid doing it twice.
+                ios = nf90_get_att(root_id, z_var_id, 'positive', direction)
+                if (ios == NF90_NOERR) then
+                    if (to_lower(direction) == "down") then
+                        if (topo_type < 0) then
+                            topo = -topo
+                        endif
+                    end if
+                end if
 #else
                 print *, "ERROR:  NetCDF library was not included in this build"
                 print *, "  of GeoClaw."
@@ -613,11 +638,15 @@ contains
         real(kind=8) :: values(10)
         character(len=80) :: str
 
-        integer(kind=4) :: nc_unit
-        character(len=50) :: xname, yname, var_name
-        integer(kind=4) :: num_dims, dim_ids(2), var_type, var_id, z_range(2)
-        integer(kind=4) :: dims(2)
-        real(kind=8) :: x_range(2), y_range(2), delta(2)
+        ! NetCDF Support
+        character(len=1) :: axis_string
+        character(len=6) :: convention_string
+        character(len=10) :: x_dim_name, y_dim_name, z_dim_name
+        character(len=10) :: x_var_name, y_var_name, z_var_name
+        integer :: ios, root_id, x_var_id, y_var_id, z_var_id, var_ids(10)
+        integer :: num_dims, num_vars, type, x_dim_id, y_dim_id, num_values
+        integer :: dim_ids(2)
+        real(kind=8) :: convention_version(10), buffer(10)
 
         ! New
         real(kind=8), allocatable :: lat(:), long(:)
@@ -673,7 +702,7 @@ contains
 
             ! ASCII file with header followed by z data
             case(2:3)
-<<<<<<< HEAD
+                open(unit=iunit, file=fname, status='unknown',form='formatted')
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 mx = nint(values(1))
@@ -703,99 +732,86 @@ contains
                 call parse_values(str, n, values)
                 nodata_value = values(1)
 
-=======
-                open(unit=iunit, file=fname, status='unknown',form='formatted')
-
-                read(iunit,*) mx
-                read(iunit,*) my
-                read(iunit,*) xll
-                read(iunit,*) yll
-                read(iunit,*) dx
-                read(iunit,*) nodata_value
-                dy = dx
->>>>>>> Add NetCDF topography capability
                 xhi = xll + (mx-1)*dx
                 yhi = yll + (my-1)*dy
                 
             ! NetCDF
             case(4)
 #ifdef NETCDF
-    
-                call check(nf90_open(fname, nf90_nowrite, nc_unit))
-                if (.false.) then
-                    ! First dimension is always 2 and called side, second is 
-                    ! total size of array, only used to check that something has not
-                    ! gone awry
-                    call check(nf90_inquire_dimension(nc_unit, 1, xname, mx))
-                    call check(nf90_inquire_dimension(nc_unit, 2, xname, mx))
 
-                    ! Get range of longitude values 
-                    call check(nf90_inquire_variable(nc_unit, 1, var_name, var_type, num_dims, dim_ids))
-                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                    call check(nf90_get_var(nc_unit, var_id, x_range))
-                    xll = x_range(1)
-                    xhi = x_range(2)
+                ! Open file    
+                call check_netcdf_error(nf90_open(fname, nf90_nowrite, root_id))
 
-                    ! Get range of latitude values
-                    call check(nf90_inquire_variable(nc_unit, 2, var_name, var_type, num_dims, dim_ids))
-                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                    call check(nf90_get_var(nc_unit, var_id, y_range))
-                    yll = y_range(1)
-                    yhi = y_range(2)
-
-                    ! Skip z range, we do not use if for anything 
-    !                 call check(nf90_inquire_variable(nc_unit, 3, var_name, var_type, num_dims, dim_ids))
-    !                 call check(nf90_inq_varid(nc_unit, var_name, var_id))
-    !                 call check(nf90_get_var(nc_unit, var_id, z_range))
-
-                    ! Fetch dx and dy
-                    call check(nf90_inquire_variable(nc_unit, 4, var_name, var_type, num_dims, dim_ids))
-                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                    call check(nf90_get_var(nc_unit, var_id, delta))
-                    dx = delta(1)
-                    dy = delta(2)
-
-                    ! Get actual grid dimensions, also check to make sure it agrees
-                    ! with the size fetched above
-                    call check(nf90_inquire_variable(nc_unit, 5, var_name, var_type, num_dims, dim_ids))
-                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                    call check(nf90_get_var(nc_unit, var_id, dims))
-                    if (mx /= dims(1) * dims(2)) then
-                        print *, "ERROR:  Total size of topography array ", mx
-                        print *, "  does not agree with seperate dimensions"
-                        print *, "  mx = ", dims(1), ", my = ", dims(2)
-                        stop
-                    end if
-                    mx = dims(1)
-                    my = dims(2)
-                else
-                    ! GDAL NGDC output
-                    ! Get size of array
-                    call check(nf90_inquire_dimension(nc_unit, 1, xname, mx))
-                    call check(nf90_inquire_dimension(nc_unit, 2, xname, my))
-                    allocate(lat(my), long(mx))
-
-                    ! Find extents in lat-long
-                    call check(nf90_inquire_variable(nc_unit, 2, var_name, var_type, num_dims, dim_ids))
-                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                    call check(nf90_get_var(nc_unit, var_id, lat))
-
-                    call check(nf90_inquire_variable(nc_unit, 3, var_name, var_type, num_dims, dim_ids))
-                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                    call check(nf90_get_var(nc_unit, var_id, long))
-
-                    ! Find delta
-                    call check(nf90_inquire_variable(nc_unit, 1, var_name, var_type, num_dims, dim_ids))
-                    print *,var_name, num_dims, dim_ids
-                    call check(nf90_inq_varid(nc_unit, var_name, var_id))
-                    call check(nf90_get_var(nc_unit, var_id, temp))
-
+                ! NetCDF4 GEBCO topography, should conform to CF metadata
+                ! standard
+                ios = nf90_get_att(root_id, NF90_GLOBAL, 'Conventions', convention_string)
+                if (ios /= NF90_NOERR .or. convention_string(1:3) /= "CF-") then
+                    print *, "Topography file does not conform to the CF"
+                    print *, "conventions and meta-data.  Please see the"
+                    print *, "information at "
+                    print *, ""
+                    print *, "    cfconventions.org"
+                    print *, ""
+                    print *, "to find out more info."
                     stop
-
-
                 end if
 
-                call check(nf90_close(nc_unit))
+                call parse_values(convention_string(4:6), num_values, convention_version)
+                if (convention_version(1) < CONVENTION_REQUIREMENT) then
+                    print *, "Topography file conforms to a CF version that"
+                    print *, "is too old (", convention_version, ").  "
+                    print *, "Please refer to"
+                    print *, ""
+                    print *, "    cfconventions.org"
+                    print *, ""
+                    print *, "to find out more info."
+                    stop
+                end if
+
+                ! Find axis identifiers
+                call check_netcdf_error(nf90_inq_varids(root_id, num_vars, var_ids))
+                x_var_id = -1
+                y_var_id = -1
+                do n=1,num_vars
+                    ios = nf90_get_att(root_id, var_ids(n), 'Axis', axis_string)
+                    if (ios /= NF90_NOERR) then
+                        ios = nf90_get_att(root_id, var_ids(n), 'axis', axis_string)
+                    end if
+                    if (ios == NF90_NOERR) then
+                        if (axis_string == "X" .or. axis_string == "x") then
+                            x_var_id = var_ids(n)
+                            call check_netcdf_error(nf90_inquire_variable(root_id, x_var_id, dimids=dim_ids))
+                            x_dim_id = dim_ids(1)
+                        else if ( axis_string == "Y" .or. axis_string == "y" ) then
+                            y_var_id = var_ids(n)
+                            call check_netcdf_error(nf90_inquire_variable(root_id, y_var_id, dimids=dim_ids))
+                            y_dim_id = dim_ids(1)
+                        else
+                            print *,"What happened?"
+                            stop
+                        end if
+                    end if
+                end do
+
+                if (x_var_id == -1 .or. y_var_id == -1) then
+                    print *, "Did not identify one of the dimension fields."
+                    stop
+                end if
+
+                ! Read in spatial data
+                call check_netcdf_error(nf90_inquire_dimension(root_id, x_dim_id, len=mx))
+                call check_netcdf_error(nf90_get_var(root_id, x_var_id, xll, start=(/ 1 /)))
+                call check_netcdf_error(nf90_get_var(root_id, x_var_id, xhi, start=(/ mx /)))
+                
+                call check_netcdf_error(nf90_inquire_dimension(root_id, y_dim_id, len=my))
+                call check_netcdf_error(nf90_get_var(root_id, y_var_id, yll, start=(/ 1 /)))
+                call check_netcdf_error(nf90_get_var(root_id, y_var_id, yhi, start=(/ my /)))
+
+                call check_netcdf_error(nf90_close(root_id))
+                
+                dx = (xhi - xll) / (mx)
+                dy = (yhi - yll) / (my)
+
 #else
                 print *, "ERROR:  NetCDF library was not included in this build"
                 print *, "  of GeoClaw."
@@ -1347,18 +1363,22 @@ subroutine intersection(indicator,area,xintlo,xinthi, &
 end subroutine intersection
 
 #ifdef NETCDF
-    subroutine check(istatus)
-        
+    subroutine check_netcdf_error(ios)
+
         use netcdf
-    
+
         implicit none
-    
-        integer, intent (in) :: istatus
-        
-        if (istatus /= nf90_noerr) then
-            print *, trim(adjustl(nf90_strerror(istatus)))
+
+        integer, intent(in) :: ios
+
+        if (ios /= NF90_NOERR) then
+            print *, "NetCDF IO error: ", ios
+            print *, trim(nf90_strerror(ios))
+            stop
         end if
-    end subroutine check
+
+    end subroutine check_netcdf_error
 #endif
+
 
 end module topo_module
