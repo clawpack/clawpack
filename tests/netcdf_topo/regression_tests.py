@@ -78,7 +78,6 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             self.success = True
             self.stdout.write("NetCDF topography test skipped due to failure" + 
                               "to build test program.")
-            self.tearDown()
 
         else:
             self.build_executable()
@@ -95,7 +94,6 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             self.stdout.write("NetCDF topography test skipped due to failure" + 
                               "to build test program.")
             self.success = True
-            self.tearDown()
             self.netcdf_passed = False
 
         else:
