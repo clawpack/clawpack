@@ -111,7 +111,7 @@ def test_against_old():
     Test against the old topotools from 5.1.0.
     Compare bowl.tt1 to bowl_old.tt1
     """
-
+    
     import old_topotools
 
     nxpoints = 5
@@ -224,6 +224,8 @@ def test_netcdf():
         shutil.copytree(temp_path, os.path.join(os.getcwd()),
             'test_read_netcdf')
         raise e
+    except ImportError as e:
+        raise nose.SkipTest("Skipping test since NetCDF support not found.")
     finally:
         shutil.rmtree(temp_path)
 
@@ -318,7 +320,12 @@ def plot_topo_bowl_hill():
     Create topo and write out, then read in again and plot.
     Note that center of bowl should be at (0,0).
     """
-    import matplotlib
+
+    try:
+        import matplotlib
+    except ImportError:
+        raise nose.SkipTest("Skipping test since matplotlib not found.")
+
     matplotlib.use("Agg")  # use image backend -- needed for Travis tests
     import matplotlib.pyplot as plt
 
@@ -350,7 +357,12 @@ def plot_kahului():
     In addition to using the Topography.plot function, also 
     illustrate how to do a contour data of the data directly.
     """
-    import matplotlib
+
+    try:
+        import matplotlib
+    except ImportError:
+        raise nose.SkipTest("Skipping test since matplotlib not found.")
+
     matplotlib.use("Agg")  # use image backend -- needed for Travis tests
     import matplotlib.pyplot as plt
 
@@ -397,8 +409,8 @@ def plot_kahului():
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         if "plot" in sys.argv[1].lower():
-            plot_topo_bowl_hill()
             plot_kahului()
+            plot_topo_bowl_hill()
             test_unstructured_topo(save=False, plot=True)
         elif bool(sys.argv[1]):
             test_unstructured_topo(save=True)
