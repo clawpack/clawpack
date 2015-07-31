@@ -18,16 +18,6 @@ import numpy
 import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
 
-# Force recompilation of topo_module to add NetCDF flags
-mod_path = os.path.join(os.environ["CLAW"], "geoclaw", "src", "2d", "shallow",
-                       "topo_module.mod")
-obj_path = os.path.join(os.environ["CLAW"], "geoclaw", "src", "2d", "shallow",
-                       "topo_module.o")
-if os.path.exists(mod_path):
-    os.remove(mod_path)
-if os.path.exists(obj_path):
-    os.remove(obj_path)
-
 class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
 
     r"""NetCDF regression test for GeoClaw based on the bowl-slosh example"""
@@ -51,8 +41,16 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
         topo = topotools.Topography(topo_func=topo_func)
         topo.x = numpy.linspace(-2.1, 2.1, 210)
         topo.y = numpy.linspace(-2.1, 2.1, 210)
-        topo.write(os.path.join(self.temp_path, "bowl.nc"))
-        topo.write(os.path.join(self.temp_path, 'bowl.tt2'))
+        try:
+            topo.write(os.path.join(self.temp_path, "bowl.nc"))
+        
+        except ImportError:
+            # Assume that NetCDF is not installed and move on
+            self.netcdf_passed = False
+            self.success = True
+            self.stdout.write("NetCDF topography test skipped due to failure" + 
+                              "to build test program.")
+            self.tearDown()
 
 
     def build_executable(self):
@@ -64,7 +62,6 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
                                                                 shell=True)
         except subprocess.CalledProcessError:
 
-            import pdb; pdb.set_trace()
             self.stdout.write("NetCDF topography test skipped due to failure" + 
                               "to build test program.")
             self.success = True
@@ -72,6 +69,15 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             self.netcdf_passed = False
 
         else:
+            # Force recompilation of topo_module to add NetCDF flags
+            mod_path = os.path.join(os.environ["CLAW"], "geoclaw", "src", "2d",
+                                    "shallow", "topo_module.mod")
+            obj_path = os.path.join(os.environ["CLAW"], "geoclaw", "src", "2d",
+                                    "shallow", "topo_module.o")
+            if os.path.exists(mod_path):
+                os.remove(mod_path)
+            if os.path.exists(obj_path):
+                os.remove(obj_path)
 
             self.netcdf_passed = True
             super(NetCDFBowlSloshTest, self).build_executable()
@@ -81,8 +87,6 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
         r"""Test NetCDF topography support
 
         """
-
-        self.build_executable()
 
         # Check to see if NetCDF has been built
         if self.netcdf_passed:
@@ -96,6 +100,70 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             # Perform tests
             self.check_gauges(save=save, indices=(2, 3), tolerance=1e-4)
             self.success = True
+
+
+    def check_gauges(self, save=False, gauge_num=1, indices=[0], 
+                           regression_data_path="regression_data.txt",
+                           tolerance=1e-14):
+        r"""Basic test to assert gauge equality
+
+        :Input:
+         - *save* (bool) - If *True* will save the output from this test to 
+           the file *regresion_data.txt*.  Default is *False*.
+         - *indices* (tuple) - Contains indices to compare in the gague 
+           comparison.  Defaults to *(2, 3)*.
+         - *regression_data_path* (path) - Path to the regression test data.
+           Defaults to 'regression_data.txt'.
+        """
+
+        # Get gauge data
+        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
+        data_sum = []
+        gauge_numbers = numpy.array(data[:, 0], dtype=int)
+        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
+        for index in indices:
+            data_sum.append(data[gauge_indices, index].sum())
+
+        # Get (and save) regression comparison data
+        regression_data_file = os.path.join(self.test_path,
+                                            regression_data_path)
+        if save:
+            numpy.savetxt(regression_data_file, data)
+        regression_data = numpy.loadtxt(regression_data_file)
+        regression_sum = []
+        gauge_numbers = numpy.array(data[:, 0], dtype=int)
+        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
+        for index in indices:
+            regression_sum.append(regression_data[gauge_indices, index].sum())
+        # regression_sum = regression_data
+
+        # Compare data
+        assert numpy.allclose(data_sum, regression_sum, tolerance), \
+                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
+        assert numpy.allclose(data, regression_data, tolerance), \
+                "Full gauge match failed."
+
+
+    def tearDown(self):
+        r"""Tear down test infrastructure.
+
+        This version removes source that may have been compiled with NetCDF
+        turned on so that it does not conflict with subsequent tests.
+
+        """
+
+        # Force recompilation of topo_module to add NetCDF flags
+        mod_path = os.path.join(os.environ["CLAW"], "geoclaw", "src", "2d",
+                                "shallow", "topo_module.mod")
+        obj_path = os.path.join(os.environ["CLAW"], "geoclaw", "src", "2d",
+                                "shallow", "topo_module.o")
+        if os.path.exists(mod_path):
+            os.remove(mod_path)
+        if os.path.exists(obj_path):
+            os.remove(obj_path)
+
+        super(NetCDFBowlSloshTest, self).tearDown()
+
 
 
 if __name__=="__main__":
