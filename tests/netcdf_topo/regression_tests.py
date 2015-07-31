@@ -41,36 +41,21 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
 
     def setUp(self):
 
-        self.temp_path = tempfile.mkdtemp()
+        super(NetCDFBowlSloshTest, self).setUp()
 
-        self.stdout = open(os.path.join(self.temp_path, "run_output.txt"), "w")
-        self.stdout.write("Output from Test %s\n" % self.__class__.__name__)
-        # TODO - Should change this to use the time module's formatting 
-        # apparatus
-        tm = time.localtime()
-        year = str(tm[0]).zfill(4)
-        month = str(tm[1]).zfill(2)
-        day = str(tm[2]).zfill(2)
-        hour = str(tm[3]).zfill(2)
-        minute = str(tm[4]).zfill(2)
-        second = str(tm[5]).zfill(2)
-        date = 'Started %s/%s/%s-%s:%s.%s\n' % (year,month,day,hour,minute,second)
-        self.stdout.write(date)
-        self.stdout.write(("="*80 + "\n"))
+        # Make topography
+        a = 1.
+        h0 = 0.1
+        topo_func = lambda x,y: h0 * (x**2 + y**2) / a**2 - h0
 
-        self.stderr = open(os.path.join(self.temp_path, "error_output.txt"), "w")
-        self.stderr.write("Errors from Test %s\n" % self.__class__.__name__)
-        self.stderr.write(date)
-        self.stderr.write(("="*80 + "\n"))
+        topo = topotools.Topography(topo_func=topo_func)
+        topo.x = numpy.linspace(-2.1, 2.1, 210)
+        topo.y = numpy.linspace(-2.1, 2.1, 210)
+        topo.write(os.path.join(self.temp_path, "bowl.nc"))
+        topo.write(os.path.join(self.temp_path, 'bowl.tt2'))
 
-        self.stdout.flush()
-        self.stderr.flush()
 
-        self.stdout.write("Paths:")
-        self.stdout.write("  %s" % self.temp_path)
-        self.stdout.write("  %s" % self.test_path)
-        self.stdout.flush()
-
+    def build_executable(self):
         try:
             self.stdout.write("Teting NetCDF output:\n")
             subprocess.check_call("cd %s ; make netcdf_test " % self.test_path, 
@@ -89,24 +74,15 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
         else:
 
             self.netcdf_passed = True
-            self.build_executable()
-
-            # Make topography
-            a = 1.
-            h0 = 0.1
-            topo_func = lambda x,y: h0 * (x**2 + y**2) / a**2 - h0
-
-            topo = topotools.Topography(topo_func=topo_func)
-            topo.x = numpy.linspace(-2.0, 2.0, 200)
-            topo.y = numpy.linspace(-2.0, 2.0, 200)
-            topo.write(os.path.join(self.temp_path, "bowl.nc"))
-
+            super(NetCDFBowlSloshTest, self).build_executable()
 
 
     def runTest(self, save=False, indices=(2, 3)):
         r"""Test NetCDF topography support
 
         """
+
+        self.build_executable()
 
         # Check to see if NetCDF has been built
         if self.netcdf_passed:
@@ -118,7 +94,7 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             self.run_code()
 
             # Perform tests
-            self.check_gauges(save=save, indices=(2, 3))
+            self.check_gauges(save=save, indices=(2, 3), tolerance=1e-4)
             self.success = True
 
 

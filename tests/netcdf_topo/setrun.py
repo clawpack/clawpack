@@ -364,6 +364,7 @@ def setgeo(rundata):
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
     topo_data.topofiles.append([4, 1, 10, 0., 1.e10, 'bowl.nc'])
+    # topo_data.topofiles.append([2, 1, 10, 0., 1.e10, 'bowl.tt2'])
 
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data

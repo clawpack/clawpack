@@ -430,6 +430,7 @@ contains
         ! NetCDF Support
         character(len=10) :: direction
         character(len=1) :: axis_string
+        real(kind=8), allocatable :: nc_buffer(:, :)
         integer :: ios, root_id, z_var_id, var_ids(10), num_vars, row_index
 
         print *, ' '
@@ -536,14 +537,12 @@ contains
                 ! Load in data
                 ! TODO: Provide striding into data if need be
                 ! TODO: Only grab section of data within the domain
-                row_index = my
+                row_index = mx + 1
                 do j=1, my
                     row_index = row_index - 1
-!                     print *,row_index * mx, (row_index + 1) * mx
-!                     print *,(row_index - 1) * mx + 1, (row_index - 1) * mx + mx
-                    call check_netcdf_error(nf90_get_var(root_id, z_var_id, &
-                             topo(row_index * mx + 1:(row_index + 1) * mx), &
-                             start=(/ 1, j /), count=(/ mx, 1 /)))
+                    call check_netcdf_error(nf90_get_var(root_id, z_var_id,  &
+                          topo((row_index-1)*mx + 1:(row_index-1)*mx + mx),  &
+                                    start = (/ 1, j /), count=(/ mx, 1 /)))
                 end do
 
                 ! Check if the topography was defined positive down and flip the
@@ -802,6 +801,7 @@ contains
                 call check_netcdf_error(nf90_inquire_dimension(root_id, x_dim_id, len=mx))
                 call check_netcdf_error(nf90_get_var(root_id, x_var_id, xll, start=(/ 1 /)))
                 call check_netcdf_error(nf90_get_var(root_id, x_var_id, xhi, start=(/ mx /)))
+!                 call check_netcdf_error(nf90_inquire)
                 
                 call check_netcdf_error(nf90_inquire_dimension(root_id, y_dim_id, len=my))
                 call check_netcdf_error(nf90_get_var(root_id, y_var_id, yll, start=(/ 1 /)))
@@ -809,8 +809,8 @@ contains
 
                 call check_netcdf_error(nf90_close(root_id))
                 
-                dx = (xhi - xll) / (mx)
-                dy = (yhi - yll) / (my)
+                dx = (xhi - xll) / (mx - 1)
+                dy = (yhi - yll) / (my - 1)
 
 #else
                 print *, "ERROR:  NetCDF library was not included in this build"
