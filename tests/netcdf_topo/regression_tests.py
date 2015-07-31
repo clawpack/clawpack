@@ -31,7 +31,35 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
 
     def setUp(self):
 
-        super(NetCDFBowlSloshTest, self).setUp()
+        self.temp_path = tempfile.mkdtemp()
+
+        self.stdout = open(os.path.join(self.temp_path, "run_output.txt"), "w")
+        self.stdout.write("Output from Test %s\n" % self.__class__.__name__)
+        # TODO - Should change this to use the time module's formatting 
+        # apparatus
+        tm = time.localtime()
+        year = str(tm[0]).zfill(4)
+        month = str(tm[1]).zfill(2)
+        day = str(tm[2]).zfill(2)
+        hour = str(tm[3]).zfill(2)
+        minute = str(tm[4]).zfill(2)
+        second = str(tm[5]).zfill(2)
+        date = 'Started %s/%s/%s-%s:%s.%s\n' % (year,month,day,hour,minute,second)
+        self.stdout.write(date)
+        self.stdout.write(("="*80 + "\n"))
+
+        self.stderr = open(os.path.join(self.temp_path, "error_output.txt"), "w")
+        self.stderr.write("Errors from Test %s\n" % self.__class__.__name__)
+        self.stderr.write(date)
+        self.stderr.write(("="*80 + "\n"))
+
+        self.stdout.flush()
+        self.stderr.flush()
+
+        self.stdout.write("Paths:")
+        self.stdout.write("  %s" % self.temp_path)
+        self.stdout.write("  %s" % self.test_path)
+        self.stdout.flush()
 
         # Make topography
         a = 1.
@@ -52,6 +80,8 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
                               "to build test program.")
             self.tearDown()
 
+        else:
+            self.build_executable()
 
     def build_executable(self):
         try:
