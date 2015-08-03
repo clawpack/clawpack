@@ -129,7 +129,7 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         print "Allowing maximum of %i levels" % amr_levels_max
 
     elev = 0.
-    kml_text = kml_header()
+    kml_text = kml_header(fname)
 
     mapping = {}
     mapping['x1'] = x1
@@ -222,7 +222,7 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
         print "Box:   %10.6f  %10.6f  %10.6f  %10.6f" % (x1,x2,y1,y2)
 
     elev = 0.
-    kml_text = kml_header()
+    kml_text = kml_header(fname)
 
     mapping = {}
     mapping['x1'] = x1
@@ -267,7 +267,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
         print "                 %10.6f  %10.6f" % (x4,y4)
 
     elev = 0.
-    kml_text = kml_header()
+    kml_text = kml_header(fname)
 
     mapping = {}
     mapping['x1'] = x1
@@ -341,7 +341,7 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
             raise IOError("*** cannot execute setrun file")
 
     elev = 0.
-    kml_text = kml_header()
+    kml_text = kml_header(fname)
 
 
     gauges = rundata.gaugedata.gauges
@@ -379,12 +379,12 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
 
 
 
-def kml_header():
+def kml_header(name='GeoClaw kml file'):
     header = """<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
-<Document><name>My document</name>
+<Document><name>%s</name>
 <description>Content</description>
-"""
+""" % name
     return header
 
 def kml_footer():
