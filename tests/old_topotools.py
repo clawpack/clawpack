@@ -91,7 +91,7 @@ skipfirstcols=0, skiplastcols=0):
 
 
 def topofile2griddata(inputfile, topotype=2):
-    import pylab
+    #import pylab
 
 
     if topotype>1:
@@ -120,7 +120,8 @@ def topofile2griddata(inputfile, topotype=2):
     else:
         a=datafile2array(inputfile)
         xdiff=numpy.diff(a[:,0])
-        inddiff=pylab.find(xdiff<0)
+        #inddiff=pylab.find(xdiff<0)  
+        inddiff = numpy.nonzero(xdiff<0)[0]  # rewrite above line without find
         xlength=inddiff[0]+1
         ylength=len(a[:,0])/xlength
         x=a[:,0]
