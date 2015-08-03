@@ -585,7 +585,8 @@ class Fault(object):
 
     """
 
-    def __init__(self, subfaults=None, input_units={}):
+    def __init__(self, subfaults=None, input_units={},
+                 coordinate_specification=None):
         r"""Fault initialization routine.
         
         See :class:`Fault` for more info.
@@ -600,6 +601,9 @@ class Fault(object):
         # Default units of each parameter type
         self.input_units = standard_units.copy()
         self.input_units.update(input_units)
+
+        # Set the coordinate specification, e.g. 'top center':
+        self.coordinate_specification = coordinate_specification
         
         if subfaults is not None:
             if not isinstance(subfaults, list):
@@ -607,6 +611,11 @@ class Fault(object):
             self.subfaults = subfaults
             for subfault in self.subfaults:
                 subfault.convert_to_standard_units(self.input_units)
+                if subfault.coordinate_specification is None:
+                    subfault.coordinate_specification = coordinate_specification
+                if subfault.coordinate_specification is None:
+                    raise ValueError("Must specify coordinate_specification, " + \
+                            "either for fault or for each subfault")
 
 
     def read(self, path, column_map, coordinate_specification="centroid",
@@ -725,6 +734,11 @@ class Fault(object):
         format['slip'] = '%15.8e'
 
         with open(path, 'w') as data_file:
+            c_s_list = set([s.coordinate_specification for s in self.subfaults])
+            if (len(c_s_list) >= 1) and \
+                    (c_s_list.pop() != self.coordinate_specification):
+                raise ValueError("Subfaults do not have common " +
+                    "coordinate_specification that agrees with fault attribute")
             # write header:
             data_file.write('Subfaults file with coordinate_specification:  ')
             data_file.write('%s, \n' % self.coordinate_specification)
@@ -1179,7 +1193,7 @@ class SubFault(object):
         r"""Latitutde of the subfault based on *coordinate_specification*."""
         self.longitude = None
         r"""Longitude of the subfault based on *coordinate_specification*."""
-        self.coordinate_specification = "top center"
+        self.coordinate_specification = None
         r"""Specifies where the latitude, longitude and depth are measured from."""
 
         # default value for rigidity = shear modulus
