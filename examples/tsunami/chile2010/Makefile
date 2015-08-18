@@ -30,7 +30,7 @@ FFLAGS ?=
 # ---------------------------------
 
 GEOLIB = $(CLAW)/geoclaw/src/2d/shallow
-include $(GEOLIB)/geoclaw_tsunami.make
+include $(GEOLIB)/geoclaw.make
 
 # ---------------------------------------
 # package sources specifically to exclude
