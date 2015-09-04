@@ -14,11 +14,11 @@ import shutil
 
 import numpy
 
-import clawpack.geoclaw.tests as tests
+import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
 import clawpack.geoclaw.dtopotools as dtopotools
 
-class DTopoTests(tests.GeoClawTest):
+class DTopoTests(test.GeoClawRegressionTest):
     
     def setUp(self):
 

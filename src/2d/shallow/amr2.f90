@@ -368,7 +368,7 @@ program amr2
 
     ! Read in region and gauge data
     call set_regions('regions.data')
-    call set_gauges('gauges.data')
+    call set_gauges(rest,'gauges.data')
 
     ! New fixed grid routines to keep track of max over computation:
     call set_fgmax('fgmax.data')

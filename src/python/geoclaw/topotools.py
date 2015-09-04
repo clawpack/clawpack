@@ -35,6 +35,7 @@ import os
 import numpy
 
 import clawpack.geoclaw.util as util
+import clawpack.clawutil.data
 import clawpack.geoclaw.data
 
 # ==============================================================================
@@ -54,7 +55,8 @@ def determine_topo_type(path, default=None):
     
     """
 
-    extension = os.path.splitext(util.strip_archive_extensions(path))[-1][1:]
+    extension = os.path.splitext(
+                  clawpack.clawutil.data.strip_archive_extensions(path))[-1][1:]
     
     topo_type = default
     if extension[:2] == "tt" or extension[:8] == 'topotype':
@@ -176,7 +178,7 @@ def topo3writer (outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints, \
 def fetch_topo_url(url, local_fname=None, force=None, verbose=False, 
                         ask_user=False):
     """
-    DEPRECATED:  Use *clawpack.geoclaw.util.get_remote_file* instead (see note below).
+    DEPRECATED:  Use *clawpack.clawutil.data.get_remote_file* instead (see note below).
 
     Replaces get_topo function.
 
@@ -200,11 +202,9 @@ def fetch_topo_url(url, local_fname=None, force=None, verbose=False,
     python/run_examples.py that runs all examples so it won't stop to prompt.
     
     This routine has been deprecated in favor of 
-    *clawpack.geoclaw.util.get_remote_file*.  All the functionality should be 
+    *clawpack.clawutil.data.get_remote_file*.  All the functionality should be 
     the same but calls the other routine internally.
     """
-
-    import clawpack.geoclaw.util
 
     if force is None:
         CTD = os.environ.get('CLAW_TOPO_DOWNLOAD', None)
@@ -214,11 +214,11 @@ def fetch_topo_url(url, local_fname=None, force=None, verbose=False,
         output_dir = os.path.dirname(local_fname)
         file_name = os.path.basename(local_fname)
 
-    clawpack.geoclaw.util.get_remote_file(url, output_dir=output_dir, 
-                                               file_name=file_name,
-                                               force=force, 
-                                               verbose=verbose, 
-                                               ask_user=ask_user)
+    clawpack.clawutil.data.get_remote_file(url, output_dir=output_dir, 
+                                                file_name=file_name,
+                                                force=force, 
+                                                verbose=verbose, 
+                                                ask_user=ask_user)
 
 
 def get_topo(topo_fname, remote_directory, force=None):
@@ -241,7 +241,7 @@ def get_topo(topo_fname, remote_directory, force=None):
     """
 
     url = remote_directory + '/' + topo_fname
-    clawpack.geoclaw.util.get_remote_file(url, force=force)
+    clawpack.clawutil.data.get_remote_file(url, force=force)
 
 
 def swapheader(inputfile, outputfile):

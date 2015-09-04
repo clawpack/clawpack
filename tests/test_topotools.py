@@ -10,7 +10,7 @@ import numpy
 import nose
 
 import clawpack.geoclaw.topotools as topotools
-import clawpack.geoclaw.util as util
+import clawpack.clawutil.data
 
 # Set local test directory to get local files
 testdir = os.path.dirname(__file__)
@@ -195,7 +195,8 @@ def test_get_remote_file():
         url = "".join(('https://raw.githubusercontent.com/rjleveque/geoclaw/',
                        '5f675256c043e59e5065f9f3b5bdd41c2901702c/src/python/',
                        'geoclaw/tests/kahului_sample_1s.tt2'))
-        util.get_remote_file(url, output_dir=temp_path, force=True)
+        clawpack.clawutil.data.get_remote_file(url, output_dir=temp_path,
+            force=True)
 
         local_path = os.path.join(temp_path, os.path.basename(url))
         download_topo = topotools.Topography(path=local_path)

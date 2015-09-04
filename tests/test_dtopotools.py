@@ -11,7 +11,6 @@ import numpy
 import nose
 
 import clawpack.geoclaw.dtopotools as dtopotools
-import clawpack.geoclaw.tests as tests
 
 # Set local test directory to get local files
 testdir = os.path.dirname(__file__)

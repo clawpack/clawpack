@@ -12,7 +12,7 @@ import unittest
 
 import numpy
 
-import clawpack.geoclaw.tests as tests
+import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
 
 
@@ -27,7 +27,7 @@ def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
           + (x_c >  0.0) * right)
 
 
-class MultilayerTest(tests.GeoClawTest):
+class MultilayerTest(test.GeoClawRegressionTest):
 
     r"""Multilayer plane-wave regression test for GeoClaw
 

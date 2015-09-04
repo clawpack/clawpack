@@ -24,7 +24,7 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
       iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
      .                                      naux*mitot*(j-1)
-      iaddqeta(ivar,i,j)  = 1 + ivar - 1 + 4*((j-1)*mitot+i-1)
+      iaddqeta(ivar,i,j)  = 1 + ivar - 1+4*num_layers*((j-1)*mitot+i-1) 
 c
 
 c     # how many aux components requested?
@@ -161,24 +161,50 @@ c                 # output in 1d format if ny=1:
          endif
 
          if (output_format == 3) then
-            if (num_layers > 1) then
-              print *,"Binary output with multilayer SWE not supported."
-              stop 
-            endif
-c            # binary output          
-c            i1 = iadd(1,1,1)
-c            i2 = iadd(nvar,mitot,mjtot)
-c            # Need to augment q with eta:
-C              allocate(qeta(4*mitot*mjtot))
-C              do j=1,mjtot
-C                  do i=1,mitot
-C                     do m=1,3
-C                         qeta(iaddqeta(m,i,j)) = alloc(iadd(m,i,j))
-C                     enddo
-C                     eta = alloc(iadd(1,i,j)) + alloc(iaddaux(1,i,j))
-C                     qeta(iaddqeta(4,i,j)) = eta
-C                  enddo
-C              enddo
+C            # binary output          
+           i1 = iadd(1,1,1)
+           i2 = iadd(nvar,mitot,mjtot)
+C            # Need to augment q with eta:
+             allocate(qeta(4*num_layers*mitot*mjtot))
+             do j=1,mjtot
+                 do i=1,mitot
+
+                   ! Extract depth and momenta
+                   do k=1,num_layers-1
+                     index = 3 * (k - 1)
+                     h(k) = alloc(iadd(index + 1,i,j)) / rho(k)
+                     hu(k)= alloc(iadd(index + 2,i,j)) / rho(k)
+                     hv(k) = alloc(iadd(index + 3,i,j)) / rho(k)
+                   end do                  
+                   ! Extract bottom layer
+                  index = 3 * (num_layers - 1) 
+                  h(num_layers) = alloc(iadd(index+1,i,j)) 
+     &                                                 / rho(num_layers)
+                  hu(num_layers) = alloc(iadd(index+2,i,j)) 
+     &                                                 / rho(num_layers)
+                  hv(num_layers) = alloc(iadd(index+3,i,j)) 
+     &                                                 / rho(num_layers)
+
+                  ! Calculate surfaces
+                  eta(num_layers) = h(num_layers) 
+     &                                           + alloc(iaddaux(1,i,j))
+                  do k=num_layers-1,1,-1
+                    eta(k) = h(k) + eta(k+1)
+                  enddo
+
+                  do m=1,num_layers
+                    index = 3*(m - 1)
+                    qeta(iaddqeta(index+1,i,j)) = h(m)
+                    qeta(iaddqeta(index+2,i,j)) = hu(m)
+                    qeta(iaddqeta(index+3,i,j)) = hv(m)
+                    qeta(iaddqeta(3*num_layers+m,i,j)) = eta(m)
+C                     print *, iaddqeta(index+1,i,j)
+C                     print *, iaddqeta(3*num_layers+m,i,j)
+C                     print *, h(m),hu(m),hv(m),eta(m)
+                  end do
+C                  stop
+                 enddo
+             enddo
 
 c            # NOTE: we are writing out ghost cell data also, unlike ascii
              write(matunit4) qeta
