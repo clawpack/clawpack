@@ -7,6 +7,10 @@ c
       implicit double precision (a-h,o-z)
       logical first
 
+      !for setaux timing
+      integer :: clock_start, clock_finish, clock_rate
+      real(kind=8) :: cpu_start, cpu_finish
+
 
 c ::::::::::::::::::::::::::::: GINIT ::::::::::::::::::::::::
 c
@@ -17,6 +21,7 @@ c
 c :::::::::::::::::::::::::::::::::::::::;::::::::::::::::::::
 
       if (msave .eq. 0) go to 99
+
       level = node(nestlevel,msave)
       hx    = hxposs(level)
       hy    = hyposs(level)
@@ -36,8 +41,15 @@ c :::::::::::::::::::::::::::::::::::::::;::::::::::::::::::::
                 do k = 1, mitot*mjtot*naux, naux  ! only set first component of aux to signal
                    alloc(locaux+k-1) = NEEDS_TO_BE_SET ! new system checks this val before setting
                 end do
+                
+                call system_clock(clock_start,clock_rate)
+                call cpu_time(cpu_start)
                 call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
      &                    naux,alloc(locaux))
+                call system_clock(clock_finish,clock_rate)
+                call cpu_time(cpu_finish)
+                timeSetaux = timeSetaux + clock_finish - clock_start
+                timeSetauxCPU = timeSetauxCPU + cpu_finish - cpu_start
               else 
                 locaux = 1
               endif
@@ -61,7 +73,7 @@ c
           call qinit(nvar,nghost,nx,ny,corn1,corn2,hx,hy,
      &               alloc(loc),naux,alloc(locaux))
 
-
+c
           mptr  = node(levelptr, mptr)
       if (mptr .ne. 0) go to 10
 c
