@@ -3,7 +3,7 @@ GEOLIB:=$(dir $(lastword $(MAKEFILE_LIST)))
 
 #import AMR library dependencies
 AMRLIB = $(CLAW)/amrclaw/src/2d
-include $(AMRLIB)/amr_2d_geoclaw.make
+include $(AMRLIB)/Makefile.amr_2d_geoclaw
 
 #list of common sources for amr 2d codes
 COMMON_MODULES += \
