@@ -92,7 +92,7 @@ c
           if (ngrids .gt. 1) call arrangeGrids(levnew,ngrids)
           if (verbosity_regrid .ge. levnew) then
              write(*,100) ngrids,ncells,levnew
- 100         format("there are ",i4," grids with ",i8,
+ 100         format("there are ",i6," grids with ",i10,
      &               " cells at level ", i3)
           endif 
 c
