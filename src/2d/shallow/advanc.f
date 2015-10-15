@@ -15,7 +15,10 @@ c
       integer mythread/0/, maxthreads/1/
       integer listgrids(numgrids(level))
       integer clock_start, clock_finish, clock_rate
-      integer clock_startStepgrid, clock_finishBound
+      integer clock_startStepgrid, clock_startBound,clock_finishBound
+      real(kind=8) cpu_start, cpu_finish
+      real(kind=8) cpu_startBound,cpu_finishBound
+      real(kind=8) cpu_startStepgrid, cpu_finishStepgrid
 
 c     maxgr is maximum number of grids  many things are
 c     dimensioned at, so this is overall. only 1d array
@@ -31,15 +34,17 @@ c                  advancing the solution on the grid
 c                  adjusting fluxes for flux conservation step later
 c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 c
-c     get start time for more detailed timing by level
       call system_clock(clock_start,clock_rate)
-
+      call cpu_time(cpu_start)
       hx   = hxposs(level)
       hy   = hyposs(level)
       delt = possk(level)
 c     this is linear alg.
 c      call prepgrids(listgrids,numgrids(level),level)
 c
+c get start time for more detailed timing by level
+       call system_clock(clock_startBound,clock_rate)
+       call cpu_time(cpu_startBound)
 
 c     maxthreads initialized to 1 above in case no openmp
 !$    maxthreads = omp_get_max_threads()
@@ -68,7 +73,9 @@ c
         end do
 !$OMP END PARALLEL DO
       call system_clock(clock_finishBound,clock_rate)
-      timeBound = timeBound + clock_finishBound - clock_start  
+      call cpu_time(cpu_finishBound)
+      timeBound = timeBound + clock_finishBound - clock_startBound
+      timeBoundCPU=timeBoundCPU+cpu_finishBound-cpu_startBound
 
 c
 c save coarse level values if there is a finer level for wave fixup
@@ -89,6 +96,7 @@ c      call fgrid_advance(time,delt)
          endif
 c 
       call system_clock(clock_startStepgrid,clock_rate)
+      call cpu_time(cpu_startStepgrid)
         
 c  set number of thrad to use. later will base on number of grids
 c     nt = 4
@@ -120,8 +128,11 @@ c
 !$OMP END PARALLEL DO
 c
       call system_clock(clock_finish,clock_rate)
+      call cpu_time(cpu_finish)
       tvoll(level) = tvoll(level) + clock_finish - clock_start
+      tvollCPU(level) = tvollCPU(level) + cpu_finish - cpu_start
       timeStepgrid = timeStepgrid +clock_finish-clock_startStepgrid
+      timeStepgridCPU=timeStepgridCPU+cpu_finish-cpu_startStepgrid
 
 c
       return
@@ -189,7 +200,7 @@ c
       locnew = node(store1, mptr)
 
 c
-c  copy old soln. values into  next time step's soln. values
+c  copy old soln. values into  next time steps soln. values
 c  since integrator will overwrite it. only for grids not at
 c  the finest level. finest level grids do not maintain copies
 c  of old and new time solution values.
