@@ -162,7 +162,7 @@ def setplot(plotdata):
     plotaxes.ylimits = gulf_ylimits
     plotaxes.afteraxes = gulf_after_axes
 
-    surge.plot.add_surface_elevation(plotaxes, plot_type='contourf',
+    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
                                                contours=surface_contours,
                                                shrink=gulf_shrink)
     surgeplot.add_land(plotaxes,topo_min=-10.0,topo_max=5.0)
