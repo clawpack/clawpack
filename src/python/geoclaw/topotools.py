@@ -1012,8 +1012,8 @@ class Topography(object):
                        numpy.min(self.y) - buffer_degrees, 
                        numpy.max(self.y) + buffer_degrees ]
         if delta is None:
-            delta_x = max( numpy.abs(self.x[1:] - self.x[:-1]), delta_degrees)
-            delta_y = max( numpy.abs(self.y[1:] - self.y[:-1]), delta_degrees)
+            delta_x = max( numpy.abs(self.x[1:] - self.x[:-1]).max(), delta_degrees)
+            delta_y = max( numpy.abs(self.y[1:] - self.y[:-1]).max(), delta_degrees)
         else:   
             try:
                 delta_x, delta_y = delta   # tuple provided
