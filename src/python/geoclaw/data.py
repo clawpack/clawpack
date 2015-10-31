@@ -383,19 +383,25 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         self.data_write('drag_law',description='(Type of drag law to use)')
         self.data_write('pressure_forcing',description="(Pressure source term used)")
         self.data_write()
-        
+
         self.data_write("wind_index", description="(Index into aux array for wind (size 2))")
         self.data_write("pressure_index", description="(Index into aux array for pressure (size 1))")
         self.data_write()
 
-        if len(self.wind_refine) == 0:
+        if isinstance(self.wind_refine, bool):
+            if not self.wind_refine:
+                self.data_write('wind_refine', value=False, description='(Refinement ratios)')
+        elif isinstance(self.wind_refine, type(None)):
             self.data_write('wind_refine', value=False, description='(Refinement ratios)')
         else:
             self.data_write('wind_refine',description='(Refinement ratios)')
-        if len(self.R_refine) == 0:
-            self.data_write('R_refine', value=False, description="(Refinement ratios)")
+        if isinstance(self.R_refine, bool):
+            if not self.R_refine:
+                self.data_write('R_refine', value=False, description='(Refinement ratios)')
+        elif isinstance(self.R_refine, type(None)):
+            self.data_write('R_refine', value=False, description='(Refinement ratios)')
         else:
-            self.data_write('R_refine',description="(Refinement ratios)")
+            self.data_write('R_refine',description='(Refinement ratios)')
         self.data_write()
         
         self.data_write("storm_type",description='(Storm specification type)')
