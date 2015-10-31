@@ -72,8 +72,6 @@ contains
     ! ========================================================================
     subroutine set_storm(data_file)
 
-        use amr_module, only: rinfinity
-
         use utility_module, only: get_value_count
 
         use holland_storm_module, only: set_holland_storm
@@ -131,7 +129,7 @@ contains
         read(unit,'(a)') line
         if (line(1:1) == "F") then
             allocate(wind_refine(1))
-            wind_refine(1) = rinfinity
+            wind_refine(1) = huge(1.d0)
         else
             allocate(wind_refine(get_value_count(line)))
             read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
@@ -139,7 +137,7 @@ contains
         read(unit,'(a)') line
         if (line(1:1) == "F") then
             allocate(R_refine(1))
-            R_refine(1) = -rinfinity
+            R_refine(1) = -huge(1.d0)
         else
             allocate(R_refine(get_value_count(line)))
             read(line,*) (R_refine(i),i=1,size(R_refine,1))
