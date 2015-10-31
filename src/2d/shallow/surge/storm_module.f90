@@ -72,6 +72,8 @@ contains
     ! ========================================================================
     subroutine set_storm(data_file)
 
+        use amr_module, only: rinfinity
+
         use utility_module, only: get_value_count
 
         use holland_storm_module, only: set_holland_storm
@@ -96,10 +98,6 @@ contains
         else
             call opendatafile(unit,'surge.data')
         endif
-
-        ! Set some parameters
-        wind_index = 5
-        pressure_index = 7
         
         ! Read in parameters
         ! Physics
@@ -123,20 +121,29 @@ contains
         end select
         read(unit,*) pressure_forcing
         read(unit,*)
-        
-        ! Set drag law function pointer
-!         ! Source term algorithm parameters
-!         read(unit,*) wind_tolerance
-!         read(unit,*) pressure_tolerance
-!         read(unit,*)
+
+        ! Set some parameters
+        read(unit, '(i2)') wind_index
+        read(unit, '(i2)') pressure_index
+        read(unit, *)
         
         ! AMR parameters
         read(unit,'(a)') line
-        allocate(wind_refine(get_value_count(line)))
-        read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
+        if (line(1:1) == "F") then
+            allocate(wind_refine(1))
+            wind_refine(1) = rinfinity
+        else
+            allocate(wind_refine(get_value_count(line)))
+            read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
+        end if
         read(unit,'(a)') line
-        allocate(R_refine(get_value_count(line)))
-        read(line,*) (R_refine(i),i=1,size(R_refine,1))
+        if (line(1:1) == "F") then
+            allocate(R_refine(1))
+            R_refine(1) = -rinfinity
+        else
+            allocate(R_refine(get_value_count(line)))
+            read(line,*) (R_refine(i),i=1,size(R_refine,1))
+        end if
         read(unit,*)
         
         ! Storm Setup 
