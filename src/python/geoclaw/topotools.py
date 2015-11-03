@@ -854,6 +854,8 @@ class Topography(object):
         """
 
         import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
+
         import clawpack.visclaw.colormaps as colormaps
 
         # Create axes if needed
@@ -888,33 +890,31 @@ class Topography(object):
             sea_cmap = plt.get_cmap('Blues_r')
             if topo_extent[0] > 0.0:
                 cmap = land_cmap
+                norm = colors.Normalize(vmin=0.0, vmax=topo_extent[1])
             elif topo_extent[1] <= 0.0:
                 cmap = sea_cmap
+                norm = colors.Normalize(vmin=topo_extent[0], vmax=0.0)
             else:
-                cmap = colormaps.add_colormaps((land_cmap, sea_cmap), 
-                                               data_limits=topo_extent,
-                                               data_break=0.0)
+                cmap, norm = colormaps.add_colormaps((land_cmap, sea_cmap), 
+                                                     data_limits=topo_extent,
+                                                     data_break=0.0)
+        else:
+            norm = colors.Normalize(vmin=topo_extent[0], vmax=topo_extent[1])
 
         # Plot data
         if self.unstructured:
-            plot = axes.scatter(self.x, self.y, c=self.z, cmap=cmap,
-                                    vmin=topo_extent[0],
-                                    vmax=topo_extent[1],
-                                    marker=',', linewidths=(0.0,))
+            plot = axes.scatter(self.x, self.y, c=self.z, cmap=cmap, norm=norm,
+                                                marker=',', linewidths=(0.0,))
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             # Adjust coordinates so color pixels centered at X,Y locations
             plot = axes.pcolor(self.X - self.delta / 2.0, 
                                self.Y - self.delta / 2.0, 
-                               self.Z, 
-                               vmin=topo_extent[0], 
-                               vmax=topo_extent[1],
+                               self.Z,
+                               norm=norm,
                                cmap=cmap)
         else:
-            plot = axes.imshow(self.Z, vmin=topo_extent[0], 
-                                       vmax=topo_extent[1],
-                                       extent=region_extent, 
-                                       cmap=cmap,
-                                       origin='lower',
+            plot = axes.imshow(self.Z, norm=norm, extent=region_extent, 
+                                       cmap=cmap, origin='lower',
                                        interpolation='nearest')
         if add_colorbar:
             cbar = plt.colorbar(plot, ax=axes)
