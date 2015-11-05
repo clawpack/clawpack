@@ -23,8 +23,7 @@ RESTART = False
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS = -O3 -funroll-loops -finline-functions -fopenmp -cpp -DNETCDF -I$(NETCDF4_DIR)/include
-LFLAGS = -fopenmp -lnetcdff
+FFLAGS ?= 
 
 # ---------------------------------
 # List of sources for this program:
