@@ -30,7 +30,7 @@ def maketopo():
     # convert to netcdf form:
     topo4 = topotools.Topography()
     topo4.read(outfile,2)
-    topo4.write("bowl.nc",4)
+    topo4.write("bowl.nc",topo_type=4)
 
 def topo(x,y):
     """
