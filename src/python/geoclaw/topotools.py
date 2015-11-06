@@ -777,8 +777,6 @@ class Topography(object):
                     outfile.write("%s %s %s\n" % (self.x[i], self.y[i], topo))
 
             elif topo_type == 1:
-                # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
-                # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
                 for j in range(len(self.y)-1, -1, -1):
                     latitude = self.y[j]
                     for (i, longitude) in enumerate(self.x):
@@ -790,7 +788,13 @@ class Topography(object):
                 outfile.write('%6i                              nrows\n' % self.Z.shape[0])
                 outfile.write('%22.15e              xlower\n' % self.extent[0])
                 outfile.write('%22.15e              ylower\n' % self.extent[2])
-                outfile.write('%22.15e              cellsize\n' % self.delta)
+                if (self.delta[0] - self.delta[1])/self.delta[0] < 1e-8:
+                    # write both dx and dy if they differ:
+                    outfile.write('%22.15e              cellsize\n' \
+                            % self.delta[0])
+                else:
+                    outfile.write('%22.15e    %22.15e          cellsize\n' \
+                            % (self.delta[0], self.delta[1]))
                 outfile.write('%10i                          nodata_value\n' % no_data_value)
 
                 masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
@@ -907,8 +911,8 @@ class Topography(object):
                                                 marker=',', linewidths=(0.0,))
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             # Adjust coordinates so color pixels centered at X,Y locations
-            plot = axes.pcolor(self.X - self.delta / 2.0, 
-                               self.Y - self.delta / 2.0, 
+            plot = axes.pcolor(self.X - self.delta[0] / 2.0, 
+                               self.Y - self.delta[1] / 2.0, 
                                self.Z,
                                norm=norm,
                                cmap=cmap)
