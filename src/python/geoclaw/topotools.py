@@ -789,10 +789,11 @@ class Topography(object):
                 outfile.write('%22.15e              xlower\n' % self.extent[0])
                 outfile.write('%22.15e              ylower\n' % self.extent[2])
                 if (self.delta[0] - self.delta[1])/self.delta[0] < 1e-8:
-                    # write both dx and dy if they differ:
+                    # write only dx in usual case:
                     outfile.write('%22.15e              cellsize\n' \
                             % self.delta[0])
                 else:
+                    # write both dx and dy if they differ:
                     outfile.write('%22.15e    %22.15e          cellsize\n' \
                             % (self.delta[0], self.delta[1]))
                 outfile.write('%10i                          nodata_value\n' % no_data_value)
