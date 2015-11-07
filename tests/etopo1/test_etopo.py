@@ -7,6 +7,9 @@ import shutil
 from clawpack.geoclaw import etopotools
 
 def test_fetch_etopo():
+    """
+    Test fetching etopo1 data from the NCEI (NGDC) website.
+    """
     
     xlimits = (-120,-60)
     ylimits = (-60,0)
