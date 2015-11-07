@@ -390,7 +390,8 @@ class Topography(object):
                     raise ValueError("Grid spacing delta not constant, ",
                                      "%s != %s." % (begin_delta, end_delta))
                        
-                self._delta = numpy.round(begin_delta[0], 15) 
+                dx = numpy.round(begin_delta[0], 15) 
+                self._delta = (dx, dx)
         return self._delta
 
 
@@ -617,7 +618,9 @@ class Topography(object):
                 self._x = data[:N[1],0]
                 self._y = data[::N[1],1]
                 self._Z = numpy.flipud(data[:,2].reshape(N))
-                self._delta = self.X[0,1] - self.X[0,0]
+                dx = self.X[0,1] - self.X[0,0]
+                dy = self.Y[1,0] - self.Y[0,0]
+                self._delta = (dx,dy)
 
             elif abs(self.topo_type) in [2,3]:
                 # Get header information
@@ -777,8 +780,6 @@ class Topography(object):
                     outfile.write("%s %s %s\n" % (self.x[i], self.y[i], topo))
 
             elif topo_type == 1:
-                # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
-                # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
                 for j in range(len(self.y)-1, -1, -1):
                     latitude = self.y[j]
                     for (i, longitude) in enumerate(self.x):
@@ -790,7 +791,14 @@ class Topography(object):
                 outfile.write('%6i                              nrows\n' % self.Z.shape[0])
                 outfile.write('%22.15e              xlower\n' % self.extent[0])
                 outfile.write('%22.15e              ylower\n' % self.extent[2])
-                outfile.write('%22.15e              cellsize\n' % self.delta)
+                if abs(self.delta[0] - self.delta[1])/self.delta[0] < 1e-8:
+                    # write only dx in usual case:
+                    outfile.write('%22.15e              cellsize\n' \
+                            % self.delta[0])
+                else:
+                    # write both dx and dy if they differ:
+                    outfile.write('%22.15e    %22.15e          cellsize\n' \
+                            % (self.delta[0], self.delta[1]))
                 outfile.write('%10i                          nodata_value\n' % no_data_value)
 
                 masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
@@ -907,8 +915,8 @@ class Topography(object):
                                                 marker=',', linewidths=(0.0,))
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             # Adjust coordinates so color pixels centered at X,Y locations
-            plot = axes.pcolor(self.X - self.delta / 2.0, 
-                               self.Y - self.delta / 2.0, 
+            plot = axes.pcolor(self.X - self.delta[0] / 2.0, 
+                               self.Y - self.delta[1] / 2.0, 
                                self.Z,
                                norm=norm,
                                cmap=cmap)
