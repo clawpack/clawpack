@@ -1,3 +1,4 @@
+
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
@@ -18,12 +19,12 @@ OUTDIR = _output               # Directory for output
 SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
-RESTART = False
-
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?= 
+FFLAGS += -DNETCDF -lnetcdf -I$(NETCDF4_DIR)/include
+LFLAGS += -lnetcdff
+
 
 # ---------------------------------
 # List of sources for this program:
@@ -50,8 +51,8 @@ MODULES = \
  $(GEOLIB)/friction_module.f90
 
 SOURCES = \
+  ./qinit.f90 \
   $(GEOLIB)/setprob.f90 \
-  $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/topo_update.f90 \
   $(GEOLIB)/cellgridintegrate2.f \
   $(GEOLIB)/topointegral.f \
@@ -76,8 +77,8 @@ SOURCES = \
   $(GEOLIB)/update.f \
   $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine2.f90  \
-  $(AMRLIB)/flagregions2.f90  \
   $(GEOLIB)/allowflag.f90  \
+  $(AMRLIB)/flagregions2.f90  \
   $(GEOLIB)/b4step2.f90 \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/tick.f \
@@ -179,12 +180,7 @@ SOURCES = \
 include $(CLAWMAKE)
 
 # Construct the topography data
-.PHONY: topo all
-topo:
-	python maketopo.py
+.PHONY: netcdf_test
 
-all: 
-	$(MAKE) topo
-	$(MAKE) .plots
-	$(MAKE) .htmls
-
+netcdf_test: netcdf_test.f90
+	$(FC) netcdf_test.f90 $(FFLAGS) $(LFLAGS) -o netcdf_test
