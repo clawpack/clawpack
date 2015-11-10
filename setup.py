@@ -90,7 +90,7 @@ Operating System :: MacOS
 
 MAJOR               = 5
 MINOR               = 3
-MICRO               = 0
+MICRO               = 1
 TYPE                = ''
 VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
 
