@@ -328,7 +328,7 @@ class SurgeData(clawpack.clawutil.data.ClawData):
 
     def __init__(self):
         super(SurgeData,self).__init__()
-        
+
         # Physics parameters
         self.add_attribute('rho_air',1.15) # Density of air
         self.add_attribute('ambient_pressure',101.3e3) # Nominal atmos pressure
@@ -364,6 +364,10 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         # Storm type 3 - Stommel wind field
         self.add_attribute('stommel_wind',1.0)
 
+        # Algorithm parameters
+        self.add_attribute("wind_index", 5)
+        self.add_attribute("pressure_index", 7)
+
         
     def write(self,out_file='./surge.data',data_source="setrun.py"):
         """Write out the data file to the path given"""
@@ -379,13 +383,25 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         self.data_write('drag_law',description='(Type of drag law to use)')
         self.data_write('pressure_forcing',description="(Pressure source term used)")
         self.data_write()
-        
-        # self.data_write('wind_tolerance',description='(Wind speed tolerance)')
-        # self.data_write('pressure_tolerance',description="(Pressure source term tolerance)")
-        # self.data_write()
-                
-        self.data_write('wind_refine',description='(Refinement ratios)')
-        self.data_write('R_refine',description="(Refinement ratios)")
+
+        self.data_write("wind_index", description="(Index into aux array for wind (size 2))")
+        self.data_write("pressure_index", description="(Index into aux array for pressure (size 1))")
+        self.data_write()
+
+        if isinstance(self.wind_refine, bool):
+            if not self.wind_refine:
+                self.data_write('wind_refine', value=False, description='(Refinement ratios)')
+        elif isinstance(self.wind_refine, type(None)):
+            self.data_write('wind_refine', value=False, description='(Refinement ratios)')
+        else:
+            self.data_write('wind_refine',description='(Refinement ratios)')
+        if isinstance(self.R_refine, bool):
+            if not self.R_refine:
+                self.data_write('R_refine', value=False, description='(Refinement ratios)')
+        elif isinstance(self.R_refine, type(None)):
+            self.data_write('R_refine', value=False, description='(Refinement ratios)')
+        else:
+            self.data_write('R_refine',description='(Refinement ratios)')
         self.data_write()
         
         self.data_write("storm_type",description='(Storm specification type)')
@@ -410,7 +426,6 @@ class SurgeData(clawpack.clawutil.data.ClawData):
             self.open_data_file(self.storm_file)
             self.data_write("stommel_wind",description="(Amplitude of Stommel wind)")
         else:
-            self.close_data_file()
             raise ValueError("Invalid storm type %s." % self.storm_type)
 
         self.close_data_file()
