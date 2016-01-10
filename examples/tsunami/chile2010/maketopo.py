@@ -32,7 +32,7 @@ def get_topo(makeplots=False):
 
     if makeplots:
         from matplotlib import pyplot as plt
-        topo = topotools.Topography(topo_fname, topo_type=2)
+        topo = topotools.Topography(os.path.join(scratch_dir,topo_fname), topo_type=2)
         topo.plot()
         fname = os.path.splitext(topo_fname)[0] + '.png'
         plt.savefig(fname)
@@ -100,8 +100,8 @@ def make_dtopo(makeplots=False):
         fault.plot_subfaults(axes=ax1,slip_color=True)
         ax1.set_xlim(x.min(),x.max())
         ax1.set_ylim(y.min(),y.max())
-        dtopo.plot_dz_colors(1.,axes=ax2)
-        fname = os.path.splitext(dtopo_fname)[0] + '.png'
+        dtopo.plot_dZ_colors(1.,axes=ax2)
+        fname = os.path.splitext(os.path.split(dtopo_fname)[-1])[0] + '.png'
         plt.savefig(fname)
         print "Created ",fname
 

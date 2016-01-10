@@ -67,6 +67,8 @@ def determine_topo_type(path, default=None):
         topo_type = 3
     elif extension == 'txyz':
         topo_type = 1
+    elif extension == 'nc':
+        topo_type = 4
 
     return topo_type
 
@@ -323,6 +325,11 @@ class Topography(object):
         if self._X is None:
             self.generate_2d_coordinates(mask=False)
         return self._X
+    @X.setter
+    def X(self, value):
+        self._extent = None
+        self._X = value
+        self._x = numpy.nan
     @X.deleter
     def X(self):
         del self._X
@@ -347,6 +354,11 @@ class Topography(object):
         if self._Y is None:
             self.generate_2d_coordinates(mask=False)
         return self._Y
+    @Y.setter
+    def Y(self, value):
+        self._extent = None
+        self._Y = value
+        self._y = numpy.nan
     @Y.deleter
     def Y(self):
         del self._Y
@@ -390,7 +402,8 @@ class Topography(object):
                     raise ValueError("Grid spacing delta not constant, ",
                                      "%s != %s." % (begin_delta, end_delta))
                        
-                self._delta = numpy.round(begin_delta[0], 15) 
+                dx = numpy.round(begin_delta[0], 15) 
+                self._delta = (dx, dx)
         return self._delta
 
 
@@ -528,7 +541,8 @@ class Topography(object):
 
 
     def read(self, path=None, topo_type=None, unstructured=False, 
-             mask=False, filter_region=None, force=False):
+             mask=False, filter_region=None, force=False, stride=[1, 1],
+             nc_params={}):
         r"""Read in the data from the object's *path* attribute.
 
         Stores the resulting data in one of the sets of *x*, *y*, and *z* or 
@@ -541,6 +555,10 @@ class Topography(object):
          - *mask* (bool) - whether to store as masked array for missing
            values (default if False)
          - *filter_region* (tuple)
+         - *stride* (list) - List of strides for the x and y dimensions
+           respectively.  Default is *[1, 1]*.  Note that this is only
+           implemented for NetCDF reading currently.
+         - *nc_params* (dict) - 
 
         The first three might have already been set when instatiating object.
 
@@ -617,7 +635,9 @@ class Topography(object):
                 self._x = data[:N[1],0]
                 self._y = data[::N[1],1]
                 self._Z = numpy.flipud(data[:,2].reshape(N))
-                self._delta = self.X[0,1] - self.X[0,0]
+                dx = self.X[0,1] - self.X[0,0]
+                dy = self.Y[1,0] - self.Y[0,0]
+                self._delta = (dx,dy)
 
             elif abs(self.topo_type) in [2,3]:
                 # Get header information
@@ -633,6 +653,41 @@ class Topography(object):
                     # Data is read in starting at the top right corner
                     self._Z = numpy.flipud(numpy.loadtxt(self.path, skiprows=6))
         
+                if mask:
+                    self._Z = numpy.ma.masked_values(self._Z, self.no_data_value, copy=False)
+
+            elif abs(self.topo_type) == 4:
+                import netCDF4
+
+                # NetCDF4 GEBCO topography
+                with netCDF4.Dataset(self.path, 'r', format="NETCDF4") as nc_file:
+                    x_var = nc_params.get('x_var', None)
+                    y_var = nc_params.get('y_var', None)
+                    z_var = nc_params.get('z_var', None)
+                    for (key, var) in nc_file.variables.iteritems():
+                        if 'axis' in var.ncattrs():
+                            if var.axis.lower() == "x" and x_var is None:
+                                x_var = key
+                            elif var.axis.lower() == "y" and y_var is None:
+                                y_var = key
+                        else:
+                            if z_var is None:
+                                z_var = key
+
+                    if x_var is None or y_var is None or z_var is None:
+                        raise IOError("Could not automatically determine ",
+                                      "variable ids.  Please check if the file",
+                                      " has the 'axis' attribute attached to",
+                                      " the appropriate x and y variables or ",
+                                      "specify the variables directly via the",
+                                      " *nc_params* dictionary.")
+
+
+                    self._x = nc_file.variables[x_var][::stride[0]]
+                    self._y = nc_file.variables[y_var][::stride[1]]
+                    self._Z = nc_file.variables[z_var][::stride[0], 
+                                                       ::stride[1]]
+
                 if mask:
                     self._Z = numpy.ma.masked_values(self._Z, self.no_data_value, copy=False)
                     
@@ -771,26 +826,36 @@ class Topography(object):
         else:
             pass
 
-        with open(path, 'w') as outfile:
-            if self.unstructured:
+        if self.unstructured:
+            with open(path, 'w') as outfile:
                 for (i, topo) in enumerate(self.z):
                     outfile.write("%s %s %s\n" % (self.x[i], self.y[i], topo))
 
-            elif topo_type == 1:
-                # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
-                # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
+        elif topo_type == 1:
+            # longitudes = numpy.linspace(lower[0], lower[0] + delta * Z.shape[0], Z.shape[0])
+            # latitudes = numpy.linspace(lower[1], lower[1] + delta * Z.shape[1], Z.shape[1])
+
+            with open(path, 'w') as outfile:
                 for j in range(len(self.y)-1, -1, -1):
                     latitude = self.y[j]
                     for (i, longitude) in enumerate(self.x):
                         outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
 
-            elif topo_type == 2 or topo_type == 3:
+        elif topo_type == 2 or topo_type == 3:
+            with open(path, 'w') as outfile:
                 # Write out header
                 outfile.write('%6i                              ncols\n' % self.Z.shape[1])
                 outfile.write('%6i                              nrows\n' % self.Z.shape[0])
                 outfile.write('%22.15e              xlower\n' % self.extent[0])
                 outfile.write('%22.15e              ylower\n' % self.extent[2])
-                outfile.write('%22.15e              cellsize\n' % self.delta)
+                if abs(self.delta[0] - self.delta[1])/self.delta[0] < 1e-8:
+                    # write only dx in usual case:
+                    outfile.write('%22.15e              cellsize\n' \
+                            % self.delta[0])
+                else:
+                    # write both dx and dy if they differ:
+                    outfile.write('%22.15e    %22.15e          cellsize\n' \
+                            % (self.delta[0], self.delta[1]))
                 outfile.write('%10i                          nodata_value\n' % no_data_value)
 
                 masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
@@ -817,9 +882,56 @@ class Topography(object):
                         outfile.write("\n")
                     if masked_Z:
                         del Z_flipped
+        elif topo_type == 4:
+            # Write out netCDF4 topography
+            import netCDF4
+            
+            with netCDF4.Dataset(path, 'w') as outfile:
+                # Add root attributes
+                outfile.Conventions = "CF-1.6"
+                outfile.title = "Topography Data"
+                outfile.institution = "Unknown"
+                outfile.source = "Unknown"
+                outfile.history = "" # TODO: Add current date here
+                outfile.references = ""
+                outfile.comment = "Created by GeoClaw"
 
-            else:
-                raise NotImplemented("Output type %s not implemented." % topo_type)
+                outfile.createDimension("lon", self.x.shape[0])
+                outfile.createDimension("lat", self.y.shape[0])
+                
+                lon = outfile.createVariable('lon', 'f8', ('lon',))
+                lon.standard_name = "longitude"
+                lon.long_name = "longitude"
+                lon.units = "degrees_east"
+                lon.axis = "X"
+                lon[:] = self.x
+
+                lat = outfile.createVariable('lat', 'f8', ('lat',))
+                lat.standard_name = "latitude"
+                lat.long_name = "latitude"
+                lat.units = "degrees_north"
+                lat.axis = "Y"
+                lat[:] = self.y
+
+                elevation = outfile.createVariable('elevation', 'f8',
+                    ('lat','lon',))
+                elevation.standard_name  = "height_above_reference_ellipsoid"
+                elevation.long_name  = "Elevation relative to sea level"
+                elevation.units  = "m"
+                elevation.scale_factor  = 1.0
+                elevation.add_offset  = 0.0
+                elevation.sdn_parameter_urn  = "SDN:P01::BATHHGHT"
+                elevation.sdn_parameter_name  = "Sea floor height (above mean sea level) {bathymetric height}"
+                elevation.sdn_uom_urn  = "SDN:P06:ULAA"
+                elevation.sdn_uom_name  = "Metres"
+                elevation.positive = "up"
+                elevation[:, :] = self.Z
+
+                elevation.no_data_value = self.no_data_value
+
+
+        else:
+            raise NotImplemented("Output type %s not implemented." % topo_type)
 
 
     def plot(self, axes=None, contour_levels=None, contour_kwargs={}, 
@@ -854,6 +966,8 @@ class Topography(object):
         """
 
         import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
+
         import clawpack.visclaw.colormaps as colormaps
 
         # Create axes if needed
@@ -888,33 +1002,31 @@ class Topography(object):
             sea_cmap = plt.get_cmap('Blues_r')
             if topo_extent[0] > 0.0:
                 cmap = land_cmap
+                norm = colors.Normalize(vmin=0.0, vmax=topo_extent[1])
             elif topo_extent[1] <= 0.0:
                 cmap = sea_cmap
+                norm = colors.Normalize(vmin=topo_extent[0], vmax=0.0)
             else:
-                cmap = colormaps.add_colormaps((land_cmap, sea_cmap), 
-                                               data_limits=topo_extent,
-                                               data_break=0.0)
+                cmap, norm = colormaps.add_colormaps((land_cmap, sea_cmap), 
+                                                     data_limits=topo_extent,
+                                                     data_break=0.0)
+        else:
+            norm = colors.Normalize(vmin=topo_extent[0], vmax=topo_extent[1])
 
         # Plot data
         if self.unstructured:
-            plot = axes.scatter(self.x, self.y, c=self.z, cmap=cmap,
-                                    vmin=topo_extent[0],
-                                    vmax=topo_extent[1],
-                                    marker=',', linewidths=(0.0,))
+            plot = axes.scatter(self.x, self.y, c=self.z, cmap=cmap, norm=norm,
+                                                marker=',', linewidths=(0.0,))
         elif isinstance(self.Z, numpy.ma.MaskedArray):
             # Adjust coordinates so color pixels centered at X,Y locations
-            plot = axes.pcolor(self.X - self.delta / 2.0, 
-                               self.Y - self.delta / 2.0, 
-                               self.Z, 
-                               vmin=topo_extent[0], 
-                               vmax=topo_extent[1],
+            plot = axes.pcolor(self.X - self.delta[0] / 2.0, 
+                               self.Y - self.delta[1] / 2.0, 
+                               self.Z,
+                               norm=norm,
                                cmap=cmap)
         else:
-            plot = axes.imshow(self.Z, vmin=topo_extent[0], 
-                                       vmax=topo_extent[1],
-                                       extent=region_extent, 
-                                       cmap=cmap,
-                                       origin='lower',
+            plot = axes.imshow(self.Z, norm=norm, extent=region_extent, 
+                                       cmap=cmap, origin='lower',
                                        interpolation='nearest')
         if add_colorbar:
             cbar = plt.colorbar(plot, ax=axes)
@@ -1012,8 +1124,8 @@ class Topography(object):
                        numpy.min(self.y) - buffer_degrees, 
                        numpy.max(self.y) + buffer_degrees ]
         if delta is None:
-            delta_x = max( numpy.abs(self.x[1:] - self.x[:-1]), delta_degrees)
-            delta_y = max( numpy.abs(self.y[1:] - self.y[:-1]), delta_degrees)
+            delta_x = max( numpy.abs(self.x[1:] - self.x[:-1]).min(), delta_degrees)
+            delta_y = max( numpy.abs(self.y[1:] - self.y[:-1]).min(), delta_degrees)
         else:   
             try:
                 delta_x, delta_y = delta   # tuple provided

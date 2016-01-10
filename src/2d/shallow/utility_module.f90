@@ -2,8 +2,12 @@
 module utility_module
 
     implicit none
-    
-Contains
+
+    ! String manipulation
+    character( * ), private, parameter :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
+    character( * ), private, parameter :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 
+
+contains
 
     ! Returns number of arguments in list, assumes arbitrary number of white 
     ! space as delimiter
@@ -97,5 +101,153 @@ Contains
 
 
     end subroutine parse_values
+
+
+    !------------------------------------------------------------------------------
+    !S+
+    ! NAME:
+    !       StrUpCase
+    !
+    ! PURPOSE:
+    !       Function to convert an input string to upper case.
+    !
+    ! CATEGORY:
+    !       Utility
+    !
+    ! LANGUAGE:
+    !       Fortran-95
+    !
+    ! CALLING SEQUENCE:
+    !       Result = StrUpCase( String )
+    !
+    ! INPUT ARGUMENTS:
+    !       String:  Character string to be converted to upper case.
+    !                UNITS:      N/A
+    !                TYPE:       CHARACTER( * )
+    !                DIMENSION:  Scalar
+    !                ATTRIBUTES: INTENT( IN )
+    !
+    ! OPTIONAL INPUT ARGUMENTS:
+    !       None.
+    !
+    ! OUTPUT ARGUMENTS:
+    !       None.
+    !
+    ! OPTIONAL OUTPUT ARGUMENTS:
+    !       None.
+    !
+    ! FUNCTION RESULT:
+    !       Result:  The input character string converted to upper case.
+    !                UNITS:      N/A
+    !                TYPE:       CHARACTER( LEN(String) )
+    !                DIMENSION:  Scalar
+    !
+    ! CALLS:
+    !       None.
+    !
+    ! SIDE EFFECTS:
+    !       None.
+    !
+    ! RESTRICTIONS:
+    !       None.
+    !
+    ! EXAMPLE:
+    !       string = 'this is a string'
+    !       WRITE( *, '( a )' ) StrUpCase( string )
+    !   THIS IS A STRING
+    !
+    ! PROCEDURE:
+    !       Figure 3.5B, pg 80, "Upgrading to Fortran 90", by Cooper Redwine,
+    !       1995 Springer-Verlag, New York.
+    !
+    ! CREATION HISTORY:
+    !       Written by:     Paul van Delst, CIMSS/SSEC 18-Oct-1999
+    !                       paul.vandelst@ssec.wisc.edu
+    !S-
+    !------------------------------------------------------------------------------
+
+
+    ! ==========================================================================
+    !  function to_upper(input_string)
+    !    Converts *input_string* to upper case and returns that string.
+    !    Note that this makes a copy of the given string so does not modify the
+    !    original string.
+    !
+    !   Based on code originally by Paul van Delst, CIMSS/SSEC 18-Oct-1999
+    !                               paul.vandelst@ssec.wisc.edu
+    !   and originally presented in
+    !       Figure 3.5B, pg 80, "Upgrading to Fortran 90", by Cooper Redwine,
+    !       1995 Springer-Verlag, New York.
+    ! ==========================================================================
+    function to_upper (input_string) result(output_string)
+
+        implicit none
+    
+        ! Input
+        character(len=*), intent(in) :: input_string
+
+        ! Output
+        character(len(input_string)) :: output_string
+
+        ! Local
+        integer :: i, n
+
+        ! -- copy input string
+        output_string = input_string
+
+        ! -- loop over string elements
+        do i = 1, len( output_string )
+
+            ! -- find location of letter in lower case constant string
+            n = index( lower_case, output_string( i:i ) )
+
+            ! -- if current substring is a lower case letter, make it upper case
+            if ( n /= 0 ) output_string( i:i ) = upper_case( n:n )
+
+        end do
+
+    end function to_upper
+
+    ! ==========================================================================
+    !  function to_lower(input_string)
+    !    Converts *input_string* to lower case and returns that string.
+    !    Note that this makes a copy of the given string so does not modify the
+    !    original string.
+    !
+    !   Based on code originally by: 
+    !       Paul van Delst, CIMSS/SSEC 18-Oct-1999
+    !       paul.vandelst@ssec.wisc.edu
+    !   and originally presented in
+    !       Figure 3.5B, pg 80, "Upgrading to Fortran 90", by Cooper Redwine,
+    !       1995 Springer-Verlag, New York.
+    ! ==========================================================================
+    function to_lower (input_string) result(output_string)
+
+        implicit none
+
+        ! argument and result
+        character(len=*), intent(in) :: input_string
+        character(len(input_string)) :: output_string
+
+        ! local variables
+        integer :: i, n
+
+
+        ! copy input string
+        output_string = input_string
+
+        ! loop over string elements
+        do i = 1, len( output_string )
+
+          ! find location of letter in lower case constant string
+          n = index( lower_case, output_string( i:i ) )
+
+          ! if current substring is an lower case letter, make it lower case
+          if ( n /= 0 ) output_string( i:i ) = lower_case( n:n )
+
+        end do
+
+    end function to_lower
+
 
 end module utility_module
