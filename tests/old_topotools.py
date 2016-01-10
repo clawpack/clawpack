@@ -3,6 +3,8 @@ r"""Basic functions from the old version of topotools for testing purposes."""
 import numpy
 import re
 
+import nose
+
 def topo1writer(outfile, topo, xlower, xupper, ylower, yupper, nxpoints,
                              nypoints):
     fout=open(outfile, 'w')
@@ -91,8 +93,11 @@ skipfirstcols=0, skiplastcols=0):
 
 
 def topofile2griddata(inputfile, topotype=2):
-    #import pylab
-
+    
+    try:
+        import pylab
+    except ImportError:
+        raise nose.SkipTest("Skipping test since matplotlib was not found.")
 
     if topotype>1:
         (fin,topoheader)=topoheaderread(inputfile,closefile=False)

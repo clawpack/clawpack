@@ -653,7 +653,7 @@ class Fault(object):
         # Read in rest of data
         # (Use genfromtxt to deal with files containing strings, e.g. unit
         # source name, in some column)
-        data = numpy.genfromtxt(path, skiprows=skiprows, delimiter=delimiter)
+        data = numpy.genfromtxt(path, skip_header=skiprows, delimiter=delimiter)
         if len(data.shape) == 1:
             data = numpy.array([data])
 
