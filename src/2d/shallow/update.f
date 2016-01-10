@@ -38,7 +38,7 @@ c
       if (uprint) write(outunit,100) lget
 100   format(19h    updating level ,i5)
 c     need to set up data structure for parallel distrib of grids
-      call prepgrids(listgrids,numgrids(level),level)
+c     call prepgrids(listgrids,numgrids(level),level)
 c
 c  grid loop for each level
 c
@@ -52,15 +52,16 @@ c 20   if (mptr .eq. 0) go to 85
 !$OMP&                    jclo,jchi,mi,mj,locf,locfaux,iplo,iphi,
 !$OMP&                    jplo,jphi,iff,jff,totrat,i,j,ivar,capac,
 !$OMP&                    capa,bc,etasum,hsum,husum,hvsum,drytol,
-!$OMP&                    newt,ico, jco,hf,bf,huf,hvf,
+!$OMP&                    newt,levSt,ico,jco,hf,bf,huf,hvf,
 !$OMP&                    etaf,etaav,hav,nwet,hc,huc,hvc),
-!$OMP&            SHARED(lget,numgrids,listgrids,level,intratx,intraty,
+!$OMP&             SHARED(numgrids,listOfGrids,level,intratx,intraty,
 !$OMP&                   nghost,uprint,nvar,naux,mcapa,node,listsp,
-!$OMP&                   alloc,lstart,dry_tolerance),
+!$OMP&                   alloc,lstart,dry_tolerance,listStart,lget),
 !$OMP&            DEFAULT(none)
       do ng = 1, numgrids(lget)
 c        mptr    = mget(ng, level)
-         mptr    = listgrids(ng)
+         levSt   = listStart(lget)
+         mptr    = listOfGrids(levSt+ng-1)
          loc     = node(store1,mptr)
          loccaux = node(storeaux,mptr)
          nx      = node(ndihi,mptr) - node(ndilo,mptr) + 1

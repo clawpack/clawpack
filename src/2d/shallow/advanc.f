@@ -36,13 +36,11 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 c
       call system_clock(clock_start,clock_rate)
       call cpu_time(cpu_start)
-      
-      
       hx   = hxposs(level)
       hy   = hyposs(level)
       delt = possk(level)
 c     this is linear alg.
-      call prepgrids(listgrids,numgrids(level),level)
+c      call prepgrids(listgrids,numgrids(level),level)
 c
 c get start time for more detailed timing by level
        call system_clock(clock_startBound,clock_rate)
@@ -52,14 +50,15 @@ c     maxthreads initialized to 1 above in case no openmp
 !$    maxthreads = omp_get_max_threads()
 
 c We want to do this regardless of the threading type
-!$OMP PARALLEL DO PRIVATE(j,locnew, locaux, mptr,nx,ny,mitot
-!$OMP&                    ,mjtot,time),
-!$OMP&            SHARED(level,nvar,naux,alloc,intrat,delt,
-!$OMP&                   nghost,node,rnode,numgrids,listgrids),
+!$OMP PARALLEL DO PRIVATE(j,locnew,locaux,mptr,nx,ny,mitot,
+!$OMP&                    mjtot,time,levSt),
+!$OMP&            SHARED(level,nvar,naux,alloc,intrat,delt,nghost,
+!$OMP&                   node,rnode,numgrids,listStart,listOfGrids),
 !$OMP&            SCHEDULE (dynamic,1)
 !$OMP&            DEFAULT(none)
       do  j = 1, numgrids(level)
-          mptr = listgrids(j)
+          levSt  = listStart(level)
+          mptr   = listOfGrids(levSt+j-1)
           nx     = node(ndihi,mptr) - node(ndilo,mptr) + 1
           ny     = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
           mitot  = nx + 2*nghost
@@ -105,14 +104,16 @@ c   ! $OMP PARALLEL DO num_threads(nt)
 
 !$OMP PARALLEL DO 
 !$OMP&            PRIVATE(j,mptr,nx,ny,mitot,mjtot)  
-!$OMP&            PRIVATE(mythread,dtnew)
+!$OMP&            PRIVATE(mythread,dtnew,levSt)
 !$OMP&            SHARED(rvol,rvoll,level,nvar,mxnest,alloc,intrat)
 !$OMP&            SHARED(nghost,intratx,intraty,hx,hy,naux,listsp)
-!$OMP&            SHARED(node,rnode,dtlevnew,numgrids,listgrids)
+!$OMP&            SHARED(node,rnode,dtlevnew,numgrids)
+!$OMP&            SHARED(listStart,listOfGrids)
 !$OMP&            SCHEDULE (DYNAMIC,1)
 !$OMP&            DEFAULT(none)
       do  j = 1, numgrids(level)
-          mptr = listgrids(j)
+          levSt  = listStart(level)
+          mptr   = listOfGrids(levSt+j-1)
           nx     = node(ndihi,mptr) - node(ndilo,mptr) + 1
           ny     = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
           mitot  = nx + 2*nghost
@@ -199,7 +200,7 @@ c
       locnew = node(store1, mptr)
 
 c
-c  copy old soln. values into  next time step's soln. values
+c  copy old soln. values into  next time steps soln. values
 c  since integrator will overwrite it. only for grids not at
 c  the finest level. finest level grids do not maintain copies
 c  of old and new time solution values.

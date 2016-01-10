@@ -97,13 +97,13 @@ c65      if (level .gt. lfine) go to 90
 c                 # output in 1d format if ny=1:
                   write(matunit1,1003) mptr, level, nx
                 endif
- 1001 format(i5,'                 grid_number',/,
-     &       i5,'                 AMR_level',/,
-     &       i5,'                 mx',/,
-     &       i5,'                 my')
- 1003 format(i5,'                 grid_number',/,
-     &       i5,'                 AMR_level',/,
-     &       i5,'                 mx')
+ 1001 format(i6,'                 grid_number',/,
+     &       i6,'                 AMR_level',/,
+     &       i6,'                 mx',/,
+     &       i6,'                 my')
+ 1003 format(i6,'                 grid_number',/,
+     &       i6,'                 AMR_level',/,
+     &       i6,'                 mx')
 
 
               xlow = rnode(cornxlo,mptr)
@@ -269,11 +269,11 @@ c     #       ghost cells from q when reading in pyclaw.io.binary
 c     # Print meqn = nvar+1 because eta added.
       write(matunit2,1000) time,nvar+1,ngrids,naux,ndim,nghost
  1000 format(e18.8,'    time', /,
-     &       i5,'                 meqn'/,
-     &       i5,'                 ngrids'/,
-     &       i5,'                 naux'/,
-     &       i5,'                 ndim'/,
-     &       i5,'                 nghost'/,/)
+     &       i6,'                 meqn'/,
+     &       i6,'                 ngrids'/,
+     &       i6,'                 naux'/,
+     &       i6,'                 ndim'/,
+     &       i6,'                 nghost'/,/)
 c
 
       write(6,601) matlabu,time

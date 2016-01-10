@@ -50,7 +50,7 @@ c
           go to 2
  3        level   = level + 1
           go to 1
-
+c
  4    lcheck = lbase + 1
 
 c
@@ -190,6 +190,7 @@ c
           mold   = mptr
           mptr   = node(levelptr,mptr)
           call putnod(mold)
+          call freeBndryList(mold)
           go to 85
  90   lstart(lcheck) = newstl(lcheck)
       lcheck = lcheck + 1
