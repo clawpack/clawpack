@@ -3,7 +3,7 @@ GEOLIB:=$(dir $(lastword $(MAKEFILE_LIST)))
 
 #import AMR library dependencies
 AMRLIB = $(CLAW)/amrclaw/src/2d
-include $(AMRLIB)/Makefile.amr_2d_geoclaw
+include $(GEOLIB)/Makefile.amr_2d_geoclaw
 
 #list of common sources for amr 2d codes
 COMMON_MODULES += \
@@ -56,3 +56,5 @@ COMMON_SOURCES += \
   $(GEOLIB)/fgmax_interpolate.f90 \
   $(GEOLIB)/fgmax_values.f90 \
   $(GEOLIB)/fgmax_finalize.f90 \
+  $(GEOLIB)/check.f \
+  $(GEOLIB)/restrt.f \
