@@ -75,8 +75,8 @@ subroutine filval(val, mx, my, dx, dy, level, time, valc, auxc, mic, &
             call icall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi,level - 1,1,1)
         endif
     endif
-    call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level - 1,time,xl,xr,yb, &
-                yt,xlower,ylower,xupper,yupper,xperdom,yperdom,spheredom)
+    call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level - 1,time,  &
+                xl,xr,yb,yt)
 
     !-----------------------------
     ! For shallow water over topograpdy, in coarse cells convert from h to eta,

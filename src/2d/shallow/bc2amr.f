@@ -1,11 +1,10 @@
-
 c
 c ------------------------------------------------------------------
 c
       subroutine bc2amr(val,aux,nrow,ncol,meqn,naux,
      1                  hx, hy, level, time,
-     2                  xleft,  xright,  ybot, ytop,
-     3                  xperiodic, yperiodic,spheredom)
+     2                  xlo_patch, xhi_patch,  
+     3                  ylo_patch, yhi_patch)
 
 c
 c    Specific to geoclaw:  extrapolates aux(i,j,1) at boundaries
@@ -34,8 +33,8 @@ c     #                  side, and vice versa), as if domain folded in half
 c     ------------------------------------------------
 c
 c     The corners of the grid patch are at
-c        (xleft,ybot)  --  lower left corner
-c        (xright,ytop) --  upper right corner
+c        (xlo_patch,ylo_patch)  --  lower left corner
+c        (xhi_patch,yhi_patch) --  upper right corner
 c
 c     The physical domain itself is a rectangle bounded by
 c        (xlower,ylower)  -- lower left corner
@@ -45,12 +44,12 @@ c     the picture is the following:
 c
 c               _____________________ (xupper,yupper)
 c              |                     |
-c          _________ (xright,ytop)   |
+c          ____|____ (xhi_patch,yhi_patch) 
 c          |   |    |                |
 c          |   |    |                |
 c          |   |    |                |
 c          |___|____|                |
-c (xleft,ybot) |                     |
+c (xlo_patch,ylo_patch) |            |
 c              |                     |
 c              |_____________________|
 c   (xlower,ylower)
@@ -58,7 +57,7 @@ c
 c
 c     Any cells that lie outside the physical domain are ghost cells whose
 c     values should be set in this routine.  This is tested for by comparing
-c     xleft with xlower to see if values need to be set at the left, as in
+c     xlo_patch with xlower to see if values need to be set at the left, as in
 c     the figure above, and similarly at the other boundaries.
 c
 c     Patches are guaranteed to have at least 1 row of cells filled
@@ -80,23 +79,23 @@ c
 c ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::;
 
       use amr_module, only: mthbc, xlower, ylower, xupper, yupper
+      use amr_module, only: xperdom,yperdom,spheredom
 
 
       implicit double precision (a-h,o-z)
 
       dimension val(meqn,nrow,ncol), aux(naux,nrow,ncol)
-      logical xperiodic, yperiodic, spheredom
 
       hxmarg = hx*.01
       hymarg = hy*.01
 
-      if (xperiodic .and. (yperiodic .or. spheredom)) go to 499
+      if (xperdom .and. (yperdom .or. spheredom)) go to 499
 c
 c
 c-------------------------------------------------------
 c     # left boundary:
 c-------------------------------------------------------
-      if (xleft .ge. xlower-hxmarg) then
+      if (xlo_patch .ge. xlower-hxmarg) then
 c        # not a physical boundary -- no cells at this edge lies
 c        # outside the physical bndry.
 c        # values are set elsewhere in amr code.
@@ -104,7 +103,7 @@ c        # values are set elsewhere in amr code.
          endif
 c
 c     # number of grid cells from this patch lying outside physical domain:
-      nxl = (xlower+hxmarg-xleft)/hx
+      nxl = (xlower+hxmarg-xlo_patch)/hx
 c
       go to (100,110,120,130) mthbc(1)+1
 c
@@ -149,7 +148,7 @@ c
 c-------------------------------------------------------
 c     # right boundary:
 c-------------------------------------------------------
-      if (xright .le. xupper+hxmarg) then
+      if (xhi_patch .le. xupper+hxmarg) then
 c        # not a physical boundary --  no cells at this edge lies
 c        # outside the physical bndry.
 c        # values are set elsewhere in amr code.
@@ -157,7 +156,7 @@ c        # values are set elsewhere in amr code.
          endif
 c
 c     # number of grid cells lying outside physical domain:
-      nxr = (xright - xupper + hxmarg)/hx
+      nxr = (xhi_patch - xupper + hxmarg)/hx
       ibeg = max0(nrow-nxr+1, 1)
 c
       go to (200,210,220,230) mthbc(2)+1
@@ -203,7 +202,7 @@ c
 c-------------------------------------------------------
 c     # bottom boundary:
 c-------------------------------------------------------
-      if (ybot .ge. ylower-hymarg) then
+      if (ylo_patch .ge. ylower-hymarg) then
 c        # not a physical boundary -- no cells at this edge lies
 c        # outside the physical bndry.
 c        # values are set elsewhere in amr code.
@@ -211,7 +210,7 @@ c        # values are set elsewhere in amr code.
          endif
 c
 c     # number of grid cells lying outside physical domain:
-      nyb = (ylower+hymarg-ybot)/hy
+      nyb = (ylower+hymarg-ylo_patch)/hy
 c
       go to (300,310,320,330) mthbc(3)+1
 c
@@ -256,7 +255,7 @@ c
 c-------------------------------------------------------
 c     # top boundary:
 c-------------------------------------------------------
-      if (ytop .le. yupper+hymarg) then
+      if (yhi_patch .le. yupper+hymarg) then
 c        # not a physical boundary --  no cells at this edge lies
 c        # outside the physical bndry.
 c        # values are set elsewhere in amr code.
@@ -264,7 +263,7 @@ c        # values are set elsewhere in amr code.
          endif
 c
 c     # number of grid cells lying outside physical domain:
-      nyt = (ytop - yupper + hymarg)/hy
+      nyt = (yhi_patch - yupper + hymarg)/hy
       jbeg = max0(ncol-nyt+1, 1)
 c
       go to (400,410,420,430) mthbc(4)+1

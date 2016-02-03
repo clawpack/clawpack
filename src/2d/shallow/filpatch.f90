@@ -436,8 +436,8 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     xhi_fine = xlower + (ihi + 1) * dx_fine
     yhi_fine = ylower + (jhi + 1) * dy_fine
     if (patchOnly) then
-       call bc2amr(valbig,aux,mx,my,nvar,naux,dx_fine,dy_fine,level,t,xlow_fine,xhi_fine,  &
-                   ylow_fine,yhi_fine,xlower,ylower,xupper,yupper,xperdom,yperdom,spheredom)
+       call bc2amr(valbig,aux,mx,my,nvar,naux,dx_fine,dy_fine,level,t,   &
+                   xlow_fine,xhi_fine,ylow_fine,yhi_fine)
     endif
 
 contains
