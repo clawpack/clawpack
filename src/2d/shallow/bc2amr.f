@@ -3,7 +3,7 @@ c ------------------------------------------------------------------
 c
       subroutine bc2amr(val,aux,nrow,ncol,meqn,naux,
      1                  hx, hy, level, time,
-     2                  xlo_patch,  xhi_patch,  
+     2                  xlo_patch, xhi_patch,  
      3                  ylo_patch, yhi_patch)
 
 c
