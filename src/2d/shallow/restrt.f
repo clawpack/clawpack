@@ -63,8 +63,10 @@ c     ### ASSUMES fgmax stuff already set up (main calls set_fgmax)
 c     ### BEFORE  this restart routine called
       do ifg = 1, FG_num_fgrids
         fg => FG_fgrids(ifg)
-          read(rstunit) fg%valuemax,fg%tmax,fg%x,fg%y,
-     &          fg%arrival_time,fg%aux,fg%auxdone,fg%t_last_updated
+          read(rstunit) fg%levelmax
+          read(rstunit) fg%auxdone
+          read(rstunit) fg%x,fg%y,fg%valuemax,fg%tmax,
+     &          fg%arrival_time,fg%aux,fg%t_last_updated
       end do
 c
       close(rstunit) 
