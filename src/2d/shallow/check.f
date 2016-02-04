@@ -79,9 +79,8 @@ c     ### fortran requires specifying each component, if
 c     ### they contain allocatable arrays
       do ifg = 1, FG_num_fgrids
         fg => FG_fgrids(ifg)
-          write(chkunit) fg%valuemax,fg%tmax
-          write(chkunit) fg%x,fg%y,fg%arrival_time
-          write(chkunit) fg%aux
+          write(chkunit) fg%valuemax,fg%tmax,fg%x,fg%y,
+     &          fg%arrival_time,fg%aux,fg%auxdone,fg%t_last_updated
       end do
 c
       close(chkunit)
