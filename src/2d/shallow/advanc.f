@@ -166,7 +166,7 @@ c
       subroutine par_advanc (mptr,mitot,mjtot,nvar,naux,dtnew)
 c
       use amr_module
-      use gauges_module, only: print_gauges, num_gauges
+      use gauges_module, only: update_gauges, num_gauges
       implicit double precision (a-h,o-z)
 
 
@@ -242,7 +242,7 @@ c        # now has boundary conditions filled in.
 c     should change the way print_gauges does io - right now is critical section
 
       if (num_gauges > 0) then
-           call print_gauges(alloc(locnew:locnew+nvar*mitot*mjtot), 
+           call update_gauges(alloc(locnew:locnew+nvar*mitot*mjtot), 
      .                       alloc(locaux:locnew+nvar*mitot*mjtot),
      .                       xlow,ylow,nvar,mitot,mjtot,naux,mptr)
            endif

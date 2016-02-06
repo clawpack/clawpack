@@ -1,7 +1,7 @@
 subroutine setprob()
 
     use regions_module, only: set_regions
-    use gauges_module, only: set_gauges
+    !use gauges_module, only: set_gauges
     use geoclaw_module, only: set_geo
     use topo_module, only: read_topo_settings, read_dtopo_settings
     use qinit_module, only: set_qinit
