@@ -44,9 +44,8 @@ module gauges_module
     integer, allocatable, dimension(:) ::  mbestsrc, mbestorder, &
                           igauge, mbestg1, mbestg2, nextLoc
     
-    integer, parameter :: MAXDATA=1000
-!!$    real(kind=8), pointer :: gaugeArray(5,MAXDATA,:)    ! 5 is time,h,hu,hv,eta
-!!$    integer, pointer :: levelArray(MAXDATA,:)
+    integer, parameter :: MAXDATA=1
+!    integer, parameter :: MAXDATA=1000
     real(kind=8), pointer :: gaugeArray(:,:,:)
     integer, pointer :: levelArray(:,:)
 
@@ -113,10 +112,10 @@ contains
               open(unit=OUTGAUGEUNIT, file=fileName, status='unknown',        &
                    position='append', form='formatted')
               rewind OUTGAUGEUNIT
-              write(OUTGAUGEUNIT,*)"##  gauge name ",igauge(i)
+              write(OUTGAUGEUNIT,100) igauge(i),i,xgauge(i),ygauge(i)
+ 100          format("##  gauge name",i10," gauge number", i5, "loc ",2e15.7)
               write(OUTGAUGEUNIT,*)"##  level  time   h    hu    hv   eta "
            endif
-
 
            close(OUTGAUGEUNIT)
 
@@ -397,8 +396,9 @@ contains
 !    print to file.
 
       implicit none
-      integer :: gaugeNum,j,inum,k,idigit,ipos
+      integer :: gaugeNum,j,inum,k,idigit,ipos,myunit
       character*14 :: fileName
+      integer :: omp_get_thread_num, mythread
 
       ! open file for gauge gaugeNum, figure out name
       ! not writing gauge number since it is in file name now
@@ -406,6 +406,7 @@ contains
       ! each file in in set_gauges.
       !
       ! NB: output written in different order, losing backward compatibility
+
 
       fileName = 'gaugexxxxx.txt'    ! NB different name convention too
       inum = igauge(gaugeNum)
@@ -415,22 +416,29 @@ contains
          inum = inum / 10
       end do
 
-      open(unit=OUTGAUGEUNIT, file=fileName, status='old',    &
-           position='append', form='formatted')
 
+      mythread = 0
+!$    mythread = omp_get_thread_num()
+      myunit = OUTGAUGEUNIT+mythread
+
+!     add thread number of outgaugeunit to make a unique unit number.
+!     ok since writing to a unique file. in serial, still using only IOUTGAUGEUNIT
+      open(unit=myunit, file=fileName, status='old',    &
+           position='append', form='formatted')
       
       ! called either because array is full (write MAXDATA amount of gauge data)
       ! or checkpoint time, so write whatever is in array and reset.
       ! nextLoc has already been increment before this subr. called
-      write(OUTGAUGEUNIT,100) (levelArray(j,gaugeNum),                   &
-                              (gaugeArray(k,j,gaugeNum),k=1,5),j=1,nextLoc(gaugeNum)-1)
+      do j = 1, nextLoc(gaugeNum)-1
+        write(myunit,100) levelArray(j,gaugeNum),(gaugeArray(k,j,gaugeNum),k=1,5)
+      end do
       nextLoc(gaugeNum) = 1                        
 
       ! if you want to modify number of digits printed, modify this...
 100     format(i5,5e15.7)
 
       ! close file
-      close(OUTGAUGEUNIT)
+      close(myunit)
 
       end subroutine print_gauges_and_reset_nextLoc
 
