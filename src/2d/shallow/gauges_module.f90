@@ -369,7 +369,7 @@ contains
            end do
         if (abs(eta) < 1d-90) eta = 0.d0
        
-        ! save info for this times 
+        ! save info for this time 
         index = nextLoc(ii)
  
         levelArray(index,ii) = level
