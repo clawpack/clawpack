@@ -44,8 +44,8 @@ module gauges_module
     integer, allocatable, dimension(:) ::  mbestsrc, mbestorder, &
                           igauge, mbestg1, mbestg2, nextLoc
     
-    integer, parameter :: MAXDATA=1
-!    integer, parameter :: MAXDATA=1000
+!    integer, parameter :: MAXDATA=1
+    integer, parameter :: MAXDATA=1000
     real(kind=8), pointer :: gaugeArray(:,:,:)
     integer, pointer :: levelArray(:,:)
 
