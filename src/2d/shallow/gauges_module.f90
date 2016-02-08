@@ -309,10 +309,11 @@ contains
         ycent  = ylow + (jindex-.5d0)*hy
         xoff   = (xgauge(ii)-xcent)/hx
         yoff   = (ygauge(ii)-ycent)/hy
-        if (xoff .lt. 0.d0 .or. xoff .gt. 1.d0 .or. &
-            yoff .lt. 0.d0 .or. yoff .gt. 1.d0) then
-           write(6,*)" BIG PROBLEM in DUMPGAUGE", i
-        endif
+!  IF WANT TO USE, MODIFY TO TEST FOR ROUNDOFF LEVEL DIFF
+!       if (xoff .lt. 0.d0 .or. xoff .gt. 1.d0 .or. &
+!           yoff .lt. 0.d0 .or. yoff .gt. 1.d0) then
+!          write(6,*)" BIG PROBLEM in DUMPGAUGE", i
+!       endif
 
      ! ## Modified below from amrclaw/src/2d/gauges_module.f90 
      ! ## to interpolate only where all four cells are
