@@ -159,9 +159,10 @@ c        ## adjust time step  to hit chktime exactly, and do checkpointing
 c
       level        = 1
       ntogo(level) = 1
-      do i = 1, maxlv
-         dtnew(i)  = rinfinity
-      enddo
+      dtnew(1:maxlv) = rinfinity
+C       do i = 1, maxlv
+C          dtnew(i)  = rinfinity
+C       enddo
 
 c     We should take at least one step on all levels after any
 c     moving topography (dtopo) has been finalized to insure that
