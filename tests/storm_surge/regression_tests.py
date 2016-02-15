@@ -64,7 +64,10 @@ class IkeTest(test.GeoClawRegressionTest):
         self.run_code()
 
         # Perform tests
-        self.check_gauges(save=save, indices=(2, 3))
+        self.check_gauges(save=save, gauge_id=1, indices=(2, 3))
+        self.check_gauges(save=save, gauge_id=2, indices=(2, 3))
+        self.check_gauges(save=save, gauge_id=3, indices=(2, 3))
+        self.check_gauges(save=save, gauge_id=4, indices=(2, 3))
 
         # If we have gotten here then we do not need to copy the run results
         self.success = True
