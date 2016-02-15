@@ -104,7 +104,6 @@ program amr2
     integer :: omp_get_max_threads, maxthreads
     real(kind=8) :: time, ratmet, cut, dtinit, dt_max
     logical :: vtime, rest, output_t0    
-    integer :: num_fgmax
 
     ! Timing variables
     integer :: clock_start, clock_finish, clock_rate, ttotal
@@ -165,7 +164,7 @@ program amr2
         read(inunit,*) nout
         allocate(tout(nout))
         read(inunit,*) (tout(i), i=1,nout)
-        output_t0 = (tout(1) == t0)
+        output_t0 = (abs(tout(1) - t0) < 1e-15)
         ! Move output times down one index
         if (output_t0) then
             nout = nout - 1
