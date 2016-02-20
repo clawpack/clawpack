@@ -194,7 +194,7 @@ SOURCES = \
   $(AMRLIB)/inlinelimiter.f \
   $(AMRLIB)/cstore.f \
   $(AMRLIB)/saveqc.f \
-  $(AMRLIB)/check.f \
+  $(GEOLIB)/check.f \
   $(AMRLIB)/restrt.f \
   $(AMRLIB)/opendatafile.f \
   $(AMRLIB)/init_alloc.f90 \
