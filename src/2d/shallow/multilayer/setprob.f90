@@ -1,4 +1,8 @@
-subroutine setprob()
+subroutine setprob(rest)
+    
+    use regions_module, only: set_regions
+    use gauges_module, only: set_gauges
+    use fgmax_module, only: set_fgmax
 
     use geoclaw_module
     use topo_module
@@ -11,7 +15,17 @@ subroutine setprob()
     
     implicit none
 
-    integer :: total_aux
+    logical, intent(in), optional :: rest
+    logical :: restart
+
+    if (.not.present(rest)) then
+        restart = .false.
+    else
+        restart = rest
+    end if
+
+    call set_regions()
+    call set_fgmax()
 
     call set_geo()                    ! sets basic parameters g and coord system
     call set_refinement()             ! sets refinement control parameters
@@ -22,5 +36,7 @@ subroutine setprob()
 
     call setup_variable_friction()    ! Variable friction parameter
     call set_multilayer()             ! Set multilayer parameters
+    
+    call set_gauges(restart)
 
 end subroutine setprob
