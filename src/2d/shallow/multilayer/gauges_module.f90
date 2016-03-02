@@ -380,7 +380,7 @@ contains
             
             nextLoc(ii) = nextLoc(ii) + 1
             if (nextLoc(ii) .gt. MAXDATA) then
-              call print_gauges_and_reset_nextLoc(ii)  
+              call print_gauges_and_reset_nextLoc(ii, nvar)  
             endif
 
         enddo ! End of gauge loop
@@ -389,7 +389,7 @@ contains
 
     ! ==========================================================================
 
-    subroutine print_gauges_and_reset_nextLoc(gaugeNum)
+    subroutine print_gauges_and_reset_nextLoc(gaugeNum, nvar)
     !
     ! Array of gauge data for this gauge reached max capacity
     ! print to file.
@@ -399,7 +399,7 @@ contains
         implicit none
       
         ! Locals
-        integer :: gaugeNum, j, inum, k, idigit, ipos, myunit
+        integer :: gaugeNum, j, inum, k, idigit, ipos, myunit, nvar
         character(len=14) :: fileName
         integer :: omp_get_thread_num, mythread, num_eqn
 

@@ -383,7 +383,7 @@ contains
         
         nextLoc(ii) = nextLoc(ii) + 1
         if (nextLoc(ii) .gt. MAXDATA) then
-          call print_gauges_and_reset_nextLoc(ii)  
+          call print_gauges_and_reset_nextLoc(ii, nvar)  
         endif
 
  10     continue  ! end of loop over all gauges
@@ -392,13 +392,13 @@ contains
 !
 ! -------------------------------------------------------------------------
 !
-      subroutine print_gauges_and_reset_nextLoc(gaugeNum)
+      subroutine print_gauges_and_reset_nextLoc(gaugeNum, nvar)
 !
 !    Array of gauge data for this gauge reached max capacity
 !    print to file.
 
       implicit none
-      integer :: gaugeNum,j,inum,k,idigit,ipos,myunit
+      integer :: gaugeNum,j,inum,k,idigit,ipos,myunit,nvar
       character*14 :: fileName
       integer :: omp_get_thread_num, mythread
 

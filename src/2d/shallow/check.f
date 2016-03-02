@@ -98,7 +98,7 @@ c     # so if code dies it will at least have output up to this checkpoint time
 c     now that gauge data is batched, need to write the last batch to file
 c    ! flush(OUTGAUGEUNIT)   ! defined in gauges_module.f90 
       do ii = 1, num_gauges
-         call print_gauges_and_reset_nextLoc(ii)
+         call print_gauges_and_reset_nextLoc(ii, nvar)
       end do
 
 c     # write the time stamp file last so it's not updated until data is
