@@ -91,9 +91,8 @@ program amr2
 
     use amr_module, only: t0, tstart_thisrun
 
-    use regions_module, only: set_regions
-    use gauges_module, only: set_gauges, num_gauges
-    use fgmax_module, only: set_fgmax, FG_num_fgrids
+    use gauges_module, only: num_gauges
+    use fgmax_module, only: FG_num_fgrids
 
     implicit none
 
@@ -367,13 +366,6 @@ program amr2
     ! Finished with reading in parameters
     ! ==========================================================================
 
-    ! Read in region and gauge data
-    call set_regions('regions.data')
-    call set_gauges(rest,'gauges.data')
-
-    ! New fixed grid routines to keep track of max over computation:
-    call set_fgmax('fgmax.data')
-
     ! Look for capacity function via auxtypes:
     mcapa = 0
     do iaux = 1, naux
@@ -455,7 +447,7 @@ program amr2
         print *, '   at time = ',time
         print *, ' '
         ! Call user routine to set up problem parameters:
-        call setprob()
+        call setprob(.true.)
 
     else
 
@@ -464,7 +456,7 @@ program amr2
         tstart_thisrun = t0
 
         ! Call user routine to set up problem parameters:
-        call setprob()
+        call setprob(.false.)
 
         cflmax = 0.d0   ! otherwise use previously heckpointed val
 

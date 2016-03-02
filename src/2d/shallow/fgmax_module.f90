@@ -87,7 +87,7 @@ contains
         implicit none
         
         ! Subroutine arguments
-        character(len=*), intent(in) :: fname
+        character(len=*), intent(in), optional :: fname
         
         ! Local storage
         integer, parameter :: unit = 7
@@ -101,7 +101,11 @@ contains
         write(parmunit,*) '-----------'
 
         ! Open data file
-        call opendatafile(unit,fname)
+        if (present(fname)) then
+            call opendatafile(unit, fname)
+        else
+            call opendatafile(unit, 'fgmax.data')
+        endif
 
         ! Read in data
         read(unit,'(i2)') num_fgmax_val   ! name used in setrun.py
