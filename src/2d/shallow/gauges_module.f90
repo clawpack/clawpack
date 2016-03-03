@@ -38,6 +38,8 @@ module gauges_module
     implicit none
     save
 
+    logical :: module_setup = .false.
+
     integer, parameter :: OUTGAUGEUNIT=89
     integer :: num_gauges, inum
     real(kind=8), allocatable :: xgauge(:), ygauge(:), t1gauge(:), t2gauge(:)
@@ -51,7 +53,7 @@ module gauges_module
 
 contains
 
-    subroutine set_gauges(restart, fname)
+    subroutine set_gauges(restart, nvar, fname)
 
         use amr_module
 
@@ -60,67 +62,72 @@ contains
         ! Input
         character(len=*), intent(in), optional :: fname
         logical, intent(in)  :: restart
+        integer, intent(in) :: nvar
 
         ! Locals
         integer :: i, ipos, idigit
         integer, parameter :: iunit = 7
         character*14 ::  fileName
 
-        ! Open file
-        if (present(fname)) then
-            call opendatafile(iunit,fname)
-        else
-            call opendatafile(iunit,'gauges.data')
-        endif
+        if (.not.module_setup) then
+            ! Open file
+            if (present(fname)) then
+                call opendatafile(iunit,fname)
+            else
+                call opendatafile(iunit,'gauges.data')
+            endif
 
-        read(iunit,*) num_gauges
+            read(iunit,*) num_gauges
 
-        allocate(xgauge(num_gauges), ygauge(num_gauges))
-        allocate(t1gauge(num_gauges), t2gauge(num_gauges))
-        allocate(mbestsrc(num_gauges), mbestorder(num_gauges))
-        allocate(igauge(num_gauges))
-        allocate(mbestg1(maxgr), mbestg2(maxgr))
+            allocate(xgauge(num_gauges), ygauge(num_gauges))
+            allocate(t1gauge(num_gauges), t2gauge(num_gauges))
+            allocate(mbestsrc(num_gauges), mbestorder(num_gauges))
+            allocate(igauge(num_gauges))
+            allocate(mbestg1(maxgr), mbestg2(maxgr))
 
-        allocate(nextLoc(num_gauges))
-        allocate(gaugeArray(5,MAXDATA,num_gauges))
-        allocate(levelArray(MAXDATA,num_gauges))
-        
-        do i=1,num_gauges
-            read(iunit,*) igauge(i),xgauge(i),ygauge(i),t1gauge(i),t2gauge(i)
-        enddo
+            allocate(nextLoc(num_gauges))
+            allocate(gaugeArray(nvar + 2,MAXDATA,num_gauges))
+            allocate(levelArray(MAXDATA,num_gauges))
+            
+            do i=1,num_gauges
+                read(iunit,*) igauge(i),xgauge(i),ygauge(i),t1gauge(i),t2gauge(i)
+            enddo
 
-        close(iunit)
-        
-        ! initialize for starters
-        mbestsrc = 0
-        nextLoc  = 1  ! next location to be filled with gauge info
+            close(iunit)
+            
+            ! initialize for starters
+            mbestsrc = 0
+            nextLoc  = 1  ! next location to be filled with gauge info
 
-        do i = 1, num_gauges
-           fileName = 'gaugexxxxx.txt'    ! NB different name convention too
-           inum = igauge(i)
-           do ipos = 10,6,-1              ! do this to replace the xxxxx in the name
-              idigit = mod(inum,10)
-              fileName(ipos:ipos) = char(ichar('0') + idigit)
-              inum = inum / 10
-           end do
+            do i = 1, num_gauges
+               fileName = 'gaugexxxxx.txt'    ! NB different name convention too
+               inum = igauge(i)
+               do ipos = 10,6,-1              ! do this to replace the xxxxx in the name
+                  idigit = mod(inum,10)
+                  fileName(ipos:ipos) = char(ichar('0') + idigit)
+                  inum = inum / 10
+               end do
 
-!          status unknown since might be a restart run. maybe need to test and rewind?
-           if (restart) then
-              open(unit=OUTGAUGEUNIT, file=fileName, status='old',        &
-                   position='append', form='formatted')
-           else
-              open(unit=OUTGAUGEUNIT, file=fileName, status='unknown',        &
-                   position='append', form='formatted')
-              rewind OUTGAUGEUNIT
-              write(OUTGAUGEUNIT,100) igauge(i), xgauge(i), ygauge(i), 4
- 100          format("# gauge_id=",i5," location=( ",1e15.7," ",1e15.7," ) num_eqn=",i2)
-              write(OUTGAUGEUNIT,101)
- 101          format("# Columns: level time h    hu    hv    eta")
-           endif
+    !          status unknown since might be a restart run. maybe need to test and rewind?
+               if (restart) then
+                  open(unit=OUTGAUGEUNIT, file=fileName, status='old',        &
+                       position='append', form='formatted')
+               else
+                  open(unit=OUTGAUGEUNIT, file=fileName, status='unknown',        &
+                       position='append', form='formatted')
+                  rewind OUTGAUGEUNIT
+                  write(OUTGAUGEUNIT,100) igauge(i), xgauge(i), ygauge(i), 4
+ 100              format("# gauge_id=",i5," location=( ",1e15.7," ",1e15.7," ) num_eqn=",i2)
+                  write(OUTGAUGEUNIT,101)
+ 101              format("# Columns: level time h    hu    hv    eta")
+               endif
 
-           close(OUTGAUGEUNIT)
+               close(OUTGAUGEUNIT)
 
-        end do
+            end do
+
+            module_setup = .true.
+        end if
 
     end subroutine set_gauges
 

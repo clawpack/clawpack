@@ -91,8 +91,18 @@ program amr2
 
     use amr_module, only: t0, tstart_thisrun
 
-    use gauges_module, only: num_gauges
-    use fgmax_module, only: FG_num_fgrids
+    ! Data modules
+    use geoclaw_module, only: set_geo
+    use topo_module, only: read_topo_settings, read_dtopo_settings
+    use qinit_module, only: set_qinit
+    use fixedgrids_module, only: set_fixed_grids
+    use refinement_module, only: set_refinement
+    use storm_module, only: set_storm
+    use friction_module, only: setup_variable_friction
+    use gauges_module, only: set_gauges, num_gauges
+    use regions_module, only: set_regions
+    use fgmax_module, only: set_fgmax, FG_num_fgrids
+    use multilayer_module, only: set_multilayer
 
     implicit none
 
@@ -447,7 +457,20 @@ program amr2
         print *, '   at time = ',time
         print *, ' '
         ! Call user routine to set up problem parameters:
-        call setprob(.true.)
+        call setprob()
+
+        ! Non-user defined setup routine
+        call set_geo()                    ! sets basic parameters g and coord system
+        call set_refinement()             ! sets refinement control parameters
+        call read_dtopo_settings()        ! specifies file with dtopo from earthquake
+        call read_topo_settings()         ! specifies topography (bathymetry) files
+        call set_qinit()                  ! specifies file with dh if this used instead
+        call set_fixed_grids()            ! Fixed grid settings
+        call setup_variable_friction()    ! Variable friction parameter
+        call set_multilayer()             ! Set multilayer SWE parameters
+        call set_regions()                ! Set refinement regions
+        call set_gauges(rest, nvar)       ! Set gauge output
+        call set_fgmax()
 
     else
 
@@ -456,7 +479,20 @@ program amr2
         tstart_thisrun = t0
 
         ! Call user routine to set up problem parameters:
-        call setprob(.false.)
+        call setprob()
+
+        ! Non-user defined setup routine
+        call set_geo()                    ! sets basic parameters g and coord system
+        call set_refinement()             ! sets refinement control parameters
+        call read_dtopo_settings()        ! specifies file with dtopo from earthquake
+        call read_topo_settings()         ! specifies topography (bathymetry) files
+        call set_qinit()                  ! specifies file with dh if this used instead
+        call set_fixed_grids()            ! Fixed grid settings
+        call setup_variable_friction()    ! Variable friction parameter
+        call set_multilayer()             ! Set multilayer SWE parameters
+        call set_regions()                ! Set refinement regions
+        call set_gauges(rest, nvar)       ! Set gauge output
+        call set_fgmax()
 
         cflmax = 0.d0   ! otherwise use previously heckpointed val
 
