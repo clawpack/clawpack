@@ -64,47 +64,47 @@ class IkeTest(test.GeoClawRegressionTest):
         self.run_code()
 
         # Perform tests
-        self.check_gauges(save=save, gauge_id=1, indices=(2, 3))
-        self.check_gauges(save=save, gauge_id=2, indices=(2, 3))
-        self.check_gauges(save=save, gauge_id=3, indices=(2, 3))
-        self.check_gauges(save=save, gauge_id=4, indices=(2, 3))
+        self.check_gauges(save=save, gauge_id=1, indices=indices)
+        self.check_gauges(save=save, gauge_id=2, indices=indices)
+        self.check_gauges(save=save, gauge_id=3, indices=indices)
+        self.check_gauges(save=save, gauge_id=4, indices=indices)
 
         # If we have gotten here then we do not need to copy the run results
         self.success = True
 
 
-    def check_gauges(self, save=False, indices=(2, 3)):
-        r"""Basic test to assert gauge equality
+    # def check_gauges(self, save=False, indices=(2, 3)):
+    #     r"""Basic test to assert gauge equality
 
-        :Input:
-         - *save* (bool) - If *True* will save the output from this test to 
-           the file *regresion_data.txt*.  Default is *False*.
-         - *indices* (tuple) - Contains indices to compare in the gague 
-           comparison.  Defaults to *(2, 3)*.
-        """
+    #     :Input:
+    #      - *save* (bool) - If *True* will save the output from this test to 
+    #        the file *regresion_data.txt*.  Default is *False*.
+    #      - *indices* (tuple) - Contains indices to compare in the gague 
+    #        comparison.  Defaults to *(2, 3)*.
+    #     """
 
-        # Get gauge data
-        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
-        data_sum = []
-        for index in indices:
-            data_sum.append(data[:, index].sum())
+    #     # Get gauge data
+    #     data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
+    #     data_sum = []
+    #     for index in indices:
+    #         data_sum.append(data[:, index].sum())
 
-        # Get (and save) regression comparison data
-        regression_data_file = os.path.join(self.test_path, "regression_data.txt")
-        if save:
-            numpy.savetxt(regression_data_file, data)
-        regression_data = numpy.loadtxt(regression_data_file)
-        regression_sum = []
-        for index in indices:
-            regression_sum.append(regression_data[:, index].sum())
-        # regression_sum = regression_data
+    #     # Get (and save) regression comparison data
+    #     regression_data_file = os.path.join(self.test_path, "regression_data.txt")
+    #     if save:
+    #         numpy.savetxt(regression_data_file, data)
+    #     regression_data = numpy.loadtxt(regression_data_file)
+    #     regression_sum = []
+    #     for index in indices:
+    #         regression_sum.append(regression_data[:, index].sum())
+    #     # regression_sum = regression_data
 
-        # Compare data
-        tolerance = 1e-14
-        assert numpy.allclose(data_sum, regression_sum, tolerance), \
-                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
-        # assert numpy.allclose(data, regression_data, tolerance), \
-        #         "Full gauge match failed."
+    #     # Compare data
+    #     tolerance = 1e-14
+    #     assert numpy.allclose(data_sum, regression_sum, tolerance), \
+    #             "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
+    #     # assert numpy.allclose(data, regression_data, tolerance), \
+    #     #         "Full gauge match failed."
 
 if __name__=="__main__":
     if len(sys.argv) > 1:
