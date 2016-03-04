@@ -8,8 +8,9 @@ that will be read in by the Fortran code.
 
 import numpy as numpy
 
-import clawpack.geoclaw.multilayer.data as multilayer
+import clawpack.geoclaw.data
 import clawpack.geoclaw.topotools as tt
+
 
 # Rotation transformations
 def transform_c2p(x,y,x0,y0,theta):
@@ -464,13 +465,15 @@ def setgeo(rundata):
 
 def set_multilayer(rundata):
 
-    rundata.replace_data('qinit_data', multilayer.QinitMultilayerData())
+    rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6
     rundata.qinit_data.epsilon = 0.02
     rundata.qinit_data.angle = 0.0
     rundata.qinit_data.sigma = 0.02
     rundata.qinit_data.wave_family = 4
     rundata.qinit_data.init_location = [-0.1,0.0]
+
+    return rundata
 
 
 def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):

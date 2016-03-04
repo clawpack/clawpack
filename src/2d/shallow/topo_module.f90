@@ -21,6 +21,8 @@ module topo_module
     use amr_module, only: tstart_thisrun
     implicit none
 
+    logical, private :: module_setup = .false.
+
     ! Work array for topography for all t
     real(kind=8), allocatable :: topowork(:)
 
@@ -110,213 +112,218 @@ contains
         real(kind=8) :: area_i,area_j,x_junk,y_junk
         real(kind=8) :: area, area_domain
 
-        ! Open and begin parameter file output
-        write(GEO_PARM_UNIT,*) ' '
-        write(GEO_PARM_UNIT,*) '--------------------------------------------'
-        write(GEO_PARM_UNIT,*) 'SETTOPO:'
-        write(GEO_PARM_UNIT,*) '---------'
+        if (.not.module_setup) then
+
+            ! Open and begin parameter file output
+            write(GEO_PARM_UNIT,*) ' '
+            write(GEO_PARM_UNIT,*) '--------------------------------------------'
+            write(GEO_PARM_UNIT,*) 'SETTOPO:'
+            write(GEO_PARM_UNIT,*) '---------'
 
 
-        if (present(file_name)) then
-            call opendatafile(iunit, file_name)
-        else
-            call opendatafile(iunit, 'topo.data')
-        endif
-
-        ! Read in topography specification type
-        read(iunit,"(i1)") test_topography
-
-        ! Primary topography type, read in topography files specified
-        if (test_topography == 0) then
-            read(iunit,*) mtopofiles
-
-            if (mtopofiles == 0) then
-                write(GEO_PARM_UNIT,*) '   mtopofiles = 0'
-                write(GEO_PARM_UNIT,*) '   No topo files specified, '
-                write(GEO_PARM_UNIT,*) '          will set B(x,y) = 0 in setaux'
-                return
+            if (present(file_name)) then
+                call opendatafile(iunit, file_name)
+            else
+                call opendatafile(iunit, 'topo.data')
             endif
 
-            mtopofiles = mtopofiles + num_dtopo
-            write(GEO_PARM_UNIT,*) '   mtopofiles = ',mtopofiles-num_dtopo
+            ! Read in topography specification type
+            read(iunit,"(i1)") test_topography
 
-            ! Read and allocate data parameters for each file
-            allocate(mxtopo(mtopofiles),mytopo(mtopofiles))
-            allocate(xlowtopo(mtopofiles),ylowtopo(mtopofiles))
-            allocate(tlowtopo(mtopofiles),xhitopo(mtopofiles),yhitopo(mtopofiles))
-            allocate(thitopo(mtopofiles),dxtopo(mtopofiles),dytopo(mtopofiles))
-            allocate(topofname(mtopofiles),itopotype(mtopofiles))
-            allocate(minleveltopo(mtopofiles),maxleveltopo(mtopofiles))
-            allocate(i0topo(mtopofiles),mtopo(mtopofiles),mtopoorder(mtopofiles))
-            allocate(topoID(mtopofiles),topotime(mtopofiles),topo0save(mtopofiles))
-            allocate(i0topo0(mtopofiles),topo0ID(mtopofiles))
+            ! Primary topography type, read in topography files specified
+            if (test_topography == 0) then
+                read(iunit,*) mtopofiles
 
-            do i=1,mtopofiles - num_dtopo
-                read(iunit,*) topofname(i)
-                read(iunit,*) itopotype(i),minleveltopo(i), maxleveltopo(i), &
-                    tlowtopo(i),thitopo(i)
-
-                write(GEO_PARM_UNIT,*) '   '
-                write(GEO_PARM_UNIT,*) '   ',topofname(i)
-                write(GEO_PARM_UNIT,*) '  itopotype = ', itopotype(i)
-                write(GEO_PARM_UNIT,*) '  minlevel, maxlevel = ', &
-                    minleveltopo(i), maxleveltopo(i)
-                write(GEO_PARM_UNIT,*) '  tlow, thi = ', tlowtopo(i),thitopo(i)
-                if (abs(itopotype(i)) == 1) then
-                    print *, 'WARNING: topotype 1 has been deprecated'
-                    print *, 'converting to topotype > 1 is encouraged'
-                    print *, 'python tools for converting files are provided'
+                if (mtopofiles == 0) then
+                    write(GEO_PARM_UNIT,*) '   mtopofiles = 0'
+                    write(GEO_PARM_UNIT,*) '   No topo files specified, '
+                    write(GEO_PARM_UNIT,*) '          will set B(x,y) = 0 in setaux'
+                    return
                 endif
-                call read_topo_header(topofname(i),itopotype(i),mxtopo(i), &
-                    mytopo(i),xlowtopo(i),ylowtopo(i),xhitopo(i),yhitopo(i), &
-                    dxtopo(i),dytopo(i))
-                topoID(i) = i
-                mtopo(i) = mxtopo(i)*mytopo(i)
-            enddo
 
-            ! adding extra topo arrays corresponding spatially to dtopo
-            ! arrays will be part of time dependent topowork as with all others.
-            ! the state of these arrays at t=0 will be stored in topo0work
-            topo0save(:)= 0
-            do i= mtopofiles - num_dtopo + 1, mtopofiles
-               j = i - mtopofiles + num_dtopo
-               itopotype(i) = dtopotype(j)
-               mxtopo(i) = mxdtopo(j)
-               mytopo(i) = mydtopo(j)
-               xlowtopo(i) = xlowdtopo(j)
-               ylowtopo(i) = ylowdtopo(j)
-               xhitopo(i) = xhidtopo(j)
-               yhitopo(i) = yhidtopo(j)
-               dxtopo(i) = dxdtopo(j)
-               dytopo(i) = dydtopo(j)
-               minleveltopo(i) = minleveldtopo(j)
-               maxleveltopo(i) = maxleveldtopo(j)
-               tlowtopo(i) = t0dtopo(j)
-               thitopo(i) = tfdtopo(j)
-               mtopo(i) = mxtopo(i)*mytopo(i)
-               topoID(i) = i
-               topotime(i) = -huge(1.0)
-               topo0save(i) = 1
-            enddo
+                mtopofiles = mtopofiles + num_dtopo
+                write(GEO_PARM_UNIT,*) '   mtopofiles = ',mtopofiles-num_dtopo
 
-            ! Indexing into work array
-            i0topo(1)=1
-            if (mtopofiles > 1) then
-                do i=2,mtopofiles
-                    i0topo(i)=i0topo(i-1) + mtopo(i-1)
-                enddo
-            endif
+                ! Read and allocate data parameters for each file
+                allocate(mxtopo(mtopofiles),mytopo(mtopofiles))
+                allocate(xlowtopo(mtopofiles),ylowtopo(mtopofiles))
+                allocate(tlowtopo(mtopofiles),xhitopo(mtopofiles),yhitopo(mtopofiles))
+                allocate(thitopo(mtopofiles),dxtopo(mtopofiles),dytopo(mtopofiles))
+                allocate(topofname(mtopofiles),itopotype(mtopofiles))
+                allocate(minleveltopo(mtopofiles),maxleveltopo(mtopofiles))
+                allocate(i0topo(mtopofiles),mtopo(mtopofiles),mtopoorder(mtopofiles))
+                allocate(topoID(mtopofiles),topotime(mtopofiles),topo0save(mtopofiles))
+                allocate(i0topo0(mtopofiles),topo0ID(mtopofiles))
 
-            ! Read topography and allocate space for each file
-            mtoposize = sum(mtopo)
-            allocate(topowork(mtoposize))
+                do i=1,mtopofiles - num_dtopo
+                    read(iunit,*) topofname(i)
+                    read(iunit,*) itopotype(i),minleveltopo(i), maxleveltopo(i), &
+                        tlowtopo(i),thitopo(i)
 
-            do i=1,mtopofiles - num_dtopo
-                topoID(i) = i
-                topotime(i) = -huge(1.0)
-                call read_topo_file(mxtopo(i),mytopo(i),itopotype(i),topofname(i), &
-                    topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
-            enddo
-
-            ! topography order...This determines which order to process topography
-            !
-            ! The finest topography will be given priority in any region
-            ! mtopoorder(rank) = i means that i'th topography file has rank rank,
-            ! where the file with rank=1 is the finest and considered first.
-            do i=1,mtopofiles
-                finer_than = 0
-                do j=1,mtopofiles
-                    if (j /= i) then
-                        area_i=dxtopo(i)*dytopo(i)
-                        area_j=dxtopo(j)*dytopo(j)
-                        if (area_i < area_j) finer_than = finer_than + 1
-                        ! if two files have the same resolution, order is
-                        ! arbitrarily chosen
-                        if ((area_i == area_j).and.(j < i)) then
-                            finer_than = finer_than + 1
-                        endif
+                    write(GEO_PARM_UNIT,*) '   '
+                    write(GEO_PARM_UNIT,*) '   ',topofname(i)
+                    write(GEO_PARM_UNIT,*) '  itopotype = ', itopotype(i)
+                    write(GEO_PARM_UNIT,*) '  minlevel, maxlevel = ', &
+                        minleveltopo(i), maxleveltopo(i)
+                    write(GEO_PARM_UNIT,*) '  tlow, thi = ', tlowtopo(i),thitopo(i)
+                    if (abs(itopotype(i)) == 1) then
+                        print *, 'WARNING: topotype 1 has been deprecated'
+                        print *, 'converting to topotype > 1 is encouraged'
+                        print *, 'python tools for converting files are provided'
                     endif
+                    call read_topo_header(topofname(i),itopotype(i),mxtopo(i), &
+                        mytopo(i),xlowtopo(i),ylowtopo(i),xhitopo(i),yhitopo(i), &
+                        dxtopo(i),dytopo(i))
+                    topoID(i) = i
+                    mtopo(i) = mxtopo(i)*mytopo(i)
                 enddo
-                ! ifinerthan tells how many other files, file i is finer than
-                rank = mtopofiles - finer_than
-                mtopoorder(rank) = i
-            enddo
 
-            write(GEO_PARM_UNIT,*) ' '
-            write(GEO_PARM_UNIT,*) '  Ranking of topography files', &
-                '  finest to coarsest: ', &
-                (mtopoorder(rank),rank=1,mtopofiles)
-            write(GEO_PARM_UNIT,*) ' '
+                ! adding extra topo arrays corresponding spatially to dtopo
+                ! arrays will be part of time dependent topowork as with all others.
+                ! the state of these arrays at t=0 will be stored in topo0work
+                topo0save(:)= 0
+                do i= mtopofiles - num_dtopo + 1, mtopofiles
+                   j = i - mtopofiles + num_dtopo
+                   itopotype(i) = dtopotype(j)
+                   mxtopo(i) = mxdtopo(j)
+                   mytopo(i) = mydtopo(j)
+                   xlowtopo(i) = xlowdtopo(j)
+                   ylowtopo(i) = ylowdtopo(j)
+                   xhitopo(i) = xhidtopo(j)
+                   yhitopo(i) = yhidtopo(j)
+                   dxtopo(i) = dxdtopo(j)
+                   dytopo(i) = dydtopo(j)
+                   minleveltopo(i) = minleveldtopo(j)
+                   maxleveltopo(i) = maxleveldtopo(j)
+                   tlowtopo(i) = t0dtopo(j)
+                   thitopo(i) = tfdtopo(j)
+                   mtopo(i) = mxtopo(i)*mytopo(i)
+                   topoID(i) = i
+                   topotime(i) = -huge(1.0)
+                   topo0save(i) = 1
+                enddo
 
-            !set values in topo array for dtopo generated topo
-            !this call will also determine which topo arrays to save in topo0work
-            do i = mtopofiles - num_dtopo + 1, mtopofiles
-               call set_topo_for_dtopo(mxtopo(i),mytopo(i),dxtopo(i),dytopo(i), &
-                    xlowtopo(i),ylowtopo(i),xhitopo(i),yhitopo(i), &
-                    topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
-            enddo
+                ! Indexing into work array
+                i0topo(1)=1
+                if (mtopofiles > 1) then
+                    do i=2,mtopofiles
+                        i0topo(i)=i0topo(i-1) + mtopo(i-1)
+                    enddo
+                endif
 
-            !create topo0work array for finest arrays covering dtopo
-            !arrays to be saved are indicated in topo0save
-            topo_finalized = .true.
-            aux_finalized = 2   !# indicates aux arrays properly set with dtopo
-            if (num_dtopo>0) then
-               topo_finalized = .false.
-               aux_finalized = 0  !# will be incremented each time level 1 goes
-               i0topo0(1) = 1
-               mtopo0size = dot_product(mtopo,topo0save)
-               allocate(topo0work(mtopo0size))
-               do i = 2,mtopofiles
-                  i0topo0(i)= i0topo0(i-1) + mtopo(i-1)*topo0save(i-1)
-               enddo
+                ! Read topography and allocate space for each file
+                mtoposize = sum(mtopo)
+                allocate(topowork(mtoposize))
 
-               do i = 1,mtopofiles
-                  if (topo0save(i)>0) then
-                     topo0work(i0topo0(i):i0topo0(i)+mtopo(i)-1) = &
-                        topowork(i0topo(i):i0topo(i)+mtopo(i)-1)
-                  endif
-               enddo
-            endif
+                do i=1,mtopofiles - num_dtopo
+                    topoID(i) = i
+                    topotime(i) = -huge(1.0)
+                    call read_topo_file(mxtopo(i),mytopo(i),itopotype(i),topofname(i), &
+                        topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
+                enddo
 
-            ! Check that topo arrays cover full domain:
-            call topoarea(xlower,xupper,ylower,yupper,1,area)
-            area_domain = (yupper-ylower)*(xupper-xlower)
-            if (abs(area - area_domain) > 1e-2*area_domain) then
-                write(6,*) '**** topo arrays do not cover domain'
-                write(6,*) '**** area of overlap = ', area
-                write(6,*) '**** area of domain  = ', area_domain
+                ! topography order...This determines which order to process topography
+                !
+                ! The finest topography will be given priority in any region
+                ! mtopoorder(rank) = i means that i'th topography file has rank rank,
+                ! where the file with rank=1 is the finest and considered first.
+                do i=1,mtopofiles
+                    finer_than = 0
+                    do j=1,mtopofiles
+                        if (j /= i) then
+                            area_i=dxtopo(i)*dytopo(i)
+                            area_j=dxtopo(j)*dytopo(j)
+                            if (area_i < area_j) finer_than = finer_than + 1
+                            ! if two files have the same resolution, order is
+                            ! arbitrarily chosen
+                            if ((area_i == area_j).and.(j < i)) then
+                                finer_than = finer_than + 1
+                            endif
+                        endif
+                    enddo
+                    ! ifinerthan tells how many other files, file i is finer than
+                    rank = mtopofiles - finer_than
+                    mtopoorder(rank) = i
+                enddo
+
+                write(GEO_PARM_UNIT,*) ' '
+                write(GEO_PARM_UNIT,*) '  Ranking of topography files', &
+                    '  finest to coarsest: ', &
+                    (mtopoorder(rank),rank=1,mtopofiles)
+                write(GEO_PARM_UNIT,*) ' '
+
+                !set values in topo array for dtopo generated topo
+                !this call will also determine which topo arrays to save in topo0work
+                do i = mtopofiles - num_dtopo + 1, mtopofiles
+                   call set_topo_for_dtopo(mxtopo(i),mytopo(i),dxtopo(i),dytopo(i), &
+                        xlowtopo(i),ylowtopo(i),xhitopo(i),yhitopo(i), &
+                        topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
+                enddo
+
+                !create topo0work array for finest arrays covering dtopo
+                !arrays to be saved are indicated in topo0save
+                topo_finalized = .true.
+                aux_finalized = 2   !# indicates aux arrays properly set with dtopo
+                if (num_dtopo>0) then
+                   topo_finalized = .false.
+                   aux_finalized = 0  !# will be incremented each time level 1 goes
+                   i0topo0(1) = 1
+                   mtopo0size = dot_product(mtopo,topo0save)
+                   allocate(topo0work(mtopo0size))
+                   do i = 2,mtopofiles
+                      i0topo0(i)= i0topo0(i-1) + mtopo(i-1)*topo0save(i-1)
+                   enddo
+
+                   do i = 1,mtopofiles
+                      if (topo0save(i)>0) then
+                         topo0work(i0topo0(i):i0topo0(i)+mtopo(i)-1) = &
+                            topowork(i0topo(i):i0topo(i)+mtopo(i)-1)
+                      endif
+                   enddo
+                endif
+
+                ! Check that topo arrays cover full domain:
+                call topoarea(xlower,xupper,ylower,yupper,1,area)
+                area_domain = (yupper-ylower)*(xupper-xlower)
+                if (abs(area - area_domain) > 1e-2*area_domain) then
+                    write(6,*) '**** topo arrays do not cover domain'
+                    write(6,*) '**** area of overlap = ', area
+                    write(6,*) '**** area of domain  = ', area_domain
+                    stop
+                else if (abs(area - area_domain) > 1e-12*area_domain) then
+                    write(6,*) '**** WARNING'
+                    write(6,*) '**** topo arrays do not quite cover domain'
+                    write(6,*) '**** area of overlap = ', area
+                    write(6,*) '**** area of domain  = ', area_domain
+                    write(6,*) '**** error is less than 1% so proceeding...'
+                endif
+
+            !---------------tests for analytic bathymetry-------------------
+            ! Simple jump discontinuity in bathymetry
+            else if (test_topography == 1) then
+                topo_finalized = .true.
+                read(iunit,"(d16.8)") topo_location
+                read(iunit,"(d16.8)") topo_left
+                read(iunit,"(d16.8)") topo_right
+
+            ! Idealized ocean shelf
+            else if (test_topography == 2 .or. test_topography == 3) then
+                topo_finalized = .true.
+                read(iunit,"(d16.8)") topo_x0
+                read(iunit,"(d16.8)") topo_x1
+                read(iunit,"(d16.8)") topo_x2
+                read(iunit,"(d16.8)") topo_basin_depth
+                read(iunit,"(d16.8)") topo_shelf_depth
+                read(iunit,"(d16.8)") topo_beach_slope
+                topo_shelf_slope = (topo_basin_depth - topo_shelf_depth) &
+                                            / (topo_x0 - topo_x1)
+            else
+                print *,"Error:  Unknown test topography type ",test_topography
                 stop
-            else if (abs(area - area_domain) > 1e-12*area_domain) then
-                write(6,*) '**** WARNING'
-                write(6,*) '**** topo arrays do not quite cover domain'
-                write(6,*) '**** area of overlap = ', area
-                write(6,*) '**** area of domain  = ', area_domain
-                write(6,*) '**** error is less than 1% so proceeding...'
             endif
 
-        !---------------tests for analytic bathymetry-------------------
-        ! Simple jump discontinuity in bathymetry
-        else if (test_topography == 1) then
-            topo_finalized = .true.
-            read(iunit,"(d16.8)") topo_location
-            read(iunit,"(d16.8)") topo_left
-            read(iunit,"(d16.8)") topo_right
-
-        ! Idealized ocean shelf
-        else if (test_topography == 2 .or. test_topography == 3) then
-            topo_finalized = .true.
-            read(iunit,"(d16.8)") topo_x0
-            read(iunit,"(d16.8)") topo_x1
-            read(iunit,"(d16.8)") topo_x2
-            read(iunit,"(d16.8)") topo_basin_depth
-            read(iunit,"(d16.8)") topo_shelf_depth
-            read(iunit,"(d16.8)") topo_beach_slope
-            topo_shelf_slope = (topo_basin_depth - topo_shelf_depth) &
-                                        / (topo_x0 - topo_x1)
-        else
-            print *,"Error:  Unknown test topography type ",test_topography
-            stop
-        endif
+            module_setup = .true.
+        end if
 
     end subroutine read_topo_settings
 

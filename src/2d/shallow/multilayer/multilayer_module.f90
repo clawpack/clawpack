@@ -10,7 +10,7 @@ module multilayer_module
 
     implicit none
 
-    logical :: module_setup = .false.
+    logical, private :: module_setup = .false.
 
     ! Storage parameters
     integer :: aux_layer_index

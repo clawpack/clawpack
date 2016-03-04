@@ -38,7 +38,7 @@ module gauges_module
     implicit none
     save
 
-    logical :: module_setup = .false.
+    logical, private :: module_setup = .false.
 
     integer, parameter :: OUTGAUGEUNIT=89
     integer :: num_gauges, inum

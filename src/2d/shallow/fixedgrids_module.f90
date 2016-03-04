@@ -20,6 +20,9 @@ module fixedgrids_module
         real(kind=8) :: last_output_time,start_time,end_time,dt
     end type fixedgrid_type    
 
+
+    logical, private :: module_setup = .false.
+
     ! Fixed grid arrays and sizes
     integer :: num_fixed_grids
     type(fixedgrid_type), allocatable :: fgrids(:)
@@ -42,107 +45,112 @@ contains
         integer, parameter :: unit = 7
         integer :: i
 
-        write(parmunit,*) ' '
-        write(parmunit,*) '--------------------------------------------'
-        write(parmunit,*) 'SETFIXEDGRIDS:'
-        write(parmunit,*) '-----------'
+        if (.not.module_setup) then
 
-        ! Open data file
-        if (present(fname)) then
-            call opendatafile(unit,fname)
-        else
-            call opendatafile(unit,'fixed_grids.data')
-        endif
+            write(parmunit,*) ' '
+            write(parmunit,*) '--------------------------------------------'
+            write(parmunit,*) 'SETFIXEDGRIDS:'
+            write(parmunit,*) '-----------'
 
-        ! Read in data
-        read(unit,'(i2)') num_fixed_grids
-        write(parmunit,*) '  mfgrids = ',num_fixed_grids
-        if (num_fixed_grids == 0) then
-            write(parmunit,*) '  No fixed grids specified for output'
-            return
-        endif
-        
-        ! Allocate fixed grids (not the data yet though)
-        allocate(fgrids(num_fixed_grids))
-
-        ! Read in data for each fixed grid
-        do i=1,num_fixed_grids
-            ! Read in this grid's data
-            read(unit,*) fgrids(i)%start_time, &
-                         fgrids(i)%end_time, &
-                         fgrids(i)%num_output, &
-                         fgrids(i)%x_low, &
-                         fgrids(i)%x_hi , &
-                         fgrids(i)%y_low, &
-                         fgrids(i)%y_hi , &
-                         fgrids(i)%mx  , &
-                         fgrids(i)%my  , &
-                         fgrids(i)%output_arrival_times, &
-                         fgrids(i)%output_surface_max
-
-           ! Setup data for this grid
-           ! Set dtfg (the timestep length between outputs) for each grid
-           if (fgrids(i)%end_time <= fgrids(i)%start_time) then
-               if (fgrids(i)%num_output > 1) then 
-                  print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
-                  print *,'start_time <= end_time yet num_output > 1'
-                  print *,'set end_time > start_time or set num_output = 1'
-                  stop
-               else
-                   fgrids(i)%dt = 0.d0
-               endif
-           else
-               if (fgrids(i)%num_output < 2) then
-                   print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
-                   print *,'end_time > start_time, yet num_output = 1'
-                   print *,'set num_output > 2'
-                   stop
-               else
-                   fgrids(i)%dt = (fgrids(i)%end_time - fgrids(i)%start_time) &
-                                       / (fgrids(i)%num_output - 1)
-               endif
+            ! Open data file
+            if (present(fname)) then
+                call opendatafile(unit,fname)
+            else
+                call opendatafile(unit,'fixed_grids.data')
             endif
 
-            ! Initialize last_output_time and index
-            fgrids(i)%last_output_time = fgrids(i)%start_time - fgrids(i)%dt
-            fgrids(i)%last_output_index = 0
-
-            ! Set spatial intervals dx and dy on each grid
-            if (fgrids(i)%mx > 1) then
-               fgrids(i)%dx = (fgrids(i)%x_hi - fgrids(i)%x_low) / (fgrids(i)%mx - 1)
-            else if (fgrids(i)%mx == 1) then
-               fgrids(i)%dx = 0.d0
-            else
-                 print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
-                 print *,'x grid points mx <= 0, set mx >= 1'
+            ! Read in data
+            read(unit,'(i2)') num_fixed_grids
+            write(parmunit,*) '  mfgrids = ',num_fixed_grids
+            if (num_fixed_grids == 0) then
+                write(parmunit,*) '  No fixed grids specified for output'
+                return
             endif
-
-            if (fgrids(i)%my > 1) then
-                fgrids(i)%dy = (fgrids(i)%y_hi - fgrids(i)%y_low) / (fgrids(i)%my - 1)
-            else if (fgrids(i)%my == 1) then
-                fgrids(i)%dy = 0.d0
-            else
-                print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
-                print *,'y grid points my <= 0, set my >= 1'
-            endif 
-       
-            ! set the number of variables stored for each grid
-            ! this should be (the number of variables you want to write out + 1)
-            fgrids(i)%num_vars(1) = 6
-            fgrids(i)%num_vars(2) = 3*fgrids(i)%output_surface_max &
-                                          + fgrids(i)%output_arrival_times
             
-            ! Allocate new fixed grid data array
-            allocate(fgrids(i)%early(fgrids(i)%num_vars(1),fgrids(i)%mx,fgrids(i)%my))
-            fgrids(i)%early = nan()
-            allocate(fgrids(i)%late(fgrids(i)%num_vars(1),fgrids(i)%mx,fgrids(i)%my))
-            fgrids(i)%late = nan()
-            allocate(fgrids(i)%often(fgrids(i)%num_vars(2),fgrids(i)%mx,fgrids(i)%my))
-            fgrids(i)%often = nan()
-       enddo
-       close(unit)
-       
-       tcfmax=-1.d16
+            ! Allocate fixed grids (not the data yet though)
+            allocate(fgrids(num_fixed_grids))
+
+            ! Read in data for each fixed grid
+            do i=1,num_fixed_grids
+                ! Read in this grid's data
+                read(unit,*) fgrids(i)%start_time, &
+                             fgrids(i)%end_time, &
+                             fgrids(i)%num_output, &
+                             fgrids(i)%x_low, &
+                             fgrids(i)%x_hi , &
+                             fgrids(i)%y_low, &
+                             fgrids(i)%y_hi , &
+                             fgrids(i)%mx  , &
+                             fgrids(i)%my  , &
+                             fgrids(i)%output_arrival_times, &
+                             fgrids(i)%output_surface_max
+
+               ! Setup data for this grid
+               ! Set dtfg (the timestep length between outputs) for each grid
+               if (fgrids(i)%end_time <= fgrids(i)%start_time) then
+                   if (fgrids(i)%num_output > 1) then 
+                      print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
+                      print *,'start_time <= end_time yet num_output > 1'
+                      print *,'set end_time > start_time or set num_output = 1'
+                      stop
+                   else
+                       fgrids(i)%dt = 0.d0
+                   endif
+               else
+                   if (fgrids(i)%num_output < 2) then
+                       print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
+                       print *,'end_time > start_time, yet num_output = 1'
+                       print *,'set num_output > 2'
+                       stop
+                   else
+                       fgrids(i)%dt = (fgrids(i)%end_time - fgrids(i)%start_time) &
+                                           / (fgrids(i)%num_output - 1)
+                   endif
+                endif
+
+                ! Initialize last_output_time and index
+                fgrids(i)%last_output_time = fgrids(i)%start_time - fgrids(i)%dt
+                fgrids(i)%last_output_index = 0
+
+                ! Set spatial intervals dx and dy on each grid
+                if (fgrids(i)%mx > 1) then
+                   fgrids(i)%dx = (fgrids(i)%x_hi - fgrids(i)%x_low) / (fgrids(i)%mx - 1)
+                else if (fgrids(i)%mx == 1) then
+                   fgrids(i)%dx = 0.d0
+                else
+                     print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
+                     print *,'x grid points mx <= 0, set mx >= 1'
+                endif
+
+                if (fgrids(i)%my > 1) then
+                    fgrids(i)%dy = (fgrids(i)%y_hi - fgrids(i)%y_low) / (fgrids(i)%my - 1)
+                else if (fgrids(i)%my == 1) then
+                    fgrids(i)%dy = 0.d0
+                else
+                    print *,'SETFIXEDGRIDS: ERROR for fixed grid', i
+                    print *,'y grid points my <= 0, set my >= 1'
+                endif 
+           
+                ! set the number of variables stored for each grid
+                ! this should be (the number of variables you want to write out + 1)
+                fgrids(i)%num_vars(1) = 6
+                fgrids(i)%num_vars(2) = 3*fgrids(i)%output_surface_max &
+                                              + fgrids(i)%output_arrival_times
+                
+                ! Allocate new fixed grid data array
+                allocate(fgrids(i)%early(fgrids(i)%num_vars(1),fgrids(i)%mx,fgrids(i)%my))
+                fgrids(i)%early = nan()
+                allocate(fgrids(i)%late(fgrids(i)%num_vars(1),fgrids(i)%mx,fgrids(i)%my))
+                fgrids(i)%late = nan()
+                allocate(fgrids(i)%often(fgrids(i)%num_vars(2),fgrids(i)%mx,fgrids(i)%my))
+                fgrids(i)%often = nan()
+           enddo
+           close(unit)
+           
+           tcfmax=-1.d16
+
+           module_setup = .true.
+        end if
 
     end subroutine set_fixed_grids
     
