@@ -465,6 +465,20 @@ def setgeo(rundata):
 
 def set_multilayer(rundata):
 
+    data = rundata.multilayer_data
+
+    # Physics parameters
+    data.num_layers = 2
+    data.rho = [0.9,1.0]
+    data.eta = [0.0,-0.6]
+    
+    # Algorithm parameters
+    data.eigen_method = 2
+    data.inundation_method = 2
+    data.richardson_tolerance = 0.95
+    # data.wave_tolerance = [0.1,0.1]
+    # data.dry_limit = True
+
     rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6
     rundata.qinit_data.epsilon = 0.02
