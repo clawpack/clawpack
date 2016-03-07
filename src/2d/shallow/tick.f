@@ -326,6 +326,11 @@ c                   adjust time steps for this and finer levels
      &                             kratio(level-1),level
                      write(6,*) "Writing checkpoint file at t = ",time
                      call check(ncycle,time,nvar,naux)
+                     if (num_gauges .gt. 0) then
+                        do ii = 1, num_gauges
+                           call print_gauges_and_reset_nextLoc(ii, nvar)
+                        end do
+                     endif
                      stop
                  endif
 
@@ -386,11 +391,21 @@ c             ! use same alg. as when setting refinement when first make new fin
      &      mod(ncycle,checkpt_interval).eq.0) .or. dumpchk) then
                 call check(ncycle,time,nvar,naux)
                 dumpchk = .true.
+               if (num_gauges .gt. 0) then
+                  do ii = 1, num_gauges
+                     call print_gauges_and_reset_nextLoc(ii, nvar)
+                  end do
+               endif
        endif
 
        if ((mod(ncycle,iout).eq.0) .or. dumpout) then
          call valout(1,lfine,time,nvar,naux)
          if (printout) call outtre(mstart,.true.,nvar,naux)
+         if (num_gauges .gt. 0) then
+            do ii = 1, num_gauges
+               call print_gauges_and_reset_nextLoc(ii, nvar)
+            end do
+         endif
        endif
 
       go to 20
@@ -420,6 +435,11 @@ c
       if (dump_final) then
            call valout(1,lfine,time,nvar,naux)
            if (printout) call outtre(mstart,.true.,nvar,naux)
+           if (num_gauges .gt. 0) then
+              do ii = 1, num_gauges
+                 call print_gauges_and_reset_nextLoc(ii, nvar)
+              end do
+           endif
       endif
 
 c  # checkpoint everything for possible future restart
@@ -430,12 +450,11 @@ c
       if (checkpt_style .ne. 0) then  ! want a chckpt
          ! check if just did it so dont do it twice
          if (.not. dumpchk) call check(ncycle,time,nvar,naux)
-      else  ! no chkpt wanted, so need to print gauges separately
-         if (num_gauges .gt. 0) then
-            do ii = 1, num_gauges
-               call print_gauges_and_reset_nextLoc(ii, nvar)
-            end do
-         endif
+      endif
+      if (num_gauges .gt. 0) then
+         do ii = 1, num_gauges
+            call print_gauges_and_reset_nextLoc(ii, nvar)
+         end do
       endif
 
 
