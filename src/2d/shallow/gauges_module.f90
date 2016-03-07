@@ -117,7 +117,7 @@ contains
                        position='append', form='formatted')
                   rewind OUTGAUGEUNIT
                   write(OUTGAUGEUNIT,100) igauge(i), xgauge(i), ygauge(i), 4
- 100              format("# gauge_id=",i5," location=( ",1e15.7," ",1e15.7," ) num_eqn=",i2)
+ 100              format("# gauge_id= ",i5," location=( ",1e15.7," ",1e15.7," ) num_eqn= ",i2)
                   write(OUTGAUGEUNIT,101)
  101              format("# Columns: level time h    hu    hv    eta")
                endif
