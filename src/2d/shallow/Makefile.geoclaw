@@ -27,9 +27,9 @@ COMMON_MODULES += \
 # list of source files from AMR library. 
 COMMON_SOURCES += \
   $(AMRLIB)/prefilp.f90 \
-  $(AMRLIB)/trimbd.f \
-  $(AMRLIB)/bound.f \
-  $(AMRLIB)/intfil.f \
+  $(AMRLIB)/trimbd.f90 \
+  $(AMRLIB)/bound.f90 \
+  $(AMRLIB)/intfil.f90 \
   $(AMRLIB)/flagregions2.f90  \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
@@ -46,7 +46,7 @@ COMMON_SOURCES += \
   $(AMRLIB)/prepbigstep.f \
   $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/flagger.f \
-  $(AMRLIB)/flagregions.f \
+  $(AMRLIB)/flagregions.f90 \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl2.f \
