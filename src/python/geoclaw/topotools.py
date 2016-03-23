@@ -1000,7 +1000,7 @@ class Topography(object):
                                                   0.5:[0.8,1.0,0.5],
                                                   1.0:[0.8,0.5,0.2]})
             sea_cmap = plt.get_cmap('Blues_r')
-            if topo_extent[0] > 0.0:
+            if topo_extent[0] >= 0.0:
                 cmap = land_cmap
                 norm = colors.Normalize(vmin=0.0, vmax=topo_extent[1])
             elif topo_extent[1] <= 0.0:
