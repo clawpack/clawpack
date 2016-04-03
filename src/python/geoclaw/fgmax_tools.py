@@ -393,6 +393,51 @@ class FGmaxGrid(object):
         self.h = h
     
 
+def adjust_fgmax_1d(x1_desired, x2_desired, x1_domain, dx):
+    """
+    :Input:
+     - x1_desired, x2_desired: approximate desired limits of fgmax grid
+     - x1_domain:  lower edge of computational domain
+     - dx: Mesh spacing on fine grid that fgmax grid should conform to
+    :Output:
+     - x1_new, x2_new: limits to set so (x2-x1) is integer multiple
+       of dx and points are at cell centers of computational grid
+     - npoints: number of points
+    """
+
+    i1 = numpy.floor((x1_desired-x1_domain - 0.5*dx)/dx)
+    x1_new = x1_domain + (i1 + 0.5)*dx 
+    i2 = numpy.floor((x2_desired-x1_domain + 0.5*dx)/dx)
+    x2_new = x1_domain + (i2 + 0.5)*dx 
+    npoints = int(i2 - i1) + 1
+    return x1_new, x2_new, npoints
+
+
+def adjust_fgmax_grid(x1_desired, x2_desired, x1_domain, dx,
+                      y1_desired, y2_desired, y1_domain, dy=None, verbose=True):
+
+    
+    if dy == None:
+        dy = dx
+
+    x1_new, x2_new, nx = adjust_fgmax_1d(x1_desired, x2_desired, x1_domain, dx)
+    y1_new, y2_new, ny = adjust_fgmax_1d(y1_desired, y2_desired, y1_domain, dy)
+
+    if verbose:
+        print "x:"
+        print "  moved %17.12f to %17.12f by %g" % (x1_desired, x1_new, abs(x1_desired-x1_new))
+        print "  moved %17.12f to %17.12f by %g" % (x2_desired, x2_new, abs(x2_desired-x2_new))
+        print "y:"
+        print "  moved %17.12f to %17.12f by %g" % (y1_desired, y1_new, abs(y1_desired-y1_new))
+        print "  moved %17.12f to %17.12f by %g" % (y2_desired, y2_new, abs(y2_desired-y2_new))
+        #print "  "
+        #print "fg.nx = %g" % nx
+        #print "fg.ny = %g" % ny
+        #print "fg.x1 = %17.12f" % x1_new
+        #print "fg.x2 = %17.12f" % x2_new
+        #print "fg.y1 = %17.12f" % y1_new
+        #print "fg.y2 = %17.12f" % y2_new
+    return x1_new, x2_new, nx, y1_new, y2_new, ny
 
 ## == Old versions now deprecated....
 
