@@ -53,8 +53,12 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True,combined=True):
 
       - *verbose* (bool) - If *True*, print out info about each region found
 
-      - *combined* (bool) - If *True*, combine into single kml file. In this
-        case *fname* is ignored and names are Domain.kml, Region00.kml, etc.
+      - *combined* (bool) - If *True*, combine into single kml file with
+        name given by *fname*.  This is the default. 
+        If False, *fname* is ignored and individual files are created for
+        each region with names are Domain.kml, Region00.kml, etc.
+        These will show up separately in GoogleEarth so they can be turned
+        on or off individually.
 
     First create a box for the entire domain (in red) and then a box
     for each region (in white).
