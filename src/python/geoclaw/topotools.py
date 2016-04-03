@@ -789,7 +789,7 @@ class Topography(object):
         return num_cells
 
     def write(self, path, no_data_value=None, topo_type=None, masked=True, 
-                header_order=1):
+                header_style='geoclaw'):
         r"""Write out a topography file to path of type *topo_type*.
 
         Writes out a topography file of topo type specified with *topo_type* or
@@ -802,9 +802,10 @@ class Topography(object):
          - *no_data_value* - values used to indicate missing data
          - *topo_type* (int) - GeoClaw format topo_type 
          - *masked* (bool) - unused??
-         - *header_order* (int) - indicates format of header lines
-             1 ==> write value then label  (original Fortran assumption)
-             2 ==> write label then value  (needed for .asc files in ArcGIS)
+         - *header_style* (str) - indicates format of header lines
+             'geoclaw' or 'default'  ==> write value then label 
+             'arcgis' or 'asc' ==> write label then value  
+                        (needed for .asc files in ArcGIS)
 
         """
 
@@ -854,7 +855,7 @@ class Topography(object):
         elif topo_type == 2 or topo_type == 3:
             with open(path, 'w') as outfile:
                 # Write out header
-                if header_order == 1:
+                if header_style in ['geoclaw','default']:
                     outfile.write('%6i                              ncols\n' % self.Z.shape[1])
                     outfile.write('%6i                              nrows\n' % self.Z.shape[0])
                     outfile.write('%22.15e              xlower\n' % self.extent[0])
@@ -868,13 +869,15 @@ class Topography(object):
                         outfile.write('%22.15e    %22.15e          cellsize\n' \
                                 % (self.delta[0], self.delta[1]))
                     outfile.write('%10i                          nodata_value\n' % no_data_value)
-                else:
+                elif header_style in ['arcgis','asc']:
                     outfile.write('ncols  %6i\n' % self.Z.shape[1])
                     outfile.write('nrows  %6i\n' % self.Z.shape[0]) 
                     outfile.write('xlower %22.15e\n' % self.extent[0])
                     outfile.write('ylower %22.15e\n' % self.extent[2])
                     outfile.write('cellsize %22.15e\n'  % self.delta[0])
                     outfile.write('nodata_value  %10i\n' % no_data_value)
+                else:
+                    raise ValueError("*** Unrecognized header_style")
 
                 masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
 
