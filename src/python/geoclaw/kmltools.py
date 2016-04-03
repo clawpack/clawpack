@@ -37,7 +37,7 @@ def deg2dms(dy):
     return dy_deg,dy_min,dy_sec
 
 
-def regions2kml(rundata=None,fname='regions.kml',verbose=True):
+def regions2kml(rundata=None,fname='regions.kml',verbose=True,combined=True):
 
     """
     Create a KML box for each AMR region specified for a GeoClaw run.
@@ -52,6 +52,13 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
       - *fname* (str) - resulting kml file.
 
       - *verbose* (bool) - If *True*, print out info about each region found
+
+      - *combined* (bool) - If *True*, combine into single kml file with
+        name given by *fname*.  This is the default. 
+        If False, *fname* is ignored and individual files are created for
+        each region with names are Domain.kml, Region00.kml, etc.
+        These will show up separately in GoogleEarth so they can be turned
+        on or off individually.
 
     First create a box for the entire domain (in red) and then a box
     for each region (in white).
@@ -129,7 +136,10 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
         print "Allowing maximum of %i levels" % amr_levels_max
 
     elev = 0.
-    kml_text = kml_header()
+    if not combined:
+        fname = 'Domain.kml'
+
+    kml_text = kml_header(fname)
 
     mapping = {}
     mapping['x1'] = x1
@@ -144,12 +154,26 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
     region_text = kml_region(mapping)
     kml_text = kml_text + region_text
 
+    if not combined:
+        kml_text = kml_text + kml_footer()
+        kml_file = open(fname,'w')
+        kml_file.write(kml_text)
+        kml_file.close()
+        if verbose:
+            print "Created ",fname
+
+            
+
     regions = rundata.regiondata.regions
     if len(regions)==0 and verbose:
         print "No regions found in setrun.py"
 
 
     for rnum,region in enumerate(regions):
+        if not combined:
+            fname = 'Region_%s.kml' % str(rnum).zfill(2)
+            kml_text = kml_header(fname)
+
         minlevel,maxlevel = region[0:2]
         t1,t2 = region[2:4]
         x1,x2,y1,y2 = region[4:]
@@ -194,12 +218,21 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True):
 
         region_text = kml_region(mapping)
         kml_text = kml_text + region_text
-    kml_text = kml_text + kml_footer()
-    kml_file = open(fname,'w')
-    kml_file.write(kml_text)
-    kml_file.close()
-    if verbose:
-        print "Created ",fname
+        if not combined:
+            kml_text = kml_text + kml_footer()
+            kml_file = open(fname,'w')
+            kml_file.write(kml_text)
+            kml_file.close()
+            if verbose:
+                print "Created ",fname
+
+    if combined:
+        kml_text = kml_text + kml_footer()
+        kml_file = open(fname,'w')
+        kml_file.write(kml_text)
+        kml_file.close()
+        if verbose:
+            print "Created ",fname
 
 
 
@@ -222,7 +255,7 @@ def box2kml(xy,fname='box.kml',name='box',color='FF0000', verbose=True):
         print "Box:   %10.6f  %10.6f  %10.6f  %10.6f" % (x1,x2,y1,y2)
 
     elev = 0.
-    kml_text = kml_header()
+    kml_text = kml_header(fname)
 
     mapping = {}
     mapping['x1'] = x1
@@ -267,7 +300,7 @@ def quad2kml(xy,fname='quad.kml',name='quad',color='FF0000', verbose=True):
         print "                 %10.6f  %10.6f" % (x4,y4)
 
     elev = 0.
-    kml_text = kml_header()
+    kml_text = kml_header(fname)
 
     mapping = {}
     mapping['x1'] = x1
@@ -341,7 +374,7 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
             raise IOError("*** cannot execute setrun file")
 
     elev = 0.
-    kml_text = kml_header()
+    kml_text = kml_header(fname)
 
 
     gauges = rundata.gaugedata.gauges
@@ -379,12 +412,11 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
 
 
 
-def kml_header():
+def kml_header(name='GeoClaw kml file'):
     header = """<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
-<Document><name>My document</name>
-<description>Content</description>
-"""
+<Document><name>%s</name>
+""" % name
     return header
 
 def kml_footer():
@@ -530,3 +562,71 @@ def kml_timespan(t1,t2,event_time=None,tz=None):
     timestrend = "%s%s" % (time.strftime("%Y-%m-%dT%H:%M:%S", gend),tzstr)
 
     return timestrbegin,timestrend
+
+def topo2kml(topo_file_name, topo_type, color='00FF00'):       
+    """
+    Create a kml file putting a box around the region covered by a topofile.
+    Color is green by default.
+    """
+
+    import os
+    from clawpack.geoclaw import topotools
+    topo = topotools.Topography(topo_file_name, topo_type=topo_type)
+    topo.read_header()
+    xy = topo.extent
+    name = os.path.splitext(os.path.split(topo_file_name)[-1])[0]
+    file_name = '%s.kml' % name
+    box2kml(xy, file_name, name, color)
+
+def dtopo2kml(dtopo_file_name, dtopo_type, color='8888FF'):       
+    """
+    Create a kml file putting a box around the region covered by a dtopofile.
+    Color is pink by default.
+    """
+
+    import os
+    from clawpack.geoclaw import dtopotools
+    dtopo = dtopotools.DTopography()
+    dtopo.read(dtopo_file_name, dtopo_type)
+    x1 = dtopo.x.min()
+    x2 = dtopo.x.max()
+    y1 = dtopo.y.min()
+    y2 = dtopo.y.max()
+    xy = (x1,x2,y1,y2)
+    name = os.path.splitext(os.path.split(dtopo_file_name)[-1])[0]
+    file_name = '%s.kml' % name
+    box2kml(xy, file_name, name, color)
+        
+
+def make_input_data_kmls(rundata):
+    """
+    Produce kml files for the computational domain, all gauges and regions 
+    specified, and all topo and dtopo files specified in rundata.
+    This can be used, e.g. by adding the lines 
+
+        from clawpack.geoclaw import kmltools
+        kmltools.make_input_data_kmls(rundata)
+
+    to the end of a `setrun.py` file so that `make data` will generate all
+    kml files in addition to the `*.data` files.
+    """
+    
+    import os
+    import topotools, dtopotools
+
+    regions2kml(rundata, combined=False)
+    gauges2kml(rundata)
+
+    topofiles = rundata.topo_data.topofiles
+    for f in topofiles:
+        topo_file_name = f[-1]
+        topo_type = f[0]
+        topo2kml(topo_file_name, topo_type)
+        
+    dtopofiles = rundata.dtopo_data.dtopofiles
+    for f in dtopofiles:
+        dtopo_file_name = f[-1]
+        dtopo_type = f[0]
+        dtopo2kml(dtopo_file_name, dtopo_type)
+        
+        
