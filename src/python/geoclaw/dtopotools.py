@@ -123,10 +123,6 @@ def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
     r"""For plotting seafloor deformation dZ"""
     import matplotlib.pyplot as plt
 
-    if axes is None:
-        fig = plt.figure(**fig_kwargs)
-        axes = fig.add_subplot(1, 1, 1)
-
     dZ_max = max(dZ.max(), -dZ.min()) + dZ_interval
     clines1 = numpy.arange(dZ_interval, dZ_max, dZ_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
@@ -561,7 +557,7 @@ class DTopography(object):
         Interpolate self.dZ to specified time t and then call module function
         plot_dZ_contours.
         """
-        axes = plot_dZ_contours(self.X, self.Y, self.dZ_at_t(t), 
+        axes = plot_dZ_contours(self.X, self.Y, self.dZ_at_t(t), axes=axes,
                                 dZ_interval=dZ_interval)
         return axes
 
@@ -860,7 +856,7 @@ class Fault(object):
     def plot_subfaults(self, axes=None, plot_centerline=False, slip_color=False,
                              cmap_slip=None, cmin_slip=None, cmax_slip=None,
                              slip_time=None, plot_rake=False, xylim=None, 
-                             plot_box=True, verbose=False):
+                             plot_box=True, colorbar_shrink=1, verbose=False):
         """
         Plot each subfault projected onto the surface.
 
@@ -986,8 +982,9 @@ class Fault(object):
             label.set_rotation(20)
         
 
-        if slip_color:
-            cax,kw = matplotlib.colorbar.make_axes(slipax)
+        if slip_color and (colorbar_shrink > 0):
+            cax,kw = matplotlib.colorbar.make_axes(slipax, 
+                     shrink=colorbar_shrink)
             norm = matplotlib.colors.Normalize(vmin=cmin_slip,vmax=cmax_slip)
             cb1 = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap_slip, norm=norm)
             cb1.set_label("Slip (m)")
@@ -1228,7 +1225,7 @@ class SubFault(object):
         Returns in units of N-m and assumes mu is in Pascals. 
         """
 
-        total_slip = self.length * self.width * self.slip
+        total_slip = self.length * self.width * abs(self.slip)
         Mo = self.mu * total_slip
         return Mo
 
