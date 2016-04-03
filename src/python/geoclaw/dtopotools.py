@@ -1225,7 +1225,7 @@ class SubFault(object):
         Returns in units of N-m and assumes mu is in Pascals. 
         """
 
-        total_slip = self.length * self.width * self.slip
+        total_slip = self.length * self.width * abs(self.slip)
         Mo = self.mu * total_slip
         return Mo
 
