@@ -27,9 +27,8 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
 
     import clawpack.clawutil.data as clawutil
     import clawpack.amrclaw.data as amrclaw
-    import clawpack.geoclaw.data as geodata
+    import clawpack.geoclaw.data
 
-    import clawpack.geoclaw.multilayer.data as ml_data
     import clawpack.geoclaw.multilayer.plot as ml_plot
 
     # Load data from output
@@ -37,11 +36,9 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     clawdata.read(os.path.join(plotdata.outdir,'claw.data'))
     amrdata = amrclaw.AmrclawInputData(clawdata)
     amrdata.read(os.path.join(plotdata.outdir,'amr.data'))
-    geodata = geodata.GeoClawData()
+    geodata = clawpack.geoclaw.data.GeoClawData()
     geodata.read(os.path.join(plotdata.outdir,'geoclaw.data'))
-    # surge_data = surge.data.SurgeData()
-    # surge_data.read(os.path.join(plotdata.outdir,'surge.data'))
-    multilayer_data = ml_data.MultilayerData()
+    multilayer_data = clawpack.geoclaw.data.MultilayerData()
     multilayer_data.read(os.path.join(plotdata.outdir,'multilayer.data'))
 
     def transform_c2p(x,y,x0,y0,theta):
@@ -567,7 +564,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
 
     # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
-    plotitem.plot_var = 6
+    plotitem.plot_var = 3
     plotitem.plotstyle = 'b-'
 
     # Bottom
@@ -579,7 +576,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = [0.0,1.0]
-    plotaxes.ylimits = internal_surface_limits
+    # plotaxes.ylimits = internal_surface_limits
     plotaxes.title = 'Bottom Surface'
 
     # Plot surface as blue curve:
