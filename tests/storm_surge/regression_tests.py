@@ -22,7 +22,11 @@ class IkeTest(test.GeoClawRegressionTest):
 
         # Download storm data
         remote_url = "http://ftp.nhc.noaa.gov/atcf/archive/2008/bal092008.dat.gz"
-        path = self.get_remote_file(remote_url, unpack=False)
+        try:
+            path = self.get_remote_file(remote_url, unpack=False)
+        except URLError:
+            raise nose.SkipTest("Could not fetch remote file, skipping test.")
+        
         storm_path = os.path.join(os.path.dirname(path), 'ike.storm')
 
         # Need to additionally deal with the fact the file is gzipped
@@ -33,8 +37,8 @@ class IkeTest(test.GeoClawRegressionTest):
             out_file.write(file_content)
 
         # Download file
-        self.get_remote_file(
-           "http://www.columbia.edu/~ktm2132/bathy/gulf_caribbean.tt3.tar.bz2")
+        #self.get_remote_file(
+        #   "http://www.columbia.edu/~ktm2132/bathy/gulf_caribbean.tt3.tar.bz2")
 
         # Create synthetic bathymetry - needs more work
         topo = clawpack.geoclaw.topotools.Topography()
