@@ -499,6 +499,11 @@ contains
                                 if (topo((j-1)*mx + i) == no_data_value) then
                                     missing = missing + 1
                                     topo((j-1)*mx + i) = topo_missing
+                                    ! uncomment next line to print row j
+                                    ! and element i that are missing.
+                                    ! write(6,601) i,j
+ 601                                format('*** missing data, i = ',i6, &
+                                           '  j = ',i6)
                                 endif
                             enddo
                         enddo
@@ -508,7 +513,6 @@ contains
                 if (missing > 0)  then
                     print *, '   WARNING...some missing data values this file'
                     print *, '       ',missing,' missing data values'
-                    print *, '              (see fort.missing)'
                     print *, '   These values have arbitrarily been set to ',&
                         topo_missing
                 endif
