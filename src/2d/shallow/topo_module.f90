@@ -425,7 +425,7 @@ contains
         integer :: i,j,num_points,missing,status,topo_start,n
         real(kind=8) :: no_data_value,x,y,z,topo_temp
         real(kind=8) :: values(10)
-        character(len=20) :: str
+        character(len=80) :: str
 
         ! NetCDF Support
         character(len=10) :: direction
