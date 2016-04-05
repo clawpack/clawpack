@@ -14,6 +14,7 @@ import tempfile
 import time
 
 import numpy
+import nose
 
 import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
@@ -76,9 +77,15 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             # Assume that NetCDF is not installed and move on
             self.netcdf_passed = False
             self.success = True
-            self.stdout.write("NetCDF topography test skipped due to failure" + 
-                              "to build test program.")
+            raise nose.SkipTest("NetCDF topography test skipped due to " + 
+                                "failure to build test program.")
 
+        except RuntimeError as e:
+            print e.message
+            self.netcdf_passed = False
+            self.success = True
+            raise nose.SkipTest("NetCDF topography test skipped due to " +
+                                "runtime failure.")
         else:
             self.build_executable()
 
