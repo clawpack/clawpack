@@ -490,6 +490,9 @@ contains
                             if (topo(i) == no_data_value) then
                                 missing = missing + 1
                                 topo(i) = topo_missing
+                                ! uncomment next line to print row i
+                                ! write(6,600) i
+ 600                            format('*** missing data, i = ',i6)
                             endif
                         enddo
                     case(3)
@@ -515,6 +518,7 @@ contains
                     print *, '       ',missing,' missing data values'
                     print *, '   These values have arbitrarily been set to ',&
                         topo_missing
+                    print *, '   See read_topo_file in topo_module.f90'
                 endif
 
                 close(unit=iunit)
