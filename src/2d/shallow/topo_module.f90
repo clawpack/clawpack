@@ -425,7 +425,7 @@ contains
         integer :: i,j,num_points,missing,status,topo_start,n
         real(kind=8) :: no_data_value,x,y,z,topo_temp
         real(kind=8) :: values(10)
-        character(len=20) :: str
+        character(len=80) :: str
 
         ! NetCDF Support
         character(len=10) :: direction
@@ -490,6 +490,9 @@ contains
                             if (topo(i) == no_data_value) then
                                 missing = missing + 1
                                 topo(i) = topo_missing
+                                ! uncomment next line to print row i
+                                ! write(6,600) i
+ 600                            format('*** missing data, i = ',i6)
                             endif
                         enddo
                     case(3)
@@ -499,6 +502,11 @@ contains
                                 if (topo((j-1)*mx + i) == no_data_value) then
                                     missing = missing + 1
                                     topo((j-1)*mx + i) = topo_missing
+                                    ! uncomment next line to print row j
+                                    ! and element i that are missing.
+                                    ! write(6,601) i,j
+ 601                                format('*** missing data, i = ',i6, &
+                                           '  j = ',i6)
                                 endif
                             enddo
                         enddo
@@ -508,9 +516,9 @@ contains
                 if (missing > 0)  then
                     print *, '   WARNING...some missing data values this file'
                     print *, '       ',missing,' missing data values'
-                    print *, '              (see fort.missing)'
                     print *, '   These values have arbitrarily been set to ',&
                         topo_missing
+                    print *, '   See read_topo_file in topo_module.f90'
                 endif
 
                 close(unit=iunit)
