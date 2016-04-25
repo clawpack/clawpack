@@ -788,8 +788,8 @@ class Topography(object):
             
         return num_cells
 
-    def write(self, path, no_data_value=None, topo_type=None, masked=True, 
-                header_style='geoclaw'):
+    def write(self, path, topo_type=None, no_data_value=None, masked=True, 
+                header_style='geoclaw', Z_format="%9.3f"):
         r"""Write out a topography file to path of type *topo_type*.
 
         Writes out a topography file of topo type specified with *topo_type* or
@@ -799,13 +799,17 @@ class Topography(object):
 
         :Input:
          - *path* (str)  - file to write
-         - *no_data_value* - values used to indicate missing data
          - *topo_type* (int) - GeoClaw format topo_type 
+         - *no_data_value* - values used to indicate missing data
          - *masked* (bool) - unused??
          - *header_style* (str) - indicates format of header lines
              'geoclaw' or 'default'  ==> write value then label 
              'arcgis' or 'asc' ==> write label then value  
                         (needed for .asc files in ArcGIS)
+         - *Z_format* (str) - string format to use for Z values
+           The default format "%9.3f" gives mm precision and gives a
+           smaller files than the previous default of "%22.15e" used in
+           GeoClaw version 5.3.1 and earlier.
 
         """
 
@@ -883,23 +887,25 @@ class Topography(object):
 
                 # Write out topography data
                 if topo_type == 2:
+                    Z_format = Z_format + "\n"
                     if masked_Z:
                         Z_filled = numpy.flipud(self.Z.filled())
                     else:
                         Z_filled = numpy.flipud(self.Z)
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
-                            outfile.write("%22.15e\n" % Z_filled[i,j])
+                            outfile.write(Z_format % Z_filled[i,j])
                     if masked_Z:
                         del Z_filled
                 elif topo_type == 3:
+                    Z_format = Z_format + " "
                     if masked_Z:
                         Z_flipped = numpy.flipud(self.Z.filled())
                     else:
                         Z_flipped = numpy.flipud(self.Z)
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
-                            outfile.write("%22.15e   " % (Z_flipped[i,j]))
+                            outfile.write(Z_format % (Z_flipped[i,j]))
                         outfile.write("\n")
                     if masked_Z:
                         del Z_flipped
