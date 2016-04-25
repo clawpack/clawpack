@@ -1420,7 +1420,7 @@ class Topography(object):
                 self.Z[index[0], index[1]] = summation / num_points
 
 
-    def crop(self, filter_region):
+    def crop(self, filter_region=None, coarsen=1):
         r"""Crop region to *filter_region*
 
         Create a new Topography object that is identical to this one but cropped
@@ -1435,6 +1435,10 @@ class Topography(object):
         if self.unstructured:
             raise NotImplemented("*** Cannot currently crop unstructured topo")
 
+        if filter_region is None:
+            # only want to coarsen, so this is entire region:
+            filter_region = [self.x[0],self.x[-1],self.y[0],self.y[-1]]
+
         # Find indices of region
         region_index = [None, None, None, None]
         region_index[0] = (self.x >= filter_region[0]).nonzero()[0][0]
@@ -1443,8 +1447,8 @@ class Topography(object):
         region_index[3] = (self.y <= filter_region[3]).nonzero()[0][-1] + 1
         newtopo = Topography()
 
-        newtopo._x = self._x[region_index[0]:region_index[1]]
-        newtopo._y = self._y[region_index[2]:region_index[3]]
+        newtopo._x = self._x[region_index[0]:region_index[1]:coarsen]
+        newtopo._y = self._y[region_index[2]:region_index[3]:coarsen]
 
         # Force regeneration of 2d coordinate arrays and extent if needed
         newtopo._X = None
@@ -1452,8 +1456,8 @@ class Topography(object):
         newtopo._extent = None
 
         # Modify Z array as well
-        newtopo._Z = self._Z[region_index[2]:region_index[3],
-                          region_index[0]:region_index[1]]
+        newtopo._Z = self._Z[region_index[2]:region_index[3]:coarsen,
+                          region_index[0]:region_index[1]:coarsen]
 
         newtopo.unstructured = self.unstructured
         newtopo.topo_type = self.topo_type
