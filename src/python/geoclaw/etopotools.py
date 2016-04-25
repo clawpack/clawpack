@@ -59,7 +59,7 @@ def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
     y1,y2 = ylimits
 
     if file_name is None:
-        file_name = 'etopo1_%i_%i_%i_%i_%imin.tt3' \
+        file_name = 'etopo1_%i_%i_%i_%i_%imin.asc' \
             % (int(round(x1)),int(round(x2)),int(round(y1)),int(round(y2)),\
               int(round(60*dx)))
 
