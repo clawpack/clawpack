@@ -6,6 +6,8 @@ that will be read in by the Fortran code.
 
 """
 
+import os
+
 import numpy as numpy
 
 import clawpack.geoclaw.data
@@ -487,7 +489,7 @@ def set_multilayer(rundata):
     rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6
     rundata.qinit_data.epsilon = 0.02
-    rundata.qinit_data.angle = 0.0
+    rundata.qinit_data.angle = numpy.pi / 4.0
     rundata.qinit_data.sigma = 0.02
     rundata.qinit_data.wave_family = 4
     rundata.qinit_data.init_location = [-0.1,0.0]
@@ -500,41 +502,20 @@ def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
           + (x_c >  0.0) * right)
 
 
-def write_topo_file(run_data, out_file, **kwargs):
+def write_topo_file(run_data, out_file):
     
-    # Write out bathy file
-    mx = run_data.clawdata.num_cells[0]
-    my = run_data.clawdata.num_cells[1]
-    xlower = run_data.clawdata.lower[0]
-    xupper = run_data.clawdata.upper[0]
-    ylower = run_data.clawdata.lower[1]
-    yupper = run_data.clawdata.upper[1]
-    dx = (xupper - xlower) / mx
-    dy = (yupper - ylower) / my
-    d = min(dx,dy)
-    mx = int((xupper - xlower) / d) + 8
-    my = int((yupper - ylower) / d) + 8
-    
-    xlower = xlower - d*4.0
-    ylower = ylower - d*4.0
-    xupper = xupper + d*4.0
-    yupper = yupper + d*4.0
-
-    step = lambda x,y: bathy_step(x, y, **kwargs)
-    
-    tt.topo2writer(out_file, step, xlower, xupper, ylower, yupper, mx, my, nodata_value=-99999)
+    # Make topography
+    topo_func = lambda x, y: bathy_step(x, y, location=0.15, 
+                                              angle=numpy.pi / 8.0, 
+                                              left=-1.0, right=-0.2)
+    topo = tt.Topography(topo_func=topo_func)
+    topo.x = numpy.linspace(-1.16, 2.16, 166)
+    topo.y = numpy.linspace(-1.16, 2.16, 166)
+    topo.write(out_file)
 
     # Write out simple bathy geometry file for communication to the plotting
     with open("./bathy_geometry.data", 'w') as bathy_geometry_file:
-        if kwargs.has_key("location"):
-            location = kwargs['location']
-        else:
-            location = 0.15
-        if kwargs.has_key("angle"):
-            angle = kwargs['angle']
-        else:
-            angle = 0.0
-        bathy_geometry_file.write("%s\n%s" % (location, angle) )
+        bathy_geometry_file.write("%s\n%s" % (0.15, numpy.pi / 8.0) )
 
 
 if __name__ == '__main__':
@@ -547,4 +528,4 @@ if __name__ == '__main__':
 
     rundata.write()
 
-    write_topo_file(rundata, 'topo.tt2')
+    write_topo_file(rundata, 'jump_topo.topotype2')

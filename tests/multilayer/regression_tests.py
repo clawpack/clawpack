@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-r"""Bowl-Slosh regression test for GeoClaw
+r"""Multilayer Shallow Water Test Case
 
 To create new regression data use
     `python regression_tests.py True`
