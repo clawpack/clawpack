@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import shutil
+import urllib2
 
 import numpy
 
@@ -224,14 +225,16 @@ def test_netcdf():
         shutil.copytree(temp_path, os.path.join(os.getcwd()),
             'test_read_netcdf')
         raise e
+
     except ImportError as e:
         raise nose.SkipTest("Skipping test since NetCDF support not found.")
 
     except RuntimeError as e:
         raise nose.SkipTest("NetCDF topography test skipped due to " +
                             "runtime failure.")
-    except URLError:
+    except urllib2.URLError:
         raise nose.SkipTest("Could not fetch remote file, skipping test.")
+    
     finally:
         shutil.rmtree(temp_path)
 
@@ -259,6 +262,10 @@ def test_get_remote_file():
     except AssertionError as e:
         shutil.copy(local_path, os.path.join(os.getcwd(), "remote_file.tt2"))
         raise e
+
+    except urllib2.URLError:
+        raise nose.SkipTest("Could not fetch remote file, skipping test.")
+
     finally:
         shutil.rmtree(temp_path)
 
