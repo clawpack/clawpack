@@ -61,7 +61,7 @@ contains
         ! Locals
         integer :: i, ipos, idigit
         integer, parameter :: iunit = 7
-        character*14 ::  fileName
+        character(len=14) ::  fileName
 
         if (.not.module_setup) then
             ! Open file
@@ -244,15 +244,15 @@ contains
         
         implicit none
         
+        integer, intent(in) ::  nvar,mitot,mjtot,naux,mptr
         real(kind=8), intent(in) ::  q(nvar,mitot,mjtot)
         real(kind=8), intent(in) ::  aux(naux,mitot,mjtot)
         real(kind=8), intent(in) ::  xlow,ylow
-        integer, intent(in) ::  nvar,mitot,mjtot,naux,mptr
         
         ! local variables:
         real(kind=8) :: var(maxvar)
         real(kind=8) :: xcent,ycent,xoff,yoff,tgrid,hx,hy
-        integer :: level,i,j,ioff,joff,iindex,jindex,ivar, ii,i1,i2
+        integer :: level,i,j,iindex,jindex,ivar, ii,i1,i2
         real(kind=8) :: drytol2, topo
         integer :: icell,jcell, index
         integer :: m, k, layer_index
@@ -318,10 +318,10 @@ contains
                 layer_index = 3 * (m - 1)
                 drytol2 = 0.1d0 * dry_tolerance(m)
 
-                h(m, 1) = q(1,iindex,jindex) 
-                h(m, 2) = q(1,iindex+1,jindex) 
-                h(m, 3) = q(1,iindex,jindex+1)
-                h(m, 4) = q(1,iindex+1,jindex+1) 
+                h(m, 1) = q(1,iindex,jindex) / rho(m)
+                h(m, 2) = q(1,iindex+1,jindex) / rho(m)
+                h(m, 3) = q(1,iindex,jindex+1) / rho(m)
+                h(m, 4) = q(1,iindex+1,jindex+1) / rho(m)
             
                 if ((h(m, 1) < drytol2) .or.  &
                     (h(m, 2) < drytol2) .or.  &
@@ -333,28 +333,27 @@ contains
                     icell = int(1.d0 + (xgauge(ii) - xlow) / hx)
                     jcell = int(1.d0 + (ygauge(ii) - ylow) / hy)
                     do ivar=1,3
-                        var(ivar + layer_index) =               &
-                                        q(ivar + layer_index, icell, jcell) / rho(m)
+                        var(ivar + layer_index) =                    &
+                                    q(ivar + layer_index, icell, jcell) / rho(m)
                     enddo
                     ! This is the bottom layer and we should figure out the
                     ! topography
                     if (m == num_layers) then
-                        topo = aux(1,icell,jcell)
+                        topo = aux(1, icell, jcell)
                     end if
                 else
                     ! Linear interpolation between four cells
                     do ivar=1,3
-                        var(ivar + layer_index) = (1.d0 - xoff) * (1.d0 - yoff) &
-                                       * q(ivar + layer_index,iindex,jindex) / rho(m) &
-                        + xoff*(1.d0 - yoff) * q(ivar + layer_index,iindex+1,jindex) / rho(m) &
-                        + (1.d0 - xoff) * yoff * q(ivar + layer_index,iindex,jindex+1) / rho(m) &
-                        + xoff * yoff * q(ivar + layer_index,iindex+1,jindex+1) / rho(m)
+                        var(ivar + layer_index) = &
+                           (1.d0 - xoff) * (1.d0 - yoff) * q(ivar + layer_index,     iindex,     jindex) / rho(m)  &
+                         + (       xoff) * (1.d0 - yoff) * q(ivar + layer_index, 1 + iindex,     jindex) / rho(m)  &
+                         + (1.d0 - xoff) * (       yoff) * q(ivar + layer_index,     iindex, 1 + jindex) / rho(m)  &
+                         + (       xoff) * (       yoff) * q(ivar + layer_index, 1 + iindex, 1 + jindex) / rho(m)
                     enddo
-                    topo = (1.d0 - xoff) * (1.d0 - yoff)  &
-                                * aux(1,iindex,jindex)  &
-                         + xoff * (1.d0 - yoff) * aux(1,iindex+1,jindex)  &
-                         + (1.d0 - xoff) * yoff * aux(1,iindex,jindex+1)  &
-                         + xoff * yoff * aux(1,iindex+1,jindex+1)
+                    topo = (1.d0 - xoff) * (1.d0 - yoff) * aux(1,     iindex,     jindex)  &
+                         + (       xoff) * (1.d0 - yoff) * aux(1, 1 + iindex,     jindex)  &
+                         + (1.d0 - xoff) * (       yoff) * aux(1,     iindex, 1 + jindex)  &
+                         + (       xoff) * (       yoff) * aux(1, 1 + iindex, 1 + jindex)
                 endif
             end do
 
@@ -408,9 +407,9 @@ contains
         ! Locals
         integer :: gaugeNum, j, inum, k, idigit, ipos, myunit, nvar
         character(len=14) :: fileName
-        integer :: omp_get_thread_num, mythread, num_eqn
-
-        character(len=12), parameter :: GAUGE_OUTPUT_FORMAT = "(i5,10e15.7)"
+        integer :: mythread, num_values
+        integer :: omp_get_thread_num
+        character(len=15), parameter :: GAUGE_OUTPUT_FORMAT = "(i5.2, 10e15.7)"
         ! open file for gauge gaugeNum, figure out name
         ! not writing gauge number since it is in file name now
         ! status is old, since file name and info written for
@@ -432,7 +431,7 @@ contains
         ! Following line indexes the thread number and determines a output unit
         ! based on this number, if 
 !$      mythread = omp_get_thread_num()
-        myunit = OUTGAUGEUNIT+mythread
+        myunit = OUTGAUGEUNIT + mythread
 
         ! add thread number of outgaugeunit to make a unique unit number.
         ! ok since writing to a unique file. in serial, still using only 
@@ -443,10 +442,10 @@ contains
         ! called either because array is full (write MAXDATA amount of gauge 
         ! data) or checkpoint time, so write whatever is in array and reset.
         ! nextLoc has already been increment before this subr. called
-        num_eqn = 1 + 4 * num_layers
+        num_values = 1 + nvar + num_layers
         do j = 1, nextLoc(gaugeNum)-1
             write(myunit, GAUGE_OUTPUT_FORMAT) levelArray(j,gaugeNum),    &
-                                          (gaugeArray(k,j,gaugeNum),k=1,num_eqn)
+                                  (gaugeArray(k, j, gaugeNum), k=1, num_values)
         end do
         nextLoc(gaugeNum) = 1                        
   
