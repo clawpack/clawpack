@@ -135,6 +135,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                cycle  ! new system copies bathy where possible
             endif
 
+
             ! Use input topography files if available
             if (mtopofiles > 0 .and. test_topography == 0) then
                 topo_integral = 0.d0
