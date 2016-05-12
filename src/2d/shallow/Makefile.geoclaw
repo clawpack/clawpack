@@ -22,7 +22,10 @@ COMMON_MODULES += \
  $(GEOLIB)/surge/stommel_storm_module.f90 \
  $(GEOLIB)/surge/constant_storm_module.f90 \
  $(GEOLIB)/surge/storm_module.f90 \
+<<<<<<< 4e305db470f7b9bd93e8361696994fdbb8eaba32
  $(GEOLIB)/multilayer/multilayer_module.f90 \
+=======
+>>>>>>> Removing white space.
  $(GEOLIB)/friction_module.f90
 
 # list of source files from AMR library. 
