@@ -81,7 +81,7 @@ def setplot(plotdata=None):
     plotitem.pcolor_cmax = 0.2
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
-    plotitem.patchedges_show = 1
+    plotitem.patchedges_show = [1,1,1]
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -90,8 +90,8 @@ def setplot(plotdata=None):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [1,1,0]
-    plotitem.patchedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = [1,1,1]
     plotaxes.xlimits = [-120,-60]
     plotaxes.ylimits = [-60,0]
 
@@ -105,7 +105,138 @@ def setplot(plotdata=None):
     plotitem.amr_contour_show = [1,0,0]  
     plotitem.celledges_show = 0
     plotitem.patchedges_show = 0
-
+    
+    #-----------------------------------------
+    # Figure for error
+    #-----------------------------------------
+    plotfigure = plotdata.new_plotfigure(name='Error', figno=1)
+    
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes('pcolor')
+    plotaxes.title = 'Surface'
+    plotaxes.scaled = True
+    
+    def fixup(current_data):
+        import pylab
+        addgauges(current_data)
+        t = current_data.t
+        t = t / 3600.  # hours
+        pylab.title('Surface at %4.2f hours' % t, fontsize=20)
+        pylab.xticks(fontsize=15)
+        pylab.yticks(fontsize=15)
+    plotaxes.afteraxes = fixup
+    
+    # Water
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    #plotitem.plot_var = geoplot.surface
+    plotitem.plot_var = 4
+    plotitem.pcolor_cmap = colormaps.white_red
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 0.002
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_data_show = [1,1,0]
+    plotitem.patchedges_show = 0
+    
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 0
+    plotaxes.xlimits = [-120,-60]
+    plotaxes.ylimits = [-60,0]
+    
+    #-----------------------------------------
+    # Figure for etac
+    #-----------------------------------------
+    plotfigure = plotdata.new_plotfigure(name='etac', figno=2)
+    
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes('pcolor')
+    plotaxes.title = 'Surface'
+    plotaxes.scaled = True
+    
+    def fixup(current_data):
+        import pylab
+        addgauges(current_data)
+        t = current_data.t
+        t = t / 3600.  # hours
+        pylab.title('Surface at %4.2f hours' % t, fontsize=20)
+        pylab.xticks(fontsize=15)
+        pylab.yticks(fontsize=15)
+    plotaxes.afteraxes = fixup
+    
+    # Water
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    #plotitem.plot_var = geoplot.surface
+    plotitem.plot_var = 5
+    plotitem.pcolor_cmap = geoplot.tsunami_colormap
+    plotitem.pcolor_cmin = -0.2
+    plotitem.pcolor_cmax = 0.2
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = [1,1,1]
+    plotitem.amr_data_show = [1,1,0]
+    
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = [1,1,1]
+    plotaxes.xlimits = [-120,-60]
+    plotaxes.ylimits = [-60,0]
+    
+    #-----------------------------------------
+    # Figure for etacrse
+    #-----------------------------------------
+    plotfigure = plotdata.new_plotfigure(name='etacrse', figno=3)
+    
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes('pcolor')
+    plotaxes.title = 'Surface'
+    plotaxes.scaled = True
+    
+    def fixup(current_data):
+        import pylab
+        addgauges(current_data)
+        t = current_data.t
+        t = t / 3600.  # hours
+        pylab.title('Surface at %4.2f hours' % t, fontsize=20)
+        pylab.xticks(fontsize=15)
+        pylab.yticks(fontsize=15)
+    plotaxes.afteraxes = fixup
+    
+    # Water
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    #plotitem.plot_var = geoplot.surface
+    plotitem.plot_var = 6
+    plotitem.pcolor_cmap = geoplot.tsunami_colormap
+    plotitem.pcolor_cmin = -0.2
+    plotitem.pcolor_cmax = 0.2
+    plotitem.add_colorbar = True
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = [1,1,1]
+    plotitem.amr_data_show = [1,1,0]
+    
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = [1,1,1]
+    plotaxes.xlimits = [-120,-60]
+    plotaxes.ylimits = [-60,0]
 
     #-----------------------------------------
     # Figures for gauges
