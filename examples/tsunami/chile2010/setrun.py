@@ -94,7 +94,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 6
+    clawdata.num_aux = 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -292,12 +292,12 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    amrdata.aux_type = ['center','capacity','yleft','center','center','center']
+    amrdata.aux_type = ['center','capacity','yleft']
 
 
     # Flag using refinement routine flag2refine rather than richardson error
     amrdata.flag_richardson = True    # use Richardson?
-    amrdata.flag_richardson_tol = 0.001  # Richardson tolerance
+    amrdata.flag_richardson_tol = 0.002  # Richardson tolerance
     amrdata.flag2refine = False
 
     # steps to take on each level L between regriddings of level L+1:
