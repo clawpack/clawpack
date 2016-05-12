@@ -1,7 +1,7 @@
 c
 c-------------------------------------------------------------------------------------
 c  Modified from prepbigstep.f in amrclaw to pass aux array into coarsen.f
-c  Currently uses setaux for coarse aux array, should be able to use auxcoarsen function
+c  and to properly account set variables in coarse aux array
 c-------------------------------------------------------------------------------------
 c
        subroutine prepbigstep(nvar,naux,lcheck,mptr,nx,ny,midub,mjdub,
@@ -70,11 +70,11 @@ c             # Generate aux for fine grid
               timeSetauxCPU = timeSetauxCPU + cpu_finish - cpu_start
 c
 c             # Generate aux for coarse grid
-c              call auxcoarsen(auxdub,midub,mjdub,               # using auxcoarsen should work
-c     1                     auxbgc,mi2tot,mj2tot,naux,auxtype)   # but gives strange results currently
-              auxbgc(1,:,:) = NEEDS_TO_BE_SET  ! signal that needs a val
+c             # Call setaux first to set capacity functions
               call setaux(nghost,nx/2,ny/2,xl,yb,hx2,hy2,
      1                    naux,auxbgc)
+              call auxcoarsen(auxdub,midub,mjdub,
+     1                     auxbgc,mi2tot,mj2tot,naux,auxtype)
           endif
 c
 c         # fill it - use enlarged (before coarsening) aux arrays

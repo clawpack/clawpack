@@ -1,6 +1,8 @@
 c
 c ---------------------------------------------------
-c Modified from coarsen.f in amrclaw to use aux arrays
+c Modified from coarsen.f in amrclaw
+c Uses code taken from update.f to take into account
+c wet and dry cells.
 c ---------------------------------------------------
 c
        subroutine coarsen(valdub,midub,mjdub,auxdub,
@@ -8,8 +10,6 @@ c
 
 
        use geoclaw_module, only: dry_tolerance
-c     # modified from update.f to coarsen grid taking into
-c     account wet and dry cells.
 c
        use amr_module, only: mcapa,nghost
        implicit none
@@ -21,7 +21,7 @@ c
        real(kind=8), intent(inout) :: auxbgc(naux,mi2tot,mj2tot)
 
 c      # Local variables
-       integer :: j,jfine,i,ifine,jco,ico,nwet,bav,bsum
+       integer :: j,jfine,i,ifine,jco,ico,nwet
        real(kind=8) :: capac,bc,etasum,hsum,husum,hvsum,capa
        real(kind=8) :: hf,huf,hvf,bf,etaf,etaav,hav,hc,huc,hvc
 
@@ -82,7 +82,6 @@ c          # Calculating which values to use for coarsen
                husum  = husum + huf
                hvsum  = hvsum + hvf
                etasum = etasum + etaf
-               bsum = bsum + bf
              enddo
            enddo
 
@@ -90,7 +89,6 @@ c          # Getting coarse averages
            if (nwet.gt.0) then
                etaav=etasum/dble(nwet)
                hav= hsum/dble(nwet)
-               bav = bsum/dble(nwet)
 
 c              hc=max(etaav-bc*capac,0.d0) !tsunamiclaw method
                hc=min(hav,(max(etaav-bc*capac,0.d0)))

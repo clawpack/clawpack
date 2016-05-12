@@ -22,7 +22,7 @@ COMMON_MODULES += \
  $(GEOLIB)/surge/stommel_storm_module.f90 \
  $(GEOLIB)/surge/constant_storm_module.f90 \
  $(GEOLIB)/surge/storm_module.f90 \
- $(GEOLIB)/friction_module.f90
+ $(GEOLIB)/friction_module.f90 
 
 # list of source files from AMR library. 
 COMMON_SOURCES += \
@@ -41,13 +41,10 @@ COMMON_SOURCES += \
   $(AMRLIB)/birect.f \
   $(AMRLIB)/cleanup.f \
   $(AMRLIB)/colate2.f \
-  $(AMRLIB)/errest.f \
   $(AMRLIB)/prepregstep.f \
-  $(AMRLIB)/prepbigstep.f \
   $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/flagger.f \
   $(AMRLIB)/flagregions.f90 \
-  $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl2.f \
   $(AMRLIB)/fluxad.f \
@@ -97,8 +94,6 @@ COMMON_SOURCES += \
   $(AMRLIB)/griddomup.f \
   $(AMRLIB)/griddomcopy.f \
   $(AMRLIB)/griddomshrink.f \
-  $(AMRLIB)/coarsen.f \
-  $(AMRLIB)/auxcoarsen.f \
   $(AMRLIB)/intcopy.f \
   $(AMRLIB)/preintcopy.f \
   $(AMRLIB)/icall.f \
@@ -149,3 +144,8 @@ COMMON_SOURCES += \
   $(GEOLIB)/fgmax_finalize.f90 \
   $(GEOLIB)/check.f \
   $(GEOLIB)/restrt.f \
+  $(GEOLIB)/errest.f \
+  $(GEOLIB)/errf1.f \
+  $(GEOLIB)/coarsen.f \
+  $(GEOLIB)/auxcoarsen.f \
+  $(GEOLIB)/prepbigstep.f \

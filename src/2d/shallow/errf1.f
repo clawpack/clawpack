@@ -2,7 +2,6 @@ c
 c --------------------------------------------------------------
 c Modified from errf1.f in amrclaw to use aux arrays
 c and correctly account for wet/dry cells.
-c Currently outputs extra aux variables for debugging
 c --------------------------------------------------------------
 c
       subroutine errf1(rctfine,nvar,rctcrse,mptr,mi2tot,mj2tot,
@@ -194,24 +193,6 @@ c               # Finding errors
                 hverr = dabs((hvc-hvcrse)/ order)
                 etaerr= dabs((etac-etacrse)/ order)
               endif
-
-c
-c             For debugging, outputting various values to aux
-c
-              auxfine(4,ifine,jfine) = etaerr
-              auxfine(4,ifine+1,jfine)  = etaerr
-              auxfine(4,ifine+1,jfine+1)  = etaerr
-              auxfine(4,ifine,jfine+1) = etaerr
-
-              auxfine(5,ifine,jfine) = etac
-              auxfine(5,ifine+1,jfine)  = etac
-              auxfine(5,ifine+1,jfine+1)  = etac
-              auxfine(5,ifine,jfine+1) = etac
-
-              auxfine(6,ifine,jfine) = etacrse
-              auxfine(6,ifine+1,jfine)  = etacrse
-              auxfine(6,ifine+1,jfine+1)  = etacrse
-              auxfine(6,ifine,jfine+1) = etacrse
 
 c             Flag point if error is large enough
               if (etaerr .ge. tol) then
