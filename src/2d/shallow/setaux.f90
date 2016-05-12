@@ -79,10 +79,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         aux(pressure_index, :, :) = ambient_pressure
     endif
 
-    aux(4,:,:) = 0.d0
-    aux(5,:,:) = 0.d0
-    aux(6,:,:) = 0.d0
-
     ! Set analytical bathymetry here if requested
     if (test_topography > 0) then
         forall (ii=1-mbc:mx+mbc,jj=1-mbc:my+mbc)
