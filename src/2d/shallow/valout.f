@@ -149,7 +149,12 @@ c                 # output in 1d format if ny=1:
                       eta = 0.d0
                    end if
 
-                   write(matunit1,109) h,hu,hv,eta
+                   error = alloc(iaddaux(4,i,j))
+                   etac = alloc(iaddaux(5,i,j))
+                   etacrse = alloc(iaddaux(6,i,j))
+
+                   write(matunit1,109) h,hu,hv,eta,
+     &                       error,etac,etacrse
                 enddo
                 write(matunit1,*) ' '
              enddo
@@ -272,8 +277,8 @@ c         # and we want to use 1d plotting routines
 
 c     # NOTE: we need to print out nghost too in order to strip
 c     #       ghost cells from q when reading in pyclaw.io.binary
-c     # Print meqn = nvar+1 because eta added.
-      write(matunit2,1000) time,nvar+1,ngrids,naux,ndim,nghost
+c     # Print meqn = nvar+1 because eta and error added.
+      write(matunit2,1000) time,nvar+4,ngrids,naux,ndim,nghost
  1000 format(e18.8,'    time', /,
      &       i6,'                 meqn'/,
      &       i6,'                 ngrids'/,
