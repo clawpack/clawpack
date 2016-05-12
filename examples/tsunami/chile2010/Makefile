@@ -23,7 +23,7 @@ RESTART = False
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?= 
+FFLAGS = -g -Wall -pedantic -fbounds-check -ffpe-trap=invalid,overflow,zero 
 
 # ---------------------------------
 # package sources for this program:
@@ -53,10 +53,6 @@ SOURCES = \
   $(CLAW)/riemann/src/rpn2_geoclaw.f \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
-  $(GEOLIB)/errest.f \
-  $(GEOLIB)/errf1.f \
-  $(GEOLIB)/coarsen.f \
-  $(GEOLIB)/prepbigstep.f \
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
