@@ -1,6 +1,7 @@
 c
 c-------------------------------------------------------------------------------------
 c  Modified from prepbigstep.f in amrclaw to pass aux array into coarsen.f
+c  Currently uses setaux for coarse aux array, should be able to use auxcoarsen function
 c-------------------------------------------------------------------------------------
 c
        subroutine prepbigstep(nvar,naux,lcheck,mptr,nx,ny,midub,mjdub,

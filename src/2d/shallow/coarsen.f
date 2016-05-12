@@ -1,7 +1,6 @@
-
-
-
 c
+c ---------------------------------------------------
+c Modified from coarsen.f in amrclaw to use aux arrays
 c ---------------------------------------------------
 c
        subroutine coarsen(valdub,midub,mjdub,auxdub,

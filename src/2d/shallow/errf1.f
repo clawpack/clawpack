@@ -1,5 +1,9 @@
 c
 c --------------------------------------------------------------
+c Modified from errf1.f in amrclaw to use aux arrays
+c and correctly account for wet/dry cells.
+c Currently outputs extra aux variables for debugging
+c --------------------------------------------------------------
 c
       subroutine errf1(rctfine,nvar,rctcrse,mptr,mi2tot,mj2tot,
      2                 mitot,mjtot,rctflg,mibuff,mjbuff,auxfine,
@@ -82,7 +86,7 @@ c
 101      format(' ',10e15.7)
 
 c
-c Main loop: flag points and set aux(innerprod_index)
+c Main loop: flag points and set extra aux values
 c
  20   continue
       jfine = nghost+1
@@ -184,7 +188,7 @@ c                    hc=max(etaav-bcrse*capacrse,0.d0) !tsunamiclaw method
                 hvc = hvc / capacrse
                 etac = hc + bcrse
 
-c               # Finding error between
+c               # Finding errors
                 herr  = dabs((hc-hcrse)/ order)
                 huerr = dabs((huc-hucrse)/ order)
                 hverr = dabs((hvc-hvcrse)/ order)
