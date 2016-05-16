@@ -11,6 +11,7 @@ c
        use amr_module, only: NEEDS_TO_BE_SET,nghost,store2,timemult
        use amr_module, only: timeSetaux,possk,alloc,node,timeSetauxCPU
        use amr_module, only: auxtype
+       use topo_module, only: aux_finalized
        implicit none
 
        integer, intent(in) :: nvar, naux, lcheck, mptr, nx, ny
@@ -24,7 +25,7 @@ c      # Local variables
        real(kind=8) :: fp(nvar,mi2tot,mj2tot),gp(nvar,mi2tot,mj2tot)
        real(kind=8) :: fm(nvar,mi2tot,mj2tot),gm(nvar,mi2tot,mj2tot)
        real(kind=8) :: hx,hy,hx2,hy2,dt,dt2,dtnew2,time,tpre
-       integer :: mitot,mjtot,ng2,locold,mx,my
+       integer :: mitot,mjtot,ng2,locold,mx,my,aux_finalized_temp
        real(kind=8) :: xlow,ylow,xl,yb
 
        !for setaux timing
@@ -85,10 +86,19 @@ c         coarsen by 2 in every direction
           call coarsen(valdub,midub,mjdub,auxdub,
      1                 valbgc,mi2tot,mj2tot,auxbgc,nvar,naux)
 c
+c         Set aux_finalized = 2 so that the aux array is not updated
+c         when stepgrid is called. This is necessary since this step
+c         on a coarse grid is not actually used for the computation
+          aux_finalized_temp = aux_finalized
+          aux_finalized = 2
+
           call stepgrid(valbgc,fm,fp,gm,gp,
      1                mi2tot,mj2tot,nghost,
      2                dt2,dtnew2,hx2,hy2,nvar,
      3                xlow,ylow,tpre,mptr,naux,auxbgc)
+c
+c         Return aux_finalized to its correct value
+          aux_finalized = aux_finalized_temp
 c
 c         update counts for error estimation work
           evol = evol + (nx/2)*(ny/2)
