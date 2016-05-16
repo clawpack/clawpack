@@ -23,7 +23,7 @@ RESTART = False
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS = -g -Wall -pedantic -fbounds-check -ffpe-trap=invalid,overflow,zero 
+FFLAGS ?= 
 
 # ---------------------------------
 # package sources for this program:
