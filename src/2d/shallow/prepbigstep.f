@@ -85,20 +85,11 @@ c
 c         coarsen by 2 in every direction
           call coarsen(valdub,midub,mjdub,auxdub,
      1                 valbgc,mi2tot,mj2tot,auxbgc,nvar,naux)
-c
-c         Set aux_finalized = 2 so that the aux array is not updated
-c         when stepgrid is called. This is necessary since this step
-c         on a coarse grid is not actually used for the computation
-          aux_finalized_temp = aux_finalized
-          aux_finalized = 2
 
           call stepgrid(valbgc,fm,fp,gm,gp,
      1                mi2tot,mj2tot,nghost,
      2                dt2,dtnew2,hx2,hy2,nvar,
-     3                xlow,ylow,tpre,mptr,naux,auxbgc)
-c
-c         Return aux_finalized to its correct value
-          aux_finalized = aux_finalized_temp
+     3                xlow,ylow,tpre,mptr,naux,auxbgc,.false.)
 c
 c         update counts for error estimation work
           evol = evol + (nx/2)*(ny/2)

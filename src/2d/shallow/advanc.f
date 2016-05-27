@@ -251,7 +251,7 @@ c
       call stepgrid(alloc(locnew),fm,fp,gm,gp,
      2            mitot,mjtot,nghost,
      3            delt,dtnew,hx,hy,nvar,
-     4            xlow,ylow,time,mptr,naux,alloc(locaux))
+     4            xlow,ylow,time,mptr,naux,alloc(locaux),.true.)
 
       if (node(cfluxptr,mptr) .ne. 0)
      2   call fluxsv(mptr,fm,fp,gm,gp,
