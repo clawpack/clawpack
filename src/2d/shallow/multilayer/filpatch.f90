@@ -380,8 +380,7 @@ recursive subroutine filrecur(level,num_eqn,valbig,aux,num_aux,t,mx,my, &
     ! set bcs, whether or not recursive calls needed. set any part of patch that
     ! stuck out
     call bc2amr(valbig,aux,mx,my,num_eqn,num_aux,dx_fine,dy_fine,level,t,fill_rect(1), &
-                fill_rect(2),fill_rect(3),fill_rect(4),xlower,ylower,xupper, &
-                yupper,xperdom,yperdom,spheredom)
+                fill_rect(2),fill_rect(3),fill_rect(4))
 
 contains
 

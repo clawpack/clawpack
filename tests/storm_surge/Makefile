@@ -34,28 +34,28 @@ MODULES = \
  $(GEOLIB)/utility_module.f90 \
  $(AMRLIB)/amr_module.f90 \
  $(AMRLIB)/regions_module.f90 \
- $(AMRLIB)/gauges_module.f90 \
  $(GEOLIB)/geoclaw_module.f90 \
+ $(GEOLIB)/gauges_module.f90 \
  $(GEOLIB)/topo_module.f90 \
  $(GEOLIB)/qinit_module.f90 \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
- $(GEOLIB)/fgmax_module.f90 \
  $(GEOLIB)/surge/holland_storm_module.f90 \
  $(GEOLIB)/surge/constant_storm_module.f90 \
  $(GEOLIB)/surge/stommel_storm_module.f90 \
  $(GEOLIB)/surge/storm_module.f90 \
- $(GEOLIB)/surge/friction_module.f90
+ $(GEOLIB)/friction_module.f90 \
+ $(GEOLIB)/fgmax_module.f90
 
 SOURCES = \
-  $(GEOLIB)/surge/src2.f90 \
-  $(GEOLIB)/surge/src1d.f90 \
-  $(GEOLIB)/surge/setaux.f90 \
-  $(GEOLIB)/surge/setprob.f90 \
+  $(GEOLIB)/src2.f90 \
+  $(GEOLIB)/src1d.f90 \
+  $(GEOLIB)/setaux.f90 \
+  $(GEOLIB)/setprob.f90 \
   $(GEOLIB)/topo_update.f90 \
-  $(GEOLIB)/surge/flag2refine2.f90 \
-  $(GEOLIB)/surge/b4step2.f90 \
-  $(GEOLIB)/surge/tick.f \
+  $(GEOLIB)/flag2refine2.f90 \
+  $(GEOLIB)/b4step2.f90 \
+  $(GEOLIB)/tick.f \
   $(GEOLIB)/valout.f \
   $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/bc2amr.f \
@@ -71,7 +71,6 @@ SOURCES = \
   $(GEOLIB)/flux2fw.f \
   $(GEOLIB)/qad.f \
   $(GEOLIB)/update.f \
-  $(GEOLIB)/dumpgauge.f \
   $(GEOLIB)/upbnd.f  \
   $(GEOLIB)/setgrd.f \
   $(GEOLIB)/gfixup.f \
@@ -84,7 +83,7 @@ SOURCES = \
   $(AMRLIB)/trimbd.f90 \
   $(AMRLIB)/bound.f90 \
   $(AMRLIB)/intfil.f90 \
-  $(AMRLIB)/amr2.f90 \
+  $(GEOLIB)/amr2.f90 \
   $(GEOLIB)/fgmax_read.f90 \
   $(GEOLIB)/fgmax_frompatch.f90 \
   $(GEOLIB)/fgmax_interpolate.f90 \

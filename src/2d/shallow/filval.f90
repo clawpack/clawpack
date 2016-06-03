@@ -52,7 +52,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     ! External function definitions
     real(kind=8) :: get_max_speed
 
-    real(kind=8) :: xl2,yb2
 
     refinement_ratio_x = intratx(level-1)
     refinement_ratio_y = intraty(level-1)
@@ -97,18 +96,12 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
         endif
 
         if (aux_finalized < 2) then
-            xl2 = xlower + iclo*dx_coarse
-            yb2 = ylower + jclo*dy_coarse
-            if ((abs(xl-xl2) > 1.d-13) .or. (abs(yb-yb2) > 1.d-13)) then
-                write(6,*) '*** xl,xl2,yb,by2: '
-                write(6,*) xl,xl2,yb,yb2
-                stop
-            endif
             call setaux(0,mic,mjc,xl,yb,dx_coarse,dy_coarse,naux,auxc)
         endif
     endif
-    call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level-1,time,xl,xr,yb, &
-                yt,xlower,ylower,xupper,yupper,xperdom,yperdom,spheredom)
+
+    call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level-1,time,  &
+                xl,xr,yb,yt)
 
 
 !  NOTE change in order of code.  Since the interp from coarse to fine needs the aux
@@ -128,7 +121,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
              aux(1,:,:) = NEEDS_TO_BE_SET  ! will indicate fine cells not yet set
              if (xperdom .or. yperdom) then
                 call preicall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
-                              jlo-nghost,jhi+nghost,level,1,1,fliparray)  
+                              jlo-nghost,jhi+nghost,level,fliparray)  
              else
                 call icall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
                            jlo-nghost,jhi+nghost,level,1,1)   

@@ -8,8 +8,7 @@ that will be read in by the Fortran code.
 
 import numpy as numpy
 
-import clawpack.geoclaw.multilayer as multilayer
-import clawpack.geoclaw.surge.data as surge
+import clawpack.geoclaw.multilayer.data as multilayer
 import clawpack.geoclaw.topotools as tt
 
 # Rotation transformations
@@ -49,12 +48,8 @@ def setrun(claw_pkg='geoclaw'):
     #------------------------------------------------------------------
     rundata = setgeo(rundata)
 
-    rundata.add_data(multilayer.data.MultilayerData(), 'multilayer_data')
+    rundata.add_data(multilayer.MultilayerData(), 'multilayer_data')
     set_multilayer(rundata)
-    rundata.add_data(surge.FrictionData(),'frictiondata')
-    set_friction(rundata)
-    rundata.add_data(surge.SurgeData(),'stormdata')
-    set_storm(rundata)
 
     #------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
@@ -96,8 +91,6 @@ def setrun(claw_pkg='geoclaw'):
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
     clawdata.num_aux = 4 + rundata.multilayer_data.num_layers
-    if rundata.stormdata.storm_type > 0:
-        clawdata.num_aux += 3
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 0
@@ -206,7 +199,7 @@ def setrun(claw_pkg='geoclaw'):
     #  0 or 'unsplit' or none'  ==> Unsplit
     #  1 or 'increment'         ==> corner transport of waves
     #  2 or 'all'               ==> corner transport of 2nd order corrections too
-    clawdata.dimensional_split = 0
+    clawdata.dimensional_split = "unsplit"
     
     # For unsplit method, transverse_waves can be 
     #  0 or 'none'      ==> donor cell (only normal solver used)
@@ -417,27 +410,10 @@ def setgeo(rundata):
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
 
-    # == setqinit.data values ==
-    # Use multilayer qinit data object
-    rundata.replace_data('qinit_data', multilayer.data.QinitMultilayerData())
-    rundata.qinit_data.qinit_type = 6
-    rundata.qinit_data.epsilon = 0.02
-    rundata.qinit_data.angle = 0.0
-    rundata.qinit_data.sigma = 0.02
-    rundata.qinit_data.wave_family = 4
-    rundata.qinit_data.init_location = [-0.1,0.0]
-
 
     return rundata
     # end of function setgeo
     # ----------------------
-
-def set_friction(rundata):
-
-    data = rundata.frictiondata
-
-    # Variable friction
-    data.variable_friction = False
 
 
 def set_multilayer(rundata):
@@ -456,11 +432,14 @@ def set_multilayer(rundata):
     # data.wave_tolerance = [0.1,0.1]
     # data.dry_limit = True
 
-
-def set_storm(rundata):
-
-    # No storm
-    rundata.stormdata.storm_type = 0
+    # Set special initial conditions for qinit
+    rundata.replace_data('qinit_data', multilayer.QinitMultilayerData())
+    rundata.qinit_data.qinit_type = 6
+    rundata.qinit_data.epsilon = 0.02
+    rundata.qinit_data.angle = 0.0
+    rundata.qinit_data.sigma = 0.02
+    rundata.qinit_data.wave_family = 4
+    rundata.qinit_data.init_location = [-0.1,0.0]
 
 
 def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
@@ -470,28 +449,17 @@ def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
 
 
 def write_topo_file(run_data, out_file, **kwargs):
-    
-    # Write out bathy file
-    mx = run_data.clawdata.num_cells[0]
-    my = run_data.clawdata.num_cells[1]
-    xlower = run_data.clawdata.lower[0]
-    xupper = run_data.clawdata.upper[0]
-    ylower = run_data.clawdata.lower[1]
-    yupper = run_data.clawdata.upper[1]
-    dx = (xupper - xlower) / mx
-    dy = (yupper - ylower) / my
-    d = min(dx,dy)
-    mx = int((xupper - xlower) / d) + 8
-    my = int((yupper - ylower) / d) + 8
-    
-    xlower = xlower - d*4.0
-    ylower = ylower - d*4.0
-    xupper = xupper + d*4.0
-    yupper = yupper + d*4.0
 
-    step = lambda x,y: bathy_step(x, y, **kwargs)
-    
-    tt.topo2writer(out_file, step, xlower, xupper, ylower, yupper, mx, my, nodata_value=-99999)
+    # Make topography
+    topo_func = lambda x, y: bathy_step(x, y, **kwargs)
+    topo = tt.Topography(topo_func=topo_func)
+    topo.x = numpy.linspace(run_data.clawdata.lower[0], 
+                            run_data.clawdata.upper[0], 
+                            run_data.clawdata.num_cells[0] + 8)
+    topo.y = numpy.linspace(run_data.clawdata.lower[1], 
+                            run_data.clawdata.upper[1], 
+                            run_data.clawdata.num_cells[1] + 8)
+    topo.write(out_file)
 
     # Write out simple bathy geometry file for communication to the plotting
     with open("./bathy_geometry.data", 'w') as bathy_geometry_file:

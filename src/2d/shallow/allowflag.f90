@@ -54,7 +54,7 @@ logical function allowflag(x,y,t,level)
         if (level < maxleveltopo(m)) then
             if (x > xlowtopo(m) .and. x < xhitopo(m) .and. &
                 y > ylowtopo(m) .and. y < yhitopo(m) .and. &
-                t > tlowtopo(m) .and. t < thitopo(m)) then
+                t >= tlowtopo(m) .and. t < thitopo(m)) then
 
                 allowflag = .true.
                 return
@@ -65,7 +65,7 @@ logical function allowflag(x,y,t,level)
         if (level < regions(m)%max_level) then
             if (x > regions(m)%x_low .and. x <  regions(m)%x_hi.and. &
                 y > regions(m)%y_low .and. y <  regions(m)%y_hi.and. &
-                t > regions(m)%t_low .and. t <= regions(m)%t_hi) then
+                t >= regions(m)%t_low .and. t <= regions(m)%t_hi) then
 
                 allowflag = .true.
                 return

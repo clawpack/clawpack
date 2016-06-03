@@ -57,7 +57,7 @@ module fgmax_module
 
     ! declare array fgrids of fixed grids, each of type fgrid.
     ! allow them to be targets of pointers for shorthand in code.
-    integer, parameter :: FG_MAXNUM_FGRIDS = 2  ! max number of fixed grids
+    integer, parameter :: FG_MAXNUM_FGRIDS = 5  ! max number of fixed grids
     type(fgrid), target :: FG_fgrids(FG_MAXNUM_FGRIDS)
 
     ! special value to flag unset portions of arrays:
@@ -92,8 +92,13 @@ contains
         ! Local storage
         integer, parameter :: unit = 7
         integer :: ifg
-        character*80 :: fname_fg
+        character(len=150) :: fname_fg
         integer :: num_fgmax_grids, num_fgmax_val
+
+        write(parmunit,*) ' '
+        write(parmunit,*) '--------------------------------------------'
+        write(parmunit,*) 'SETFGMAX:'
+        write(parmunit,*) '-----------'
 
         ! Open data file
         call opendatafile(unit,fname)

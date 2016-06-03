@@ -50,7 +50,7 @@ c
           go to 2
  3        level   = level + 1
           go to 1
-
+c
  4    lcheck = lbase + 1
 
 c
@@ -147,6 +147,7 @@ c          # "interior" of coarser patch to fill fine grid.
            xr  = rnode(cornxhi,mptr)
            yb  = rnode(cornylo,mptr)
            yt  = rnode(cornyhi,mptr)
+           time  = rnode(timemult, mptr)
            ilo   = node(ndilo, mptr)
            ihi   = node(ndihi, mptr)
            jlo   = node(ndjlo, mptr)
@@ -189,6 +190,7 @@ c
           mold   = mptr
           mptr   = node(levelptr,mptr)
           call putnod(mold)
+          call freeBndryList(mold)
           go to 85
  90   lstart(lcheck) = newstl(lcheck)
       lcheck = lcheck + 1

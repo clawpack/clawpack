@@ -15,7 +15,10 @@ c
       integer mythread/0/, maxthreads/1/
       integer listgrids(numgrids(level))
       integer clock_start, clock_finish, clock_rate
-      integer clock_startStepgrid, clock_finishBound
+      integer clock_startStepgrid, clock_startBound,clock_finishBound
+      real(kind=8) cpu_start, cpu_finish
+      real(kind=8) cpu_startBound,cpu_finishBound
+      real(kind=8) cpu_startStepgrid, cpu_finishStepgrid
 
 c     maxgr is maximum number of grids  many things are
 c     dimensioned at, so this is overall. only 1d array
@@ -31,27 +34,31 @@ c                  advancing the solution on the grid
 c                  adjusting fluxes for flux conservation step later
 c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 c
+      call system_clock(clock_start,clock_rate)
+      call cpu_time(cpu_start)
       hx   = hxposs(level)
       hy   = hyposs(level)
       delt = possk(level)
 c     this is linear alg.
-      call prepgrids(listgrids,numgrids(level),level)
+c      call prepgrids(listgrids,numgrids(level),level)
 c
 c get start time for more detailed timing by level
-       call system_clock(clock_start,clock_rate)
+       call system_clock(clock_startBound,clock_rate)
+       call cpu_time(cpu_startBound)
 
 c     maxthreads initialized to 1 above in case no openmp
 !$    maxthreads = omp_get_max_threads()
 
 c We want to do this regardless of the threading type
-!$OMP PARALLEL DO PRIVATE(j,locnew, locaux, mptr,nx,ny,mitot
-!$OMP&                    ,mjtot,time),
-!$OMP&            SHARED(level,nvar,naux,alloc,intrat,delt,
-!$OMP&                   nghost,node,rnode,numgrids,listgrids),
+!$OMP PARALLEL DO PRIVATE(j,locnew,locaux,mptr,nx,ny,mitot,
+!$OMP&                    mjtot,time,levSt),
+!$OMP&            SHARED(level,nvar,naux,alloc,intrat,delt,nghost,
+!$OMP&                   node,rnode,numgrids,listStart,listOfGrids),
 !$OMP&            SCHEDULE (dynamic,1)
 !$OMP&            DEFAULT(none)
       do  j = 1, numgrids(level)
-          mptr = listgrids(j)
+          levSt  = listStart(level)
+          mptr   = listOfGrids(levSt+j-1)
           nx     = node(ndihi,mptr) - node(ndilo,mptr) + 1
           ny     = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
           mitot  = nx + 2*nghost
@@ -66,7 +73,9 @@ c
         end do
 !$OMP END PARALLEL DO
       call system_clock(clock_finishBound,clock_rate)
-      timeBound = timeBound + clock_finishBound - clock_start  
+      call cpu_time(cpu_finishBound)
+      timeBound = timeBound + clock_finishBound - clock_startBound
+      timeBoundCPU=timeBoundCPU+cpu_finishBound-cpu_startBound
 
 c
 c save coarse level values if there is a finer level for wave fixup
@@ -87,6 +96,7 @@ c      call fgrid_advance(time,delt)
          endif
 c 
       call system_clock(clock_startStepgrid,clock_rate)
+      call cpu_time(cpu_startStepgrid)
         
 c  set number of thrad to use. later will base on number of grids
 c     nt = 4
@@ -94,14 +104,16 @@ c   ! $OMP PARALLEL DO num_threads(nt)
 
 !$OMP PARALLEL DO 
 !$OMP&            PRIVATE(j,mptr,nx,ny,mitot,mjtot)  
-!$OMP&            PRIVATE(mythread,dtnew)
+!$OMP&            PRIVATE(mythread,dtnew,levSt)
 !$OMP&            SHARED(rvol,rvoll,level,nvar,mxnest,alloc,intrat)
 !$OMP&            SHARED(nghost,intratx,intraty,hx,hy,naux,listsp)
-!$OMP&            SHARED(node,rnode,dtlevnew,numgrids,listgrids)
+!$OMP&            SHARED(node,rnode,dtlevnew,numgrids)
+!$OMP&            SHARED(listStart,listOfGrids)
 !$OMP&            SCHEDULE (DYNAMIC,1)
 !$OMP&            DEFAULT(none)
       do  j = 1, numgrids(level)
-          mptr = listgrids(j)
+          levSt  = listStart(level)
+          mptr   = listOfGrids(levSt+j-1)
           nx     = node(ndihi,mptr) - node(ndilo,mptr) + 1
           ny     = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
           mitot  = nx + 2*nghost
@@ -116,8 +128,11 @@ c
 !$OMP END PARALLEL DO
 c
       call system_clock(clock_finish,clock_rate)
+      call cpu_time(cpu_finish)
       tvoll(level) = tvoll(level) + clock_finish - clock_start
+      tvollCPU(level) = tvollCPU(level) + cpu_finish - cpu_start
       timeStepgrid = timeStepgrid +clock_finish-clock_startStepgrid
+      timeStepgridCPU=timeStepgridCPU+cpu_finish-cpu_startStepgrid
 
 c
       return
@@ -151,6 +166,7 @@ c
       subroutine par_advanc (mptr,mitot,mjtot,nvar,naux,dtnew)
 c
       use amr_module
+      use gauges_module, only: print_gauges, num_gauges
       implicit double precision (a-h,o-z)
 
 
@@ -184,7 +200,7 @@ c
       locnew = node(store1, mptr)
 
 c
-c  copy old soln. values into  next time step's soln. values
+c  copy old soln. values into  next time steps soln. values
 c  since integrator will overwrite it. only for grids not at
 c  the finest level. finest level grids do not maintain copies
 c  of old and new time solution values.
@@ -218,19 +234,18 @@ c
      3            naux,alloc(locaux),alloc(locx1d),delt,mptr)
       endif
 
-c        # see if the grid about to advanced has gauge data to output
-c        # this corresponds to previous time step, but output done
+c        # See if the grid about to be advanced has gauge data to output.
+c        # This corresponds to previous time step, but output done
 c        # now to make linear interpolation easier, since grid
 c        # now has boundary conditions filled in.
-c        # no testing here for mgauges>0 so that do not
-c        # need to use gauges.i. the only time advanc is
-c        # called that isn't "real" is in the initial setting
-c        # up of grids (setgrd), but source grids are 0 there so
-c        # nothing will be output.
 
-c    should change the way  dumpguage does io - right now is critical section
-           call dumpgauge(alloc(locnew),alloc(locaux),xlow,ylow,
-     .                    nvar,mitot,mjtot,naux,mptr)
+c     should change the way print_gauges does io - right now is critical section
+
+      if (num_gauges > 0) then
+           call print_gauges(alloc(locnew:locnew+nvar*mitot*mjtot), 
+     .                       alloc(locaux:locnew+nvar*mitot*mjtot),
+     .                       xlow,ylow,nvar,mitot,mjtot,naux,mptr)
+           endif
 
 c
       call stepgrid(alloc(locnew),fm,fp,gm,gp,

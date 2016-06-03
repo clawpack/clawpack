@@ -12,11 +12,11 @@ import unittest
 
 import numpy
 
-import clawpack.geoclaw.tests as tests
+import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
 
 
-class BowlSloshTest(tests.GeoClawTest):
+class BowlSloshTest(test.GeoClawRegressionTest):
 
     r"""Bowl-Slosh regression test for GeoClaw"""
 
@@ -34,6 +34,29 @@ class BowlSloshTest(tests.GeoClawTest):
         topo.x = numpy.linspace(-2.0, 2.0, 200)
         topo.y = numpy.linspace(-2.0, 2.0, 200)
         topo.write(os.path.join(self.temp_path, "bowl.topotype2"))
+
+        from make_fgmax_grid import make_fgmax_grid1
+        make_fgmax_grid1(self.temp_path)
+
+
+    def runTest(self, save=False, indices=(2, 3)):
+        r"""Test bowl-slosh example
+
+        Note that this stub really only runs the code and performs no tests.
+
+        """
+
+        # Write out data files
+        self.load_rundata()
+        self.write_rundata_objects()
+
+        # Run code
+        self.run_code()
+
+        # Perform tests
+        self.check_gauges(save=save, indices=(2, 3))
+        self.check_fgmax(save=save)
+        self.success = True
 
 
 if __name__=="__main__":

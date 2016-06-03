@@ -9,12 +9,15 @@ c
       use amr_module
       use topo_module, only: dt_max_dtopo, num_dtopo, topo_finalized,
      &                       aux_finalized, topo0work
+      use gauges_module, only: setbestsrc
+
 
       implicit double precision (a-h,o-z)
 
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
       integer clock_start, clock_finish, clock_rate
+      real(kind=8) cpu_start,cpu_finish
 
 c
 c :::::::::::::::::::::::::::: TICK :::::::::::::::::::::::::::::
@@ -66,7 +69,7 @@ c              # restart: make sure output times start after restart time
       endif
 
       nextchk = 1
-      if ((nstart .gt. 0) .and. (checkpt_style.eq.2)) then
+      if ((nstart .gt. 0) .and. (abs(checkpt_style).eq.2)) then
 c        if this is a restart, make sure chkpt times start after restart time
          do ii = 1, nchkpt
            if (tchk(ii) .gt. time) then
@@ -165,7 +168,7 @@ c     all aux arrays are consistent with the final topography.
 c     The variable aux_finalized is incremented so that we can check
 c     if this is true by checking if aux_finalized == 2 elsewhere in code.
 
-	  if (aux_finalized .eq. 1) then
+      if (aux_finalized .eq. 1 .and. num_dtopo > 0) then
 c         # this is only true once, and only if there was moving topo
           deallocate(topo0work)
           endif 
@@ -208,9 +211,12 @@ c
 101       format(8h  level ,i5,32h  stays fixed during regridding )
 
           call system_clock(clock_start,clock_rate)
+          call cpu_time(cpu_start)
           call regrid(nvar,lbase,cut,naux,start_time)
           call system_clock(clock_finish,clock_rate)
+          call cpu_time(cpu_finish)
           timeRegridding = timeRegridding + clock_finish - clock_start
+          timeRegriddingCPU=timeRegriddingCPU+cpu_finish-cpu_start
 
           call setbestsrc()     ! need at every grid change
 c         call conck(1,nvar,naux,time,rest)
@@ -340,16 +346,6 @@ c
           ncycle  = ncycle + 1
           call conck(1,nvar,naux,time,rest)
 
-       if ((checkpt_style.eq.3 .and. 
-     &      mod(ncycle,checkpt_interval).eq.0) .or. dumpchk) then
-                call check(ncycle,time,nvar,naux)
-                dumpchk = .true.
-       endif
-
-       if ((mod(ncycle,iout).eq.0) .or. dumpout) then
-         call valout(1,lfine,time,nvar,naux)
-         if (printout) call outtre(mstart,.true.,nvar,naux)
-       endif
 
       if ( .not.vtime) goto 201
 
@@ -385,7 +381,18 @@ c             ! use same alg. as when setting refinement when first make new fin
 
       endif
 
- 201  go to 20
+ 201  if ((abs(checkpt_style).eq.3 .and. 
+     &      mod(ncycle,checkpt_interval).eq.0) .or. dumpchk) then
+                call check(ncycle,time,nvar,naux)
+                dumpchk = .true.
+       endif
+
+       if ((mod(ncycle,iout).eq.0) .or. dumpout) then
+         call valout(1,lfine,time,nvar,naux)
+         if (printout) call outtre(mstart,.true.,nvar,naux)
+       endif
+
+      go to 20
 c
 999   continue
 
@@ -418,7 +425,7 @@ c  # checkpoint everything for possible future restart
 c  # (unless we just did it based on dumpchk)
 c
 
-      if ((checkpt_style .gt. 0) .and. (.not. dumpchk)) then
+      if ((checkpt_style .ne. 0) .and. (.not. dumpchk)) then
            call check(ncycle,time,nvar,naux)
          endif
 

@@ -1,15 +1,39 @@
 #!/usr/bin/env python
 
-"""Classes representing parameters for GeoClaw runs"""
+"""
+
+Classes representing parameters for GeoClaw runs
+
+:Classes:
+
+ - GeoClawData
+ - RefinementData
+ - TopographyData
+ - FixedGridData
+ - FGmaxData
+ - DTopoData
+ - QinitData
+
+:Constants:
+
+ - Rearth - Radius of earth in meters
+ - DEG2RAD factor to convert degrees to radians
+ - RAD2DEG factor to convert radians to degrees
+ - LAT2METER factor to convert degrees in latitude to meters
+"""
 
 import os
-
+import numpy
 import clawpack.clawutil.data
 
 # Radius of earth in meters.  
 # For consistency, should always use this value when needed, e.g.
 # in setrun.py or topotools:
 Rearth = 6367.5e3  # average of polar and equatorial radii
+
+DEG2RAD = numpy.pi / 180.0
+RAD2DEG = 180.0 / numpy.pi
+LAT2METER = Rearth * DEG2RAD
 
 class GeoClawData(clawpack.clawutil.data.ClawData):
     r"""
@@ -34,10 +58,6 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         self.add_attribute('dry_tolerance',1e-3)
         self.add_attribute('friction_depth',1.0e6)
         self.add_attribute('sea_level',0.0)
-
-        # Refinement behavior
-        self.add_attribute('variable_dt_refinement_ratios', False)
-
 
 
     def write(self,data_source='setrun.py'):
@@ -68,7 +88,7 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
 
         self.data_write()
 
-        self.data_write('dry_tolerance',1e-3)
+        self.data_write('dry_tolerance')
  
         self.close_data_file()
 
@@ -81,15 +101,14 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         super(RefinementData,self).__init__()
 
         # Refinement controls
-        self.add_attribute('dry_tolerance',1.0e-3)
         self.add_attribute('wave_tolerance',1.0e-1)
         self.add_attribute('speed_tolerance',[1.0e12]*6)
         self.add_attribute('deep_depth',1.0e2)
         self.add_attribute('max_level_deep',3)
+        self.add_attribute('variable_dt_refinement_ratios',False)
 
 
-    def write(self, data_source="setrun.py"):
-        
+    def write(self,data_source='setrun.py'):
         # Refinement controls
         self.open_data_file('refinement.data',data_source)
         self.data_write('wave_tolerance')
@@ -99,9 +118,10 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         self.data_write('deep_depth')
         self.data_write('max_level_deep')
         self.data_write()
-        self.data_write('variable_dt_refinement_ratios')
-
+        self.data_write('variable_dt_refinement_ratios',
+                        description="(Set dt refinement ratios automatically)")
         self.close_data_file()
+
 
 
 class TopographyData(clawpack.clawutil.data.ClawData):
@@ -155,35 +175,6 @@ class TopographyData(clawpack.clawutil.data.ClawData):
             raise NotImplementedError("Test topography type %s has not been"
                                         " implemented." % self.test_topography)
 
-        self.close_data_file()
-
-
-class RefinementData(clawpack.clawutil.data.ClawData):
-
-    def __init__(self):
-
-        super(RefinementData,self).__init__()
-
-        # Refinement controls
-        self.add_attribute('wave_tolerance',1.0e-1)
-        self.add_attribute('speed_tolerance',[1.0e12]*6)
-        self.add_attribute('deep_depth',1.0e2)
-        self.add_attribute('max_level_deep',3)
-        self.add_attribute('variable_dt_refinement_ratios',False)
-
-
-    def write(self,data_source='setrun.py'):
-        # Refinement controls
-        self.open_data_file('refinement.data',data_source)
-        self.data_write('wave_tolerance')
-        if not isinstance(self.speed_tolerance,list):
-            self.speed_tolerance = [self.speed_tolerance]
-        self.data_write('speed_tolerance')
-        self.data_write('deep_depth')
-        self.data_write('max_level_deep')
-        self.data_write()
-        self.data_write('variable_dt_refinement_ratios',
-                        description="(Set dt refinement ratios automatically)")
         self.close_data_file()
 
 
@@ -262,6 +253,45 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.close_data_file()
 
 
+    def read(self, path, force=False):
+        r"""Read a dtopography data file."""
+
+        print self.dtopofiles
+
+        with open(os.path.abspath(path), 'r') as data_file:
+
+            file_name = None
+            
+            # Forward to first parameter
+            for line in data_file:
+
+                # Regular parameter setting
+                if "=:" in line:
+                    value, tail = line.split("=:")
+                    varname = tail.split()[0]
+
+                    if varname == "mdtopofiles":
+                        num_dtopo_files = int(value)
+                    elif varname == "dt_max_dtopo":
+                        self.dt_max_dtopo = float(value)
+
+                # Assume this is the second line of a record, complete and add
+                # to dtopofiles list
+                elif file_name is not None:
+                    base_values = [int(value) for value in line.split()]
+                    base_values.append(file_name)
+                    self.dtopofiles.append(base_values)
+                    file_name = None
+
+                # Non-empty line, assume start of dtopo_file record
+                elif line[0] == "'":
+                    file_name = line.strip()[1:-1]
+
+        # Check to make sure we have all the dtopofiles
+        if len(self.dtopofiles) != num_dtopo_files:
+            raise IOError("The number of dtopo files specified does not equal ",
+                          "the number found.")
+
 
 class QinitData(clawpack.clawutil.data.ClawData):
 
@@ -289,4 +319,160 @@ class QinitData(clawpack.clawutil.data.ClawData):
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         else:
             raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
+        self.close_data_file()
+
+
+# Storm data
+class SurgeData(clawpack.clawutil.data.ClawData):
+    r"""Data object describing storm surge related parameters"""
+
+    def __init__(self):
+        super(SurgeData,self).__init__()
+
+        # Physics parameters
+        self.add_attribute('rho_air',1.15) # Density of air
+        self.add_attribute('ambient_pressure',101.3e3) # Nominal atmos pressure
+
+        # Source term controls
+        self.add_attribute('wind_forcing',False)
+        self.add_attribute('drag_law',1)
+        self.add_attribute('pressure_forcing',False)
+        
+        # Source term algorithm parameters
+        # self.add_attribute('wind_tolerance',1e-6)
+        # self.add_attribute('pressure_tolerance',1e-4) # Pressure source term tolerance
+
+        # AMR parameters
+        self.add_attribute('wind_refine',[20.0,40.0,60.0])
+        self.add_attribute('R_refine',[60.0e3,40e3,20e3])
+        
+        # Storm parameters
+        self.add_attribute("storm_type",0) # Type of storm
+        self.add_attribute("landfall",0.0)
+
+        # Storm type 1 - Read in file track
+        self.add_attribute("storm_file",'./storm.data')
+
+        # Storm type 2 - Idealized Hurricane, these match hurricane Tracy
+        self.add_attribute("ramp_up_t",12*60.0**2) # Ramp up time for hurricane
+        self.add_attribute('velocity',(5.0,0.0))  # Speed of hurricane
+        self.add_attribute('R_eye_init',(0.0,0.0))     # Initial position
+        self.add_attribute('A',23.0)        # Hurricane model fit parameter
+        self.add_attribute('B',1.5)
+        self.add_attribute('Pc',950.0)      # Pressure in the eye of the hurricane 
+
+        # Storm type 3 - Stommel wind field
+        self.add_attribute('stommel_wind',1.0)
+
+        # Algorithm parameters
+        self.add_attribute("wind_index", 5)
+        self.add_attribute("pressure_index", 7)
+
+        
+    def write(self,out_file='./surge.data',data_source="setrun.py"):
+        """Write out the data file to the path given"""
+
+        # print "Creating data file %s" % out_file
+        self.open_data_file(out_file,data_source)
+
+        self.data_write('rho_air',description="(Density of air)")
+        self.data_write('ambient_pressure',description="(Nominal atmospheric pressure)")
+        self.data_write()
+        
+        self.data_write('wind_forcing',description='(Wind source term used)')
+        self.data_write('drag_law',description='(Type of drag law to use)')
+        self.data_write('pressure_forcing',description="(Pressure source term used)")
+        self.data_write()
+
+        self.data_write("wind_index", description="(Index into aux array for wind (size 2))")
+        self.data_write("pressure_index", description="(Index into aux array for pressure (size 1))")
+        self.data_write()
+
+        if isinstance(self.wind_refine, bool):
+            if not self.wind_refine:
+                self.data_write('wind_refine', value=False, description='(Refinement ratios)')
+        elif isinstance(self.wind_refine, type(None)):
+            self.data_write('wind_refine', value=False, description='(Refinement ratios)')
+        else:
+            self.data_write('wind_refine',description='(Refinement ratios)')
+        if isinstance(self.R_refine, bool):
+            if not self.R_refine:
+                self.data_write('R_refine', value=False, description='(Refinement ratios)')
+        elif isinstance(self.R_refine, type(None)):
+            self.data_write('R_refine', value=False, description='(Refinement ratios)')
+        else:
+            self.data_write('R_refine',description='(Refinement ratios)')
+        self.data_write()
+        
+        self.data_write("storm_type",description='(Storm specification type)')
+        self.data_write('landfall',description="(Landfall time of storm)")
+        self.data_write('storm_file',description="(Location of storm data)")
+
+        if self.storm_type == 0 or self.storm_type == 1:
+            pass 
+        elif self.storm_type == 2:
+            # Open another data file called stored in storm_file and write the 
+            # following parameters to it
+            self.open_data_file(self.storm_file)
+            self.data_write("ramp_up_t",description="(Ramp up time for wind field)")
+            self.data_write('velocity',description="(Speed of storm)")
+            self.data_write('R_eye_init',description="(Initial position of storm)")
+            self.data_write('A',description="(Hurricane model fit parameter)")
+            self.data_write('B')
+            self.data_write('Pc',description="(Pressure in the eye of the hurricane)")
+        elif self.storm_type == 3:
+            # Open another data file called stored in storm_file and write the 
+            # following parameters to it
+            self.open_data_file(self.storm_file)
+            self.data_write("stommel_wind",description="(Amplitude of Stommel wind)")
+        else:
+            raise ValueError("Invalid storm type %s." % self.storm_type)
+
+        self.close_data_file()
+
+
+
+class FrictionData(clawpack.clawutil.data.ClawData):
+    r"""Data class representing complex variable friction"""
+
+    def __init__(self):
+        r""""""
+        
+        super(FrictionData, self).__init__()
+
+        # Variable friction support
+        self.add_attribute('variable_friction',False)
+
+        # Region support
+        self.add_attribute('friction_regions',[])
+
+        # File support
+        self.add_attribute('friction_files',[])
+
+
+    def write(self, out_file='friction.data', data_source='setrun.py'):
+
+        self.open_data_file(out_file,data_source)
+
+        self.data_write('variable_friction',description="(method for setting variable friction)")
+        self.data_write()
+        if self.variable_friction:
+            # Region based friction
+            self.data_write(value=len(self.friction_regions),
+                            alt_name='num_friction_regions',
+                            description="(Friction Regions)")
+            self.data_write()
+            for region in self.friction_regions:
+                self.data_write(value=region[0],alt_name="lower")
+                self.data_write(value=region[1],alt_name="upper")
+                self.data_write(value=region[2],alt_name="depths")
+                self.data_write(value=region[3],alt_name="manning_coefficients")
+                self.data_write()
+
+            # File based friction
+            self.data_write(value=len(self.friction_files),
+                            alt_name='num_friction_files')
+            for friction_file in self.friction_files:
+                self._out_file.write("'%s' %s\n " % friction_file)
+
         self.close_data_file()

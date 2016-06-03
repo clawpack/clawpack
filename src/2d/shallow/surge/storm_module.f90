@@ -46,9 +46,9 @@ module storm_module
     integer :: storm_type
     real(kind=8) :: landfall = 0.d0
     real(kind=8) :: ramp_width
-    type(holland_storm_type) :: holland_storm
-    type(constant_storm_type) :: constant_storm
-    type(stommel_storm_type) :: stommel_storm
+    type(holland_storm_type), save :: holland_storm
+    type(constant_storm_type), save :: constant_storm
+    type(stommel_storm_type), save :: stommel_storm
 
     ! Store physics here for ease of use
     ! WARNING:  If these do not agree with the storm data objects things will break!
@@ -96,10 +96,6 @@ contains
         else
             call opendatafile(unit,'surge.data')
         endif
-
-        ! Set some parameters
-        wind_index = 5
-        pressure_index = 7
         
         ! Read in parameters
         ! Physics
@@ -123,20 +119,29 @@ contains
         end select
         read(unit,*) pressure_forcing
         read(unit,*)
-        
-        ! Set drag law function pointer
-!         ! Source term algorithm parameters
-!         read(unit,*) wind_tolerance
-!         read(unit,*) pressure_tolerance
-!         read(unit,*)
+
+        ! Set some parameters
+        read(unit, '(i2)') wind_index
+        read(unit, '(i2)') pressure_index
+        read(unit, *)
         
         ! AMR parameters
         read(unit,'(a)') line
-        allocate(wind_refine(get_value_count(line)))
-        read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
+        if (line(1:1) == "F") then
+            allocate(wind_refine(1))
+            wind_refine(1) = huge(1.d0)
+        else
+            allocate(wind_refine(get_value_count(line)))
+            read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
+        end if
         read(unit,'(a)') line
-        allocate(R_refine(get_value_count(line)))
-        read(line,*) (R_refine(i),i=1,size(R_refine,1))
+        if (line(1:1) == "F") then
+            allocate(R_refine(1))
+            R_refine(1) = -huge(1.d0)
+        else
+            allocate(R_refine(get_value_count(line)))
+            read(line,*) (R_refine(i),i=1,size(R_refine,1))
+        end if
         read(unit,*)
         
         ! Storm Setup 

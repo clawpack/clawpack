@@ -96,7 +96,7 @@ def setplot(plotdata):
     landfall = (landfall_dt.days - 1.0) * 24.0 * 60**2 + landfall_dt.seconds
 
     # Set afteraxes function
-    surge_afteraxes = lambda cd: surgeplot.surge_afteraxes(cd, 
+    surge_afteraxes = lambda cd: surgeplot.surge_afteraxes(cd,
                                         track, landfall, plot_direction=False)
 
     # Color limits
@@ -162,7 +162,7 @@ def setplot(plotdata):
     plotaxes.ylimits = gulf_ylimits
     plotaxes.afteraxes = gulf_after_axes
 
-    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf', 
+    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
                                                contours=surface_contours,
                                                shrink=gulf_shrink)
     surgeplot.add_land(plotaxes,topo_min=-10.0,topo_max=5.0)
@@ -189,8 +189,8 @@ def setplot(plotdata):
     plotaxes.afteraxes = gulf_after_axes
 
     # Speed
-    surgeplot.add_speed(plotaxes, plot_type='contourf', 
-                                   contours=speed_contours, 
+    surgeplot.add_speed(plotaxes, plot_type='contourf',
+                                   contours=speed_contours,
                                    shrink=gulf_shrink)
     if article:
         plotaxes.plotitem_dict['speed'].add_colorbar = False
@@ -199,7 +199,7 @@ def setplot(plotdata):
 
     # Land
     surgeplot.add_land(plotaxes)
-    surgeplot.add_bathy_contours(plotaxes)    
+    surgeplot.add_bathy_contours(plotaxes)
 
     #
     # Friction field
@@ -256,8 +256,7 @@ def setplot(plotdata):
     plotaxes.xlimits = latex_xlimits
     plotaxes.ylimits = latex_ylimits
     plotaxes.afteraxes = latex_after_axes
-    
-    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf', 
+    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
                                                contours=surface_contours,
                                                shrink=latex_shrink)
 
@@ -298,9 +297,8 @@ def setplot(plotdata):
     plotaxes.xlimits = latex_xlimits
     plotaxes.ylimits = latex_ylimits
     plotaxes.afteraxes = latex_after_axes
-    
-    surgeplot.add_speed(plotaxes, plot_type='contourf', 
-                                   contours=speed_contours, 
+    surgeplot.add_speed(plotaxes, plot_type='contourf',
+                                   contours=speed_contours,
                                    shrink=latex_shrink)
 
     if article:
@@ -346,8 +344,7 @@ def setplot(plotdata):
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
     plotaxes.afteraxes = houston_after_axes
-    
-    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf', 
+    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
                                                contours=surface_contours,
                                                shrink=houston_shrink)
     
@@ -379,8 +376,7 @@ def setplot(plotdata):
     plotaxes.xlimits = houston_xlimits
     plotaxes.ylimits = houston_ylimits
     plotaxes.afteraxes = houston_after_axes
-    
-    surgeplot.add_speed(plotaxes, plot_type='contourf', 
+    surgeplot.add_speed(plotaxes, plot_type='contourf',
                                    contours=speed_contours,
                                    shrink=houston_shrink)
     
@@ -410,10 +406,9 @@ def setplot(plotdata):
     plotaxes.title = "Pressure Field"
     plotaxes.afteraxes = gulf_after_axes
     plotaxes.scaled = True
-    
     surgeplot.add_pressure(plotaxes, bounds=pressure_limits, shrink=gulf_shrink)
     surgeplot.add_land(plotaxes)
-    
+
     # Wind field
     plotfigure = plotdata.new_plotfigure(name='Wind Speed', 
                                          figno=fig_num_counter.get_counter())
@@ -425,7 +420,6 @@ def setplot(plotdata):
     plotaxes.title = "Wind Field"
     plotaxes.afteraxes = gulf_after_axes
     plotaxes.scaled = True
-    
     surgeplot.add_wind(plotaxes, bounds=wind_limits, plot_type='pcolor',
                                   shrink=gulf_shrink)
     surgeplot.add_land(plotaxes)
@@ -513,8 +507,7 @@ def setplot(plotdata):
     plotaxes.xlimits = gauge_xlimits
     plotaxes.ylimits = gauge_ylimits
     plotaxes.afteraxes = gauge_after_axes
-    
-    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf', 
+    surgeplot.add_surface_elevation(plotaxes, plot_type='contourf',
                                                contours=surface_contours,
                                                shrink=gauge_location_shrink)
     # surge.plot.add_surface_elevation(plotaxes, plot_type="contourf")
@@ -578,7 +571,6 @@ def setplot(plotdata):
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.amr_patchedges_show = [1,1,1]
-    
     surgeplot.add_land(plotaxes)
 
     # 
@@ -629,7 +621,6 @@ def setplot(plotdata):
     plotitem.colorbar_label = "Source Strength"
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
-    
     surgeplot.add_land(plotaxes)
 
     plotfigure = plotdata.new_plotfigure(name='Friction/Coriolis Source', 
@@ -653,7 +644,6 @@ def setplot(plotdata):
     plotitem.colorbar_label = "Source Strength"
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
-    
     surgeplot.add_land(plotaxes)
 
     #-----------------------------------------

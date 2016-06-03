@@ -126,8 +126,8 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     call fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
                    xlower,ylower,mask_patch,values)
     if (debug) then
-		write(65,*) '+++ i,j,x,y,values(1,i,j) '
-		write(65,*) '    at points where mask_patch(i,j) == .true.'
+        write(65,*) '+++ i,j,x,y,values(1,i,j) '
+        write(65,*) '    at points where mask_patch(i,j) == .true.'
         do i=1-mbc,mx+mbc
             x = xlower + (i-0.5d0)*dx
             do j=1-mbc,my+mbc

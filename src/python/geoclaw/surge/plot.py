@@ -441,7 +441,7 @@ def add_wind(plotaxes,bounds=None,plot_type='pcolor',shrink=1.0):
         
 def add_pressure(plotaxes, bounds=None, plot_type='pcolor', shrink=1.0):
     if plot_type == 'pcolor' or plot_type == 'imshow':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem = plotaxes.new_plotitem(name="pressure", plot_type='2d_pcolor')
         plotitem.plot_var = pressure
         plotitem.colorbar_shrink = shrink
         plotitem.pcolor_cmap = plt.get_cmap('PuBu')
@@ -458,7 +458,7 @@ def add_pressure(plotaxes, bounds=None, plot_type='pcolor', shrink=1.0):
         
 def add_vorticity(plotaxes,bounds=None,plot_type="pcolor"):
     if plot_type == 'pcolor' or plot_type == 'imshow':            
-        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem = plotaxes.new_plotitem(name="vorticity", plot_type='2d_pcolor')
         plotitem.plot_var = 9
         plotitem.pcolor_cmap = plt.get_cmap('PRGn')
         if bounds is not None:
@@ -486,7 +486,7 @@ def add_land(plotaxes,plot_type='pcolor',topo_min=-10,topo_max=10.0):
         plotitem.amr_celledges_show = [0,0,0,0,0,0,0]
         plotitem.amr_patchedges_show = [1,1,1,1,1,0,0]
     elif plot_type == 'contour':            
-        plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+        plotitem = plotaxes.new_plotitem(name="land", plot_type='2d_contour')
         plotitem.plot_var = geoplot.land
         plotitem.contour_nlevels = 40
         plotitem.contour_min = 0.0
