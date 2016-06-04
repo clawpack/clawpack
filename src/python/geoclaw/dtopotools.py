@@ -1394,15 +1394,58 @@ class SubFault(object):
         **Note: ** calculate_geometry() goes in *roughly* the opposite 
         direction
         """
+        import pdb
 
         if self.coordinate_specification == 'triangular':
             
-            v1 = self.corners[0]
-            v2 = self.corners[1]
-            v3 = self.corners[2]
+            x1 = numpy.array(self.corners[0])
+            x2 = numpy.array(self.corners[1])
+            x3 = numpy.array(self.corners[2])
+
+            # compute strike and dip direction
+            e3 = numpy.array([0.,0.,1.])
+            v1 = x2 - x1
+            v2 = x3 - x1
+            
+            normal = numpy.cross(v1,v2)
+            area = numpy.linalg.norm(normal) / 2.
+            tan1 = numpy.cross(e3,normal)   # tangent in strike direction
+            
+            if (tan1[1] < 0):
+                tan1 = -tan1
+
+            tan2 = numpy.cross(tan1,normal)
+            tan2 = tan2 / numpy.linalg.norm(tan2)   # tangent in dip direction
+
+            strike_rad = numpy.arctan(tan1[0]/tan1[1]) 
+            dip_rad = numpy.arccos(numpy.dot(tan2,-e3))
+            
+            # convert to degrees
+            self.strike = numpy.rad2deg(strike_rad)
+            self.dip = numpy.rad2deg(dip_rad)
+            self.rake = 90.     # set default rake to 90 degrees
+
+            # find the center line
+            xx1 = (x2 + x3) / 2. # opposite a
+            xx2 = (x1 + x3) / 2. # opposite b
+            xx3 = (x1 + x2) / 2. # opposite c
+
+            i = numpy.argmin([xx1[2],xx2[2],xx3[2])
+                    # okay probably need to make x1,x2,x3 into 2D arrays
+                    # to use indexing...
+
+            #self._centers = [, \
+            #                 [None, None, None]] 
+
+            self.longitude = (x1[0] + x2[0] + x3[0]) / 3.
+            self.latitude = (x1[1] + x2[1] + x3[1]) / 3.
+            self.depth = (x1[2] + x2[2] + x3[2]) / 3.
+
+            # length and width are set to sqrt(area): tmp sol
+            self.length = numpy.sqrt(area)
+            self.width = numpy.sqrt(area)
 
 
-            print('got triangular')
         else:
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
