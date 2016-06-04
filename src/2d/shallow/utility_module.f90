@@ -86,6 +86,11 @@ contains
         nw = nw + 1
         word(nw) = trim(adjustl(str2(1:pos2-1)))
         str2 = trim(adjustl(str2(pos2+1:)))
+        if (nw == 10) then
+            write(6,*) '*** too many words on line, str = '
+            write(6,*) str
+            stop
+            endif
         enddo
 
     ! now extract numerical values:
