@@ -16,6 +16,8 @@ module storm_module
 
     implicit none
 
+    logical, private :: module_setup = .false.
+
     ! Log file IO unit
     integer, parameter :: log_unit = 423
 
@@ -90,105 +92,110 @@ contains
         integer :: i, drag_law
         character(len=200) :: storm_file_path, line
         
-        ! Open file
-        if (present(data_file)) then
-            call opendatafile(unit,data_file)
-        else
-            call opendatafile(unit,'surge.data')
-        endif
-        
-        ! Read in parameters
-        ! Physics
-        ! TODO: These are currently set directly in the types, should change!
-        read(unit,"(1d16.8)") rho_air
-        read(unit,"(1d16.8)") ambient_pressure
+        if (.not.module_setup) then
 
-        ! Forcing terms
-        read(unit,*) wind_forcing
-        read(unit,*) drag_law
-        if (.not.wind_forcing) drag_law = 0
-        select case(drag_law)
-            case(0)
-                wind_drag => no_wind_drag
-            case(1)
-                wind_drag => garret_wind_drag
-            case(2)
-                wind_drag => powell_wind_drag
-            case default
-                stop "*** ERROR *** Invalid wind drag law."
-        end select
-        read(unit,*) pressure_forcing
-        read(unit,*)
+            ! Open file
+            if (present(data_file)) then
+                call opendatafile(unit,data_file)
+            else
+                call opendatafile(unit,'surge.data')
+            endif
+            
+            ! Read in parameters
+            ! Physics
+            ! TODO: These are currently set directly in the types, should change!
+            read(unit,"(1d16.8)") rho_air
+            read(unit,"(1d16.8)") ambient_pressure
 
-        ! Set some parameters
-        read(unit, '(i2)') wind_index
-        read(unit, '(i2)') pressure_index
-        read(unit, *)
-        
-        ! AMR parameters
-        read(unit,'(a)') line
-        if (line(1:1) == "F") then
-            allocate(wind_refine(1))
-            wind_refine(1) = huge(1.d0)
-        else
-            allocate(wind_refine(get_value_count(line)))
-            read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
+            ! Forcing terms
+            read(unit,*) wind_forcing
+            read(unit,*) drag_law
+            if (.not.wind_forcing) drag_law = 0
+            select case(drag_law)
+                case(0)
+                    wind_drag => no_wind_drag
+                case(1)
+                    wind_drag => garret_wind_drag
+                case(2)
+                    wind_drag => powell_wind_drag
+                case default
+                    stop "*** ERROR *** Invalid wind drag law."
+            end select
+            read(unit,*) pressure_forcing
+            read(unit,*)
+
+            ! Set some parameters
+            read(unit, '(i2)') wind_index
+            read(unit, '(i2)') pressure_index
+            read(unit, *)
+            
+            ! AMR parameters
+            read(unit,'(a)') line
+            if (line(1:1) == "F") then
+                allocate(wind_refine(1))
+                wind_refine(1) = huge(1.d0)
+            else
+                allocate(wind_refine(get_value_count(line)))
+                read(line,*) (wind_refine(i),i=1,size(wind_refine,1))
+            end if
+            read(unit,'(a)') line
+            if (line(1:1) == "F") then
+                allocate(R_refine(1))
+                R_refine(1) = -huge(1.d0)
+            else
+                allocate(R_refine(get_value_count(line)))
+                read(line,*) (R_refine(i),i=1,size(R_refine,1))
+            end if
+            read(unit,*)
+            
+            ! Storm Setup 
+            read(unit,"(i1)") storm_type
+            read(unit,"(d16.8)") landfall
+            read(unit,*) storm_file_path
+            
+            close(unit)
+
+            ! Print log messages
+            open(unit=log_unit, file="fort.surge", status="unknown", action="write")
+            
+            write(log_unit,"(a,1d16.8)") "rho_air =          ",rho_air
+            write(log_unit,"(a,1d16.8)") "ambient_pressure = ",ambient_pressure
+            write(log_unit,*) ""
+
+    !         write(log_unit,"(a,1d16.8)") "wind_tolerance =     ", wind_tolerance
+    !         write(log_unit,"(a,1d16.8)") "pressure_tolerance = ", pressure_tolerance
+    !         write(log_unit,*) ""
+
+            write(log_unit,*) "Wind Nesting = ", (wind_refine(i),i=1,size(wind_refine,1))
+            write(log_unit,*) "R Nesting = ", (R_refine(i),i=1,size(R_refine,1))
+            write(log_unit,*) ""
+
+            write(log_unit,*) "Storm Type = ", storm_type
+            write(log_unit,*) "  file = ", storm_file_path
+
+            ! Read in hurricane track data from file
+            if (storm_type == 0) then
+                ! No storm will be used
+            else if (storm_type == 1) then
+                ! Track file with Holland reconstruction
+                call set_holland_storm(storm_file_path,holland_storm,log_unit)
+                ! Set rho_air and ambient pressure in storms
+            else if (storm_type == 2) then
+                ! constant track and holland reconstruction
+                call set_constant_storm(storm_file_path,constant_storm,log_unit)
+                ! Set rho_air and ambient pressure in storms
+            else if (storm_type == 3) then
+                ! Stommel wind field
+                call set_stommel_storm(storm_file_path,stommel_storm,log_unit)
+            else
+                print *,"Invalid storm type ",storm_type," provided."
+                stop
+            endif
+
+            close(log_unit)
+
+            module_setup = .true.
         end if
-        read(unit,'(a)') line
-        if (line(1:1) == "F") then
-            allocate(R_refine(1))
-            R_refine(1) = -huge(1.d0)
-        else
-            allocate(R_refine(get_value_count(line)))
-            read(line,*) (R_refine(i),i=1,size(R_refine,1))
-        end if
-        read(unit,*)
-        
-        ! Storm Setup 
-        read(unit,"(i1)") storm_type
-        read(unit,"(d16.8)") landfall
-        read(unit,*) storm_file_path
-        
-        close(unit)
-
-        ! Print log messages
-        open(unit=log_unit, file="fort.surge", status="unknown", action="write")
-        
-        write(log_unit,"(a,1d16.8)") "rho_air =          ",rho_air
-        write(log_unit,"(a,1d16.8)") "ambient_pressure = ",ambient_pressure
-        write(log_unit,*) ""
-
-!         write(log_unit,"(a,1d16.8)") "wind_tolerance =     ", wind_tolerance
-!         write(log_unit,"(a,1d16.8)") "pressure_tolerance = ", pressure_tolerance
-!         write(log_unit,*) ""
-
-        write(log_unit,*) "Wind Nesting = ", (wind_refine(i),i=1,size(wind_refine,1))
-        write(log_unit,*) "R Nesting = ", (R_refine(i),i=1,size(R_refine,1))
-        write(log_unit,*) ""
-
-        write(log_unit,*) "Storm Type = ", storm_type
-        write(log_unit,*) "  file = ", storm_file_path
-
-        ! Read in hurricane track data from file
-        if (storm_type == 0) then
-            ! No storm will be used
-        else if (storm_type == 1) then
-            ! Track file with Holland reconstruction
-            call set_holland_storm(storm_file_path,holland_storm,log_unit)
-            ! Set rho_air and ambient pressure in storms
-        else if (storm_type == 2) then
-            ! constant track and holland reconstruction
-            call set_constant_storm(storm_file_path,constant_storm,log_unit)
-            ! Set rho_air and ambient pressure in storms
-        else if (storm_type == 3) then
-            ! Stommel wind field
-            call set_stommel_storm(storm_file_path,stommel_storm,log_unit)
-        else
-            print *,"Invalid storm type ",storm_type," provided."
-            stop
-        endif
-
-        close(log_unit)
 
     end subroutine set_storm
 

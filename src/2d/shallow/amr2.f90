@@ -91,9 +91,18 @@ program amr2
 
     use amr_module, only: t0, tstart_thisrun
 
-    use regions_module, only: set_regions
+    ! Data modules
+    use geoclaw_module, only: set_geo
+    use topo_module, only: read_topo_settings, read_dtopo_settings
+    use qinit_module, only: set_qinit
+    use fixedgrids_module, only: set_fixed_grids
+    use refinement_module, only: set_refinement
+    use storm_module, only: set_storm
+    use friction_module, only: setup_variable_friction
     use gauges_module, only: set_gauges, num_gauges
+    use regions_module, only: set_regions
     use fgmax_module, only: set_fgmax, FG_num_fgrids
+    use multilayer_module, only: set_multilayer
 
     implicit none
 
@@ -104,7 +113,6 @@ program amr2
     integer :: omp_get_max_threads, maxthreads
     real(kind=8) :: time, ratmet, cut, dtinit, dt_max
     logical :: vtime, rest, output_t0    
-    integer :: num_fgmax
 
     ! Timing variables
     integer :: clock_start, clock_finish, clock_rate, ttotal
@@ -165,7 +173,7 @@ program amr2
         read(inunit,*) nout
         allocate(tout(nout))
         read(inunit,*) (tout(i), i=1,nout)
-        output_t0 = (tout(1) == t0)
+        output_t0 = (abs(tout(1) - t0) < 1e-15)
         ! Move output times down one index
         if (output_t0) then
             nout = nout - 1
@@ -368,13 +376,6 @@ program amr2
     ! Finished with reading in parameters
     ! ==========================================================================
 
-    ! Read in region and gauge data
-    call set_regions('regions.data')
-    call set_gauges(rest,'gauges.data')
-
-    ! New fixed grid routines to keep track of max over computation:
-    call set_fgmax('fgmax.data')
-
     ! Look for capacity function via auxtypes:
     mcapa = 0
     do iaux = 1, naux
@@ -458,6 +459,19 @@ program amr2
         ! Call user routine to set up problem parameters:
         call setprob()
 
+        ! Non-user defined setup routine
+        call set_geo()                    ! sets basic parameters g and coord system
+        call set_refinement()             ! sets refinement control parameters
+        call read_dtopo_settings()        ! specifies file with dtopo from earthquake
+        call read_topo_settings()         ! specifies topography (bathymetry) files
+        call set_qinit()                  ! specifies file with dh if this used instead
+        call set_fixed_grids()            ! Fixed grid settings
+        call setup_variable_friction()    ! Variable friction parameter
+        call set_multilayer()             ! Set multilayer SWE parameters
+        call set_regions()                ! Set refinement regions
+        call set_gauges(rest, nvar)       ! Set gauge output
+        call set_fgmax()
+
     else
 
         open(outunit, file=outfile, status='unknown', form='formatted')
@@ -466,6 +480,19 @@ program amr2
 
         ! Call user routine to set up problem parameters:
         call setprob()
+
+        ! Non-user defined setup routine
+        call set_geo()                    ! sets basic parameters g and coord system
+        call set_refinement()             ! sets refinement control parameters
+        call read_dtopo_settings()        ! specifies file with dtopo from earthquake
+        call read_topo_settings()         ! specifies topography (bathymetry) files
+        call set_qinit()                  ! specifies file with dh if this used instead
+        call set_fixed_grids()            ! Fixed grid settings
+        call setup_variable_friction()    ! Variable friction parameter
+        call set_multilayer()             ! Set multilayer SWE parameters
+        call set_regions()                ! Set refinement regions
+        call set_gauges(rest, nvar)       ! Set gauge output
+        call set_fgmax()
 
         cflmax = 0.d0   ! otherwise use previously heckpointed val
 

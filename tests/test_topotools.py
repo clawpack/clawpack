@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import shutil
+import urllib2
 
 import numpy
 
@@ -187,7 +188,7 @@ def test_read_write_topo_bowl_hill():
 
 
 def test_netcdf():
-    r"""Test NetCDF formatted topography reading"""
+    r"""Test Python NetCDF formatted topography reading"""
 
     temp_path = tempfile.mkdtemp()
 
@@ -197,7 +198,7 @@ def test_netcdf():
                        '5f675256c043e59e5065f9f3b5bdd41c2901702c/src/python/',
                        'geoclaw/tests/kahului_sample_1s.tt2'))
         clawpack.clawutil.data.get_remote_file(url, output_dir=temp_path,
-            force=True)
+                                                    force=True)
         
         # Paths
         local_path = os.path.join(temp_path, os.path.basename(url))
@@ -224,8 +225,16 @@ def test_netcdf():
         shutil.copytree(temp_path, os.path.join(os.getcwd()),
             'test_read_netcdf')
         raise e
+
     except ImportError as e:
         raise nose.SkipTest("Skipping test since NetCDF support not found.")
+
+    except RuntimeError as e:
+        raise nose.SkipTest("NetCDF topography test skipped due to " +
+                            "runtime failure.")
+    except urllib2.URLError:
+        raise nose.SkipTest("Could not fetch remote file, skipping test.")
+    
     finally:
         shutil.rmtree(temp_path)
 
@@ -253,6 +262,10 @@ def test_get_remote_file():
     except AssertionError as e:
         shutil.copy(local_path, os.path.join(os.getcwd(), "remote_file.tt2"))
         raise e
+
+    except urllib2.URLError:
+        raise nose.SkipTest("Could not fetch remote file, skipping test.")
+
     finally:
         shutil.rmtree(temp_path)
 

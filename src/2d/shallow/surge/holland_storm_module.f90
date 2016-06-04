@@ -37,6 +37,8 @@ module holland_storm_module
 
     end type holland_storm_type
 
+    logical, private :: module_setup = .false.
+
     ! Interal tracking variables for storm
     real(kind=8), private :: A,B
     integer, private :: last_storm_index
@@ -89,171 +91,175 @@ contains
         character(len=*), parameter :: NOAA_FORMAT = "(8x,i4,i2,i2,i2,6x,a4,"//&
                             "2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,47x,i3,2x,i3)"
 
-
-        ! Storm type only works on lat-long coordinate systems
-        if (coordinate_system /= 2) then
-            stop "Holland storm type does only works on lat-long coordinates."
-        endif
-
-        ! Open data file
-        if (present(storm_data_path)) then
-            print *,'Reading storm date file ',storm_data_path
-            open(unit=data_file,file=storm_data_path,status='old', &
-                 action='read',iostat=io_status)
-        else
-            print *,'Reading storm date file ./storm.data'
-            open(unit=data_file,file="./storm.data",status='old', &
-                 action='read',iostat=io_status)
-        endif
-        if (io_status /= 0) then
-            print "(a,i2)", "Error opening storm data file. status = ", io_status
-            stop 
-        endif            
-
-        ! Count number of data lines
-        num_casts = 0
-        last_time = -rinfinity
-        do
-            if (file_format == "NOAA") then
-                read(data_file,fmt=NOAA_FORMAT,iostat=io_status) year,month,day, &
-                    hour,cast_type,forecast,lat,direction(2),lon,direction(1), &
-                    max_wind_speed,central_pressure,RRP,max_wind_radius
-            else if (file_format == "JAM") then
-                ! JAM may be missing RRP parameter, may need to set this based
-                ! on other data in the file.  It is only used in the field 
-                ! ramping function so it might not be an issue
-                read(data_file,fmt=JMA_FORMAT,iostat=io_status) year, month, day, &
-                        hour, lat, lon, central_pressure, max_wind_speed, max_wind_radius
-            else
-                print *,"ERROR - Unrecognized storm data file format."
-                stop
-            endif
-
-            ! Exit loop if we ran into an error or we reached the end of the file
-            if (io_status /= 0) exit
-
-            ! Skip counting this line if time is repeated
-            forecast_time = date_to_seconds(year,month,day,hour,0,0.d0)
-            if (abs(forecast_time - last_time) >= 1.8d3) then
-                num_casts = num_casts + 1
-            endif
-            last_time = forecast_time
-        end do
-        rewind(data_file)
-
-        write(log_unit,"('Forecasts = ',i3)") num_casts
-
-        ! Allocate storm parameter file variables
-        allocate(storm%track(3,num_casts))
-        allocate(storm%max_wind_speed(num_casts))
-        allocate(storm%max_wind_radius(num_casts))
-        allocate(storm%central_pressure(num_casts))
-        allocate(storm%rrp(num_casts))
-
-        ! Now re-read the file's contents
-        i = 0
-        do while (i < num_casts)
-            if (file_format == "NOAA") then
-                read(data_file,fmt=NOAA_FORMAT) year,month,day,hour,cast_type, &
-                    forecast,lat,direction(2),lon,direction(1),max_wind_speed, &
-                    central_pressure,RRP,max_wind_radius
-            else if (file_format == "JAM") then
-                read(data_file,fmt=JMA_FORMAT,iostat=io_status) year, month, day, &
-                        hour, lat, lon, central_pressure, max_wind_speed, max_wind_radius
-            else
-                print *,"ERROR - Unrecognized storm data file format."
-                stop
-            endif
-
-
-            ! Skip counting this line if time is repeated
-            forecast_time = date_to_seconds(year,month,day,hour,0,0.d0)
-            if (abs(forecast_time - last_time) < 1.8d3) then
-                cycle
-            endif
-            i = i + 1
-            last_time = forecast_time
-
-            ! Storm position
-            ! Conversions:
-            !  lon - Convert 10ths of degs to degs, depends on E,W
-            !  lat - Convert 10ths of degs to degs
-            storm%track(1,i) = date_to_seconds(year,month,day,hour,0,0.d0)
-            if (direction(1) == "E") then
-                storm%track(2,i) = real(lon,kind=8) / 10.d0
-            else
-                storm%track(2,i) = -real(lon,kind=8) / 10.d0
-            endif
-            if (direction(2) == "N") then
-                storm%track(3,i) = real(lat,kind=8) / 10.d0
-            else
-                storm%track(3,i) = -real(lat,kind=8) / 10.d0
-            endif
-
-            ! Storm intensity
-            ! Conversions:
-            !  max_wind_speed - Convert knots to m/s
-            !  max_wind_radius  - convert from nm to m
-            !  central_pressure - convert from mbar to Pa
-            !  Radius of last isobar contour - convert from nm to m
-            storm%max_wind_speed(i) = real(max_wind_speed,kind=8) * 0.51444444d0
-            storm%max_wind_radius(i) = real(max_wind_radius,kind=8) * 1.852000003180799d0 * 1000.d0
-            storm%central_pressure(i) = real(central_pressure,kind=8) * 100.d0
-            storm%rrp(i) = real(RRP,kind=8) * 1.852000003180799d0 * 1000.d0
-
-        enddo
-
-        ! Calculate storm speed 
-        allocate(storm%velocity(2,num_casts))
-        do i=1,num_casts - 1
-            ! Calculate velocity based on great circle distance between
-
-            ! locations of storm
-            x = storm%track(2:3,i)
-            y = storm%track(2:3,i+1)
-
-            dt = storm%track(1,i + 1) - storm%track(1,i)
-
-            ds = spherical_distance(x(1), 0.5d0 * (x(2) + y(2)), &
-                                    y(1), 0.5d0 * (x(2) + y(2)))
-            storm%velocity(1,i) = sign(ds / dt,y(1) - x(1))
-
+        if (.not. module_setup) then
             
-            ds = spherical_distance(0.5d0 * (x(1) + y(1)), x(2), &
-                                    0.5d0 * (x(1) + y(1)), y(2))
-            storm%velocity(2,i) = sign(ds / dt,y(2) - x(2))
-        end do
+            ! Storm type only works on lat-long coordinate systems
+            if (coordinate_system /= 2) then
+                stop "Holland storm type does only works on lat-long coordinates."
+            endif
 
-        ! Use last approximation for velocity point going forward
-        storm%velocity(:,num_casts) = storm%velocity(:,num_casts - 1)
+            ! Open data file
+            if (present(storm_data_path)) then
+                print *,'Reading storm date file ',storm_data_path
+                open(unit=data_file,file=storm_data_path,status='old', &
+                     action='read',iostat=io_status)
+            else
+                print *,'Reading storm date file ./storm.data'
+                open(unit=data_file,file="./storm.data",status='old', &
+                     action='read',iostat=io_status)
+            endif
+            if (io_status /= 0) then
+                print "(a,i2)", "Error opening storm data file. status = ", io_status
+                stop 
+            endif            
 
-        ! Record number of casts
-        storm%num_casts = num_casts
+            ! Count number of data lines
+            num_casts = 0
+            last_time = -rinfinity
+            do
+                if (file_format == "NOAA") then
+                    read(data_file,fmt=NOAA_FORMAT,iostat=io_status) year,month,day, &
+                        hour,cast_type,forecast,lat,direction(2),lon,direction(1), &
+                        max_wind_speed,central_pressure,RRP,max_wind_radius
+                else if (file_format == "JAM") then
+                    ! JAM may be missing RRP parameter, may need to set this based
+                    ! on other data in the file.  It is only used in the field 
+                    ! ramping function so it might not be an issue
+                    read(data_file,fmt=JMA_FORMAT,iostat=io_status) year, month, day, &
+                            hour, lat, lon, central_pressure, max_wind_speed, max_wind_radius
+                else
+                    print *,"ERROR - Unrecognized storm data file format."
+                    stop
+                endif
 
-        if (t0 < storm%track(1,1)) then
-            print *,t0,storm%track(1,1)
-            stop "Start time is before first forecast time."
-        endif
+                ! Exit loop if we ran into an error or we reached the end of the file
+                if (io_status /= 0) exit
 
-        ! This is used to speed up searching for correct storm data
-        last_storm_index = 2
-        last_storm_index = storm_index(t0,storm)
-        if (last_storm_index == -1) then
-            print *,"Forecast not found for time ",t0,'.'
-            stop
-        endif
+                ! Skip counting this line if time is repeated
+                forecast_time = date_to_seconds(year,month,day,hour,0,0.d0)
+                if (abs(forecast_time - last_time) >= 1.8d3) then
+                    num_casts = num_casts + 1
+                endif
+                last_time = forecast_time
+            end do
+            rewind(data_file)
 
-        ! Log everything to the surge log file
-        write(log_unit,*) ""
-        write(log_unit,*) "Storm Track and Strength"
-        write(log_unit,*) ""
-        do i=1,storm%num_casts
-            write(log_unit,"(8e26.16)") (storm%track(k,i),k=1,3),  &
-                                        (storm%velocity(k,i),k=1,2), &
-                                         storm%max_wind_radius(i), &
-                                         storm%max_wind_speed(i),  &
-                                         storm%central_pressure(i)
-        enddo
+            write(log_unit,"('Forecasts = ',i3)") num_casts
+
+            ! Allocate storm parameter file variables
+            allocate(storm%track(3,num_casts))
+            allocate(storm%max_wind_speed(num_casts))
+            allocate(storm%max_wind_radius(num_casts))
+            allocate(storm%central_pressure(num_casts))
+            allocate(storm%rrp(num_casts))
+
+            ! Now re-read the file's contents
+            i = 0
+            do while (i < num_casts)
+                if (file_format == "NOAA") then
+                    read(data_file,fmt=NOAA_FORMAT) year,month,day,hour,cast_type, &
+                        forecast,lat,direction(2),lon,direction(1),max_wind_speed, &
+                        central_pressure,RRP,max_wind_radius
+                else if (file_format == "JAM") then
+                    read(data_file,fmt=JMA_FORMAT,iostat=io_status) year, month, day, &
+                            hour, lat, lon, central_pressure, max_wind_speed, max_wind_radius
+                else
+                    print *,"ERROR - Unrecognized storm data file format."
+                    stop
+                endif
+
+
+                ! Skip counting this line if time is repeated
+                forecast_time = date_to_seconds(year,month,day,hour,0,0.d0)
+                if (abs(forecast_time - last_time) < 1.8d3) then
+                    cycle
+                endif
+                i = i + 1
+                last_time = forecast_time
+
+                ! Storm position
+                ! Conversions:
+                !  lon - Convert 10ths of degs to degs, depends on E,W
+                !  lat - Convert 10ths of degs to degs
+                storm%track(1,i) = date_to_seconds(year,month,day,hour,0,0.d0)
+                if (direction(1) == "E") then
+                    storm%track(2,i) = real(lon,kind=8) / 10.d0
+                else
+                    storm%track(2,i) = -real(lon,kind=8) / 10.d0
+                endif
+                if (direction(2) == "N") then
+                    storm%track(3,i) = real(lat,kind=8) / 10.d0
+                else
+                    storm%track(3,i) = -real(lat,kind=8) / 10.d0
+                endif
+
+                ! Storm intensity
+                ! Conversions:
+                !  max_wind_speed - Convert knots to m/s
+                !  max_wind_radius  - convert from nm to m
+                !  central_pressure - convert from mbar to Pa
+                !  Radius of last isobar contour - convert from nm to m
+                storm%max_wind_speed(i) = real(max_wind_speed,kind=8) * 0.51444444d0
+                storm%max_wind_radius(i) = real(max_wind_radius,kind=8) * 1.852000003180799d0 * 1000.d0
+                storm%central_pressure(i) = real(central_pressure,kind=8) * 100.d0
+                storm%rrp(i) = real(RRP,kind=8) * 1.852000003180799d0 * 1000.d0
+
+            enddo
+
+            ! Calculate storm speed 
+            allocate(storm%velocity(2,num_casts))
+            do i=1,num_casts - 1
+                ! Calculate velocity based on great circle distance between
+
+                ! locations of storm
+                x = storm%track(2:3,i)
+                y = storm%track(2:3,i+1)
+
+                dt = storm%track(1,i + 1) - storm%track(1,i)
+
+                ds = spherical_distance(x(1), 0.5d0 * (x(2) + y(2)), &
+                                        y(1), 0.5d0 * (x(2) + y(2)))
+                storm%velocity(1,i) = sign(ds / dt,y(1) - x(1))
+
+                
+                ds = spherical_distance(0.5d0 * (x(1) + y(1)), x(2), &
+                                        0.5d0 * (x(1) + y(1)), y(2))
+                storm%velocity(2,i) = sign(ds / dt,y(2) - x(2))
+            end do
+
+            ! Use last approximation for velocity point going forward
+            storm%velocity(:,num_casts) = storm%velocity(:,num_casts - 1)
+
+            ! Record number of casts
+            storm%num_casts = num_casts
+
+            if (t0 < storm%track(1,1)) then
+                print *,t0,storm%track(1,1)
+                stop "Start time is before first forecast time."
+            endif
+
+            ! This is used to speed up searching for correct storm data
+            last_storm_index = 2
+            last_storm_index = storm_index(t0,storm)
+            if (last_storm_index == -1) then
+                print *,"Forecast not found for time ",t0,'.'
+                stop
+            endif
+
+            ! Log everything to the surge log file
+            write(log_unit,*) ""
+            write(log_unit,*) "Storm Track and Strength"
+            write(log_unit,*) ""
+            do i=1,storm%num_casts
+                write(log_unit,"(8e26.16)") (storm%track(k,i),k=1,3),  &
+                                            (storm%velocity(k,i),k=1,2), &
+                                             storm%max_wind_radius(i), &
+                                             storm%max_wind_speed(i),  &
+                                             storm%central_pressure(i)
+            enddo
+
+            module_setup = .true.
+        end if
 
     end subroutine set_holland_storm
 
