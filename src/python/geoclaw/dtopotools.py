@@ -1382,6 +1382,33 @@ class SubFault(object):
                                             self._centers[0][1] 
                                                                  - up_strike[1])
 
+    def calculate_geometry_triangles(self):
+        r"""
+        Calculate geometry for triangular subfaults
+
+        uses *corners* to calculate *centers*, *longitude*, *latitude*,
+        *depth*, *strike*, *dip*, *rake*, *length*, *width*.
+
+        sets *coordinate_specification* as "triangular"
+
+        **Note: ** calculate_geometry() goes in *roughly* the opposite 
+        direction
+        """
+
+        if self.coordinate_specification == 'triangular':
+            
+            v1 = self.corners[0]
+            v2 = self.corners[1]
+            v3 = self.corners[2]
+
+
+            print('got triangular')
+        else:
+            raise ValueError("Invalid coordinate specification %s." \
+                                                % self.coordinate_specification)
+
+
+
     
     def okada(self, x, y):
         r"""
