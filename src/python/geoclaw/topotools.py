@@ -788,13 +788,24 @@ class Topography(object):
             
         return num_cells
 
-    def write(self, path, no_data_value=None, topo_type=None, masked=True):
+    def write(self, path, no_data_value=None, topo_type=None, masked=True, 
+                header_style='geoclaw'):
         r"""Write out a topography file to path of type *topo_type*.
 
         Writes out a topography file of topo type specified with *topo_type* or
         inferred from the output file's extension, defaulting to 3, to path
         from data in Z.  The rest of the arguments are used to write the header
         data.
+
+        :Input:
+         - *path* (str)  - file to write
+         - *no_data_value* - values used to indicate missing data
+         - *topo_type* (int) - GeoClaw format topo_type 
+         - *masked* (bool) - unused??
+         - *header_style* (str) - indicates format of header lines
+             'geoclaw' or 'default'  ==> write value then label 
+             'arcgis' or 'asc' ==> write label then value  
+                        (needed for .asc files in ArcGIS)
 
         """
 
@@ -844,19 +855,29 @@ class Topography(object):
         elif topo_type == 2 or topo_type == 3:
             with open(path, 'w') as outfile:
                 # Write out header
-                outfile.write('%6i                              ncols\n' % self.Z.shape[1])
-                outfile.write('%6i                              nrows\n' % self.Z.shape[0])
-                outfile.write('%22.15e              xlower\n' % self.extent[0])
-                outfile.write('%22.15e              ylower\n' % self.extent[2])
-                if abs(self.delta[0] - self.delta[1])/self.delta[0] < 1e-8:
-                    # write only dx in usual case:
-                    outfile.write('%22.15e              cellsize\n' \
-                            % self.delta[0])
+                if header_style in ['geoclaw','default']:
+                    outfile.write('%6i                              ncols\n' % self.Z.shape[1])
+                    outfile.write('%6i                              nrows\n' % self.Z.shape[0])
+                    outfile.write('%22.15e              xlower\n' % self.extent[0])
+                    outfile.write('%22.15e              ylower\n' % self.extent[2])
+                    if abs(self.delta[0] - self.delta[1])/self.delta[0] < 1e-8:
+                        # write only dx in usual case:
+                        outfile.write('%22.15e              cellsize\n' \
+                                % self.delta[0])
+                    else:
+                        # write both dx and dy if they differ:
+                        outfile.write('%22.15e    %22.15e          cellsize\n' \
+                                % (self.delta[0], self.delta[1]))
+                    outfile.write('%10i                          nodata_value\n' % no_data_value)
+                elif header_style in ['arcgis','asc']:
+                    outfile.write('ncols  %6i\n' % self.Z.shape[1])
+                    outfile.write('nrows  %6i\n' % self.Z.shape[0]) 
+                    outfile.write('xlower %22.15e\n' % self.extent[0])
+                    outfile.write('ylower %22.15e\n' % self.extent[2])
+                    outfile.write('cellsize %22.15e\n'  % self.delta[0])
+                    outfile.write('nodata_value  %10i\n' % no_data_value)
                 else:
-                    # write both dx and dy if they differ:
-                    outfile.write('%22.15e    %22.15e          cellsize\n' \
-                            % (self.delta[0], self.delta[1]))
-                outfile.write('%10i                          nodata_value\n' % no_data_value)
+                    raise ValueError("*** Unrecognized header_style")
 
                 masked_Z = isinstance(self.Z, numpy.ma.MaskedArray)
 
@@ -1000,7 +1021,7 @@ class Topography(object):
                                                   0.5:[0.8,1.0,0.5],
                                                   1.0:[0.8,0.5,0.2]})
             sea_cmap = plt.get_cmap('Blues_r')
-            if topo_extent[0] > 0.0:
+            if topo_extent[0] >= 0.0:
                 cmap = land_cmap
                 norm = colors.Normalize(vmin=0.0, vmax=topo_extent[1])
             elif topo_extent[1] <= 0.0:

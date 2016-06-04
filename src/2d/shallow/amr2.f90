@@ -303,12 +303,12 @@ program amr2
         ! Never checkpoint:
         checkpt_interval = iinfinity
 
-    else if (checkpt_style == 2) then
+    else if (abs(checkpt_style) == 2) then
         read(inunit,*) nchkpt
         allocate(tchk(nchkpt))
         read(inunit,*) (tchk(i), i=1,nchkpt)
 
-    else if (checkpt_style == 3) then
+    else if (abs(checkpt_style) == 3) then
         ! Checkpoint every checkpt_interval steps on coarse grid
         read(inunit,*) checkpt_interval
     endif
