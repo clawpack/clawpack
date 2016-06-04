@@ -550,6 +550,15 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # ========================================================================
     #  Figures for gauges
     # ========================================================================
+    def plot_regression_gauges(cd, plot_var=(3, 7)):
+        import clawpack.pyclaw.gauges as gauges
+        import numpy
+
+        fig = plt.gcf()
+        gauge = gauges.GaugeSolution(cd.gaugeno, path="./regression_data")
+        for (i, n) in enumerate(plot_var):
+            fig.axes[i].plot(gauge.t, gauge.q[n, :], 'k-')
+
     # Top
     plotfigure = plotdata.new_plotfigure(name='Surface & topo', figno=300, \
                     type='each_gauge')
@@ -559,30 +568,25 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = [0.0,1.0]
-    plotaxes.ylimits = top_surface_limits
+    # plotaxes.ylimits = top_surface_limits
     plotaxes.title = 'Top Surface'
+    plotaxes.axescmd = "subplot(1, 2, 1)"
 
-    # Plot surface as blue curve:
+    # Plot surfaces:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
     plotitem.plot_var = 3
-    plotitem.plotstyle = 'b-'
+    plotitem.plotstyle = 'ro'
 
     # Bottom
-    plotfigure = plotdata.new_plotfigure(name='Bottom Surface Gauge',
-                                         type='each_gauge')
-    plotfigure.show = True
-    plotfigure.clf_each_gauge = True
-
-    # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = [0.0,1.0]
-    # plotaxes.ylimits = internal_surface_limits
     plotaxes.title = 'Bottom Surface'
+    plotaxes.axescmd = "subplot(1, 2, 2)"
+    plotaxes.afteraxes = plot_regression_gauges
 
-    # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
     plotitem.plot_var = 7
-    plotitem.plotstyle = 'b-'
+    plotitem.plotstyle = 'ro'
 
     # Plot topo as green curve:
     # plotitem = plotaxes.new_plotitem(plot_type='1d_plot')

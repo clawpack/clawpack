@@ -14,6 +14,7 @@ import tempfile
 import time
 
 import numpy
+import nose
 
 import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
@@ -76,9 +77,15 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             # Assume that NetCDF is not installed and move on
             self.netcdf_passed = False
             self.success = True
-            self.stdout.write("NetCDF topography test skipped due to failure" + 
-                              "to build test program.")
+            raise nose.SkipTest("NetCDF topography test skipped due to " + 
+                                "failure to build test program.")
 
+        except RuntimeError as e:
+            print e.message
+            self.netcdf_passed = False
+            self.success = True
+            raise nose.SkipTest("NetCDF topography test skipped due to " +
+                                "runtime failure.")
         else:
             self.build_executable()
 
@@ -126,50 +133,9 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             self.run_code()
 
             # Perform tests
-            self.check_gauges(save=save, indices=(2, 3), tolerance=1e-4)
-            self.success = True
-
-
-    def check_gauges(self, save=False, gauge_num=1, indices=[0], 
-                           regression_data_path="regression_data.txt",
-                           tolerance=1e-14):
-        r"""Basic test to assert gauge equality
-
-        :Input:
-         - *save* (bool) - If *True* will save the output from this test to 
-           the file *regresion_data.txt*.  Default is *False*.
-         - *indices* (tuple) - Contains indices to compare in the gague 
-           comparison.  Defaults to *(2, 3)*.
-         - *regression_data_path* (path) - Path to the regression test data.
-           Defaults to 'regression_data.txt'.
-        """
-
-        # Get gauge data
-        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
-        data_sum = []
-        gauge_numbers = numpy.array(data[:, 0], dtype=int)
-        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
-        for index in indices:
-            data_sum.append(data[gauge_indices, index].sum())
-
-        # Get (and save) regression comparison data
-        regression_data_file = os.path.join(self.test_path,
-                                            regression_data_path)
-        if save:
-            numpy.savetxt(regression_data_file, data)
-        regression_data = numpy.loadtxt(regression_data_file)
-        regression_sum = []
-        gauge_numbers = numpy.array(data[:, 0], dtype=int)
-        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
-        for index in indices:
-            regression_sum.append(regression_data[gauge_indices, index].sum())
-        # regression_sum = regression_data
-
-        # Compare data
-        assert numpy.allclose(data_sum, regression_sum, tolerance), \
-                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
-        assert numpy.allclose(data, regression_data, tolerance), \
-                "Full gauge match failed."
+            self.check_gauges(save=save, gauge_id=1, indices=(2, 3), 
+                              tolerance=1e-4)
+        self.success = True
 
 
     def tearDown(self):

@@ -71,7 +71,7 @@ class GeoClawRegressionTest(clawpack.clawutil.test.ClawpackRegressionTest):
         data_sum = numpy.array([fg.h.sum(), fg.s.sum()])
 
         # Get (and save) regression comparison data
-        regression_data_file = os.path.join(self.test_path, \
+        regression_data_file = os.path.join(self.test_path, "regression_data",
                 "regression_data_fgmax.txt")
         if save:
             numpy.savetxt(regression_data_file, data_sum)

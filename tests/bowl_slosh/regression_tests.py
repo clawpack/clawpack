@@ -54,7 +54,7 @@ class BowlSloshTest(test.GeoClawRegressionTest):
         self.run_code()
 
         # Perform tests
-        self.check_gauges(save=save, indices=(2, 3))
+        self.check_gauges(save=save, gauge_id=1, indices=(2, 3))
         self.check_fgmax(save=save)
         self.success = True
 
