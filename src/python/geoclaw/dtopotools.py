@@ -1037,12 +1037,20 @@ class Fault(object):
     
         for subfault in self.subfaults:
 
-            x_top = subfault.centers[0][0]
-            y_top = subfault.centers[0][1]
-            depth_top = subfault.centers[0][2]
-            x_bottom = subfault.centers[2][0]
-            y_bottom = subfault.centers[2][1]
-            depth_bottom = subfault.centers[2][2]
+            if subfault.coordinate_specification == 'triangular':
+                x_top = subfault.centers[0][0]
+                y_top = subfault.centers[0][1]
+                depth_top = subfault.centers[0][2]
+                x_bottom = subfault.centers[1][0]
+                y_bottom = subfault.centers[1][1]
+                depth_bottom = subfault.centers[1][2]
+            else:
+                x_top = subfault.centers[0][0]
+                y_top = subfault.centers[0][1]
+                depth_top = subfault.centers[0][2]
+                x_bottom = subfault.centers[2][0]
+                y_bottom = subfault.centers[2][1]
+                depth_bottom = subfault.centers[2][2]
     
             # Plot planes in x-z and y-z to see depths:
             axes[0].plot([x_top, x_bottom], [-depth_top, -depth_bottom])
