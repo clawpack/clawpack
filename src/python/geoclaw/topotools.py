@@ -789,7 +789,7 @@ class Topography(object):
         return num_cells
 
     def write(self, path, topo_type=None, no_data_value=None, masked=True, 
-                header_style='geoclaw', Z_format="%9.3f"):
+                header_style='geoclaw', Z_format="%15.7e"):
         r"""Write out a topography file to path of type *topo_type*.
 
         Writes out a topography file of topo type specified with *topo_type* or
@@ -800,6 +800,9 @@ class Topography(object):
         :Input:
          - *path* (str)  - file to write
          - *topo_type* (int) - GeoClaw format topo_type 
+           **Note:** this is second positional argument, agreeing with
+           the read function in this class.  It was the third argument in
+           GeoClaw version 5.3.1 and earlier.  
          - *no_data_value* - values used to indicate missing data
          - *masked* (bool) - unused??
          - *header_style* (str) - indicates format of header lines
@@ -807,9 +810,14 @@ class Topography(object):
              'arcgis' or 'asc' ==> write label then value  
                         (needed for .asc files in ArcGIS)
          - *Z_format* (str) - string format to use for Z values
-           The default format "%9.3f" gives mm precision and gives a
+           The default format "%15.7e" gives at least millimeter precision
+           for topography with abs(Z) < 10000 and results in
            smaller files than the previous default of "%22.15e" used in
-           GeoClaw version 5.3.1 and earlier.
+           GeoClaw version 5.3.1 and earlier.  A shorter format can be used
+           if the user knows there are fewer significant digits, e.g.
+           etopo1 data is integers and so has a resolution of 1 meter.
+           In this case a cropped or coarsened version might be written
+           with `Z_format = "%7i"`, for example.
 
         """
 
