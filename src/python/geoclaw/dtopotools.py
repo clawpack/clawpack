@@ -919,22 +919,49 @@ class Fault(object):
         y_ave = 0.
         for subfault in self.subfaults:
 
-            x_top = subfault.centers[0][0]
-            y_top = subfault.centers[0][1]
-            x_centroid = subfault.centers[1][0]
-            y_centroid = subfault.centers[1][1]
-            x_corners = [subfault.corners[2][0],
-                         subfault.corners[3][0],
-                         subfault.corners[0][0],
-                         subfault.corners[1][0],
-                         subfault.corners[2][0]]
-            y_corners = [subfault.corners[2][1],
-                         subfault.corners[3][1],
-                         subfault.corners[0][1],
-                         subfault.corners[1][1],
-                         subfault.corners[2][1]]
+            if subfault.coordinate_specification == 'triangular':
+                x_top = subfault.centers[0][0]
+                y_top = subfault.centers[0][1]
+
+                x_centroid = (subfault.corners[0][0] \
+                            + subfault.corners[1][0] \
+                            + subfault.corners[2][0]) / 3.
+                y_centroid = (subfault.corners[0][1] \
+                            + subfault.corners[1][1] \
+                            + subfault.corners[2][1]) / 3.
+
+                x_corners = [subfault.corners[2][0],
+                             subfault.corners[0][0],
+                             subfault.corners[1][0],
+                             subfault.corners[2][0]]
+
+                y_corners = [subfault.corners[2][1],
+                             subfault.corners[0][1],
+                             subfault.corners[1][1],
+                             subfault.corners[2][1]]
     
-            y_ave += y_centroid
+                y_ave += y_centroid
+
+            else:
+                x_top = subfault.centers[0][0]
+                y_top = subfault.centers[0][1]
+
+                x_centroid = subfault.centers[1][0]
+                y_centroid = subfault.centers[1][1]
+
+                x_corners = [subfault.corners[2][0],
+                             subfault.corners[3][0],
+                             subfault.corners[0][0],
+                             subfault.corners[1][0],
+                             subfault.corners[2][0]]
+
+                y_corners = [subfault.corners[2][1],
+                             subfault.corners[3][1],
+                             subfault.corners[0][1],
+                             subfault.corners[1][1],
+                             subfault.corners[2][1]]
+    
+                y_ave += y_centroid
     
     
             # Plot projection of planes to x-y surface:
@@ -1394,18 +1421,18 @@ class SubFault(object):
         **Note: ** calculate_geometry() goes in *roughly* the opposite 
         direction
         """
-        import pdb
 
         if self.coordinate_specification == 'triangular':
             
-            x1 = numpy.array(self.corners[0])
-            x2 = numpy.array(self.corners[1])
-            x3 = numpy.array(self.corners[2])
+            x = numpy.zeros((3,3))
+            x[:,0] = numpy.array(self.corners[0])
+            x[:,1] = numpy.array(self.corners[1])
+            x[:,2] = numpy.array(self.corners[2])
 
             # compute strike and dip direction
             e3 = numpy.array([0.,0.,1.])
-            v1 = x2 - x1
-            v2 = x3 - x1
+            v1 = x[:,1] - x[:,0]
+            v2 = x[:,2] - x[:,0]
             
             normal = numpy.cross(v1,v2)
             area = numpy.linalg.norm(normal) / 2.
@@ -1426,20 +1453,23 @@ class SubFault(object):
             self.rake = 90.     # set default rake to 90 degrees
 
             # find the center line
-            xx1 = (x2 + x3) / 2. # opposite a
-            xx2 = (x1 + x3) / 2. # opposite b
-            xx3 = (x1 + x2) / 2. # opposite c
+            xx = numpy.zeros((3,3))
+            xx[:,0] = (x[:,1] + x[:,2]) / 2. # opposite a
+            xx[:,1] = (x[:,0] + x[:,2]) / 2. # opposite b
+            xx[:,2] = (x[:,0] + x[:,1]) / 2. # opposite c
 
-            i = numpy.argmin([xx1[2],xx2[2],xx3[2])
-                    # okay probably need to make x1,x2,x3 into 2D arrays
-                    # to use indexing...
+            i = numpy.argmin(xx[2,:])
 
-            #self._centers = [, \
-            #                 [None, None, None]] 
+            self._centers = [x[:,i].tolist(),\
+                             xx[:,i].tolist()]
 
-            self.longitude = (x1[0] + x2[0] + x3[0]) / 3.
-            self.latitude = (x1[1] + x2[1] + x3[1]) / 3.
-            self.depth = (x1[2] + x2[2] + x3[2]) / 3.
+            if x[2,i] <= xx[2,i]:
+                self._centers.reverse()
+
+            xcenter = numpy.mean(xx, axis=1)
+            self.longitude = xcenter[0]
+            self.latitude = xcenter[1]
+            self.depth = xcenter[2]
 
             # length and width are set to sqrt(area): tmp sol
             self.length = numpy.sqrt(area)
@@ -1449,7 +1479,6 @@ class SubFault(object):
         else:
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
-
 
 
     
