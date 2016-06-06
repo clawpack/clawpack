@@ -1455,8 +1455,12 @@ class SubFault(object):
 
             tan2 = numpy.cross(tan1,normal)
             tan2 = tan2 / numpy.linalg.norm(tan2)   # tangent in dip direction
+            
+            if tan1[1] == 0.:
+                strike_rad = numpy.pi/2.
+            else:
+                strike_rad = numpy.arctan(tan1[0]/tan1[1]) 
 
-            strike_rad = numpy.arctan(tan1[0]/tan1[1]) 
             dip_rad = numpy.arccos(numpy.dot(tan2,-e3))
             
             # convert to degrees
