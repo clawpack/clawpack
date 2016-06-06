@@ -920,8 +920,6 @@ class Fault(object):
         for subfault in self.subfaults:
 
             if subfault.coordinate_specification == 'triangular':
-                x_top = subfault.centers[0][0]
-                y_top = subfault.centers[0][1]
 
                 x_centroid = (subfault.corners[0][0] \
                             + subfault.corners[1][0] \
@@ -929,6 +927,12 @@ class Fault(object):
                 y_centroid = (subfault.corners[0][1] \
                             + subfault.corners[1][1] \
                             + subfault.corners[2][1]) / 3.
+                
+                #x_top = subfault.centers[0][0]
+                #y_top = subfault.centers[0][1]
+                gamma = (subfault.strike + 90.)*numpy.pi/180. 
+                x_top = x_centroid + subfault.length/4.*numpy.cos(gamma)
+                y_top = y_centroid + subfault.length/4.*numpy.sin(gamma)
 
                 x_corners = [subfault.corners[2][0],
                              subfault.corners[0][0],
