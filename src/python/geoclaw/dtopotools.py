@@ -1202,6 +1202,13 @@ class SubFault(object):
             self.calculate_geometry()
         return self._centers
 
+    @property
+    def gauss_pts(self):
+        r"""Coordinates along the center-line of the fault plane."""
+        if self._gauss_pts is None:
+            self._gauss_pts = self._get_gauss_pts(self.n_gauss_pts)
+        return self._gauss_pts
+
     def __init__(self):
         r"""SubFault initialization routine.
         
@@ -1240,6 +1247,8 @@ class SubFault(object):
 
         self._centers = None
         self._corners = None
+        self._gauss_pts = None
+        self.n_gauss_pts = 10
 
 
     def convert_to_standard_units(self, input_units, verbose=False):
@@ -1447,21 +1456,20 @@ class SubFault(object):
             v2 = x[:,2] - x[:,0]
             
             normal = numpy.cross(v1,v2)
-            area = numpy.linalg.norm(normal) / 2.
-            tan1 = numpy.cross(e3,normal)   # tangent in strike direction
-            
-            if (tan1[1] < 0):
-                tan1 = -tan1
+            if (normal[2] < 0):
+                normal = -normal
 
-            tan2 = numpy.cross(tan1,normal)
-            tan2 = tan2 / numpy.linalg.norm(tan2)   # tangent in dip direction
+            area = numpy.linalg.norm(normal) / 2.
+            strikev = numpy.cross(e3,normal)   # vector in strike direction
+            dipv = numpy.cross(strikev,normal) # vector in dip direction
             
-            if tan1[1] == 0.:
+            if strikev[1] == 0.:
+                # avoid division by zero
                 strike_rad = numpy.pi/2.
             else:
-                strike_rad = numpy.arctan(tan1[0]/tan1[1]) 
+                strike_rad = numpy.arctan(strikev[0]/strikev[1]) 
 
-            dip_rad = numpy.arccos(numpy.dot(tan2,-e3))
+            dip_rad = numpy.arcsin(numpy.abs(dipv[2]) / numpy.linalg.norm(dipv))
             
             # convert to degrees
             self.strike = numpy.rad2deg(strike_rad)
@@ -1470,9 +1478,9 @@ class SubFault(object):
 
             # find the center line
             xx = numpy.zeros((3,3))
-            xx[:,0] = (x[:,1] + x[:,2]) / 2. # opposite a
-            xx[:,1] = (x[:,0] + x[:,2]) / 2. # opposite b
-            xx[:,2] = (x[:,0] + x[:,1]) / 2. # opposite c
+            xx[:,0] = (x[:,1] + x[:,2]) / 2. # midpt opposite a
+            xx[:,1] = (x[:,0] + x[:,2]) / 2. # midpt opposite b
+            xx[:,2] = (x[:,0] + x[:,1]) / 2. # midpt opposite c
 
             i = numpy.argmin(xx[2,:])
 
@@ -1529,70 +1537,181 @@ class SubFault(object):
 
         """
 
-        # Okada model assumes x,y are at bottom center:
-        x_bottom = self.centers[2][0]
-        y_bottom = self.centers[2][1]
-        depth_bottom = self.centers[2][2]
+        if self.coordinate_specification != 'triangular':
+            # Okada model assumes x,y are at bottom center:
+            x_bottom = self.centers[2][0]
+            y_bottom = self.centers[2][1]
+            depth_bottom = self.centers[2][2]
 
-        length = self.length
-        width = self.width
-        depth = self.depth
-        slip = self.slip
+            length = self.length
+            width = self.width
+            depth = self.depth
+            slip = self.slip
 
-        halfL = 0.5*length
-        w  =  width
+            halfL = 0.5*length
+            w  =  width
 
-        # convert angles to radians:
-        ang_dip = DEG2RAD * self.dip
-        ang_rake = DEG2RAD * self.rake
-        ang_strike = DEG2RAD * self.strike
+            # convert angles to radians:
+            ang_dip = DEG2RAD * self.dip
+            ang_rake = DEG2RAD * self.rake
+            ang_strike = DEG2RAD * self.strike
     
-        X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
+            X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
     
-        # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
-        # meters:
-        xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_bottom)   
-        yy = LAT2METER * (Y - y_bottom)
+            # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
+            # meters:
+            xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_bottom)   
+            yy = LAT2METER * (Y - y_bottom)
     
     
-        # Convert to distance along strike (x1) and dip (x2):
-        x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
-        x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike) 
+            # Convert to distance along strike (x1) and dip (x2):
+            x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
+            x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike) 
     
-        # In Okada's paper, x2 is distance up the fault plane, not down dip:
-        x2 = -x2
+            # In Okada's paper, x2 is distance up the fault plane, not down dip:
+            x2 = -x2
     
-        p = x2 * numpy.cos(ang_dip) + depth_bottom * numpy.sin(ang_dip)
-        q = x2 * numpy.sin(ang_dip) - depth_bottom * numpy.cos(ang_dip)
+            p = x2 * numpy.cos(ang_dip) + depth_bottom * numpy.sin(ang_dip)
+            q = x2 * numpy.sin(ang_dip) - depth_bottom * numpy.cos(ang_dip)
     
-        f1 = self._strike_slip(x1 + halfL, p,     ang_dip, q)
-        f2 = self._strike_slip(x1 + halfL, p - w, ang_dip, q)
-        f3 = self._strike_slip(x1 - halfL, p,     ang_dip, q)
-        f4 = self._strike_slip(x1 - halfL, p - w, ang_dip, q)
+            f1 = self._strike_slip(x1 + halfL, p,     ang_dip, q)
+            f2 = self._strike_slip(x1 + halfL, p - w, ang_dip, q)
+            f3 = self._strike_slip(x1 - halfL, p,     ang_dip, q)
+            f4 = self._strike_slip(x1 - halfL, p - w, ang_dip, q)
     
-        g1=self._dip_slip(x1 + halfL, p,     ang_dip, q)
-        g2=self._dip_slip(x1 + halfL, p - w, ang_dip, q)
-        g3=self._dip_slip(x1 - halfL, p,     ang_dip, q)
-        g4=self._dip_slip(x1 - halfL, p - w, ang_dip, q)
+            g1=self._dip_slip(x1 + halfL, p,     ang_dip, q)
+            g2=self._dip_slip(x1 + halfL, p - w, ang_dip, q)
+            g3=self._dip_slip(x1 - halfL, p,     ang_dip, q)
+            g4=self._dip_slip(x1 - halfL, p - w, ang_dip, q)
     
-        # Displacement in direction of strike and dip:
-        ds = slip * numpy.cos(ang_rake)
-        dd = slip * numpy.sin(ang_rake)
+            # Displacement in direction of strike and dip:
+            ds = slip * numpy.cos(ang_rake)
+            dd = slip * numpy.sin(ang_rake)
     
-        us = (f1 - f2 - f3 + f4) * ds
-        ud = (g1 - g2 - g3 + g4) * dd
+            us = (f1 - f2 - f3 + f4) * ds
+            ud = (g1 - g2 - g3 + g4) * dd
     
-        dz = (us+ud)
+            dz = (us+ud)
 
-        dtopo = DTopography()
-        dtopo.X = X
-        dtopo.Y = Y
-        dtopo.dZ = numpy.array(dz, ndmin=3)
-        dtopo.times = [0.]
-        self.dtopo = dtopo
+            dtopo = DTopography()
+            dtopo.X = X
+            dtopo.Y = Y
+            dtopo.dZ = numpy.array(dz, ndmin=3)
+            dtopo.times = [0.]
+            self.dtopo = dtopo
+
+        elif self.coordinate_specification == 'triangular':
+
+            # coordinates for the three nodes
+            c1 = self.corners[0]
+            c2 = self.corners[1]
+            c3 = self.corners[2]
+
+            slip = self.slip
+
+            # convert angles to radians:
+            ang_dip = DEG2RAD * self.dip
+            ang_rake = DEG2RAD * self.rake
+            ang_strike = DEG2RAD * self.strike
+
+
+            bs,w = self.gauss_pts     # get gassian pts and weights
+
+
+            N = bs.shape[0]
+            X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
+
+            dtopo = DTopography()
+            dtopo.dZ = numpy.array(numpy.zeros(X.shape), ndmin=3)
+            dtopo.times = [0.]
+
+
+            for j in range(N):
+
+                b = bs[j]
+
+                x_pt = c1[0] + (c2[0] - c1[0])*b[0] + (c3[0] - c1[0])*b[1]
+                y_pt = c1[1] + (c2[1] - c1[1])*b[0] + (c3[1] - c1[1])*b[1]
+                depth = c1[2] + (c2[2] - c1[2])*b[0] + (c3[2] - c1[2])*b[1]
+
+                if depth < 0:
+                    depth = - depth
+
+                # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
+                # meters:
+                #xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_pt)   
+                #yy = LAT2METER * (Y - y_pt)
+                xx = (X - x_pt)
+                yy = (Y - y_pt) 
+
+                # Convert to distance along strike (x1) and dip (x2):
+                x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
+                x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike) 
+    
+                # In Okada's paper, x2 is distance up the fault plane, not down dip:
+                x2 = -x2
+
+                (dX_str,dY_str,dZ_str) = self._strike_pt_slip(x1, x2, ang_dip, depth)
+                (dX_dip,dY_dip,dZ_dip) = self._dip_pt_slip(x1, x2, ang_dip, depth)
+
+                # take linear combination in rake direction
+                ds = slip * numpy.cos(ang_rake)
+                dd = slip * numpy.sin(ang_rake)
+     
+                us = dZ_str * ds
+                ud = dZ_dip * dd
+
+            
+                dz = (us + ud)
+
+                dtopo.dZ[0,:,:] = dtopo.dZ[0,:,:] + w[j]*dz
+        
+            self.dtopo = dtopo
+            dtopo.X = X
+            dtopo.Y = Y
         return dtopo
 
     # Utility functions for okada:
+
+    def _get_gauss_pts(self,n):
+        """
+
+        returns points and weights using Stroud Conical Product Rule
+
+        """
+
+        gamma = numpy.linspace(1,n-1,n-1) / \
+             numpy.sqrt(4. * numpy.linspace(1,n-1,n-1) ** 2 - numpy.ones(n-1))
+        A = numpy.diag(gamma,1) + numpy.diag(gamma,-1)
+        r,V = numpy.linalg.eigh(A)
+        a = 2. * V[0,:] ** 2
+
+        delta = -1. / (4. * numpy.linspace(1,n,n) ** 2 - numpy.ones(n))
+        gamma = numpy.sqrt(numpy.linspace(2,n,n-1)*numpy.linspace(1,n-1,n-1)) \
+                / (2.*numpy.linspace(2,n,n-1) - numpy.ones(n-1))
+        A = numpy.diag(delta) + numpy.diag(gamma,1) + numpy.diag(gamma,-1)
+        s,V = numpy.linalg.eigh(A)
+        b = 2. * V[0,:] ** 2
+
+        r = .5*r + .5
+        a = .5 * a
+
+        s = .5*s + .5
+        b = .25 * b
+
+        M = r.size
+        N = s.size
+        x = numpy.zeros((n**2,2))
+        for j in range(n):
+            for k in range(n):
+               x[j + n*k,0] = s[k] 
+               x[n*k + j,1] = r[j] * (1 - s[k])
+
+        w = numpy.outer(a,b)
+        w = w.flatten(order='F')
+
+        return (x,w) 
+
 
     def _strike_slip(self, y1, y2, ang_dip, q):
         """
@@ -1626,7 +1745,68 @@ class SubFault(object):
     
         return f
 
+    def _strike_pt_slip(self, x, y, ang_dip, d):
+        """
+        surface deformation due to point source
+
+        """
+        
+        p = y*numpy.cos(ang_dip) + d*numpy.sin(ang_dip)
+        q = y*numpy.sin(ang_dip) - d*numpy.cos(ang_dip)
+
+        R = numpy.sqrt(x**2 + p**2 + q**2)
+
+        # is 2.*poisson = mu / (lam + mu) ?
+        # isn't it lam / (mu + lam)?
+
+        I1 = 2.*poisson*y*(1/(R*(R + d)**2) \
+                - x**2 * (3*R + d) / (R**3 * (R + d)**3))
+        I2 = 2.*poisson*x*(1/(R*(R + d)**2) \
+                - y**2 * (3*R + d) / (R**3 * (R + d)**3))
+        I4 = 2.*poisson*(x/(R**3) - x*y*(2*R + d)/(R**3*(R+d)**2))
+
+        dX = - 1./(2.*numpy.pi)*(3.*(x**2)*q/(R**5) + I1*numpy.sin(ang_dip))
+        dY = - 1./(2.*numpy.pi)*(3.*x*y*q/(R**5) + I2*numpy.sin(ang_dip))
+        dZ = - 1./(2.*numpy.pi)*(3.*x*d*q/(R**5) + I4*numpy.sin(ang_dip))
+
+        return (dX,dY,dZ)
+
+
+
+    def _dip_pt_slip(self, x, y, ang_dip, d):
+        """
+        surface deformation due to point source
+
+        """
+        p = y*numpy.cos(ang_dip) + d*numpy.sin(ang_dip)
+        q = y*numpy.sin(ang_dip) - d*numpy.cos(ang_dip)
+
+        R = numpy.sqrt(x**2 + p**2 + q**2)
+
+        # is 2.*poisson = mu / (lam + mu) ?
+
+        I1 = 2.*poisson*y*(1./(R*(R+d)**2) \
+                - x**2 * (3*R + d)/(R**3*(R+d)**3))
+
+        I2 = 2.*poisson*x*(1./(R*(R+d)**2) \
+                - y**2 * (3*R+d)/(R**3*(R+d)**3))
+
+        I3 = 2.*poisson*(x/R**3) - I2
+
+        I5 = 2.*poisson*(1./(R*(R+d)) - x**2*(2*R+d)/(R**3*(R+d)**2))
+
+        dX = - 1./ (2.*numpy.pi)*( 3.*x*p*q / (R**5) \
+                - I3*numpy.sin(ang_dip)*numpy.cos(ang_dip) )
+
+        dY = - 1./ (2.*numpy.pi)*( 3.*y*p*q / (R**5) \
+                - I1*numpy.sin(ang_dip)*numpy.cos(ang_dip) )
+
+        dZ = - 1./ (2.*numpy.pi)*( 3.*d*p*q / (R**5) \
+                - I5*numpy.sin(ang_dip)*numpy.cos(ang_dip) )
+
+        return (dX,dY,dZ)
     
+
     def dynamic_slip(self, t):
         r"""
         For a dynamic fault, compute the slip at time t.
