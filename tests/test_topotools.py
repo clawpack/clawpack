@@ -63,7 +63,7 @@ def test_read_write_topo_bowl():
     try:
         for topo_type in xrange(1, 4):
             path = os.path.join(temp_path, 'bowl.tt%s' % topo_type)
-            topo.write(path, topo_type=topo_type)
+            topo.write(path, topo_type=topo_type,Z_format="%22.15e")
 
             topo_in = topotools.Topography(path)
             assert numpy.allclose(topo.Z, topo_in.Z), \
@@ -172,7 +172,7 @@ def test_read_write_topo_bowl_hill():
 
         for topo_type in xrange(1,4):
             file_path = os.path.join(temp_path, 'bowl_hill.tt%s' % topo_type)
-            topo.write(file_path, topo_type=topo_type)
+            topo.write(file_path, topo_type=topo_type,Z_format="%22.15e")
             topo_in = topotools.Topography(path=file_path, topo_type=topo_type)
             assert numpy.allclose(topo.Z, topo_in.Z), \
                    "Written file of topo_type=%s does not equal read in" + \
@@ -207,7 +207,7 @@ def test_netcdf():
         # Write out NetCDF version of file
         ascii_topo = topotools.Topography(path=local_path)
         ascii_topo.read()
-        ascii_topo.write(nc_path, topo_type=4)
+        ascii_topo.write(nc_path, topo_type=4,Z_format="%22.15e")
 
         # Read back in NetCDF file
         nc_topo = topotools.Topography(path=nc_path)
@@ -313,7 +313,7 @@ def test_unstructured_topo(save=False, plot=False):
     # Load (and save) test data and make the comparison
     test_data_path = os.path.join(testdir, "data", "unstructured_test_data.tt3")
     if save:
-        topo.write(test_data_path)
+        topo.write(test_data_path,Z_format="%22.15e")
 
     compare_data = topotools.Topography(path=test_data_path)
 

@@ -135,10 +135,10 @@ def setplot(plotdata):
             if len(itlist) > 0:
                 it = max(find(dtopo.times <= t))
                 #print "+++ t, it, dtopo.times[it]: ",t, it, dtopo.times[it]
-                dz = dtopo.dz_list[it]
+                dz = dtopo.dZ[it,:,:]
                 dzj = dz[j,:]
                 if it < len(dtopo.times)-1:
-                    dz1 = dtopo.dz_list[it+1]
+                    dz1 = dtopo.dZ[it+1,:,:]
                     dz1j = dz1[j,:]
                     alpha = (t - dtopo.times[it])/(dtopo.times[it+1] - dtopo.times[it])
                     #print "+++ alpha = ",alpha

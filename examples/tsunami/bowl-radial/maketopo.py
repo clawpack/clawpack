@@ -3,7 +3,7 @@
 Module to create topo and qinit data files for this example.
 """
 
-from clawpack.geoclaw import topotools
+from clawpack.geoclaw.topotools import Topography
 from numpy import *
 
 def maketopo():
@@ -17,7 +17,11 @@ def maketopo():
     yupper = 100.e0
     ylower = -100.e0
     outfile= "bowl.topotype2"     
-    topotools.topo2writer(outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints)
+
+    topography = Topography(topo_func=topo)
+    topography.x = linspace(xlower,xupper,nxpoints)
+    topography.y = linspace(ylower,yupper,nypoints)
+    topography.write(outfile, topo_type=2, Z_format="%22.15e")
 
 def makeqinit():
     """
@@ -30,7 +34,11 @@ def makeqinit():
     yupper = 50.e0
     ylower = -50.e0
     outfile= "hump.xyz"     
-    topotools.topo1writer(outfile,qinit,xlower,xupper,ylower,yupper,nxpoints,nypoints)
+
+    topography = Topography(topo_func=qinit)
+    topography.x = linspace(xlower,xupper,nxpoints)
+    topography.y = linspace(ylower,yupper,nypoints)
+    topography.write(outfile, topo_type=1)
 
 def topo(x,y):
     """

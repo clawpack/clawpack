@@ -3,7 +3,8 @@
 Module to create topo and qinit data files for this example.
 """
 
-from clawpack.geoclaw.topotools import topo1writer, topo2writer
+from clawpack.geoclaw.topotools import Topography
+
 from clawpack.geoclaw import dtopotools
 import numpy
 import matplotlib.pyplot as plt
@@ -21,7 +22,10 @@ def maketopo():
     ylower = -10e0
     yupper= 10e0
     outfile= "topo1.topotype2"
-    topo2writer(outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints)
+    topography = Topography(topo_func=topo)
+    topography.x = numpy.linspace(xlower,xupper,nxpoints)
+    topography.y = numpy.linspace(ylower,yupper,nypoints)
+    topography.write(outfile, topo_type=2, Z_format="%22.15e")
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
     print "==> topo1 has dx = %g, dy = %g" % (dx,dy)
@@ -37,7 +41,10 @@ def maketopo2():
     ylower = -0.1
     yupper= 0.4
     outfile= "topo2.topotype2"
-    topo2writer(outfile,topo2,xlower,xupper,ylower,yupper,nxpoints,nypoints)
+    topography = Topography(topo_func=topo2)
+    topography.x = numpy.linspace(xlower,xupper,nxpoints)
+    topography.y = numpy.linspace(ylower,yupper,nypoints)
+    topography.write(outfile, topo_type=2, Z_format="%22.15e")
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
     print "==> topo2 has dx = %g, dy = %g" % (dx,dy)

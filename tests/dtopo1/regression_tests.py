@@ -31,7 +31,8 @@ class DTopoTests(test.GeoClawRegressionTest):
         topo.topo_type = 2
         topo.x = numpy.linspace(-10.0, 10.0, 201)
         topo.y = numpy.linspace(-10.0, 10.0, 201)
-        topo.write(os.path.join(self.temp_path, "topo1.topotype2"))
+        topo.write(os.path.join(self.temp_path, "topo1.topotype2"), \
+                topo_type=2, Z_format="%22.15e")
 
         h0 = 1000.0
         topo_func = lambda x,y: -h0*(1. + numpy.exp(x+y))
@@ -39,7 +40,8 @@ class DTopoTests(test.GeoClawRegressionTest):
         topo.topo_type = 2
         topo.x = numpy.linspace(-0.5, -0.3, 21)
         topo.y = numpy.linspace(-0.1, 0.4, 51)
-        topo.write(os.path.join(self.temp_path, "topo2.topotype2"))
+        topo.write(os.path.join(self.temp_path, "topo2.topotype2"), \
+                topo_type=2, Z_format="%22.15e")
 
         # Make dtopography
         subfault_path = os.path.join(self.test_path, "dtopo1.csv")

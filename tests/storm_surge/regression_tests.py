@@ -47,7 +47,8 @@ class IkeTest(test.GeoClawRegressionTest):
         topo.x = numpy.linspace(-100, -69, 125)
         topo.y = numpy.linspace(7.0, 33.0, 105)
         topo.Z = 25.0 * ((topo.X + 84.5)**2 + (topo.Y - 20.0)**2) - 4000.0
-        topo.write(os.path.join(self.temp_path, 'gulf_caribbean.tt3'))
+        topo.write(os.path.join(self.temp_path, 'gulf_caribbean.tt3'), \
+                topo_type=2, Z_format="%22.15e")
 
 
     def runTest(self, save=False, indices=(2, 3)):
