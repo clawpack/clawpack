@@ -468,6 +468,7 @@ program amr2
         call set_fixed_grids()            ! Fixed grid settings
         call setup_variable_friction()    ! Variable friction parameter
         call set_multilayer()             ! Set multilayer SWE parameters
+        call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar)       ! Set gauge output
         call set_fgmax()
@@ -490,6 +491,7 @@ program amr2
         call set_fixed_grids()            ! Fixed grid settings
         call setup_variable_friction()    ! Variable friction parameter
         call set_multilayer()             ! Set multilayer SWE parameters
+        call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar)       ! Set gauge output
         call set_fgmax()
