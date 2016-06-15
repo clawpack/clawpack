@@ -143,7 +143,8 @@ def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
 
 
 def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
-                   add_colorbar=True, verbose=False, fig_kwargs={}):
+                   add_colorbar=True, verbose=False, 
+                   colorbar_labelsize=10, colorbar_ticksize=10, fig_kwargs={}):
     r"""
     Plot sea floor deformation dZ as colormap with contours
     """
@@ -167,10 +168,11 @@ def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
     extent = [x.min(), x.max(), y.min(), y.max()]
     im = axes.imshow(dZ, extent=extent, cmap=cmap, origin='lower')
     im.set_clim(-cmax_dZ,cmax_dZ)
+
     if add_colorbar:
         cbar = plt.colorbar(im, ax=axes)
-        cbar.set_label("Deformation (m)")
-    
+        cbar.set_label("Deformation (m)",fontsize=colorbar_labelsize)
+        cbar.ax.tick_params(labelsize=colorbar_ticksize)
 
     if dZ_interval is None:
         dZ_interval = cmax_dZ/10.
@@ -541,6 +543,7 @@ class DTopography(object):
 
 
     def plot_dZ_colors(self, t, axes=None, cmax_dZ=None, dZ_interval=None, 
+                       colorbar_ticksize=10,colorbar_labelsize=10,
                                 fig_kwargs={}):
         """
         Interpolate self.dZ to specified time t and then call module function
@@ -548,6 +551,8 @@ class DTopography(object):
         """
         axes = plot_dZ_colors(self.X, self.Y, self.dZ_at_t(t), axes=axes,
                               cmax_dZ=cmax_dZ, dZ_interval=dZ_interval,
+                              colorbar_ticksize=colorbar_ticksize,
+                              colorbar_labelsize=colorbar_labelsize,
                               fig_kwargs=fig_kwargs)
         return axes
 
@@ -856,7 +861,8 @@ class Fault(object):
     def plot_subfaults(self, axes=None, plot_centerline=False, slip_color=False,
                              cmap_slip=None, cmin_slip=None, cmax_slip=None,
                              slip_time=None, plot_rake=False, xylim=None, 
-                             plot_box=True, colorbar_shrink=1, verbose=False):
+                             plot_box=True, colorbar_shrink=1, verbose=False,
+                             colorbar_labelsize=10,colorbar_ticksize=10):
         """
         Plot each subfault projected onto the surface.
 
@@ -930,9 +936,11 @@ class Fault(object):
                 
                 #x_top = subfault.centers[0][0]
                 #y_top = subfault.centers[0][1]
+                # rake direction is wrong...
                 gamma = (subfault.strike + 90.)*numpy.pi/180. 
-                x_top = x_centroid + subfault.length/4.*numpy.cos(gamma)
-                y_top = y_centroid + subfault.length/4.*numpy.sin(gamma)
+
+                x_top = x_centroid + numpy.cos(gamma)
+                y_top = y_centroid + numpy.sin(gamma)
 
                 x_corners = [subfault.corners[2][0],
                              subfault.corners[0][0],
@@ -1018,7 +1026,8 @@ class Fault(object):
                      shrink=colorbar_shrink)
             norm = matplotlib.colors.Normalize(vmin=cmin_slip,vmax=cmax_slip)
             cb1 = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap_slip, norm=norm)
-            cb1.set_label("Slip (m)")
+            cb1.set_label("Slip (m)",fontsize=colorbar_labelsize)
+            cb1.ax.tick_params(labelsize=colorbar_ticksize)
         plt.sca(slipax) # reset the current axis to the main figure
 
         return slipax
@@ -1248,7 +1257,7 @@ class SubFault(object):
         self._centers = None
         self._corners = None
         self._gauss_pts = None
-        self.n_gauss_pts = 10
+        self.n_gauss_pts = 4
 
 
     def convert_to_standard_units(self, input_units, verbose=False):
@@ -1446,11 +1455,14 @@ class SubFault(object):
         if self.coordinate_specification == 'triangular':
             
             x = numpy.zeros((3,3))
+            
             x[:,0] = numpy.array(self.corners[0])
             x[:,1] = numpy.array(self.corners[1])
             x[:,2] = numpy.array(self.corners[2])
 
             # compute strike and dip direction
+            # e3: vertical 
+            # v1,v2: tangents from x0
             e3 = numpy.array([0.,0.,1.])
             v1 = x[:,1] - x[:,0]
             v2 = x[:,2] - x[:,0]
@@ -1459,7 +1471,6 @@ class SubFault(object):
             if (normal[2] < 0):
                 normal = -normal
 
-            area = numpy.linalg.norm(normal) / 2.
             strikev = numpy.cross(e3,normal)   # vector in strike direction
             dipv = numpy.cross(strikev,normal) # vector in dip direction
             
@@ -1495,7 +1506,18 @@ class SubFault(object):
             self.latitude = xcenter[1]
             self.depth = xcenter[2]
 
-            # length and width are set to sqrt(area): tmp sol
+            # length and width are set to sqrt(area): 
+            # this is set temporarily so that Fault.Mw() can be computed
+
+            # first convert distances from lat/long to meters
+            v1[0] = LAT2METER * numpy.cos(DEG2RAD * x[1,0]) * (v1[0])   
+            v1[1] = LAT2METER * (v1[1])
+
+            v2[0] = LAT2METER * numpy.cos(DEG2RAD * x[1,0]) * (v2[0])
+            v2[1] = LAT2METER * (v2[1])
+
+            normal = numpy.cross(v1,v2)
+            area = numpy.linalg.norm(normal) / 2.
             self.length = numpy.sqrt(area)
             self.width = numpy.sqrt(area)
 
@@ -1608,6 +1630,7 @@ class SubFault(object):
             c3 = self.corners[2]
 
             slip = self.slip
+            area = self.length * self.width # approximately
 
             # convert angles to radians:
             ang_dip = DEG2RAD * self.dip
@@ -1639,10 +1662,13 @@ class SubFault(object):
 
                 # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
                 # meters:
-                #xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_pt)   
-                #yy = LAT2METER * (Y - y_pt)
-                xx = (X - x_pt)
-                yy = (Y - y_pt) 
+                xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_pt)   
+                yy = LAT2METER * (Y - y_pt)
+                #xx = numpy.cos(DEG2RAD * Y) * (X - x_pt)   
+                #yy = (Y - y_pt)
+
+                #xx = (X - x_pt)
+                #yy = (Y - y_pt) 
 
                 # Convert to distance along strike (x1) and dip (x2):
                 x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
@@ -1664,7 +1690,7 @@ class SubFault(object):
             
                 dz = (us + ud)
 
-                dtopo.dZ[0,:,:] = dtopo.dZ[0,:,:] + w[j]*dz
+                dtopo.dZ[0,:,:] = dtopo.dZ[0,:,:] + w[j]*area*dz
         
             self.dtopo = dtopo
             dtopo.X = X
@@ -1675,8 +1701,14 @@ class SubFault(object):
 
     def _get_gauss_pts(self,n):
         """
-
         returns points and weights using Stroud Conical Product Rule
+
+        :Input:
+            - n is the number of points in 1D direction
+        :Output:
+            - (x,w)
+            - x is the array of Gaussian points
+            - w is the array of quadrature weights
 
         """
 
