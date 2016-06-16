@@ -349,6 +349,7 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         # Storm parameters
         self.add_attribute("storm_type",0) # Type of storm
         self.add_attribute("landfall",0.0)
+        self.add_attribute("display_landfall_time", False)
 
         # Storm type 1 - Read in file track
         self.add_attribute("storm_file",'./storm.data')
@@ -406,6 +407,8 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         
         self.data_write("storm_type",description='(Storm specification type)')
         self.data_write('landfall',description="(Landfall time of storm)")
+        self.data_write("display_landfall_time", description='(Display time relative to landfall)')
+
         self.data_write('storm_file',description="(Location of storm data)")
 
         if self.storm_type == 0 or self.storm_type == 1:
