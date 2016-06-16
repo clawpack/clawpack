@@ -276,11 +276,6 @@ c Output time info
           if (method(4).ge.level) then
               print time_format, level, cfl_level, possk(level), timenew
           endif
-C 100       format(' AMRCLAW: level ',i2,'  CFL = ',e8.3,
-C      &           '  dt = ',e10.4,  '  final t = ',e12.6)
-C 103       format(' AMRCLAW: level ',i2,'  CFL = ',e8.3,
-C      &           '  dt = ',e10.4,  '  final t = ',e4.2)
-
 
 c        # to debug individual grid updates...
 c        call valout(level,level,time,nvar,naux)
