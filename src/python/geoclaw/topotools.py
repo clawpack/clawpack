@@ -788,8 +788,8 @@ class Topography(object):
             
         return num_cells
 
-    def write(self, path, no_data_value=None, topo_type=None, masked=True, 
-                header_style='geoclaw'):
+    def write(self, path, topo_type=None, no_data_value=None, masked=True, 
+                header_style='geoclaw', Z_format="%15.7e"):
         r"""Write out a topography file to path of type *topo_type*.
 
         Writes out a topography file of topo type specified with *topo_type* or
@@ -799,13 +799,25 @@ class Topography(object):
 
         :Input:
          - *path* (str)  - file to write
-         - *no_data_value* - values used to indicate missing data
          - *topo_type* (int) - GeoClaw format topo_type 
+           **Note:** this is second positional argument, agreeing with
+           the read function in this class.  It was the third argument in
+           GeoClaw version 5.3.1 and earlier.  
+         - *no_data_value* - values used to indicate missing data
          - *masked* (bool) - unused??
          - *header_style* (str) - indicates format of header lines
              'geoclaw' or 'default'  ==> write value then label 
              'arcgis' or 'asc' ==> write label then value  
                         (needed for .asc files in ArcGIS)
+         - *Z_format* (str) - string format to use for Z values
+           The default format "%15.7e" gives at least millimeter precision
+           for topography with abs(Z) < 10000 and results in
+           smaller files than the previous default of "%22.15e" used in
+           GeoClaw version 5.3.1 and earlier.  A shorter format can be used
+           if the user knows there are fewer significant digits, e.g.
+           etopo1 data is integers and so has a resolution of 1 meter.
+           In this case a cropped or coarsened version might be written
+           with `Z_format = "%7i"`, for example.
 
         """
 
@@ -883,23 +895,25 @@ class Topography(object):
 
                 # Write out topography data
                 if topo_type == 2:
+                    Z_format = Z_format + "\n"
                     if masked_Z:
                         Z_filled = numpy.flipud(self.Z.filled())
                     else:
                         Z_filled = numpy.flipud(self.Z)
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
-                            outfile.write("%22.15e\n" % Z_filled[i,j])
+                            outfile.write(Z_format % Z_filled[i,j])
                     if masked_Z:
                         del Z_filled
                 elif topo_type == 3:
+                    Z_format = Z_format + " "
                     if masked_Z:
                         Z_flipped = numpy.flipud(self.Z.filled())
                     else:
                         Z_flipped = numpy.flipud(self.Z)
                     for i in xrange(self.Z.shape[0]):
                         for j in xrange(self.Z.shape[1]):
-                            outfile.write("%22.15e   " % (Z_flipped[i,j]))
+                            outfile.write(Z_format % (Z_flipped[i,j]))
                         outfile.write("\n")
                     if masked_Z:
                         del Z_flipped
@@ -1414,7 +1428,7 @@ class Topography(object):
                 self.Z[index[0], index[1]] = summation / num_points
 
 
-    def crop(self, filter_region):
+    def crop(self, filter_region=None, coarsen=1):
         r"""Crop region to *filter_region*
 
         Create a new Topography object that is identical to this one but cropped
@@ -1429,6 +1443,10 @@ class Topography(object):
         if self.unstructured:
             raise NotImplemented("*** Cannot currently crop unstructured topo")
 
+        if filter_region is None:
+            # only want to coarsen, so this is entire region:
+            filter_region = [self.x[0],self.x[-1],self.y[0],self.y[-1]]
+
         # Find indices of region
         region_index = [None, None, None, None]
         region_index[0] = (self.x >= filter_region[0]).nonzero()[0][0]
@@ -1437,8 +1455,8 @@ class Topography(object):
         region_index[3] = (self.y <= filter_region[3]).nonzero()[0][-1] + 1
         newtopo = Topography()
 
-        newtopo._x = self._x[region_index[0]:region_index[1]]
-        newtopo._y = self._y[region_index[2]:region_index[3]]
+        newtopo._x = self._x[region_index[0]:region_index[1]:coarsen]
+        newtopo._y = self._y[region_index[2]:region_index[3]:coarsen]
 
         # Force regeneration of 2d coordinate arrays and extent if needed
         newtopo._X = None
@@ -1446,8 +1464,8 @@ class Topography(object):
         newtopo._extent = None
 
         # Modify Z array as well
-        newtopo._Z = self._Z[region_index[2]:region_index[3],
-                          region_index[0]:region_index[1]]
+        newtopo._Z = self._Z[region_index[2]:region_index[3]:coarsen,
+                          region_index[0]:region_index[1]:coarsen]
 
         newtopo.unstructured = self.unstructured
         newtopo.topo_type = self.topo_type

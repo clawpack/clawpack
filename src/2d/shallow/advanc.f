@@ -166,7 +166,7 @@ c
       subroutine par_advanc (mptr,mitot,mjtot,nvar,naux,dtnew)
 c
       use amr_module
-      use gauges_module, only: print_gauges, num_gauges
+      use gauges_module, only: update_gauges, num_gauges
       implicit double precision (a-h,o-z)
 
 
@@ -240,9 +240,11 @@ c        # now to make linear interpolation easier, since grid
 c        # now has boundary conditions filled in.
 
 c     should change the way print_gauges does io - right now is critical section
-
+c     NOW changed, mjb 2/6/2015.
+c     NOTE that gauge subr called before stepgrid, so never get
+c     the very last gauge time at end of run.
       if (num_gauges > 0) then
-           call print_gauges(alloc(locnew:locnew+nvar*mitot*mjtot), 
+           call update_gauges(alloc(locnew:locnew+nvar*mitot*mjtot), 
      .                       alloc(locaux:locnew+nvar*mitot*mjtot),
      .                       xlow,ylow,nvar,mitot,mjtot,naux,mptr)
            endif

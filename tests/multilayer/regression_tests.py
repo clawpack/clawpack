@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-r"""Bowl-Slosh regression test for GeoClaw
+r"""Multilayer Shallow Water Test Case
 
 To create new regression data use
     `python regression_tests.py True`
@@ -60,7 +60,11 @@ class MultilayerTest(test.GeoClawRegressionTest):
 
         # Run code and check
         self.run_code()
-        self.check_gauges(save=save, indices=(3, 6))
+        self.check_gauges(save=save, gauge_id=0, indices=(3, 6))
+        self.check_gauges(save=save, gauge_id=1, indices=(3, 6))
+        self.check_gauges(save=save, gauge_id=2, indices=(3, 6))
+        self.check_gauges(save=save, gauge_id=3, indices=(3, 6))
+        self.check_gauges(save=save, gauge_id=4, indices=(3, 6))
 
         # If we have gotten here then we do not need to copy the run results
         self.success = True

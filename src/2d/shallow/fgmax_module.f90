@@ -55,6 +55,8 @@ module fgmax_module
 
     end type
 
+    logical, private :: module_setup = .false.
+
     ! declare array fgrids of fixed grids, each of type fgrid.
     ! allow them to be targets of pointers for shorthand in code.
     integer, parameter :: FG_MAXNUM_FGRIDS = 5  ! max number of fixed grids
@@ -87,7 +89,7 @@ contains
         implicit none
         
         ! Subroutine arguments
-        character(len=*), intent(in) :: fname
+        character(len=*), intent(in), optional :: fname
         
         ! Local storage
         integer, parameter :: unit = 7
@@ -95,40 +97,49 @@ contains
         character(len=150) :: fname_fg
         integer :: num_fgmax_grids, num_fgmax_val
 
-        write(parmunit,*) ' '
-        write(parmunit,*) '--------------------------------------------'
-        write(parmunit,*) 'SETFGMAX:'
-        write(parmunit,*) '-----------'
+        if (.not.module_setup) then
 
-        ! Open data file
-        call opendatafile(unit,fname)
+            write(parmunit,*) ' '
+            write(parmunit,*) '--------------------------------------------'
+            write(parmunit,*) 'SETFGMAX:'
+            write(parmunit,*) '-----------'
 
-        ! Read in data
-        read(unit,'(i2)') num_fgmax_val   ! name used in setrun.py
-        FG_NUM_VAL = num_fgmax_val        ! module variable name
-        read(unit,'(i2)') num_fgmax_grids ! name used in setrun.py
-        FG_num_fgrids = num_fgmax_grids   ! module variable name
+            ! Open data file
+            if (present(fname)) then
+                call opendatafile(unit, fname)
+            else
+                call opendatafile(unit, 'fgmax.data')
+            endif
 
-        if (FG_num_fgrids > FG_MAXNUM_FGRIDS) then
-           write(6,601) FG_num_fgrids
- 601       format('*** Too many fixed grids specified: FG_num_fgrids = ',i3,/, &
-               '*** Increase FG_MAXNUM_FGRIDS in fgmax_module.f90')
-           stop
-           endif
+            ! Read in data
+            read(unit,'(i2)') num_fgmax_val   ! name used in setrun.py
+            FG_NUM_VAL = num_fgmax_val        ! module variable name
+            read(unit,'(i2)') num_fgmax_grids ! name used in setrun.py
+            FG_num_fgrids = num_fgmax_grids   ! module variable name
 
-        do ifg=1,FG_num_fgrids
-            read(unit,*) fname_fg
-            call fgmax_read(fname_fg, ifg)
-            enddo
-        write(parmunit,*) ' '
-        write(parmunit,*) '--------------------------------------------'
-        write(parmunit,*) 'SETFGMAX:'
-        write(parmunit,*) '-----------'
+            if (FG_num_fgrids > FG_MAXNUM_FGRIDS) then
+               write(6,601) FG_num_fgrids
+     601       format('*** Too many fixed grids specified: FG_num_fgrids = ',i3,/, &
+                   '*** Increase FG_MAXNUM_FGRIDS in fgmax_module.f90')
+               stop
+               endif
 
-        write(parmunit,*) 'FG_NUM_VAL = ', FG_NUM_VAL
-        write(parmunit,*) 'FG_num_fgrids = ', FG_num_fgrids
+            do ifg=1,FG_num_fgrids
+                read(unit,*) fname_fg
+                call fgmax_read(fname_fg, ifg)
+                enddo
+            write(parmunit,*) ' '
+            write(parmunit,*) '--------------------------------------------'
+            write(parmunit,*) 'SETFGMAX:'
+            write(parmunit,*) '-----------'
+
+            write(parmunit,*) 'FG_NUM_VAL = ', FG_NUM_VAL
+            write(parmunit,*) 'FG_num_fgrids = ', FG_num_fgrids
+
+            module_setup = .true.
+        end if
 
     
-        end subroutine set_fgmax
+    end subroutine set_fgmax
 
 end module fgmax_module

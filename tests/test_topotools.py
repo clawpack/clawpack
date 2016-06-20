@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import shutil
+import urllib2
 
 import numpy
 
@@ -62,7 +63,7 @@ def test_read_write_topo_bowl():
     try:
         for topo_type in xrange(1, 4):
             path = os.path.join(temp_path, 'bowl.tt%s' % topo_type)
-            topo.write(path, topo_type=topo_type)
+            topo.write(path, topo_type=topo_type,Z_format="%22.15e")
 
             topo_in = topotools.Topography(path)
             assert numpy.allclose(topo.Z, topo_in.Z), \
@@ -171,7 +172,7 @@ def test_read_write_topo_bowl_hill():
 
         for topo_type in xrange(1,4):
             file_path = os.path.join(temp_path, 'bowl_hill.tt%s' % topo_type)
-            topo.write(file_path, topo_type=topo_type)
+            topo.write(file_path, topo_type=topo_type,Z_format="%22.15e")
             topo_in = topotools.Topography(path=file_path, topo_type=topo_type)
             assert numpy.allclose(topo.Z, topo_in.Z), \
                    "Written file of topo_type=%s does not equal read in" + \
@@ -187,7 +188,7 @@ def test_read_write_topo_bowl_hill():
 
 
 def test_netcdf():
-    r"""Test NetCDF formatted topography reading"""
+    r"""Test Python NetCDF formatted topography reading"""
 
     temp_path = tempfile.mkdtemp()
 
@@ -197,7 +198,7 @@ def test_netcdf():
                        '5f675256c043e59e5065f9f3b5bdd41c2901702c/src/python/',
                        'geoclaw/tests/kahului_sample_1s.tt2'))
         clawpack.clawutil.data.get_remote_file(url, output_dir=temp_path,
-            force=True)
+                                                    force=True)
         
         # Paths
         local_path = os.path.join(temp_path, os.path.basename(url))
@@ -206,7 +207,7 @@ def test_netcdf():
         # Write out NetCDF version of file
         ascii_topo = topotools.Topography(path=local_path)
         ascii_topo.read()
-        ascii_topo.write(nc_path, topo_type=4)
+        ascii_topo.write(nc_path, topo_type=4,Z_format="%22.15e")
 
         # Read back in NetCDF file
         nc_topo = topotools.Topography(path=nc_path)
@@ -224,8 +225,16 @@ def test_netcdf():
         shutil.copytree(temp_path, os.path.join(os.getcwd()),
             'test_read_netcdf')
         raise e
+
     except ImportError as e:
         raise nose.SkipTest("Skipping test since NetCDF support not found.")
+
+    except RuntimeError as e:
+        raise nose.SkipTest("NetCDF topography test skipped due to " +
+                            "runtime failure.")
+    except urllib2.URLError:
+        raise nose.SkipTest("Could not fetch remote file, skipping test.")
+    
     finally:
         shutil.rmtree(temp_path)
 
@@ -253,6 +262,10 @@ def test_get_remote_file():
     except AssertionError as e:
         shutil.copy(local_path, os.path.join(os.getcwd(), "remote_file.tt2"))
         raise e
+
+    except urllib2.URLError:
+        raise nose.SkipTest("Could not fetch remote file, skipping test.")
+
     finally:
         shutil.rmtree(temp_path)
 
@@ -300,7 +313,7 @@ def test_unstructured_topo(save=False, plot=False):
     # Load (and save) test data and make the comparison
     test_data_path = os.path.join(testdir, "data", "unstructured_test_data.tt3")
     if save:
-        topo.write(test_data_path)
+        topo.write(test_data_path,Z_format="%22.15e")
 
     compare_data = topotools.Topography(path=test_data_path)
 

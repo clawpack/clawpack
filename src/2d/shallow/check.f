@@ -8,11 +8,13 @@ c   check point routine - can only call at end of coarse grid cycle
 c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::;
 
       use amr_module
-      use gauges_module, only: OUTGAUGEUNIT
+c     !use gauges_module, only: OUTGAUGEUNIT, num_gauges
+      use gauges_module, only: num_gauges
+      use gauges_module, only: print_gauges_and_reset_nextLoc
       use fgmax_module
 
       implicit double precision (a-h,o-z)
-      integer tchkunit, ifg
+      integer tchkunit, ifg, ii
       parameter (tchkunit = 13)
       character  chkname*13
       character  tchkname*13
@@ -92,7 +94,12 @@ c     # so if code dies it will at least have output up to this checkpoint time
 
       flush(outunit)        ! defined in amr_module.f90
       flush(dbugunit)       ! defined in amr_module.f90
-      flush(OUTGAUGEUNIT)   ! defined in gauges_module.f90
+
+c     now that gauge data is batched, need to write the last batch to file
+c    ! flush(OUTGAUGEUNIT)   ! defined in gauges_module.f90 
+      do ii = 1, num_gauges
+         call print_gauges_and_reset_nextLoc(ii, nvar)
+      end do
 
 c     # write the time stamp file last so it's not updated until data is
 c     # all dumped, in case of crash mid-dump.
