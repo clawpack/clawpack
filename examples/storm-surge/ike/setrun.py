@@ -127,7 +127,7 @@ def setrun(claw_pkg='geoclaw'):
         # Output nout frames at equally spaced times up to tfinal:
         # clawdata.tfinal = days2seconds(date2days('2008091400'))
         clawdata.tfinal = days2seconds(ike_landfall.days + 0.75) + ike_landfall.seconds
-        recurrence = 24
+        recurrence = 4
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) 
                                             * recurrence / (60**2 * 24))
 
@@ -435,6 +435,7 @@ def setgeo(rundata):
     # Storm parameters
     data.storm_type = 1 # Type of storm
     data.landfall = days2seconds(ike_landfall.days) + ike_landfall.seconds
+    data.display_landfall_time = True
 
     # Storm type 2 - Idealized storm track
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),'ike.storm'))

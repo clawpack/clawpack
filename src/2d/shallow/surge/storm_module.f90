@@ -59,6 +59,9 @@ module storm_module
     ! Wind drag maximum limit
     real(kind=8), parameter :: WIND_DRAG_LIMIT = 2.d-3
 
+    ! Display times in days relative to landfall
+    logical :: display_landfall_time = .false.
+
 contains
     ! ========================================================================
     !   subroutine set_storm(data_file)
@@ -149,9 +152,10 @@ contains
             read(unit,*)
             
             ! Storm Setup 
-            read(unit,"(i1)") storm_type
-            read(unit,"(d16.8)") landfall
-            read(unit,*) storm_file_path
+            read(unit, "(i1)") storm_type
+            read(unit, "(d16.8)") landfall
+            read(unit, *) display_landfall_time
+            read(unit, *) storm_file_path
             
             close(unit)
 

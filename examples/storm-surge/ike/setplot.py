@@ -43,7 +43,6 @@ import clawpack.amrclaw.data as amrclaw
 import clawpack.geoclaw.data as geodata
 
 import clawpack.geoclaw.surge.plot as surgeplot
-import clawpack.geoclaw.surge.data as surgedata
 
 try:
     from setplotfg import setplotfg
@@ -83,9 +82,9 @@ def setplot(plotdata):
     amrdata.read(os.path.join(plotdata.outdir,'amr.data'))
     physics = geodata.GeoClawData()
     physics.read(os.path.join(plotdata.outdir,'geoclaw.data'))
-    surge_data = surgedata.SurgeData()
+    surge_data = geodata.SurgeData()
     surge_data.read(os.path.join(plotdata.outdir,'surge.data'))
-    friction_data = surgedata.FrictionData()
+    friction_data = geodata.FrictionData()
     friction_data.read(os.path.join(plotdata.outdir,'friction.data'))
 
     # Load storm track

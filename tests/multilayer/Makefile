@@ -76,7 +76,6 @@ EXCLUDE_SOURCES = \
 # ----------------------------------------
 
 MODULES = \
- $(GEOLIB)/multilayer/multilayer_module.f90 \
  $(GEOLIB)/multilayer/gauges_module.f90 \
  ./qinit_module.f90
 

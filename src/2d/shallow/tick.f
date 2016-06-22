@@ -12,12 +12,15 @@ c
       use gauges_module, only: setbestsrc, num_gauges
       use gauges_module, only: print_gauges_and_reset_nextLoc
 
+      use storm_module, only: landfall, display_landfall_time
+
 
       implicit double precision (a-h,o-z)
 
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
       integer clock_start, clock_finish, clock_rate
+      character(len=128) :: time_format
       real(kind=8) cpu_start,cpu_finish
 
 c
@@ -257,19 +260,22 @@ c
 
           call advanc(level,nvar,dtlevnew,vtime,naux)
 
-c         # rjl modified 6/17/05 to print out *after* advanc and print cfl
-c         # rjl & mjb changed to cfl_level, 3/17/10
-
+c Output time info
           timenew = tlevel(level)+possk(level)
+          time_format = "(' AMRCLAW: level ',i2,'  CFL = ',e8.3," //
+     &                  "'  dt = ',e10.4,  '  final t = ',e12.6)"
+          if (display_landfall_time) then
+            timenew = (timenew - landfall) / (3.6d3 * 24d0)
+            time_format = "(' AMRCLAW: level ',i2,'  CFL = ',e8.3," //
+     &                  "'  dt = ',e10.4,  '  final t = ', f5.2)"
+          end if
           if (tprint) then
-              write(outunit,100)level,cfl_level,possk(level),timenew
-              endif
+              write(outunit, time_format) level, cfl_level, 
+     &                                    possk(level), timenew
+          endif
           if (method(4).ge.level) then
-              write(6,100)level,cfl_level,possk(level),timenew
-              endif
-100       format(' AMRCLAW: level ',i2,'  CFL = ',e8.3,
-     &           '  dt = ',e10.4,  '  final t = ',e12.6)
-
+              print time_format, level, cfl_level, possk(level), timenew
+          endif
 
 c        # to debug individual grid updates...
 c        call valout(level,level,time,nvar,naux)
