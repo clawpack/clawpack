@@ -1637,60 +1637,12 @@ class SubFault(object):
             ang_rake = DEG2RAD * self.rake
             ang_strike = DEG2RAD * self.strike
 
-
-            bs,w = self.gauss_pts     # get gassian pts and weights
-
-
-            N = bs.shape[0]
-            X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
-
             dtopo = DTopography()
             dtopo.dZ = numpy.array(numpy.zeros(X.shape), ndmin=3)
             dtopo.times = [0.]
-
-
-            for j in range(N):
-
-                b = bs[j]
-
-                x_pt = c1[0] + (c2[0] - c1[0])*b[0] + (c3[0] - c1[0])*b[1]
-                y_pt = c1[1] + (c2[1] - c1[1])*b[0] + (c3[1] - c1[1])*b[1]
-                depth = c1[2] + (c2[2] - c1[2])*b[0] + (c3[2] - c1[2])*b[1]
-
-                if depth < 0:
-                    depth = - depth
-
-                # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
-                # meters:
-                xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_pt)   
-                yy = LAT2METER * (Y - y_pt)
-                #xx = numpy.cos(DEG2RAD * Y) * (X - x_pt)   
-                #yy = (Y - y_pt)
-
-                #xx = (X - x_pt)
-                #yy = (Y - y_pt) 
-
-                # Convert to distance along strike (x1) and dip (x2):
-                x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
-                x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike) 
-    
-                # In Okada's paper, x2 is distance up the fault plane, not down dip:
-                x2 = -x2
-
-                (dX_str,dY_str,dZ_str) = self._strike_pt_slip(x1, x2, ang_dip, depth)
-                (dX_dip,dY_dip,dZ_dip) = self._dip_pt_slip(x1, x2, ang_dip, depth)
-
-                # take linear combination in rake direction
-                ds = slip * numpy.cos(ang_rake)
-                dd = slip * numpy.sin(ang_rake)
-     
-                us = dZ_str * ds
-                ud = dZ_dip * dd
-
             
-                dz = (us + ud)
-
-                dtopo.dZ[0,:,:] = dtopo.dZ[0,:,:] + w[j]*area*dz
+            dz = (us + ud)
+            dtopo.dZ[0,:,:] = dtopo.dZ[0,:,:] + w[j]*area*dz
         
             self.dtopo = dtopo
             dtopo.X = X
@@ -1698,6 +1650,90 @@ class SubFault(object):
         return dtopo
 
     # Utility functions for okada:
+
+    def _get_angular_params(self):
+
+        x1 = numpy.array(self.corners[0])
+        x2 = numpy.array(self.corners[1])
+        x3 = numpy.array(self.corners[2])
+
+        v_list = [x2 - x1, x3 - x2, x1 - x3]
+
+        e3 = numpy.array([0.,0.,-1.])
+
+        beta_list = []
+
+        for v in v_list:
+            beta = numpy.arccos(numpy.dot(e3,v/numpy.linalg.norm(v)))
+            print(numpy.dot(e3,v/numpy.linalg.norm(v)))
+            if beta > numpy.pi/2. :
+                beta = numpy.pi - beta
+            beta_list.append(beta)
+
+        return beta_list
+        
+
+
+
+    def _get_halfspace_coords(self,x,alpha,beta,longitude,latitude,depth):
+        """
+        compute coordinates
+
+        :Input:
+            - x: 2d numpy array of cartesian coordinates,with shape (n,3). 
+                 (long,lat,depth)
+                 x[:,3] = 0 implies free surface
+            - alpha: angle of the vertical hyperplane
+                    (measured from north-direction, =strike)
+            - beta: angle of the angular dislocation 
+                    (angle between two inf lines, 
+                     measured from depth-direction)
+            - longitude
+            - latitude
+            - depth
+
+        :Output:
+
+            - tuple (y,z,ybar,zbar)
+            - each numpy array of same shape as x
+              containing *angular* coordinates as well as its mirrored image
+
+        """
+
+        n = x.shape[0]
+
+        x[:,0] = x[:,0] - longitude
+        x[:,1] = x[:,1] - latitude
+        
+        # convert lat/long to meters
+        x[:,0] = LAT2METER * numpy.cos(DEG2RAD*x[:,1]) * x[:,0]   
+        x[:,1] = LAT2METER * x[:,1]
+
+        y = numpy.zeros((n,3))       # yi-coordinates
+        z = numpy.zeros((n,3))       # yi coordinates rot. by beta
+        
+        ybar = numpy.zeros((n,3))    # mirrored yi-coordinates
+        zbar = numpy.zeros((n,3))    # mirrored yi-coordinates rot. by beta
+
+        # rotate by -alpha
+        y[:,0] = numpy.cos(alpha)*x[:,0] - numpy.sin(alpha)*x[:,1]
+        y[:,1] = numpy.sin(alpha)*x[:,0] + numpy.cos(alpha)*x[:,1]
+        y[:,2] = x[:,2] - depth
+        
+        z[:,0] = numpy.cos(beta)*y[:,0] - numpy.sin(beta)*y[:,1]
+        z[:,1] = y[:,1]
+        z[:,2] = numpy.sin(beta)*y[:,0] + numpy.cos(beta)*y[:,1]
+
+        ybar[:,0] = y[:,0]
+        ybar[:,1] = y[:,1]
+        ybar[:,2] = y[:,2] + 2*depth  
+
+        zbar[:,0] =  numpy.cos(beta)*ybar[:,0] + numpy.sin(beta)*ybar[:,1]
+        zbar[:,1] =  ybar[:,1]
+        zbar[:,2] = -numpy.sin(beta)*ybar[:,0] + numpy.cos(beta)*ybar[:,1]
+
+        return y,z,ybar,zbar
+
 
     def _get_gauss_pts(self,n):
         """
