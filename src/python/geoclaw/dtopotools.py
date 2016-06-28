@@ -1672,25 +1672,208 @@ class SubFault(object):
 
         return beta_list
         
+    def _get_angular_displocations(Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,depth)
+        """
+        compute angular dislocations
+
+        M. Comninou and J. Dundurs 
+        Journal of Elasticity, Vol. 5, Nos.3-4, Nov 1975
+
+        equations (1-29)
+
+        :Input:
+            -  Y1, Y2, Y3
+               Z1, Z2, Z3
+              Yb1,Yb2,Yb3
+              Zb1,Zb2,Zb3   : coordinates in meters
+
+        :Output:
+            - v11,v12,v13
+              v21,v22,v23
+              v31,v32,v33   : dislocation vectors
+
+        """
+
+        pi = numpy.pi
+        nu = poisson        # .5 * lambda / (lambda + mu)
+        a = depth
+
+        # some preliminary quantities
+        R = numpy.sqrt(Y1**2 + Y2**2 + Y3**2)
+        Rb = numpy.sqrt(Yb1**2 + Yb2**2 + Yb3**2)
+        
+        F = - numpy.arctan(Y2/Y1) + numpy.arctan(Y2/Z1) \
+          + numpy.arctan(Y2*R*numpy.sin(beta)/(Y1*Z1 + Y2**2*numpy.cos(beta)))
+        Fb = - numpy.arctan(Y2/Y1) + numpy.arctan(Y2/Zb1) \
+          + numpy.arctan(Y2*Rb*numpy.sin(beta)/(Y1*Zb1 + Y2**2*numpy.cos(beta)))
+
+        phib = -Y2*Fb - Y1*numpy.log(Rb + Yb3) + Zb1*numpy.log(Rb + Zb3)
+        chib = -Y1*Fb + Y2*numpy.log(Rb + Yb3) \
+                - Y2*numpy.cos(beta)*numpy.log(Rb + Zb3)
+        phib = Yb3*Fb + Y2*numpy.sin(beta)*numpy.log(Rb + Zb3)
+        
+
+        # Burgers vectors (1,0,0)
+
+        v11inf = 1/(8*pi*(1 - nu))*(\
+            2*(1 - nu)*(F + Fb) - Y1*Y2*(1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3)))
+          - Y2*numpy.cos(beta)*((R*numpy.sin(beta) - Y1)/(R*(R - Z3)) \
+                  + (Rb*numpy.sin(beta) - Y1)/(Rb*(Rb + Zb3))))
+
+        v12inf = 1/(8*pi*(1 - nu))*(\
+            (1 - 2*nu)*(numpy.log(R - Y3) + numpy.log(Rb + Yb3) \
+          - numpy.cos(beta)*(numpy.log(R - Z3) + numpy.log(Rb + Zb3)))
+          - Y2**2*(1/(R*(R-Y3)) + 1/(Rb*(Rb + Yb3)) \
+                  - numpy.cos(beta)*(1/(R*(R - Z3)) + 1/(Rb*(Rb + Zb3)))))
+
+        v13inf = 1/(8*pi*(1 - nu))*Y2*(\
+                1/R - 1/Rb - numpy.cos(beta)*(\
+                    (R*numpy.cos(beta) - Y3)/(R*(R - Z3)) \
+                  - (Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3))))
+
+        v11c = 1/(4*pi*(1 - nu))*(\
+               - 2*(1 - nu)*(1 - 2*nu)*Fb/(numpy.tan(beta)**2)  \
+               + (1 - 2*nu)*Y2/(Rb + Yb3)*(\
+               (1 - 2*nu - a/Rb)/numpy.tan(beta) \
+               - Y1/(Rb + Yb3)*(nu + a/Rb)) \
+               + (1 - 2*nu)*Y2*numpy.cos(beta)/numpy.tan(beta)/(Rb + Zb3)\
+            *(numpy.cos(beta) + a/Rb) + a*Y2*(Yb3 - a)/numpy.tan(beta)/(Rb**3)\
+            + Y2*(Yb3 - a)/(Rb*(Rb + Yb3))*(\
+            - (1 - 2*nu)/numpy.tan(beta) + Y1/(Rb + Yb3)*(2*nu + a/Rb) \
+            + a*Y1/(Rb**2)) \
+            + Y2*(Yb3 - a)/(Rb*(Rb + Zb3))*(\
+            numpy.cos(beta)/(Rb + Zb3)*(\
+            (Rb*numpy.cos(beta) + Yb3)\
+            *((1 - 2*nu)*numpy.cos(beta) - a/Rb)/numpy.tan(beta) \
+            + 2*(1 - nu)*(Rb*numpy.sin(beta) - Y1)*numpy.cos(beta))\
+            - a*Yb3*numpy.cos(beta)/numpy.tan(beta)/(Rb**2))\
+            )
+
+
+        v12c = 1/(4*pi(1 - nu))*(\
+        (1 - 2*nu)*((2*(1 - nu)/(numpy.tan(beta)**2) - nu)*numpy.log(Rb - Yb3)\
+        - (2*(1 - nu)/(numpy.tan(beta)**2) + 1 - 2*nu)\
+        *numpy.cos(beta)*numpy.log(Rb + Zb3)) \
+        - (1 - 2*nu)/(Rb + Yb3)*(Y1/numpy.tan(beta)*(1 - 2*nu - a/Rb) \
+        + nu*Yb3 - a + Y2**2/(Rb + Yb3) *(nu + a/Rb)) \
+        - (1 - 2*nu)*Zb1/numpy.tan(beta)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb) \
+        - a*Y1*(Yb3 - a)/numpy.tan(beta)/(Rb**3) \
+        + (Yb3 - a)/(Rb + Yb3)*( -2 * nu + 1/Rb*((1 - 2*nu)*Y1/numpy.tan(beta)\
+        - a) + Y2**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) + a*Y2**2/(Rb**3)) \
+        + (Yb3 - a)/(Rb + Zb3)*((numpy.cos(beta)**2) \
+        - 1/Rb*((1 - 2*nu)*Zb1/numpy.tan(beta) + a*numpy.cos(beta)) \
+        + a*Yb3*Zb1/numpy.tan(beta)/(Rb**3) \
+        - 1/(Rb*(Rb + Zb3))*( Y2**2*(numpy.cos(beta)**2) - \
+        a*Zb1/numpy.tan(beta)/Rb*(Rb*numpy.cos(beta) + Yb3)))\
+        )
+            
+        v13c = 1/(4*pi*(1-nu))*(\
+        2*(1 - nu)*( (1 - 2*nu)*Fb/numpy.tan(beta) \
+          + Y2/(Rb + Yb3)*(2*nu + a/Rb) \
+          - Y2*numpy.cos(beta)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb))\
+          + Y2*(Yb3 - a)/Rb*(2*nu/(Rb + Yb3) + a/(Rb**2)) \
+          + Y2*(Yb3 - a)*numpy.cos(beta)/(Rb*(Rb + Zb3))*(\
+          1 - 2*nu \
+          - (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3)\
+          *(numpy.cos(beta) + a/Rb) - a*Yb3/(Rb**2))\
+          )
+
+        v11 = v11inf + v11c
+        v12 = v12inf + v12c
+        v13 = v13inf + v13c
+
+        # Burgers vectors (0,1,0)
+
+        v21inf = 1/(8*pi*(1 - nu))*(\
+                - (1 - 2*nu)*(\
+                numpy.log(R - Y3) + numpy.log(Rb - Yb3) \
+                - numpy.cos(beta)*(numpy.log(R - Z3) + numpy.log(Rb + Zb3)))\
+                + Y1**2*( 1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3))) \
+                + Z1*(R*numpy.sin(beta) - Y1)/(R*(R - Z3)) \
+                + Zb1*(Rb*numpy.sin(beta) - Y1)/(Rb*(Rb + Zb3)) \
+                )
+
+        v22inf = 1/(8*pi*(1 - nu))*(\
+                2*(1 - nu)*(F + Fb) + Y1*Y2*(\
+                1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3))) \
+                - Y2*( Z1/(R*(R - Z3)) + Zb1/(Rb*(Rb + Zb3)) ) \
+                )
+
+        v23inf = 1/(8*pi*(1 - nu))*(\
+                -(1 - 2*nu)*numpy.sin(beta)*(\
+                numpy.log(R - Z3) - numpy.log(Rb + Zb3))
+                - Y1*(1/R - 1/Rb) + Z1*(R*numpy.cos(beta) - Y3)/(R*(R-Z3)) \
+                        - Zb1*(Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3)) \
+                )
+
+        v21c = 1/(4*pi*(1 - nu))*(\
+    (1 - 2*nu)*( (2*(1 - nu)/(numpy.tan(beta)**2) + nu)*numpy.log(Rb + Yb3)\
+    - (2*(1 - nu)/(numpy.tan(beta)**2) + 1)*numpy.cos(beta)*numpy.log(Rb + Zb3)) \
+    + (1 - 2*nu)/(Rb + Yb3)*( - (1 - 2*nu)*Y1/numpy.tan(beta) + nu*Yb3 \
+    - a + a*Y1/numpy.tan(beta)/Rb + Y1**2/(Rb + Yb3)*(nu + a/Rb) ) \
+    - (1 - 2*nu)/numpy.tan(beta)/(Rb + Zb3)*(Zb1*numpy.cos(beta) \
+    - a*(Rb*numpy.sin(beta) - Y1)/(Rb * numpy.cos(beta)) ) \
+    - a*Y1*(Yb3 - a)/numpy.tan(beta)/(Rb**3) \
+    + (Yb3 - a)/(Rb + Yb3)*(2*nu + 1/Rb*( (1 - 2*nu)*Y1/numpy.tan(beta) + a)\
+    - Y1**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) - a*Y1**2/(Rb**3))\
+    + (Yb3 - a)/numpy.tan(beta)/(Rb + Zb3)*( - numpy.cos(beta)*numpy.sin(beta)\
+    + a*Y1*Yb3/(Rb**3*numpy.cos(beta)) + (Rb*numpy.sin(beta) - Y1)/Rb*(\
+    2*(1 - nu)*numpy.cos(beta) \
+    - (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3)*(1 + a/(Rb*numpy.cos(beta)))))\
+    )
+        
+        v22c = 1/(4*pi*(1 - nu))*(\
+    2*(1 - nu)*(1 - 2*nu)*Fb/(numpy.tan(beta)**2) \
+    + (1 - 2*nu)*Y2/(Rb + Yb3)*( - (1 - 2*nu - a/R)/numpy.tan(beta) \
+    + Y1/(Rb + Yb3)*(nu + a/Rb)) \
+    - (1 - 2*nu)*Y2/numpy.tan(beta)/(Rb + Zb3)*(1 + a/(Rb*numpy.cos(beta)))\
+    - a*Y2*(Yb3 - a)/numpy.tan(beta)/(Rb**3) \
+    + Y2*(Yb3 - a)/(Rb*(Rb + Yb3))*((1 - 2*nu)/numpy.tan(beta) \
+    - 2*nu*Y1/(Rb + Yb3) - a*Y1/Rb(1/Rb + 1/(Rb + Yb3))) \
+    + Y2*(Yb3 - a)/numpy.tan(beta)/(Rb*(Rb + Zb3))*(\
+    -2*(1 - nu)*numpy.cos(beta) + (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3) \
+    *(1 + a/(Rb * numpy.cos(beta))) + a*Yb3/(Rb**2*numpy.cos(beta)))\
+                )
+
+        v23c = 1/(4*pi*(1 - nu))*(\
+    -2*(1 - nu)*(1 - 2*nu)/numpy.tan(beta) \
+    *(numpy.log(Rb + Yb3) - numpy.cos(beta)*numpy.log(Rb + Zb3)) \
+    - 2*(1 - nu)*Y1/(Rb + Yb3)*(2*nu + a/Rb) \
+    + 2*(1 - nu)*Zb1/(Rb + Zb3)*(numpy.cos(beta) + a/Rb) \
+    + (Yb3 - a)/Rb*((1 - 2*nu)/numpy.tan(beta) - 2*nu*Y1/(Rb + Yb3) \
+        - a*Y1/(Rb**2)) \
+    + (Yb3 - a)/(Rb + Zb3)*( numpy.cos(beta)*numpy.sin(beta) \
+    + (Rb*numpy.cos(beta) + Yb3)/numpy.tan(beta)/Rb*(\
+        2*(1 - nu)*numpy.cos(beta) - (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3))\
+        + a/Rb*(numpy.sin(beta) - Yb3*Zb1/(Rb**2) - Zb1*(Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3))))\
+    )
+
+        # Burgers vectors (0,0,1)
+
+        v31inf =
+
+        v32inf =
+
+        v33inf =
+
+
+        return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
 
 
-    def _get_halfspace_coords(self,x,alpha,beta,longitude,latitude,depth):
+    def _get_halfspace_coords(self,X1,X2,X3,alpha,beta,Olong,Olat,Odepth):
         """
         compute coordinates
 
         :Input:
-            - x: 2d numpy array of cartesian coordinates,with shape (n,3). 
-                 (long,lat,depth)
-                 x[:,3] = 0 implies free surface
+            - X1,X2,X3: longitude,latitude,depth
             - alpha: angle of the vertical hyperplane
                     (measured from north-direction, =strike)
             - beta: angle of the angular dislocation 
                     (angle between two inf lines, 
                      measured from depth-direction)
-            - longitude
-            - latitude
-            - depth
+            - Olong,Olat,Odepth: longitude,latitude,depth of 
+                                 origin of y1-y2-y3 coordinates
 
         :Output:
 
@@ -1700,39 +1883,49 @@ class SubFault(object):
 
         """
 
-        n = x.shape[0]
+        dims = X1.shape
 
-        x[:,0] = x[:,0] - longitude
-        x[:,1] = x[:,1] - latitude
+        X1 = X1 - Olong
+        X2 = X2 - Olat
         
         # convert lat/long to meters
-        x[:,0] = LAT2METER * numpy.cos(DEG2RAD*x[:,1]) * x[:,0]   
-        x[:,1] = LAT2METER * x[:,1]
+        X1 = LAT2METER * numpy.cos( DEG2RAD*X2 ) * X1
+        X2 = LAT2METER * X2
 
-        y = numpy.zeros((n,3))       # yi-coordinates
-        z = numpy.zeros((n,3))       # yi coordinates rot. by beta
+        Y1 = numpy.zeros(dims)       # yi-coordinates
+        Y2 = numpy.zeros(dims)       # yi-coordinates
+        Y3 = numpy.zeros(dims)       # yi-coordinates
+
+        Z1 = numpy.zeros(dims)       # yi coordinates rot. by beta
+        Z2 = numpy.zeros(dims)       # yi coordinates rot. by beta
+        Z3 = numpy.zeros(dims)       # yi coordinates rot. by beta
         
-        ybar = numpy.zeros((n,3))    # mirrored yi-coordinates
-        zbar = numpy.zeros((n,3))    # mirrored yi-coordinates rot. by beta
+        Yb1 = numpy.zeros(dims)    # mirrored yi-coordinates
+        Yb2 = numpy.zeros(dims)    # mirrored yi-coordinates
+        Yb3 = numpy.zeros(dims)    # mirrored yi-coordinates
 
-        # rotate by -alpha
-        y[:,0] = numpy.cos(alpha)*x[:,0] - numpy.sin(alpha)*x[:,1]
-        y[:,1] = numpy.sin(alpha)*x[:,0] + numpy.cos(alpha)*x[:,1]
-        y[:,2] = x[:,2] - depth
+        Zb1 = numpy.zeros(dims)    # mirrored yi-coordinates rot. by beta
+        Zb2 = numpy.zeros(dims)    # mirrored yi-coordinates rot. by beta
+        Zb3 = numpy.zeros(dims)    # mirrored yi-coordinates rot. by beta
+
+        # rotate by -alpha in long/lat plane
+        Y1 = numpy.cos(alpha)*X1 - numpy.sin(alpha)*X2
+        Y2 = numpy.sin(alpha)*X1 + numpy.cos(alpha)*X2
+        Y3 = X3 - Odepth
         
-        z[:,0] = numpy.cos(beta)*y[:,0] - numpy.sin(beta)*y[:,1]
-        z[:,1] = y[:,1]
-        z[:,2] = numpy.sin(beta)*y[:,0] + numpy.cos(beta)*y[:,1]
+        Z1 = numpy.cos(beta)*Y1 - numpy.sin(beta)*Y3
+        Z2 = Y2
+        Z3 = numpy.sin(beta)*Y1 + numpy.cos(beta)*Y3
 
-        ybar[:,0] = y[:,0]
-        ybar[:,1] = y[:,1]
-        ybar[:,2] = y[:,2] + 2*depth  
+        Yb1 = Y1
+        Yb2 = Y2
+        Yb3 = Y3 + 2*Odepth  
 
-        zbar[:,0] =  numpy.cos(beta)*ybar[:,0] + numpy.sin(beta)*ybar[:,1]
-        zbar[:,1] =  ybar[:,1]
-        zbar[:,2] = -numpy.sin(beta)*ybar[:,0] + numpy.cos(beta)*ybar[:,1]
+        Zb1 =  numpy.cos(beta)*Y1 + numpy.sin(beta)*Yb3
+        Zb2 =  Y2
+        Zb3 = -numpy.sin(beta)*Y1 + numpy.cos(beta)*Yb3
 
-        return y,z,ybar,zbar
+        return Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3
 
 
     def _get_gauss_pts(self,n):
