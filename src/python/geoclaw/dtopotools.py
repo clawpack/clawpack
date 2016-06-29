@@ -1848,14 +1848,66 @@ class SubFault(object):
         + a/Rb*(numpy.sin(beta) - Yb3*Zb1/(Rb**2) - Zb1*(Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3))))\
     )
 
+        v21 = v21inf + v21c
+        v22 = v22inf + v22c
+        v23 = v23inf + v23c
+
         # Burgers vectors (0,0,1)
 
-        v31inf =
+        v31inf = 1/(8*pi*(1 - nu))*(\
+                Y2*numpy.sin(beta)*(\
+                    (R*numpy.sin(beta) - Y1)/(R*(R - Z3)) \
+                    + (Rb*numpy.sin(beta) - Y1)/(Rb*(Rb + Zb3)))\
+                    )
 
-        v32inf =
+        v32inf = 1/(8*pi*(1 - nu))*(\
+          (1 - 2*nu)*numpy.sin(beta)*(\
+          numpy.log(R - Z3) + numpy.log(Rb + Zb3)) \
+          - Y2**2*numpy.sin(beta)*(1 / (R*(R - Z3)) + 1 / (Rb*(Rb + Zb3))) \
+          )
 
-        v33inf =
+        v33inf = 1/(8*pi*(1 - nu))*(\
+            2*(1 - nu)*(F - Fb) \
+            + Y2*numpy.sin(beta)*(\
+            (R*numpy.cos(beta) - Y3)/(R*(R - Z3)) \
+            - (Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3))) \
+            )
 
+        v31c = 1/(4*pi*(1- nu))*(\
+                (1 - 2*nu)*(\
+                    Y2/(Rb + Yb3)*(1 + a/Rb) \
+                    - Y2*numpy.cos(beta)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb))\
+                    - Y2*(Yb3 - a)/Rb*(a / (Rb**2) + 1/(Rb + Yb3)) \
+                    + Y2*(Yb3 - a)*numpy.cos(beta)/(Rb*(Rb + Zb3))*( \
+                (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb)\
+                + a*Yb3/(Rb**2))\
+                    )
+
+        v32c = 1/(4*pi*(1 - nu))*(\
+                (1 - 2*nu)(\
+                - numpy.sin(beta)*numpy.log(Rb + Zb3) \
+                - Y1/(Rb + Yb3)*(1 + a/Rb) \
+                + Zb1/(Rb + Zb3)*(numpy.cos(beta) + a/Rb)) \
+                + Y1*(Yb3 - a)/Rb*(a / (Rb**2) + 1/(Rb + Yb3)) \
+                + (Yb3 - a)/(Rb + Zb3)*( \
+                numpy.sin(beta)*(numpy.cos(beta) - a/Rb) \
+                + Zb1/Rb*(1 + a*Yb3/(Rb**2)) \
+                - 1/(Rb*(Rb + Zb3))*(\
+                    Y2**2*numpy.cos(beta)*numpy.sin(beta)\
+                - a*Zb1/(Rb)*(Rb * numpy.cos(beta) + Yb3))) \
+                )
+
+        v33c = 1/(4*pi*(1 - nu))*(\
+                2*(1 - nu)*(\
+                Fb + Y2*numpy.sin(beta)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb))\
+                + Y2*(Yb3 - a)*numpy.sin(beta)/(Rb*(Rb + Zb3))*(\
+                1 + (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3)*(\
+                numpy.cos(beta) + a/Rb) + a*Yb3/(Rb**2))\
+                )
+
+        v31 = v31inf + v31c
+        v32 = v32inf + v32c
+        v33 = v33inf + v33c
 
         return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
@@ -1925,6 +1977,7 @@ class SubFault(object):
         Zb2 =  Y2
         Zb3 = -numpy.sin(beta)*Y1 + numpy.cos(beta)*Yb3
 
+        
         return Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3
 
 
