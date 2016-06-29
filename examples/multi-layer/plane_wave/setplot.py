@@ -116,9 +116,13 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # ========================================================================
     # Axis limits
     #xlimits = [amrdata.xlower,amrdata.xupper]
-    xlimits = [-0.5,0.5]
+    # xlimits = [-0.5,0.5]    # plotting the domain
+    xlimits = [-1.5, 2.5]         # ploting extra space to see edges more clearly
+
     #ylimits = [amrdata.ylower,amrdata.yupper]
-    ylimits = [-0.5,0.5]
+    # ylimits = [-0.5,0.5]    # plotting the domain
+    ylimits = [-1.5, 2.5]        # ploting extra space to see edges more clearly
+    
     eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
     top_surface_limits = [eta[0]-0.03,eta[0]+0.03]
     internal_surface_limits = [eta[1]-0.015,eta[1]+0.015]
