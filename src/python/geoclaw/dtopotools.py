@@ -1663,12 +1663,14 @@ class SubFault(object):
             yy = LAT2METER * Y
 
             # get beta angles
-            beta_list = self._get_beta_angles()
+            O1_list, O2_list, alpha_list, beta_list = self._get_leg_angles()
 
             slipv = self._get_slip_unit_vector()                # slip-vector
             rot = numpy.array([[ cos(alpha),sin(alpha)],\
                                [-sin(alpha),cos(alpha)]])   # rot. by -alpha
             burgersv = numpy.dot(rot,slipv)        # burgers vector
+
+
 
             slip = self.slip
             area = self.length * self.width # approximately
@@ -1751,7 +1753,7 @@ class SubFault(object):
 
         return O1_list,O2_list,alpha_list,beta_list
         
-    def _get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
+    def _get_angular_dislocations(self,Y1,Y2,Y3,Z1,Z2,Z3,\
                                   Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth):
                                   
         """
@@ -1779,9 +1781,12 @@ class SubFault(object):
         pi = numpy.pi
         sin = numpy.sin
         cos = numpy.cos
+        tan = numpy.tan
         atan = numpy.arctan
         sqrt = numpy.sqrt
         log = numpy.log
+
+        a = numpy.abs(Odepth)   #lazy
 
         nu = poisson        # .5 * lambda / (lambda + mu)
 
@@ -1980,7 +1985,7 @@ class SubFault(object):
                     )
 
         v32c = cC*(\
-                (1 - 2*nu)(\
+                (1 - 2*nu)*(\
                     - sin(beta)*log(Rb + Zb3) \
                     - Y1/(Rb + Yb3)*(1 + a/Rb) \
                     + Zb1/(Rb + Zb3)*(cos(beta) + a/Rb)) \
