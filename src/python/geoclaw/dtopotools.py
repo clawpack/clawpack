@@ -1525,6 +1525,29 @@ class SubFault(object):
         else:
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
+    def _get_slip_unit_vector(self):
+        """
+        compute a unit vector in the slip-direction (rake-direction)
+
+        """
+        strike = self.strike
+        dip = self.dip
+        rake = self.rake
+
+        sin = numpy.sin
+        cos = numpy.cos
+
+        e1 = numpy.array([1.,0.,0.])
+        e2 = numpy.array([0.,1.,0.])
+        e3 = numpy.array([0.,0.,1.])
+
+        u = sin(strike)*e1 + cos(strike)*e2
+        v = cos(strike)*e1 - sin(strike)*e2
+
+        w = sin(dip)*e3 + cos(dip)*v
+        z = sin(rake)*w+ cos(rake)*u
+
+        return z
 
 
     
@@ -1624,10 +1647,28 @@ class SubFault(object):
 
         elif self.coordinate_specification == 'triangular':
 
+            cos = numpy.cos
+            sin = numpy.sin
+
             # coordinates for the three nodes
             c1 = self.corners[0]
             c2 = self.corners[1]
             c3 = self.corners[2]
+
+            X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
+    
+            # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
+            # meters:
+            xx = LAT2METER * cos(DEG2RAD * Y) * X
+            yy = LAT2METER * Y
+
+            # get beta angles
+            beta_list = self._get_beta_angles()
+
+            slipv = self._get_slip_unit_vector()                # slip-vector
+            rot = numpy.array([[ cos(alpha),sin(alpha)],\
+                               [-sin(alpha),cos(alpha)]])   # rot. by -alpha
+            burgersv = numpy.dot(rot,slipv)        # burgers vector
 
             slip = self.slip
             area = self.length * self.width # approximately
@@ -1651,38 +1692,68 @@ class SubFault(object):
 
     # Utility functions for okada:
 
-    def _get_angular_params(self):
+    def _get_leg_angles(self):
         """
-        compute beta, the angle between vertical depth axis and 
-        the tangent vector of side of the triangular subfault
+        compute beta in radians
+        (the angle between vertical depth axis and 
+        the tangent vector of side of the triangular subfault)
 
         ordering: x2-x1, x3-x2, x1-x3
+
+        requires self.corners to have been computed.
 
         """
 
         # put in coordinate_specification == 'triangular' check here
 
-        x1 = numpy.array(self.corners[0])
-        x2 = numpy.array(self.corners[1])
-        x3 = numpy.array(self.corners[2])
+        x = numpy.array(self.corners)
+        y = numpy.zeros(x.shape)
 
-        v_list = [x2 - x1, x3 - x2, x1 - x3]
+        # convert to meters
+        y[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
+        y[:,1] = LAT2METER * x[:,1]
+        y[:,2] = x[:,2]
+
+        v_list = [y[1,:] - y[0,:], y[2,:] - y[1,:], y[0,:] - y[2,:]]
 
         e3 = numpy.array([0.,0.,-1.])
 
+        O1_list = []
+        O2_list = []
+        alpha_list = []
         beta_list = []
 
+        j = 0
         for v in v_list:
-            beta = numpy.arccos(numpy.dot(e3,v/numpy.linalg.norm(v)))
-            print(numpy.dot(e3,v/numpy.linalg.norm(v)))
-            if beta > numpy.pi/2. :
-                beta = numpy.pi - beta
+            vnormal = v/numpy.linalg.norm(v)
+            k = j
+            l = (j+1)%3
+            if vnormal[2] > 0.:
+                vnormal = -vnormal    # point vnormal in depth direction
+                k = (j+1)%3
+                l = j
+
+            O1 = x[k,:].tolist()     # set origin for the vector v
+            O2 = x[l,:].tolist()     # set dest.  for the vector v
+            O1_list.append(O1)
+            O2_list.append(O2)
+
+            vxy = vnormal[0:2]
+            vxy = vxy / numpy.linalg.norm(vxy)  # normalized xy-components
+            alpha = numpy.arccos(vxy[1])
+            if vxy[0] < 0.:
+                alpha = 2.*numpy.pi - alpha
+            alpha_list.append(alpha)
+            beta = numpy.arccos(numpy.dot(e3,vnormal))
             beta_list.append(beta)
 
-        return beta_list
+            j = j+1
+
+        return O1_list,O2_list,alpha_list,beta_list
         
-    def _get_angular_displocations(Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,\
-                                  beta,depth):
+    def _get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
+                                  Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth):
+                                  
         """
         compute angular dislocations
 
@@ -1704,7 +1775,7 @@ class SubFault(object):
 
         """
 
-        # some elementary functions
+        # shorthand for some elementary functions from numpy
         pi = numpy.pi
         sin = numpy.sin
         cos = numpy.cos
@@ -1713,7 +1784,6 @@ class SubFault(object):
         log = numpy.log
 
         nu = poisson        # .5 * lambda / (lambda + mu)
-        a = depth
 
         # some preliminary quantities
         R = sqrt(Y1**2 + Y2**2 + Y3**2)
@@ -1768,32 +1838,32 @@ class SubFault(object):
 
 
         v12c = cC*(\
-        (1 - 2*nu)*((2*(1 - nu)/(tan(beta)**2) - nu)*log(Rb - Yb3)\
-        - (2*(1 - nu)/(tan(beta)**2) + 1 - 2*nu)\
-        *cos(beta)*log(Rb + Zb3)) \
-        - (1 - 2*nu)/(Rb + Yb3)*(Y1/tan(beta)*(1 - 2*nu - a/Rb) \
-        + nu*Yb3 - a + Y2**2/(Rb + Yb3) *(nu + a/Rb)) \
-        - (1 - 2*nu)*Zb1/tan(beta)/(Rb + Zb3)*(cos(beta) + a/Rb) \
-        - a*Y1*(Yb3 - a)/tan(beta)/(Rb**3) \
-        + (Yb3 - a)/(Rb + Yb3)*( -2 * nu + 1/Rb*((1 - 2*nu)*Y1/tan(beta)\
-        - a) + Y2**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) + a*Y2**2/(Rb**3)) \
-        + (Yb3 - a)/(Rb + Zb3)*((cos(beta)**2) \
-        - 1/Rb*((1 - 2*nu)*Zb1/tan(beta) + a*cos(beta)) \
-        + a*Yb3*Zb1/tan(beta)/(Rb**3) \
-        - 1/(Rb*(Rb + Zb3))*( Y2**2*(cos(beta)**2) - \
-        a*Zb1/tan(beta)/Rb*(Rb*cos(beta) + Yb3)))\
-        )
+              (1 - 2*nu)*((2*(1 - nu)/(tan(beta)**2) - nu)*log(Rb - Yb3)\
+              - (2*(1 - nu)/(tan(beta)**2) + 1 - 2*nu)\
+              *cos(beta)*log(Rb + Zb3)) \
+              - (1 - 2*nu)/(Rb + Yb3)*(Y1/tan(beta)*(1 - 2*nu - a/Rb) \
+              + nu*Yb3 - a + Y2**2/(Rb + Yb3) *(nu + a/Rb)) \
+              - (1 - 2*nu)*Zb1/tan(beta)/(Rb + Zb3)*(cos(beta) + a/Rb) \
+              - a*Y1*(Yb3 - a)/tan(beta)/(Rb**3) \
+              + (Yb3 - a)/(Rb + Yb3)*( -2 * nu + 1/Rb*((1 - 2*nu)*Y1/tan(beta)\
+              - a) + Y2**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) + a*Y2**2/(Rb**3)) \
+              + (Yb3 - a)/(Rb + Zb3)*((cos(beta)**2) \
+              - 1/Rb*((1 - 2*nu)*Zb1/tan(beta) + a*cos(beta)) \
+              + a*Yb3*Zb1/tan(beta)/(Rb**3) \
+              - 1/(Rb*(Rb + Zb3))*( Y2**2*(cos(beta)**2) - \
+              a*Zb1/tan(beta)/Rb*(Rb*cos(beta) + Yb3)))\
+              )
             
         v13c = cC*(\
-        2*(1 - nu)*( (1 - 2*nu)*Fb/tan(beta) \
-          + Y2/(Rb + Yb3)*(2*nu + a/Rb) \
-          - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
-          + Y2*(Yb3 - a)/Rb*(2*nu/(Rb + Yb3) + a/(Rb**2)) \
-          + Y2*(Yb3 - a)*cos(beta)/(Rb*(Rb + Zb3))*(\
-          1 - 2*nu \
-          - (Rb*cos(beta) + Yb3)/(Rb + Zb3)\
-          *(cos(beta) + a/Rb) - a*Yb3/(Rb**2))\
-          )
+              2*(1 - nu)*( (1 - 2*nu)*Fb/tan(beta) \
+                + Y2/(Rb + Yb3)*(2*nu + a/Rb) \
+                - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
+                + Y2*(Yb3 - a)/Rb*(2*nu/(Rb + Yb3) + a/(Rb**2)) \
+                + Y2*(Yb3 - a)*cos(beta)/(Rb*(Rb + Zb3))*(\
+                1 - 2*nu \
+                - (Rb*cos(beta) + Yb3)/(Rb + Zb3)\
+                *(cos(beta) + a/Rb) - a*Yb3/(Rb**2))\
+               )
 
         v11 = v11inf + v11c
         v12 = v12inf + v12c
