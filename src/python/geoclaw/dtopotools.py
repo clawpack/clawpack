@@ -1652,6 +1652,15 @@ class SubFault(object):
     # Utility functions for okada:
 
     def _get_angular_params(self):
+        """
+        compute beta, the angle between vertical depth axis and 
+        the tangent vector of side of the triangular subfault
+
+        ordering: x2-x1, x3-x2, x1-x3
+
+        """
+
+        # put in coordinate_specification == 'triangular' check here
 
         x1 = numpy.array(self.corners[0])
         x2 = numpy.array(self.corners[1])
@@ -1672,7 +1681,8 @@ class SubFault(object):
 
         return beta_list
         
-    def _get_angular_displocations(Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,depth)
+    def _get_angular_displocations(Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,\
+                                  beta,depth):
         """
         compute angular dislocations
 
@@ -1694,88 +1704,95 @@ class SubFault(object):
 
         """
 
+        # some elementary functions
         pi = numpy.pi
+        sin = numpy.sin
+        cos = numpy.cos
+        atan = numpy.arctan
+        sqrt = numpy.sqrt
+        log = numpy.log
+
         nu = poisson        # .5 * lambda / (lambda + mu)
         a = depth
 
         # some preliminary quantities
-        R = numpy.sqrt(Y1**2 + Y2**2 + Y3**2)
-        Rb = numpy.sqrt(Yb1**2 + Yb2**2 + Yb3**2)
+        R = sqrt(Y1**2 + Y2**2 + Y3**2)
+        Rb = sqrt(Yb1**2 + Yb2**2 + Yb3**2)
         
-        F = - numpy.arctan(Y2/Y1) + numpy.arctan(Y2/Z1) \
-          + numpy.arctan(Y2*R*numpy.sin(beta)/(Y1*Z1 + Y2**2*numpy.cos(beta)))
-        Fb = - numpy.arctan(Y2/Y1) + numpy.arctan(Y2/Zb1) \
-          + numpy.arctan(Y2*Rb*numpy.sin(beta)/(Y1*Zb1 + Y2**2*numpy.cos(beta)))
+        F =  - atan(Y2/Y1) + atan(Y2/Z1) \
+             + atan(Y2*R*sin(beta)/(Y1*Z1 + Y2**2*cos(beta)))
+        Fb = - atan(Y2/Y1) + atan(Y2/Zb1) \
+             + atan(Y2*Rb*sin(beta)/(Y1*Zb1 + Y2**2*cos(beta)))
 
-        phib = -Y2*Fb - Y1*numpy.log(Rb + Yb3) + Zb1*numpy.log(Rb + Zb3)
-        chib = -Y1*Fb + Y2*numpy.log(Rb + Yb3) \
-                - Y2*numpy.cos(beta)*numpy.log(Rb + Zb3)
-        phib = Yb3*Fb + Y2*numpy.sin(beta)*numpy.log(Rb + Zb3)
+        phib = - Y2*Fb - Y1*log(Rb + Yb3) + Zb1*log(Rb + Zb3)
+        chib = - Y1*Fb + Y2*log(Rb + Yb3) - Y2*cos(beta)*log(Rb + Zb3)
+        psib =   Yb3*Fb + Y2*sin(beta)*log(Rb + Zb3)
+
+        infC = 1/(8*pi*(1 - nu))
+        cC = 1/(4*pi*(1 - nu))
         
-
         # Burgers vectors (1,0,0)
 
-        v11inf = 1/(8*pi*(1 - nu))*(\
+        v11inf = infC*(\
             2*(1 - nu)*(F + Fb) - Y1*Y2*(1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3)))
-          - Y2*numpy.cos(beta)*((R*numpy.sin(beta) - Y1)/(R*(R - Z3)) \
-                  + (Rb*numpy.sin(beta) - Y1)/(Rb*(Rb + Zb3))))
+          - Y2*cos(beta)*((R*sin(beta) - Y1)/(R*(R - Z3)) \
+                  + (Rb*sin(beta) - Y1)/(Rb*(Rb + Zb3))))
 
-        v12inf = 1/(8*pi*(1 - nu))*(\
-            (1 - 2*nu)*(numpy.log(R - Y3) + numpy.log(Rb + Yb3) \
-          - numpy.cos(beta)*(numpy.log(R - Z3) + numpy.log(Rb + Zb3)))
+        v12inf = infC*(\
+            (1 - 2*nu)*(log(R - Y3) + log(Rb + Yb3) \
+          - cos(beta)*(log(R - Z3) + log(Rb + Zb3)))
           - Y2**2*(1/(R*(R-Y3)) + 1/(Rb*(Rb + Yb3)) \
-                  - numpy.cos(beta)*(1/(R*(R - Z3)) + 1/(Rb*(Rb + Zb3)))))
+                  - cos(beta)*(1/(R*(R - Z3)) + 1/(Rb*(Rb + Zb3)))))
 
-        v13inf = 1/(8*pi*(1 - nu))*Y2*(\
-                1/R - 1/Rb - numpy.cos(beta)*(\
-                    (R*numpy.cos(beta) - Y3)/(R*(R - Z3)) \
-                  - (Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3))))
+        v13inf = infC*Y2*(\
+                1/R - 1/Rb - cos(beta)*(\
+                    (R*cos(beta) - Y3)/(R*(R - Z3)) \
+                  - (Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))))
 
-        v11c = 1/(4*pi*(1 - nu))*(\
-               - 2*(1 - nu)*(1 - 2*nu)*Fb/(numpy.tan(beta)**2)  \
-               + (1 - 2*nu)*Y2/(Rb + Yb3)*(\
-               (1 - 2*nu - a/Rb)/numpy.tan(beta) \
-               - Y1/(Rb + Yb3)*(nu + a/Rb)) \
-               + (1 - 2*nu)*Y2*numpy.cos(beta)/numpy.tan(beta)/(Rb + Zb3)\
-            *(numpy.cos(beta) + a/Rb) + a*Y2*(Yb3 - a)/numpy.tan(beta)/(Rb**3)\
-            + Y2*(Yb3 - a)/(Rb*(Rb + Yb3))*(\
-            - (1 - 2*nu)/numpy.tan(beta) + Y1/(Rb + Yb3)*(2*nu + a/Rb) \
-            + a*Y1/(Rb**2)) \
-            + Y2*(Yb3 - a)/(Rb*(Rb + Zb3))*(\
-            numpy.cos(beta)/(Rb + Zb3)*(\
-            (Rb*numpy.cos(beta) + Yb3)\
-            *((1 - 2*nu)*numpy.cos(beta) - a/Rb)/numpy.tan(beta) \
-            + 2*(1 - nu)*(Rb*numpy.sin(beta) - Y1)*numpy.cos(beta))\
-            - a*Yb3*numpy.cos(beta)/numpy.tan(beta)/(Rb**2))\
-            )
+        v11c = cC*(\
+               - 2*(1 - nu)*(1 - 2*nu)*Fb/(tan(beta)**2)  \
+               + (1 - 2*nu)*Y2/(Rb + Yb3)\
+                *((1 - 2*nu - a/Rb)/tan(beta) - Y1/(Rb + Yb3)*(nu + a/Rb)) \
+               + (1-2*nu)*Y2*cos(beta)/tan(beta)/(Rb + Zb3)*(cos(beta) + a/Rb)\
+               + a*Y2*(Yb3 - a)/tan(beta)/(Rb**3)\
+                + Y2*(Yb3 - a)/(Rb*(Rb + Yb3))*(\
+                - (1 - 2*nu)/tan(beta) + Y1/(Rb + Yb3)*(2*nu + a/Rb) \
+                + a*Y1/(Rb**2)) \
+                + Y2*(Yb3 - a)/(Rb*(Rb + Zb3))*(\
+                        cos(beta)/(Rb + Zb3)*(\
+                (Rb*cos(beta) + Yb3)\
+                *((1 - 2*nu)*cos(beta) - a/Rb)/tan(beta) \
+                + 2*(1 - nu)*(Rb*sin(beta) - Y1)*cos(beta))\
+                - a*Yb3*cos(beta)/tan(beta)/(Rb**2))\
+                )
 
 
-        v12c = 1/(4*pi(1 - nu))*(\
-        (1 - 2*nu)*((2*(1 - nu)/(numpy.tan(beta)**2) - nu)*numpy.log(Rb - Yb3)\
-        - (2*(1 - nu)/(numpy.tan(beta)**2) + 1 - 2*nu)\
-        *numpy.cos(beta)*numpy.log(Rb + Zb3)) \
-        - (1 - 2*nu)/(Rb + Yb3)*(Y1/numpy.tan(beta)*(1 - 2*nu - a/Rb) \
+        v12c = cC*(\
+        (1 - 2*nu)*((2*(1 - nu)/(tan(beta)**2) - nu)*log(Rb - Yb3)\
+        - (2*(1 - nu)/(tan(beta)**2) + 1 - 2*nu)\
+        *cos(beta)*log(Rb + Zb3)) \
+        - (1 - 2*nu)/(Rb + Yb3)*(Y1/tan(beta)*(1 - 2*nu - a/Rb) \
         + nu*Yb3 - a + Y2**2/(Rb + Yb3) *(nu + a/Rb)) \
-        - (1 - 2*nu)*Zb1/numpy.tan(beta)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb) \
-        - a*Y1*(Yb3 - a)/numpy.tan(beta)/(Rb**3) \
-        + (Yb3 - a)/(Rb + Yb3)*( -2 * nu + 1/Rb*((1 - 2*nu)*Y1/numpy.tan(beta)\
+        - (1 - 2*nu)*Zb1/tan(beta)/(Rb + Zb3)*(cos(beta) + a/Rb) \
+        - a*Y1*(Yb3 - a)/tan(beta)/(Rb**3) \
+        + (Yb3 - a)/(Rb + Yb3)*( -2 * nu + 1/Rb*((1 - 2*nu)*Y1/tan(beta)\
         - a) + Y2**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) + a*Y2**2/(Rb**3)) \
-        + (Yb3 - a)/(Rb + Zb3)*((numpy.cos(beta)**2) \
-        - 1/Rb*((1 - 2*nu)*Zb1/numpy.tan(beta) + a*numpy.cos(beta)) \
-        + a*Yb3*Zb1/numpy.tan(beta)/(Rb**3) \
-        - 1/(Rb*(Rb + Zb3))*( Y2**2*(numpy.cos(beta)**2) - \
-        a*Zb1/numpy.tan(beta)/Rb*(Rb*numpy.cos(beta) + Yb3)))\
+        + (Yb3 - a)/(Rb + Zb3)*((cos(beta)**2) \
+        - 1/Rb*((1 - 2*nu)*Zb1/tan(beta) + a*cos(beta)) \
+        + a*Yb3*Zb1/tan(beta)/(Rb**3) \
+        - 1/(Rb*(Rb + Zb3))*( Y2**2*(cos(beta)**2) - \
+        a*Zb1/tan(beta)/Rb*(Rb*cos(beta) + Yb3)))\
         )
             
-        v13c = 1/(4*pi*(1-nu))*(\
-        2*(1 - nu)*( (1 - 2*nu)*Fb/numpy.tan(beta) \
+        v13c = cC*(\
+        2*(1 - nu)*( (1 - 2*nu)*Fb/tan(beta) \
           + Y2/(Rb + Yb3)*(2*nu + a/Rb) \
-          - Y2*numpy.cos(beta)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb))\
+          - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
           + Y2*(Yb3 - a)/Rb*(2*nu/(Rb + Yb3) + a/(Rb**2)) \
-          + Y2*(Yb3 - a)*numpy.cos(beta)/(Rb*(Rb + Zb3))*(\
+          + Y2*(Yb3 - a)*cos(beta)/(Rb*(Rb + Zb3))*(\
           1 - 2*nu \
-          - (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3)\
-          *(numpy.cos(beta) + a/Rb) - a*Yb3/(Rb**2))\
+          - (Rb*cos(beta) + Yb3)/(Rb + Zb3)\
+          *(cos(beta) + a/Rb) - a*Yb3/(Rb**2))\
           )
 
         v11 = v11inf + v11c
@@ -1784,69 +1801,79 @@ class SubFault(object):
 
         # Burgers vectors (0,1,0)
 
-        v21inf = 1/(8*pi*(1 - nu))*(\
+        v21inf = infC*(\
                 - (1 - 2*nu)*(\
-                numpy.log(R - Y3) + numpy.log(Rb - Yb3) \
-                - numpy.cos(beta)*(numpy.log(R - Z3) + numpy.log(Rb + Zb3)))\
+                    log(R - Y3) + log(Rb - Yb3) \
+                  - cos(beta)*(log(R - Z3) + log(Rb + Zb3)))\
                 + Y1**2*( 1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3))) \
-                + Z1*(R*numpy.sin(beta) - Y1)/(R*(R - Z3)) \
-                + Zb1*(Rb*numpy.sin(beta) - Y1)/(Rb*(Rb + Zb3)) \
+                + Z1*(R*sin(beta) - Y1)/(R*(R - Z3)) \
+                + Zb1*(Rb*sin(beta) - Y1)/(Rb*(Rb + Zb3)) \
                 )
 
-        v22inf = 1/(8*pi*(1 - nu))*(\
+        v22inf = infC*(\
                 2*(1 - nu)*(F + Fb) + Y1*Y2*(\
-                1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3))) \
+                    1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3))) \
                 - Y2*( Z1/(R*(R - Z3)) + Zb1/(Rb*(Rb + Zb3)) ) \
                 )
 
-        v23inf = 1/(8*pi*(1 - nu))*(\
-                -(1 - 2*nu)*numpy.sin(beta)*(\
-                numpy.log(R - Z3) - numpy.log(Rb + Zb3))
-                - Y1*(1/R - 1/Rb) + Z1*(R*numpy.cos(beta) - Y3)/(R*(R-Z3)) \
-                        - Zb1*(Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3)) \
+        v23inf = infC*(\
+                - (1 - 2*nu)*sin(beta)*(log(R - Z3) - log(Rb + Zb3)) \
+                - Y1*(1/R - 1/Rb) + Z1*(R*cos(beta) - Y3)/(R*(R - Z3)) \
+                        - Zb1*(Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3)) \
                 )
 
-        v21c = 1/(4*pi*(1 - nu))*(\
-    (1 - 2*nu)*( (2*(1 - nu)/(numpy.tan(beta)**2) + nu)*numpy.log(Rb + Yb3)\
-    - (2*(1 - nu)/(numpy.tan(beta)**2) + 1)*numpy.cos(beta)*numpy.log(Rb + Zb3)) \
-    + (1 - 2*nu)/(Rb + Yb3)*( - (1 - 2*nu)*Y1/numpy.tan(beta) + nu*Yb3 \
-    - a + a*Y1/numpy.tan(beta)/Rb + Y1**2/(Rb + Yb3)*(nu + a/Rb) ) \
-    - (1 - 2*nu)/numpy.tan(beta)/(Rb + Zb3)*(Zb1*numpy.cos(beta) \
-    - a*(Rb*numpy.sin(beta) - Y1)/(Rb * numpy.cos(beta)) ) \
-    - a*Y1*(Yb3 - a)/numpy.tan(beta)/(Rb**3) \
-    + (Yb3 - a)/(Rb + Yb3)*(2*nu + 1/Rb*( (1 - 2*nu)*Y1/numpy.tan(beta) + a)\
-    - Y1**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) - a*Y1**2/(Rb**3))\
-    + (Yb3 - a)/numpy.tan(beta)/(Rb + Zb3)*( - numpy.cos(beta)*numpy.sin(beta)\
-    + a*Y1*Yb3/(Rb**3*numpy.cos(beta)) + (Rb*numpy.sin(beta) - Y1)/Rb*(\
-    2*(1 - nu)*numpy.cos(beta) \
-    - (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3)*(1 + a/(Rb*numpy.cos(beta)))))\
-    )
+        v21c = cC*(\
+              (1 - 2*nu)*( \
+                  (2*(1 - nu)/(tan(beta)**2) + nu)*log(Rb + Yb3)\
+                - (2*(1 - nu)/(tan(beta)**2) + 1)*cos(beta)*log(Rb + Zb3)) \
+            + (1 - 2*nu)/(Rb + Yb3)*(\
+                - (1 - 2*nu)*Y1/tan(beta) + nu*Yb3 \
+                - a + a*Y1/tan(beta)/Rb + Y1**2/(Rb + Yb3)*(nu + a/Rb) ) \
+            - (1 - 2*nu)/tan(beta)/(Rb + Zb3)*(\
+                 Zb1*cos(beta) - a*(Rb*sin(beta) - Y1)/(Rb * cos(beta)) ) \
+            - a*Y1*(Yb3 - a)/tan(beta)/(Rb**3) \
+            + (Yb3 - a)/(Rb + Yb3)*(\
+                2*nu + 1/Rb*((1 - 2*nu)*Y1/tan(beta) + a)\
+                - Y1**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) - a*Y1**2/(Rb**3))\
+            + (Yb3 - a)/tan(beta)/(Rb + Zb3)*(\
+                - cos(beta)*sin(beta)\
+                + a*Y1*Yb3/(Rb**3*cos(beta)) \
+                + (Rb*sin(beta) - Y1)/Rb*(\
+                    2*(1 - nu)*cos(beta) \
+                  - (Rb*cos(beta) + Yb3)/(Rb + Zb3)*(1 + a/(Rb*cos(beta)))))\
+            )
         
-        v22c = 1/(4*pi*(1 - nu))*(\
-    2*(1 - nu)*(1 - 2*nu)*Fb/(numpy.tan(beta)**2) \
-    + (1 - 2*nu)*Y2/(Rb + Yb3)*( - (1 - 2*nu - a/R)/numpy.tan(beta) \
-    + Y1/(Rb + Yb3)*(nu + a/Rb)) \
-    - (1 - 2*nu)*Y2/numpy.tan(beta)/(Rb + Zb3)*(1 + a/(Rb*numpy.cos(beta)))\
-    - a*Y2*(Yb3 - a)/numpy.tan(beta)/(Rb**3) \
-    + Y2*(Yb3 - a)/(Rb*(Rb + Yb3))*((1 - 2*nu)/numpy.tan(beta) \
-    - 2*nu*Y1/(Rb + Yb3) - a*Y1/Rb(1/Rb + 1/(Rb + Yb3))) \
-    + Y2*(Yb3 - a)/numpy.tan(beta)/(Rb*(Rb + Zb3))*(\
-    -2*(1 - nu)*numpy.cos(beta) + (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3) \
-    *(1 + a/(Rb * numpy.cos(beta))) + a*Yb3/(Rb**2*numpy.cos(beta)))\
+        v22c = cC*(\
+              2*(1 - nu)*(1 - 2*nu)*Fb/(tan(beta)**2) \
+            + (1 - 2*nu)*Y2/(Rb + Yb3)*(\
+                - (1 - 2*nu - a/R)/tan(beta) \
+                + Y1/(Rb + Yb3)*(nu + a/Rb)) \
+            - (1 - 2*nu)*Y2/tan(beta)/(Rb + Zb3)*(1 + a/(Rb*cos(beta)))\
+            - a*Y2*(Yb3 - a)/tan(beta)/(Rb**3) \
+            + Y2*(Yb3 - a)/(Rb*(Rb + Yb3))*(\
+                (1 - 2*nu)/tan(beta) \
+              - 2*nu*Y1/(Rb + Yb3) - a*Y1/Rb*(1/Rb + 1/(Rb + Yb3))) \
+            + Y2*(Yb3 - a)/tan(beta)/(Rb*(Rb + Zb3))*(\
+              - 2*(1 - nu)*cos(beta) \
+              + (Rb*cos(beta) + Yb3)/(Rb + Zb3)*(1 + a/(Rb * cos(beta))) \
+              + a*Yb3/(Rb**2*cos(beta)))\
                 )
 
-        v23c = 1/(4*pi*(1 - nu))*(\
-    -2*(1 - nu)*(1 - 2*nu)/numpy.tan(beta) \
-    *(numpy.log(Rb + Yb3) - numpy.cos(beta)*numpy.log(Rb + Zb3)) \
-    - 2*(1 - nu)*Y1/(Rb + Yb3)*(2*nu + a/Rb) \
-    + 2*(1 - nu)*Zb1/(Rb + Zb3)*(numpy.cos(beta) + a/Rb) \
-    + (Yb3 - a)/Rb*((1 - 2*nu)/numpy.tan(beta) - 2*nu*Y1/(Rb + Yb3) \
-        - a*Y1/(Rb**2)) \
-    + (Yb3 - a)/(Rb + Zb3)*( numpy.cos(beta)*numpy.sin(beta) \
-    + (Rb*numpy.cos(beta) + Yb3)/numpy.tan(beta)/Rb*(\
-        2*(1 - nu)*numpy.cos(beta) - (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3))\
-        + a/Rb*(numpy.sin(beta) - Yb3*Zb1/(Rb**2) - Zb1*(Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3))))\
-    )
+        v23c = cC*(\
+              -2*(1 - nu)*(1 - 2*nu)/tan(beta)\
+                *(log(Rb + Yb3) - cos(beta)*log(Rb + Zb3)) \
+              - 2*(1 - nu)*Y1/(Rb + Yb3)*(2*nu + a/Rb) \
+              + 2*(1 - nu)*Zb1/(Rb + Zb3)*(cos(beta) + a/Rb) \
+              + (Yb3 - a)/Rb*((1 - 2*nu)/tan(beta) - 2*nu*Y1/(Rb + Yb3) \
+                - a*Y1/(Rb**2)) \
+              + (Yb3 - a)/(Rb + Zb3)*(\
+                  cos(beta)*sin(beta) \
+                + (Rb*cos(beta) + Yb3)/tan(beta)/Rb*(\
+                    2*(1 - nu)*cos(beta) - (Rb*cos(beta) + Yb3)/(Rb + Zb3))\
+                + a/Rb*(sin(beta) \
+                    - Yb3*Zb1/(Rb**2) \
+                    - Zb1*(Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))))\
+               )
 
         v21 = v21inf + v21c
         v22 = v22inf + v22c
@@ -1854,55 +1881,54 @@ class SubFault(object):
 
         # Burgers vectors (0,0,1)
 
-        v31inf = 1/(8*pi*(1 - nu))*(\
-                Y2*numpy.sin(beta)*(\
-                    (R*numpy.sin(beta) - Y1)/(R*(R - Z3)) \
-                    + (Rb*numpy.sin(beta) - Y1)/(Rb*(Rb + Zb3)))\
+        v31inf = infC*(\
+                  Y2*sin(beta)*(\
+                      (R*sin(beta) - Y1)/(R*(R - Z3)) \
+                    + (Rb*sin(beta) - Y1)/(Rb*(Rb + Zb3)))\
                     )
 
-        v32inf = 1/(8*pi*(1 - nu))*(\
-          (1 - 2*nu)*numpy.sin(beta)*(\
-          numpy.log(R - Z3) + numpy.log(Rb + Zb3)) \
-          - Y2**2*numpy.sin(beta)*(1 / (R*(R - Z3)) + 1 / (Rb*(Rb + Zb3))) \
-          )
+        v32inf = infC*(\
+                   (1 - 2*nu)*sin(beta)*(log(R - Z3) + log(Rb + Zb3)) \
+                 - Y2**2*sin(beta)*(1/(R*(R - Z3)) + 1/(Rb*(Rb + Zb3)))\
+                 )
 
-        v33inf = 1/(8*pi*(1 - nu))*(\
-            2*(1 - nu)*(F - Fb) \
-            + Y2*numpy.sin(beta)*(\
-            (R*numpy.cos(beta) - Y3)/(R*(R - Z3)) \
-            - (Rb*numpy.cos(beta) + Yb3)/(Rb*(Rb + Zb3))) \
-            )
+        v33inf = infC*(\
+                   2*(1 - nu)*(F - Fb) \
+                 + Y2*sin(beta)*(\
+                    (R*cos(beta) - Y3)/(R*(R - Z3)) \
+                  - (Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))) \
+                )
 
-        v31c = 1/(4*pi*(1- nu))*(\
+        v31c = cC*(\
                 (1 - 2*nu)*(\
-                    Y2/(Rb + Yb3)*(1 + a/Rb) \
-                    - Y2*numpy.cos(beta)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb))\
-                    - Y2*(Yb3 - a)/Rb*(a / (Rb**2) + 1/(Rb + Yb3)) \
-                    + Y2*(Yb3 - a)*numpy.cos(beta)/(Rb*(Rb + Zb3))*( \
-                (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb)\
+                      Y2/(Rb + Yb3)*(1 + a/Rb) \
+                    - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
+                - Y2*(Yb3 - a)/Rb*(a / (Rb**2) + 1/(Rb + Yb3)) \
+                + Y2*(Yb3 - a)*cos(beta)/(Rb*(Rb + Zb3))*( \
+                (Rb*cos(beta) + Yb3)/(Rb + Zb3)*(cos(beta) + a/Rb)\
                 + a*Yb3/(Rb**2))\
                     )
 
-        v32c = 1/(4*pi*(1 - nu))*(\
+        v32c = cC*(\
                 (1 - 2*nu)(\
-                - numpy.sin(beta)*numpy.log(Rb + Zb3) \
-                - Y1/(Rb + Yb3)*(1 + a/Rb) \
-                + Zb1/(Rb + Zb3)*(numpy.cos(beta) + a/Rb)) \
-                + Y1*(Yb3 - a)/Rb*(a / (Rb**2) + 1/(Rb + Yb3)) \
+                    - sin(beta)*log(Rb + Zb3) \
+                    - Y1/(Rb + Yb3)*(1 + a/Rb) \
+                    + Zb1/(Rb + Zb3)*(cos(beta) + a/Rb)) \
+                + Y1*(Yb3 - a)/Rb*(a/(Rb**2) + 1/(Rb + Yb3)) \
                 + (Yb3 - a)/(Rb + Zb3)*( \
-                numpy.sin(beta)*(numpy.cos(beta) - a/Rb) \
-                + Zb1/Rb*(1 + a*Yb3/(Rb**2)) \
+                     sin(beta)*(cos(beta) - a/Rb) \
+                   + Zb1/Rb*(1 + a*Yb3/(Rb**2)) \
                 - 1/(Rb*(Rb + Zb3))*(\
-                    Y2**2*numpy.cos(beta)*numpy.sin(beta)\
-                - a*Zb1/(Rb)*(Rb * numpy.cos(beta) + Yb3))) \
+                    Y2**2*cos(beta)*sin(beta)\
+                  - a*Zb1/(Rb)*(Rb*cos(beta) + Yb3))) \
                 )
 
-        v33c = 1/(4*pi*(1 - nu))*(\
+        v33c = cC*(\
                 2*(1 - nu)*(\
-                Fb + Y2*numpy.sin(beta)/(Rb + Zb3)*(numpy.cos(beta) + a/Rb))\
-                + Y2*(Yb3 - a)*numpy.sin(beta)/(Rb*(Rb + Zb3))*(\
-                1 + (Rb*numpy.cos(beta) + Yb3)/(Rb + Zb3)*(\
-                numpy.cos(beta) + a/Rb) + a*Yb3/(Rb**2))\
+                    Fb + Y2*sin(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
+                + Y2*(Yb3 - a)*sin(beta)/(Rb*(Rb + Zb3))*(\
+                    1 + (Rb*cos(beta) + Yb3)/(Rb + Zb3)*(cos(beta) + a/Rb)\
+                    + a*Yb3/(Rb**2))\
                 )
 
         v31 = v31inf + v31c
