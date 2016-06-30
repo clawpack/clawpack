@@ -1724,6 +1724,7 @@ class SubFault(object):
         O2_list = []
         alpha_list = []
         beta_list = []
+        reverse_list = [False,False,False]
 
         j = 0
         for v in v_list:
@@ -1734,6 +1735,7 @@ class SubFault(object):
                 vnormal = -vnormal    # point vnormal in depth direction
                 k = (j+1)%3
                 l = j
+                reverse_list[j] = True
 
             O1 = x[k,:].tolist()     # set origin for the vector v
             O2 = x[l,:].tolist()     # set dest.  for the vector v
@@ -1751,7 +1753,7 @@ class SubFault(object):
 
             j = j+1
 
-        return O1_list,O2_list,alpha_list,beta_list
+        return reverse_list,O1_list,O2_list,alpha_list,beta_list
         
     def _get_angular_dislocations(self,Y1,Y2,Y3,Z1,Z2,Z3,\
                                   Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth):
@@ -1813,13 +1815,13 @@ class SubFault(object):
           - Y2*cos(beta)*((R*sin(beta) - Y1)/(R*(R - Z3)) \
                   + (Rb*sin(beta) - Y1)/(Rb*(Rb + Zb3))))
 
-        v12inf = infC*(\
+        v21inf = infC*(\
             (1 - 2*nu)*(log(R - Y3) + log(Rb + Yb3) \
           - cos(beta)*(log(R - Z3) + log(Rb + Zb3)))
           - Y2**2*(1/(R*(R-Y3)) + 1/(Rb*(Rb + Yb3)) \
                   - cos(beta)*(1/(R*(R - Z3)) + 1/(Rb*(Rb + Zb3)))))
 
-        v13inf = infC*Y2*(\
+        v31inf = infC*Y2*(\
                 1/R - 1/Rb - cos(beta)*(\
                     (R*cos(beta) - Y3)/(R*(R - Z3)) \
                   - (Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))))
@@ -1842,7 +1844,7 @@ class SubFault(object):
                 )
 
 
-        v12c = cC*(\
+        v21c = cC*(\
               (1 - 2*nu)*((2*(1 - nu)/(tan(beta)**2) - nu)*log(Rb - Yb3)\
               - (2*(1 - nu)/(tan(beta)**2) + 1 - 2*nu)\
               *cos(beta)*log(Rb + Zb3)) \
@@ -1859,7 +1861,7 @@ class SubFault(object):
               a*Zb1/tan(beta)/Rb*(Rb*cos(beta) + Yb3)))\
               )
             
-        v13c = cC*(\
+        v31c = cC*(\
               2*(1 - nu)*( (1 - 2*nu)*Fb/tan(beta) \
                 + Y2/(Rb + Yb3)*(2*nu + a/Rb) \
                 - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
@@ -1871,12 +1873,12 @@ class SubFault(object):
                )
 
         v11 = v11inf + v11c
-        v12 = v12inf + v12c
-        v13 = v13inf + v13c
+        v21 = v21inf + v21c
+        v31 = v31inf + v31c
 
         # Burgers vectors (0,1,0)
 
-        v21inf = infC*(\
+        v12inf = infC*(\
                 - (1 - 2*nu)*(\
                     log(R - Y3) + log(Rb - Yb3) \
                   - cos(beta)*(log(R - Z3) + log(Rb + Zb3)))\
@@ -1891,13 +1893,13 @@ class SubFault(object):
                 - Y2*( Z1/(R*(R - Z3)) + Zb1/(Rb*(Rb + Zb3)) ) \
                 )
 
-        v23inf = infC*(\
+        v32inf = infC*(\
                 - (1 - 2*nu)*sin(beta)*(log(R - Z3) - log(Rb + Zb3)) \
                 - Y1*(1/R - 1/Rb) + Z1*(R*cos(beta) - Y3)/(R*(R - Z3)) \
                         - Zb1*(Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3)) \
                 )
 
-        v21c = cC*(\
+        v12c = cC*(\
               (1 - 2*nu)*( \
                   (2*(1 - nu)/(tan(beta)**2) + nu)*log(Rb + Yb3)\
                 - (2*(1 - nu)/(tan(beta)**2) + 1)*cos(beta)*log(Rb + Zb3)) \
@@ -1934,7 +1936,7 @@ class SubFault(object):
               + a*Yb3/(Rb**2*cos(beta)))\
                 )
 
-        v23c = cC*(\
+        v32c = cC*(\
               -2*(1 - nu)*(1 - 2*nu)/tan(beta)\
                 *(log(Rb + Yb3) - cos(beta)*log(Rb + Zb3)) \
               - 2*(1 - nu)*Y1/(Rb + Yb3)*(2*nu + a/Rb) \
@@ -1950,19 +1952,19 @@ class SubFault(object):
                     - Zb1*(Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))))\
                )
 
-        v21 = v21inf + v21c
+        v12 = v12inf + v12c
         v22 = v22inf + v22c
-        v23 = v23inf + v23c
+        v32 = v32inf + v32c
 
         # Burgers vectors (0,0,1)
 
-        v31inf = infC*(\
+        v13inf = infC*(\
                   Y2*sin(beta)*(\
                       (R*sin(beta) - Y1)/(R*(R - Z3)) \
                     + (Rb*sin(beta) - Y1)/(Rb*(Rb + Zb3)))\
                     )
 
-        v32inf = infC*(\
+        v23inf = infC*(\
                    (1 - 2*nu)*sin(beta)*(log(R - Z3) + log(Rb + Zb3)) \
                  - Y2**2*sin(beta)*(1/(R*(R - Z3)) + 1/(Rb*(Rb + Zb3)))\
                  )
@@ -1974,7 +1976,7 @@ class SubFault(object):
                   - (Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))) \
                 )
 
-        v31c = cC*(\
+        v13c = cC*(\
                 (1 - 2*nu)*(\
                       Y2/(Rb + Yb3)*(1 + a/Rb) \
                     - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
@@ -1984,7 +1986,7 @@ class SubFault(object):
                 + a*Yb3/(Rb**2))\
                     )
 
-        v32c = cC*(\
+        v23c = cC*(\
                 (1 - 2*nu)*(\
                     - sin(beta)*log(Rb + Zb3) \
                     - Y1/(Rb + Yb3)*(1 + a/Rb) \
@@ -2006,12 +2008,43 @@ class SubFault(object):
                     + a*Yb3/(Rb**2))\
                 )
 
-        v31 = v31inf + v31c
-        v32 = v32inf + v32c
+        v13 = v13inf + v13c
+        v23 = v23inf + v23c
         v33 = v33inf + v33c
 
         return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
+    def _coord_transform(self,v11,v12,v13,v21,v22,v23,v31,v32,v33,alpha):
+
+
+        cos = numpy.cos
+        sin = numpy.sin
+        
+        w11 = sin(alpha)*v11 + cos(alpha)*v12
+        w12 = cos(alpha)*v11 - sin(alpha)*v12
+        w13 = v13
+        
+        w21 = sin(alpha)*v21 + cos(alpha)*v22
+        w22 = cos(alpha)*v21 - sin(alpha)*v22
+        w23 = v23
+        
+        w31 = sin(alpha)*v31 + cos(alpha)*v32
+        w32 = cos(alpha)*v31 - sin(alpha)*v32
+        w33 = v33
+
+        v11 = sin(alpha)*w11 + cos(alpha)*w21
+        v12 = sin(alpha)*w12 + cos(alpha)*w22
+        v13 = sin(alpha)*w13 + cos(alpha)*w23
+        
+        v21 = cos(alpha)*w11 - sin(alpha)*w21
+        v22 = cos(alpha)*w12 - sin(alpha)*w22
+        v23 = cos(alpha)*w13 - sin(alpha)*w23
+        
+        v31 = w31
+        v32 = w32
+        v33 = w33
+
+        return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
 
     def _get_halfspace_coords(self,X1,X2,X3,alpha,beta,Olong,Olat,Odepth):
@@ -2062,8 +2095,8 @@ class SubFault(object):
         Zb3 = numpy.zeros(dims)    # mirrored yi-coordinates rot. by beta
 
         # rotate by -alpha in long/lat plane
-        Y1 = numpy.cos(alpha)*X1 - numpy.sin(alpha)*X2
-        Y2 = numpy.sin(alpha)*X1 + numpy.cos(alpha)*X2
+        Y1 = numpy.sin(alpha)*X1 + numpy.cos(alpha)*X2
+        Y2 = numpy.cos(alpha)*X1 - numpy.sin(alpha)*X2
         Y3 = X3 - Odepth
         
         Z1 = numpy.cos(beta)*Y1 - numpy.sin(beta)*Y3
