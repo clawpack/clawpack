@@ -2020,16 +2020,18 @@ class SubFault(object):
         return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
     def _get_angular_dislocations_surface(self,Y1,Y2,Y3,beta,Odepth):
-        
+
+        import pdb
 
         # shorthand for some elementary functions from numpy
         pi = numpy.pi
         sin = numpy.sin
         cos = numpy.cos
         tan = numpy.tan
-        atan = numpy.arctan
+        atan = numpy.arctan2
         sqrt = numpy.sqrt
         log = numpy.log
+        divide = numpy.divide
 
         a = numpy.abs(Odepth)   #lazy
 
@@ -2040,31 +2042,37 @@ class SubFault(object):
         Z1 = cos(beta)*Y1 + a*sin(beta)
         Z3 = sin(beta)*Y1 - a*cos(beta)
         R = sqrt(Y1**2 + Y2**2 + a**2)
+        eps = numpy.finfo(float).eps
 
-        F =  - atan(Y2/Y1) + atan(Y2/Z1) \
-             + atan(Y2*R*sin(beta)/(Y1*Z1 + Y2**2*cos(beta)))
+        #F =  - atan(divide(Y2,Y1+eps)) \
+        #     + atan(divide(Y2*R*sin(beta),Y1*Z1 + Y2**2*cos(beta) + eps)) \
+        #     + atan(divide(Y2,Z1+eps)) 
              
+        F =  - atan(Y2,Y1) \
+             + atan(Y2*R*sin(beta),Y1*Z1 + Y2**2*cos(beta)) \
+             + atan(Y2,Z1) 
+        
         # Burgers vector (1,0,0)
 
         v11 = 1/C*(\
              (1 - (1 - 2*nu)/(tan(beta)**2))*F \
              + Y2/(R + a)*(\
                 (1 - 2*nu)*(1/tan(beta) + Y1/(2*(R + a))) - Y1/R) \
-             - Y2*(R*sin(beta) - Y1)*cos(beta)/(R*(R - Z3)))
+             - (Y2/R)*((R*sin(beta) - Y1)*cos(beta)/(R - Z3)))
 
         v21 = 1/C*(\
                 (1 - 2*nu)*(\
                     (.5 + 1/(tan(beta)**2))*log(R + a)\
                     - 1/tan(beta)/sin(beta)*log(R - Z3)) \
               - 1/(R + a)*(\
-                    (1 - 2*nu)*(Y1/tan(beta) - .5*a - Y2**2/(2*(R + a))) \
-                    + Y2**2/R)
-              + Y2**2*cos(beta)/(R*(R - Z3)))
+                    (1 - 2*nu)*(Y1/tan(beta) - .5*a - (Y2/(2*(R + a)))*Y2)) \
+              - (Y2/R)*(Y2/(R+a))
+              + (Y2/R)*cos(beta)*(Y2/(R - Z3)))
 
         v31 = 1/C*(\
                 (1 - 2*nu)*F/tan(beta) \
                 + Y2/(R + a)*(2*nu + a/R) \
-                - Y2*cos(beta)/(R - Z3)*(cos(beta) + a/R))
+                - (Y2/(R - Z3))*cos(beta)*(cos(beta) + a/R))
                 
 
         # Burgers vector (0,1,0)
@@ -2074,14 +2082,14 @@ class SubFault(object):
                 (.5 - 1/(tan(beta)**2))*log(R + a) \
                 + cos(beta)/(tan(beta)**2)*log(R - Z3)) \
                 - 1/(R + a)*((1 - 2*nu)*(\
-                    Y1/tan(beta) + .5*a + Y1**2/(2*(R+a))) - Y1**2/R)\
-                + Z1*(R*sin(beta) - Y1)/(R*(R - Z3)))
+                    Y1/tan(beta) + .5*a + (Y1/(2*(R+a)))*Y1) - (Y1/R)*Y1)\
+                + (Z1/R)*((R*sin(beta) - Y1)/(R - Z3)))
 
         v22 = 1/C*(\
                 (1 + (1 - 2*nu)/(tan(beta)**2))*F \
                 - Y2/(R + a)*(\
                     (1 - 2*nu)*(1/tan(beta) + Y1/(2*(R+a))) - Y1/R) \
-                - Y2*Z1/(R*(R - Z3)))
+                - (Y2/R)*(Z1/(R - Z3)))
 
         v32 = 1/C*(\
                 -(1 - 2*nu)/tan(beta)*(log(R + a) - cos(beta)*log(R - Z3))\
@@ -2090,9 +2098,12 @@ class SubFault(object):
 
         # Burgers vectors (0,0,1)
 
-        v13 = 1/C*(Y2*(R*sin(beta) - Y1)*sin(beta)/(R*(R - Z3)))
-        v23 = 1/C*(-Y2**2*sin(beta)/(R*(R - Z3)))
-        v33 = 1/C*(F + Y2*(R*cos(beta) + a)*sin(beta)/(R*(R - Z3))
+        v13 = 1/C*((Y2/R)*((R*sin(beta) - Y1)/(R-Z3))*sin(beta))
+        v23 = 1/C*((-Y2/R)*sin(beta)*(Y2/(R - Z3)))
+        v33 = 1/C*(F + Y2*(R*cos(beta) + a)*sin(beta)/(R*(R - Z3)))
+        
+
+        #pdb.set_trace()
 
         return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
