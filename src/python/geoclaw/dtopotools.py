@@ -1459,6 +1459,9 @@ class SubFault(object):
             x[:,0] = numpy.array(self.corners[0])
             x[:,1] = numpy.array(self.corners[1])
             x[:,2] = numpy.array(self.corners[2])
+            
+            x[0,:] = LAT2METER * numpy.cos( DEG2RAD*x[1,:] ) * x[0,:]
+            x[1,:] = LAT2METER * x[1,:]
 
             # compute strike and dip direction
             # e3: vertical 
@@ -1785,7 +1788,7 @@ class SubFault(object):
         sin = numpy.sin
         cos = numpy.cos
         tan = numpy.tan
-        atan = numpy.arctan
+        atan = numpy.arctan2
         sqrt = numpy.sqrt
         log = numpy.log
 
@@ -1797,10 +1800,10 @@ class SubFault(object):
         R = sqrt(Y1**2 + Y2**2 + Y3**2)
         Rb = sqrt(Y1**2 + Y2**2 + Yb3**2)
         
-        F =  - atan(Y2/Y1) + atan(Y2/Z1) \
-             + atan(Y2*R*sin(beta)/(Y1*Z1 + Y2**2*cos(beta)))
-        Fb = - atan(Y2/Y1) + atan(Y2/Zb1) \
-             + atan(Y2*Rb*sin(beta)/(Y1*Zb1 + Y2**2*cos(beta)))
+        F =  - atan(Y2,Y1) + atan(Y2,Z1) \
+             + atan(Y2*R*sin(beta),(Y1*Z1 + Y2**2*cos(beta)))
+        Fb = - atan(Y2,Y1) + atan(Y2,Zb1) \
+             + atan(Y2*Rb*sin(beta),(Y1*Zb1 + Y2**2*cos(beta)))
 
         phib = - Y2*Fb - Y1*log(Rb + Yb3) + Zb1*log(Rb + Zb3)
         chib = - Y1*Fb + Y2*log(Rb + Yb3) - Y2*cos(beta)*log(Rb + Zb3)
@@ -2037,17 +2040,12 @@ class SubFault(object):
 
         nu = 0.25        # .5 * lambda / (lambda + mu) poisson ratio
 
-        C = 1/(2*pi)
+        C = (2*pi)
 
         Z1 = cos(beta)*Y1 + a*sin(beta)
         Z3 = sin(beta)*Y1 - a*cos(beta)
         R = sqrt(Y1**2 + Y2**2 + a**2)
-        eps = numpy.finfo(float).eps
 
-        #F =  - atan(divide(Y2,Y1+eps)) \
-        #     + atan(divide(Y2*R*sin(beta),Y1*Z1 + Y2**2*cos(beta) + eps)) \
-        #     + atan(divide(Y2,Z1+eps)) 
-             
         F =  - atan(Y2,Y1) \
              + atan(Y2*R*sin(beta),Y1*Z1 + Y2**2*cos(beta)) \
              + atan(Y2,Z1) 
@@ -2098,8 +2096,8 @@ class SubFault(object):
 
         # Burgers vectors (0,0,1)
 
-        v13 = 1/C*((Y2/R)*((R*sin(beta) - Y1)/(R-Z3))*sin(beta))
-        v23 = 1/C*((-Y2/R)*sin(beta)*(Y2/(R - Z3)))
+        v13 = 1/C*(Y2*(R*sin(beta) - Y1)*sin(beta)/(R*(R-Z3)))
+        v23 = 1/C*(-Y2**2*sin(beta))/(R*(R - Z3))
         v33 = 1/C*(F + Y2*(R*cos(beta) + a)*sin(beta)/(R*(R - Z3)))
         
 
