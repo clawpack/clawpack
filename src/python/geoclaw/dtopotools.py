@@ -1791,11 +1791,11 @@ class SubFault(object):
 
         a = numpy.abs(Odepth)   #lazy
 
-        nu = 0.25        # .5 * lambda / (lambda + mu)
+        nu = 0.25        # .5 * lambda / (lambda + mu) poisson ratio
 
         # some preliminary quantities
         R = sqrt(Y1**2 + Y2**2 + Y3**2)
-        Rb = sqrt(Yb1**2 + Yb2**2 + Yb3**2)
+        Rb = sqrt(Y1**2 + Y2**2 + Yb3**2)
         
         F =  - atan(Y2/Y1) + atan(Y2/Z1) \
              + atan(Y2*R*sin(beta)/(Y1*Z1 + Y2**2*cos(beta)))
@@ -1846,20 +1846,23 @@ class SubFault(object):
 
 
         v21c = cC*(\
-              (1 - 2*nu)*((2*(1 - nu)/(tan(beta)**2) - nu)*log(Rb - Yb3)\
-              - (2*(1 - nu)/(tan(beta)**2) + 1 - 2*nu)\
-              *cos(beta)*log(Rb + Zb3)) \
-              - (1 - 2*nu)/(Rb + Yb3)*(Y1/tan(beta)*(1 - 2*nu - a/Rb) \
-              + nu*Yb3 - a + Y2**2/(Rb + Yb3) *(nu + a/Rb)) \
+              (1 - 2*nu)*((2*(1 - nu)/(tan(beta)**2) - nu)*log(Rb + Yb3)\
+              - (2*(1 - nu)/(tan(beta)**2) +1 -2*nu)*cos(beta)*log(Rb + Zb3)) \
+              - (1 - 2*nu)/(Rb + Yb3)*(\
+                    Y1/tan(beta)*(1 - 2*nu - a/Rb) \
+                  + nu*Yb3 - a + Y2**2/(Rb + Yb3)*(nu + a/Rb)) \
               - (1 - 2*nu)*Zb1/tan(beta)/(Rb + Zb3)*(cos(beta) + a/Rb) \
               - a*Y1*(Yb3 - a)/tan(beta)/(Rb**3) \
-              + (Yb3 - a)/(Rb + Yb3)*( -2 * nu + 1/Rb*((1 - 2*nu)*Y1/tan(beta)\
-              - a) + Y2**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) + a*Y2**2/(Rb**3)) \
-              + (Yb3 - a)/(Rb + Zb3)*((cos(beta)**2) \
-              - 1/Rb*((1 - 2*nu)*Zb1/tan(beta) + a*cos(beta)) \
-              + a*Yb3*Zb1/tan(beta)/(Rb**3) \
-              - 1/(Rb*(Rb + Zb3))*( Y2**2*(cos(beta)**2) - \
-              a*Zb1/tan(beta)/Rb*(Rb*cos(beta) + Yb3)))\
+              + (Yb3 - a)/(Rb + Yb3)*( \
+                    -2*nu + 1/Rb*((1 - 2*nu)*Y1/tan(beta) - a) \
+                   + Y2**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) + a*Y2**2/(Rb**3)) \
+              + (Yb3 - a)/(Rb + Zb3)*(\
+                    (cos(beta)**2) \
+                  - 1/Rb*((1 - 2*nu)*Zb1/tan(beta) + a*cos(beta)) \
+                  + a*Yb3*Zb1/tan(beta)/(Rb**3) \
+                  - 1/(Rb*(Rb + Zb3))*(\
+                        Y2**2*(cos(beta)**2) \
+                      - a*Zb1/tan(beta)/Rb*(Rb*cos(beta) + Yb3)))\
               )
             
         v31c = cC*(\
@@ -1868,9 +1871,9 @@ class SubFault(object):
                 - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
                 + Y2*(Yb3 - a)/Rb*(2*nu/(Rb + Yb3) + a/(Rb**2)) \
                 + Y2*(Yb3 - a)*cos(beta)/(Rb*(Rb + Zb3))*(\
-                1 - 2*nu \
-                - (Rb*cos(beta) + Yb3)/(Rb + Zb3)\
-                *(cos(beta) + a/Rb) - a*Yb3/(Rb**2))\
+                    1 - 2*nu \
+                    - (Rb*cos(beta) + Yb3)/(Rb + Zb3)\
+                        *(cos(beta) + a/Rb) - a*Yb3/(Rb**2))\
                )
 
         v11 = v11inf + v11c
@@ -1881,7 +1884,7 @@ class SubFault(object):
 
         v12inf = infC*(\
                 - (1 - 2*nu)*(\
-                    log(R - Y3) + log(Rb - Yb3) \
+                    log(R - Y3) + log(Rb + Yb3) \
                   - cos(beta)*(log(R - Z3) + log(Rb + Zb3)))\
                 + Y1**2*( 1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3))) \
                 + Z1*(R*sin(beta) - Y1)/(R*(R - Z3)) \
@@ -1947,7 +1950,8 @@ class SubFault(object):
               + (Yb3 - a)/(Rb + Zb3)*(\
                   cos(beta)*sin(beta) \
                 + (Rb*cos(beta) + Yb3)/tan(beta)/Rb*(\
-                    2*(1 - nu)*cos(beta) - (Rb*cos(beta) + Yb3)/(Rb + Zb3))\
+                    2*(1 - nu)*cos(beta) \
+                    - (Rb*cos(beta) + Yb3)/(Rb + Zb3))\
                 + a/Rb*(sin(beta) \
                     - Yb3*Zb1/(Rb**2) \
                     - Zb1*(Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))))\
@@ -1993,7 +1997,7 @@ class SubFault(object):
                     - Y1/(Rb + Yb3)*(1 + a/Rb) \
                     + Zb1/(Rb + Zb3)*(cos(beta) + a/Rb)) \
                 + Y1*(Yb3 - a)/Rb*(a/(Rb**2) + 1/(Rb + Yb3)) \
-                + (Yb3 - a)/(Rb + Zb3)*( \
+                - (Yb3 - a)/(Rb + Zb3)*( \
                      sin(beta)*(cos(beta) - a/Rb) \
                    + Zb1/Rb*(1 + a*Yb3/(Rb**2)) \
                 - 1/(Rb*(Rb + Zb3))*(\
@@ -2014,6 +2018,44 @@ class SubFault(object):
         v33 = v33inf + v33c
 
         return v11,v12,v13,v21,v22,v23,v31,v32,v33
+
+    def _get_angular_dislocations_surface(self,Y1,Y2,Y3,beta,Odepth):
+        
+
+        # shorthand for some elementary functions from numpy
+        pi = numpy.pi
+        sin = numpy.sin
+        cos = numpy.cos
+        tan = numpy.tan
+        atan = numpy.arctan
+        sqrt = numpy.sqrt
+        log = numpy.log
+
+        a = numpy.abs(Odepth)   #lazy
+
+        nu = 0.25        # .5 * lambda / (lambda + mu) poisson ratio
+
+        C = 1/(2*pi)
+
+        Z1 = cos(beta)*Y1 + a*sin(beta)
+        Z3 = sin(beta)*Y1 - a*cos(beta)
+        R = sqrt(Y1**2 + Y2**2 + a**2)
+
+        v11 = 1/C
+        v21 = 1/C
+        v31 = 1/C
+
+        v12 = 1/C
+        v22 = 1/C
+        v32 = 1/C
+
+        v13 = 1/C
+        v23 = 1/C
+        v33 = 1/C
+
+
+        return v11,v12,v13,v21,v22,v23,v31,v32,v33
+
 
     def _coord_transform(self,v11,v12,v13,v21,v22,v23,v31,v32,v33,alpha):
 
