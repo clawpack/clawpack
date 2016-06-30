@@ -2041,18 +2041,58 @@ class SubFault(object):
         Z3 = sin(beta)*Y1 - a*cos(beta)
         R = sqrt(Y1**2 + Y2**2 + a**2)
 
-        v11 = 1/C
-        v21 = 1/C
-        v31 = 1/C
+        F =  - atan(Y2/Y1) + atan(Y2/Z1) \
+             + atan(Y2*R*sin(beta)/(Y1*Z1 + Y2**2*cos(beta)))
+             
+        # Burgers vector (1,0,0)
 
-        v12 = 1/C
-        v22 = 1/C
-        v32 = 1/C
+        v11 = 1/C*(\
+             (1 - (1 - 2*nu)/(tan(beta)**2))*F \
+             + Y2/(R + a)*(\
+                (1 - 2*nu)*(1/tan(beta) + Y1/(2*(R + a))) - Y1/R) \
+             - Y2*(R*sin(beta) - Y1)*cos(beta)/(R*(R - Z3)))
 
-        v13 = 1/C
-        v23 = 1/C
-        v33 = 1/C
+        v21 = 1/C*(\
+                (1 - 2*nu)*(\
+                    (.5 + 1/(tan(beta)**2))*log(R + a)\
+                    - 1/tan(beta)/sin(beta)*log(R - Z3)) \
+              - 1/(R + a)*(\
+                    (1 - 2*nu)*(Y1/tan(beta) - .5*a - Y2**2/(2*(R + a))) \
+                    + Y2**2/R)
+              + Y2**2*cos(beta)/(R*(R - Z3)))
 
+        v31 = 1/C*(\
+                (1 - 2*nu)*F/tan(beta) \
+                + Y2/(R + a)*(2*nu + a/R) \
+                - Y2*cos(beta)/(R - Z3)*(cos(beta) + a/R))
+                
+
+        # Burgers vector (0,1,0)
+
+        v12 = 1/C*(\
+                -(1 - 2*nu)*(\
+                (.5 - 1/(tan(beta)**2))*log(R + a) \
+                + cos(beta)/(tan(beta)**2)*log(R - Z3)) \
+                - 1/(R + a)*((1 - 2*nu)*(\
+                    Y1/tan(beta) + .5*a + Y1**2/(2*(R+a))) - Y1**2/R)\
+                + Z1*(R*sin(beta) - Y1)/(R*(R - Z3)))
+
+        v22 = 1/C*(\
+                (1 + (1 - 2*nu)/(tan(beta)**2))*F \
+                - Y2/(R + a)*(\
+                    (1 - 2*nu)*(1/tan(beta) + Y1/(2*(R+a))) - Y1/R) \
+                - Y2*Z1/(R*(R - Z3)))
+
+        v32 = 1/C*(\
+                -(1 - 2*nu)/tan(beta)*(log(R + a) - cos(beta)*log(R - Z3))\
+                - Y1/(R + a)*(2*nu + a/R) \
+                + Z1/(R - Z3)*(cos(beta) + a/R))
+
+        # Burgers vectors (0,0,1)
+
+        v13 = 1/C*(Y2*(R*sin(beta) - Y1)*sin(beta)/(R*(R - Z3)))
+        v23 = 1/C*(-Y2**2*sin(beta)/(R*(R - Z3)))
+        v33 = 1/C*(F + Y2*(R*cos(beta) + a)*sin(beta)/(R*(R - Z3))
 
         return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
