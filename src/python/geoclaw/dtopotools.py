@@ -1480,7 +1480,8 @@ class SubFault(object):
             else:
                 strike_rad = numpy.arctan(strikev[0]/strikev[1]) 
 
-            dip_rad = numpy.arcsin(numpy.abs(dipv[2]) / numpy.linalg.norm(dipv))
+            dipv = dipv/numpy.linalg.norm(dipv)
+            dip_rad = numpy.arcsin(numpy.abs(dipv[2]))
             
             # convert to degrees
             self.strike = numpy.rad2deg(strike_rad)
@@ -1790,7 +1791,7 @@ class SubFault(object):
 
         a = numpy.abs(Odepth)   #lazy
 
-        nu = poisson        # .5 * lambda / (lambda + mu)
+        nu = 0.25        # .5 * lambda / (lambda + mu)
 
         # some preliminary quantities
         R = sqrt(Y1**2 + Y2**2 + Y3**2)
@@ -2070,6 +2071,7 @@ class SubFault(object):
         """
 
         dims = X1.shape
+        Odepth = numpy.abs(Odepth)
 
         X1 = X1 - Olong
         X2 = X2 - Olat
