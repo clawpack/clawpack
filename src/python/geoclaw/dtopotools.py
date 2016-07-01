@@ -1473,18 +1473,20 @@ class SubFault(object):
             normal = numpy.cross(v1,v2)
             if (normal[2] < 0):
                 normal = -normal
+            normal = normal/numpy.linalg.norm(normal)
 
             strikev = numpy.cross(e3,normal)   # vector in strike direction
+            if numpy.linalg.norm(strikev) < 1e-12:
+                strikev = numpy.array([0.,1.,0.])
             dipv = numpy.cross(strikev,normal) # vector in dip direction
             
-            if strikev[1] == 0.:
-                # avoid division by zero
-                strike_rad = numpy.pi/2.
-            else:
-                strike_rad = numpy.arctan(strikev[0]/strikev[1]) 
+            strike_rad = numpy.arctan2(strikev[0],strikev[1])
 
-            dipv = dipv/numpy.linalg.norm(dipv)
-            dip_rad = numpy.arcsin(numpy.abs(dipv[2]))
+            print normal
+            print dipv
+            #dipv = dipv/numpy.linalg.norm(dipv)
+            #dip_rad = numpy.arcsin(numpy.abs(dipv[2]))
+            dip_rad = numpy.arctan(numpy.divide(dipv[0]**2+dipv[1]**2,dipv[2]))
             
             # convert to degrees
             self.strike = numpy.rad2deg(strike_rad)
@@ -1529,27 +1531,28 @@ class SubFault(object):
         else:
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
-    def _get_slip_unit_vector(self):
+    def _get_unit_slip_vector(self):
         """
         compute a unit vector in the slip-direction (rake-direction)
 
         """
-        strike = self.strike
-        dip = self.dip
-        rake = self.rake
+
+        strike = numpy.deg2rad(self.strike)
+        dip = numpy.deg2rad(self.dip)
+        rake = numpy.deg2rad(self.rake)
 
         sin = numpy.sin
         cos = numpy.cos
 
         e1 = numpy.array([1.,0.,0.])
         e2 = numpy.array([0.,1.,0.])
-        e3 = numpy.array([0.,0.,1.])
+        e3 = numpy.array([0.,0.,-1.])
 
         u = sin(strike)*e1 + cos(strike)*e2
         v = cos(strike)*e1 - sin(strike)*e2
 
         w = sin(dip)*e3 + cos(dip)*v
-        z = sin(rake)*w+ cos(rake)*u
+        z = sin(rake)*w + cos(rake)*u
 
         return z
 
@@ -1659,41 +1662,93 @@ class SubFault(object):
             c2 = self.corners[1]
             c3 = self.corners[2]
 
-            X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
+            X1,X2 = numpy.meshgrid(x, y)   # uppercase
+            X3 = numpy.zeros(X1.shape)  # depth zero
+
     
             # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
             # meters:
-            xx = LAT2METER * cos(DEG2RAD * Y) * X
-            yy = LAT2METER * Y
+            #X1 = LAT2METER * cos(DEG2RAD * x2) * x1
+            #X2 = LAT2METER * x2
+
+            # compute burgers vector
+            slipv = self._get_unit_slip_vector() 
+            burgersv = slipv*self.slip
 
             # get beta angles
-            O1_list, O2_list, alpha_list, beta_list = self._get_leg_angles()
+            reverse_list,O1_list,O2_list,alpha_list,beta_list = \
+                    self._get_leg_angles()
 
-            slipv = self._get_slip_unit_vector()                # slip-vector
-            rot = numpy.array([[ cos(alpha),sin(alpha)],\
-                               [-sin(alpha),cos(alpha)]])   # rot. by -alpha
-            burgersv = numpy.dot(rot,slipv)        # burgers vector
+            #
+            v11 = numpy.zeros(X1.shape)
+            v21 = numpy.zeros(X1.shape)
+            v31 = numpy.zeros(X1.shape)
+
+            v12 = numpy.zeros(X1.shape)
+            v22 = numpy.zeros(X1.shape)
+            v32 = numpy.zeros(X1.shape)
+
+            v13 = numpy.zeros(X1.shape)
+            v23 = numpy.zeros(X1.shape)
+            v33 = numpy.zeros(X1.shape)
+
+            for j in range(6):
+                
+                k = j%3
+                alpha = alpha_list[k]
+                beta = beta_list[k]
+
+                if ((j/3) == 0):
+                    Olong = O1_list[k][0]
+                    Olat = O1_list[k][1]
+                    Odepth = abs(O1_list[k][2])
+                elif ((j/3) == 1):
+                    Olong = O2_list[k][0]
+                    Olat = O2_list[k][1]
+                    Odepth = abs(O2_list[k][2])
+
+                if reverse_list[k]:
+                    sgn = (-1.)**(j/3+1)
+                else:
+                    sgn = (-1.)**(j/3)
+
+                Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3 = \
+                self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
+                w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
+                self._get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
+                                Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
+
+                w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
+                self._coord_transform(w11,w12,w13,w21,w22,w23,w31,w32,w33,alpha)
+            
+                v11 = v11 + sgn*w11
+                v21 = v21 + sgn*w21
+                v31 = v31 + sgn*w31
+
+                v12 = v12 + sgn*w12
+                v22 = v22 + sgn*w22
+                v32 = v32 + sgn*w32
+
+                v13 = v13 + sgn*w13
+                v23 = v23 + sgn*w23
+                v33 = v33 + sgn*w33
 
 
+        
+            dX = v11*burgersv[0] + v21*burgersv[1] + v31*burgersv[2]
+            dY = v12*burgersv[0] + v22*burgersv[1] + v32*burgersv[2]
+            dZ = v13*burgersv[0] + v23*burgersv[1] + v33*burgersv[2]
 
-            slip = self.slip
-            area = self.length * self.width # approximately
-
-            # convert angles to radians:
-            ang_dip = DEG2RAD * self.dip
-            ang_rake = DEG2RAD * self.rake
-            ang_strike = DEG2RAD * self.strike
 
             dtopo = DTopography()
-            dtopo.dZ = numpy.array(numpy.zeros(X.shape), ndmin=3)
+            dtopo.X = X1
+            dtopo.Y = X2
+            dtopo.dX = numpy.array(dX, ndmin=3)
+            dtopo.dY = numpy.array(dY, ndmin=3)
+            dtopo.dZ = numpy.array(-dZ, ndmin=3)
             dtopo.times = [0.]
-            
-            dz = (us + ud)
-            dtopo.dZ[0,:,:] = dtopo.dZ[0,:,:] + w[j]*area*dz
-        
             self.dtopo = dtopo
-            dtopo.X = X
-            dtopo.Y = Y
+
         return dtopo
 
     # Utility functions for okada:
