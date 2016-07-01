@@ -1481,12 +1481,7 @@ class SubFault(object):
             dipv = numpy.cross(strikev,normal) # vector in dip direction
             
             strike_rad = numpy.arctan2(strikev[0],strikev[1])
-
-            print normal
-            print dipv
-            #dipv = dipv/numpy.linalg.norm(dipv)
-            #dip_rad = numpy.arcsin(numpy.abs(dipv[2]))
-            dip_rad = numpy.arctan(numpy.divide(dipv[0]**2+dipv[1]**2,dipv[2]))
+            dip_rad = abs(numpy.arctan(numpy.divide(dipv[2],dipv[0]**2+dipv[1]**2)))
             
             # convert to degrees
             self.strike = numpy.rad2deg(strike_rad)
