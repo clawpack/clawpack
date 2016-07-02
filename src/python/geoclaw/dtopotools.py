@@ -1456,19 +1456,22 @@ class SubFault(object):
             
             x = numpy.zeros((3,3))
             
-            x[:,0] = numpy.array(self.corners[0])
-            x[:,1] = numpy.array(self.corners[1])
-            x[:,2] = numpy.array(self.corners[2])
+            #x[:,0] = numpy.array(self.corners[0])
+            #x[:,1] = numpy.array(self.corners[1])
+            #x[:,2] = numpy.array(self.corners[2])
+            x = numpy.array(self.corners)
+
+            x[2,:] = - numpy.abs(x[2,:])        # lazy
             
-            x[0,:] = LAT2METER * numpy.cos( DEG2RAD*x[1,:] ) * x[0,:]
-            x[1,:] = LAT2METER * x[1,:]
+            x[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
+            x[:,1] = LAT2METER * x[:,1]
 
             # compute strike and dip direction
             # e3: vertical 
             # v1,v2: tangents from x0
             e3 = numpy.array([0.,0.,1.])
-            v1 = x[:,1] - x[:,0]
-            v2 = x[:,2] - x[:,0]
+            v1 = x[1,:] - x[0,:]
+            v2 = x[2,:] - x[0,:]
             
             normal = numpy.cross(v1,v2)
             if (normal[2] < 0):
@@ -1547,7 +1550,8 @@ class SubFault(object):
         v = cos(strike)*e1 - sin(strike)*e2
 
         w = sin(dip)*e3 + cos(dip)*v
-        z = sin(rake)*w + cos(rake)*u
+        z = sin(-rake)*w + cos(-rake)*u
+
 
         return z
 
@@ -1652,20 +1656,10 @@ class SubFault(object):
             cos = numpy.cos
             sin = numpy.sin
 
-            # coordinates for the three nodes
-            c1 = self.corners[0]
-            c2 = self.corners[1]
-            c3 = self.corners[2]
-
             X1,X2 = numpy.meshgrid(x, y)   # uppercase
             X3 = numpy.zeros(X1.shape)  # depth zero
 
     
-            # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
-            # meters:
-            #X1 = LAT2METER * cos(DEG2RAD * x2) * x1
-            #X2 = LAT2METER * x2
-
             # compute burgers vector
             slipv = self._get_unit_slip_vector() 
             burgersv = slipv*self.slip
@@ -1768,7 +1762,7 @@ class SubFault(object):
         # convert to meters
         y[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
         y[:,1] = LAT2METER * x[:,1]
-        y[:,2] = x[:,2]
+        y[:,2] = - numpy.abs(x[:,2])    #lazy
 
         v_list = [y[1,:] - y[0,:], y[2,:] - y[1,:], y[0,:] - y[2,:]]
 
@@ -2214,12 +2208,16 @@ class SubFault(object):
         dims = X1.shape
         Odepth = numpy.abs(Odepth)
 
-        X1 = X1 - Olong
-        X2 = X2 - Olat
         
         # convert lat/long to meters
-        X1 = LAT2METER * numpy.cos( DEG2RAD*X2 ) * X1
-        X2 = LAT2METER * X2
+        X1 = LAT2METER * numpy.cos( DEG2RAD*X2 ) * X1 
+        X2 = LAT2METER * X2 
+
+        Olong = LAT2METER * numpy.cos( DEG2RAD*Olat ) * Olong 
+        Olat = LAT2METER * Olat 
+
+        X1 = X1 - Olong
+        X2 = X2 - Olat
 
         Y1 = numpy.zeros(dims)       # yi-coordinates
         Y2 = numpy.zeros(dims)       # yi-coordinates
