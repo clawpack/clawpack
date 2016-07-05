@@ -1707,6 +1707,9 @@ class SubFault(object):
                 self._get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
                                 Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
 
+                #w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
+                #self._get_angular_dislocations_surface(Y1,Y2,Y3,beta,Odepth)
+
                 w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 self._coord_transform(w11,w12,w13,w21,w22,w23,w31,w32,w33,alpha)
             
@@ -1724,10 +1727,18 @@ class SubFault(object):
 
 
         
-            dX = v11*burgersv[0] + v21*burgersv[1] + v31*burgersv[2]
-            dY = v12*burgersv[0] + v22*burgersv[1] + v32*burgersv[2]
-            dZ = v13*burgersv[0] + v23*burgersv[1] + v33*burgersv[2]
+            # burgersv[2] has opposite sign in yi-coordinates
+            #dX = v11*burgersv[0] + v21*burgersv[1] - v31*burgersv[2]
+            #dY = v12*burgersv[0] + v22*burgersv[1] - v32*burgersv[2]
+            #dZ = v13*burgersv[0] + v23*burgersv[1] - v33*burgersv[2]
 
+            #dX = v11*burgersv[0] + v12*burgersv[1] + v13*burgersv[2]
+            #dY = v21*burgersv[0] + v22*burgersv[1] + v23*burgersv[2]
+            #dZ = v31*burgersv[0] + v32*burgersv[1] + v33*burgersv[2]
+
+            dX = v11*burgersv[0] + v12*burgersv[1] 
+            dY = v21*burgersv[0] + v22*burgersv[1] 
+            dZ = v31*burgersv[0] + v32*burgersv[1] 
 
             dtopo = DTopography()
             dtopo.X = X1
@@ -1754,14 +1765,14 @@ class SubFault(object):
 
         """
 
-        # put in coordinate_specification == 'triangular' check here
 
+        # put in coordinate_specification == 'triangular' check here
         x = numpy.array(self.corners)
         y = numpy.zeros(x.shape)
 
         # convert to meters
-        y[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
-        y[:,1] = LAT2METER * x[:,1]
+        y[:,0] = LAT2METER*numpy.cos( DEG2RAD*x[:,1] )*x[:,0]
+        y[:,1] = LAT2METER*x[:,1]
         y[:,2] = - numpy.abs(x[:,2])    #lazy
 
         v_list = [y[1,:] - y[0,:], y[2,:] - y[1,:], y[0,:] - y[2,:]]
@@ -1776,11 +1787,11 @@ class SubFault(object):
 
         j = 0
         for v in v_list:
-            vnormal = v/numpy.linalg.norm(v)
+            vn = v/numpy.linalg.norm(v)
             k = j
             l = (j+1)%3
-            if vnormal[2] > 0.:
-                vnormal = -vnormal    # point vnormal in depth direction
+            if vn[2] > 0.:
+                vn = -vn    # point vn in depth direction
                 k = (j+1)%3
                 l = j
                 reverse_list[j] = True
@@ -1790,13 +1801,10 @@ class SubFault(object):
             O1_list.append(O1)
             O2_list.append(O2)
 
-            vxy = vnormal[0:2]
-            vxy = vxy / numpy.linalg.norm(vxy)  # normalized xy-components
-            alpha = numpy.arccos(vxy[1])
-            if vxy[0] < 0.:
-                alpha = 2.*numpy.pi - alpha
+            alpha = numpy.arctan2(vn[0],vn[1])
             alpha_list.append(alpha)
-            beta = numpy.arccos(numpy.dot(e3,vnormal))
+            #beta = numpy.arccos(numpy.dot(e3,vn))
+            beta = numpy.pi/2 - numpy.arctan(numpy.divide(abs(vn[2]),abs(numpy.sqrt(vn[0]**2 + vn[1]**2))))
             beta_list.append(beta)
 
             j = j+1
@@ -1853,6 +1861,7 @@ class SubFault(object):
         chib = - Y1*Fb + Y2*log(Rb + Yb3) - Y2*cos(beta)*log(Rb + Zb3)
         psib =   Yb3*Fb + Y2*sin(beta)*log(Rb + Zb3)
 
+        # some recurring constants
         infC = 1/(8*pi*(1 - nu))
         cC = 1/(4*pi*(1 - nu))
         
