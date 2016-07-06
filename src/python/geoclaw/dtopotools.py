@@ -1461,12 +1461,13 @@ class SubFault(object):
             divide = numpy.divide
             sqrt = numpy.sqrt
             cross = numpy.cross
+            norm = numpy.linalg.norm
 
             x = numpy.array(self.corners)
 
             x[:,2] = - numpy.abs(x[:,2])        # lazy
             
-            x[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
+            x[:,0] = LAT2METER * cos( DEG2RAD*x[:,1] ) * x[:,0]
             x[:,1] = LAT2METER * x[:,1]
 
             # compute strike and dip direction
@@ -1479,10 +1480,10 @@ class SubFault(object):
             normal = cross(v1,v2)
             if (normal[2] < 0):
                 normal = -normal
-            normal = normal/numpy.linalg.norm(normal)
+            normal = normal/norm(normal)
 
             strikev = cross(e3,normal)   # vector in strike direction
-            if numpy.linalg.norm(strikev) < 1e-12:
+            if norm(strikev) < 1e-12:
                 strikev = numpy.array([0.,1.,0.])
             dipv = cross(strikev,normal) # vector in dip direction
             
@@ -1524,7 +1525,7 @@ class SubFault(object):
             v2[1] = LAT2METER * (v2[1])
 
             normal = cross(v1,v2)
-            area = numpy.linalg.norm(normal) / 2.
+            area = norm(normal) / 2.
             self.length = sqrt(area)
             self.width = sqrt(area)
 
