@@ -1453,15 +1453,18 @@ class SubFault(object):
         """
 
         if self.coordinate_specification == 'triangular':
+
             
-            x = numpy.zeros((3,3))
-            
-            #x[:,0] = numpy.array(self.corners[0])
-            #x[:,1] = numpy.array(self.corners[1])
-            #x[:,2] = numpy.array(self.corners[2])
+            cos = numpy.cos
+            atan = numpy.arctan
+            atan2 = numpy.arctan2
+            divide = numpy.divide
+            sqrt = numpy.sqrt
+            cross = numpy.cross
+
             x = numpy.array(self.corners)
 
-            x[2,:] = - numpy.abs(x[2,:])        # lazy
+            x[:,2] = - numpy.abs(x[:,2])        # lazy
             
             x[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
             x[:,1] = LAT2METER * x[:,1]
@@ -1473,18 +1476,18 @@ class SubFault(object):
             v1 = x[1,:] - x[0,:]
             v2 = x[2,:] - x[0,:]
             
-            normal = numpy.cross(v1,v2)
+            normal = cross(v1,v2)
             if (normal[2] < 0):
                 normal = -normal
             normal = normal/numpy.linalg.norm(normal)
 
-            strikev = numpy.cross(e3,normal)   # vector in strike direction
+            strikev = cross(e3,normal)   # vector in strike direction
             if numpy.linalg.norm(strikev) < 1e-12:
                 strikev = numpy.array([0.,1.,0.])
-            dipv = numpy.cross(strikev,normal) # vector in dip direction
+            dipv = cross(strikev,normal) # vector in dip direction
             
-            strike_rad = numpy.arctan2(strikev[0],strikev[1])
-            dip_rad = abs(numpy.arctan(numpy.divide(dipv[2],dipv[0]**2+dipv[1]**2)))
+            strike_rad = atan2(strikev[0],strikev[1])
+            dip_rad =atan(divide(abs(dipv[2]),sqrt(dipv[0]**2+dipv[1]**2)))
             
             # convert to degrees
             self.strike = numpy.rad2deg(strike_rad)
@@ -1493,9 +1496,9 @@ class SubFault(object):
 
             # find the center line
             xx = numpy.zeros((3,3))
-            xx[:,0] = (x[:,1] + x[:,2]) / 2. # midpt opposite a
-            xx[:,1] = (x[:,0] + x[:,2]) / 2. # midpt opposite b
-            xx[:,2] = (x[:,0] + x[:,1]) / 2. # midpt opposite c
+            xx[0,:] = (x[1,:] + x[2,:]) / 2. # midpt opposite a
+            xx[1,:] = (x[0,:] + x[2,:]) / 2. # midpt opposite b
+            xx[2,:] = (x[0,:] + x[1,:]) / 2. # midpt opposite c
 
             i = numpy.argmin(xx[2,:])
 
@@ -1514,16 +1517,16 @@ class SubFault(object):
             # this is set temporarily so that Fault.Mw() can be computed
 
             # first convert distances from lat/long to meters
-            v1[0] = LAT2METER * numpy.cos(DEG2RAD * x[1,0]) * (v1[0])   
+            v1[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v1[0])   
             v1[1] = LAT2METER * (v1[1])
 
-            v2[0] = LAT2METER * numpy.cos(DEG2RAD * x[1,0]) * (v2[0])
+            v2[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v2[0])
             v2[1] = LAT2METER * (v2[1])
 
-            normal = numpy.cross(v1,v2)
+            normal = cross(v1,v2)
             area = numpy.linalg.norm(normal) / 2.
-            self.length = numpy.sqrt(area)
-            self.width = numpy.sqrt(area)
+            self.length = sqrt(area)
+            self.width = sqrt(area)
 
 
         else:
@@ -1551,7 +1554,6 @@ class SubFault(object):
 
         w = sin(dip)*e3 + cos(dip)*v
         z = sin(-rake)*w + cos(-rake)*u
-
 
         return z
 
