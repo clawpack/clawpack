@@ -2006,7 +2006,7 @@ class SubFault(object):
               + 2*(1 - nu)*Zb1/(Rb + Zb3)*(cos(beta) + a/Rb) \
               + (Yb3 - a)/Rb*((1 - 2*nu)/tan(beta) - 2*nu*Y1/(Rb + Yb3) \
                 - a*Y1/(Rb**2)) \
-              + (Yb3 - a)/(Rb + Zb3)*(\
+              - (Yb3 - a)/(Rb + Zb3)*(\
                   cos(beta)*sin(beta) \
                 + (Rb*cos(beta) + Yb3)/tan(beta)/Rb*(\
                     2*(1 - nu)*cos(beta) \
