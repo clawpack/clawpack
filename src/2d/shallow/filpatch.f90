@@ -84,7 +84,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     ! the +2 is to expand on coarse grid to enclose fine
     real(kind=8) :: valcrse((ihi-ilo+3) * (jhi-jlo+3) * nvar)   ! NB this is a 1D array 
     real(kind=8) :: auxcrse((ihi-ilo+3) * (jhi-jlo+3) * naux)  
- 
+
 
     mx_patch = ihi-ilo + 1 ! nrowp
     my_patch = jhi-jlo + 1 
@@ -216,8 +216,9 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
         endif
 
         !********* Begin Interpolations **************!
+
         do layer = 1, num_layers 
-                                 ! also, the number of values in a cell (for now 3: eta, u, v) should be calculated from num_layers and nvar or is it nvar?
+            ! the number of values in a cell (for now 3: eta, u, v) should be calculated from num_layers and nvar
 
             ! loop through coarse cells determining intepolation slopes
             ! these will be saved for fine grid loop
@@ -299,7 +300,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                         eta_fine = eta_coarse(i_coarse,j_coarse) + eta1 * slope(1,i_coarse,j_coarse) &
                                                                  + eta2 * slope(2,i_coarse,j_coarse)
                         h_fine = max(eta_fine - aux(1,i_fine + nrowst - 1, j_fine + ncolst - 1), 0.d0)
-                        valbig(1,i_fine+nrowst-1, j_fine+ncolst-1) = h_fine
+                        valbig(1,i_fine+nrowst-1, j_fine+ncolst-1) = h_fine * rho(layer)
                         fine_mass(i_coarse,j_coarse) = fine_mass(i_coarse,j_coarse) + h_fine
 
                         ! Flag the corresponding coarse cell as needing relimiting
