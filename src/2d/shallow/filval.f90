@@ -159,8 +159,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
               fineflag(1) = .false.
               ! interpolate eta to find depth
               do ii=-1,1
-                  coarseval(2+ii) = valc(3*layer-2,i+ii,j)  + auxc(1,i+ii,j)
-                  if (valc(3*layer-2,i+ii,j)  <= dry_tolerance) then
+                  coarseval(2+ii) = valc(3*layer-2,i+ii,j) / rho(layer)  + auxc(1,i+ii,j)
+                  if (valc(3*layer-2,i+ii,j) / rho(layer)  <= dry_tolerance) then
                       coarseval(2+ii)=sea_level
                   end if
               end do
@@ -171,8 +171,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
               if (s1m*s1p <= 0.d0) slopex=0.d0
 
               do jj=-1,1
-                  coarseval(2+jj) = valc(3*layer-2,i,j+jj) + auxc(1,i,j+jj)
-                  if (valc(3*layer-2,i,j+jj) <= dry_tolerance) then
+                  coarseval(2+jj) = valc(3*layer-2,i,j+jj) / rho(layer) + auxc(1,i,j+jj)
+                  if (valc(3*layer-2,i,j+jj) / rho(layer) <= dry_tolerance) then
                       coarseval(2+jj)=sea_level
                   end if
               end do
@@ -192,7 +192,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                       ifine = (i-2) * refinement_ratio_x + nghost + ico
                       if (setflags(ifine,jfine) .eq. NEEDS_TO_BE_SET) then
                          val(3*layer-2,ifine,jfine) = (coarseval(2) + xoff * slopex &
-                                                            + yoff * slopey)
+                                                            + yoff * slopey) * rho(layer)
                          val(3*layer-2,ifine,jfine) = max(0.d0, val(3*layer-2,ifine,jfine)  &
                                                  - aux(1,ifine,jfine))
                          finemass = finemass + val(3*layer-2,ifine,jfine)
