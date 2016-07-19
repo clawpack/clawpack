@@ -20,27 +20,28 @@ subroutine update (level, nvar, naux)
     ! eta - q(i,j,1) + aux(i,j,1)
 
     ! inputs
-    integer intent(in) :: nvar, naux
-    real(kind=8) intent(in) :: level
+    integer, intent(in) :: nvar, naux
+    real(kind=8), intent(in) :: level
 
     integer :: ng, levSt, mptr, loc, locaux, nx, ny, mitot, mjtot
     integer :: ilo, jlo, ihi, jhi, mkid, iclo, jclo, ichi, jchi
     integer :: mi, mj, locf, locfaux, iplo, jplo, iphi, jphi
-    integer :: iff, jff, nwet, ico, jco
+    integer :: iff, jff, nwet, ico, jco, i, j, ivar, loccaux
     integer :: listgrids(numgrids(level))
     real(kind=8) :: lget, dt, totrat, bc, etasum, hsum, husum, hvsum
-    real(kind=8) :: hf, bf, huf, hvf, etaf, hav, hc, huc, hvc
+    real(kind=8) :: hf, bf, huf, hvf, etaf, hav, hc, huc, hvc, capa, etaav
+    real(kind=8) :: capac
+    character(len=80) :: String
 
     lget = level
 
-    character(len=80) :: String
     String = "(19h    updating level ,i5)"
     
     if (uprint) then
-        write(outunit, String) leget
+        write(outunit, String) lget
     endif
 
-    dt = possk(leget)
+    dt = possk(lget)
 
 !$OMP PARALLEL DO PRIVATE(ng,mptr,loc,loccaux,nx,ny,mitot,mjtot,
 !$OMP&                    ilo,jlo,ihi,jhi,locuse,mkid,iclo,ichi,
@@ -72,9 +73,8 @@ subroutine update (level, nvar, naux)
         jhi     = node(ndjhi,mptr)
 
         if (node(cfluxptr, mptr) /= 0) then
-            call upbnd(alloc(nod(cfluxptr,mprt),alloc(loc),nvar,naux,mitot, &
-                    mjtot, listsp(leget),mptr), mitot, mjtot, listsp(leget), &
-                    alloc(locuse),mptr)
+            call upbnd(alloc(node(cfluxptr,mptr)),alloc(loc),nvar,naux,mitot, &
+                    mjtot,listsp(lget),mptr)
         endif
 
         mkid = lstart(lget+1)
@@ -100,7 +100,7 @@ subroutine update (level, nvar, naux)
                 jff    = jplo*intraty(lget) - node(ndjlo,mkid) + nghost + 1
                 totrat = intratx(lget) * intraty(lget)
 
-                do 71 i = iplo-ilo+nghost+1, iphi-ilo+nghost+1
+                do i = iplo-ilo+nghost+1, iphi-ilo+nghost+1
                     do j = jplo-jlo+nghost+1, jphi-jlo+nghost+1
                         if (uprint) then
                             String = "(' updating pt. ',2i4,' of grid ',i3,' using ',2i4,' of grid ',i4)"
@@ -159,7 +159,7 @@ subroutine update (level, nvar, naux)
                             hav = hsum/dble(nwet)
                             hc = min(hav, (max(etaav-bc*capac, 0.0d0)))
                             huc = (min(hav, hc) / hsum) * husum
-                            hvc = (mi(hav, hc) / hsum) * hvsum
+                            hvc = (min(hav, hc) / hsum) * hvsum
                         else
                             hc = 0.0d0
                             huc = 0.0d0
@@ -185,63 +185,43 @@ subroutine update (level, nvar, naux)
                 
             endif
             mkid = node(levelptr, mkid)
-            
+
         endif
         continue
     enddo
     return
 
-end subroutine
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+contains
 
     integer pure function iadd(ivar,i,j)
-        integer, intent(in) :: i,j
+        integer, intent(in) :: i, j, ivar
         iadd = loc + ivar-1 + nvar*((j-1)*mitot+i-1)
     end function iadd
 
     integer pure function iaddf(ivar,i,j) 
-        integer intent(in) :: i,j
+        integer, intent(in) :: i, j, ivar
         iaddf = locf   + ivar-1 + nvar*((j-1)*mi+i-1)
     end function iaddf
 
     integer pure function iaddfaux(i,j)
-        integer intent(in) :: i,j
+        integer, intent(in) :: i, j
         iaddfaux = locfaux + mcapa-1 + naux*((j-1)*mi + (i-1))
     end function iaddfaux
 
     integer pure function iaddcaux(i,j)
-        integer intent(in) :: i,j
+        integer, intent(in) :: i, j
         iaddcaux = loccaux + mcapa-1 + naux*((j-1)*mitot+(i-1))
     end function iaddcaux
 
-    integer pure funtion iaddftopo(i,j)
-        integer intent(in) :: i,j
+    integer pure function iaddftopo(i,j)
+        integer, intent(in) :: i, j
         iaddftopo = locfaux +  naux*((j-1)*mi + (i-1))
     end function iaddftopo
 
-    integer pure funtion iaddctopo(i,j)
-        integer intent(in) :: i,j
+    integer pure function iaddctopo(i,j)
+        integer, intent(in) :: i, j
         iaddctopo = loccaux +  naux*((j-1)*mitot+(i-1))
     end function iaddctopo
+
+end subroutine
