@@ -24,16 +24,19 @@ subroutine update (level, nvar, naux)
     real(kind=8) intent(in) :: level
 
     integer :: ng, levSt, mptr, loc, locaux, nx, ny, mitot, mjtot
-    integer :: ilo, jlo, ihi, jhi, mkid
+    integer :: ilo, jlo, ihi, jhi, mkid, iclo, jclo, ichi, jchi
+    integer :: mi, mj, locf, locfaux, iplo, jplo, iphi, jphi
+    integer :: iff, jff, nwet, ico, jco
     integer :: listgrids(numgrids(level))
-    real(kind=8) :: lget, dt
+    real(kind=8) :: lget, dt, totrat, bc, etasum, hsum, husum, hvsum
+    real(kind=8) :: hf, bf, huf, hvf, etaf, hav, hc, huc, hvc
 
     lget = level
 
     character(len=80) :: String
     String = "(19h    updating level ,i5)"
     
-    if (uprint)
+    if (uprint) then
         write(outunit, String) leget
     endif
 
@@ -68,22 +71,127 @@ subroutine update (level, nvar, naux)
         ihi     = node(ndihi,mptr)
         jhi     = node(ndjhi,mptr)
 
-        if (node(cfluxptr, mptr) == 0) 
-            mkid = lstart(lget+1)
-        endif
-
-        call upbnd(alloc(nod(cfluxptr,mprt),alloc(loc),nvar,naux,mitot, &
+        if (node(cfluxptr, mptr) /= 0) then
+            call upbnd(alloc(nod(cfluxptr,mprt),alloc(loc),nvar,naux,mitot, &
                     mjtot, listsp(leget),mptr), mitot, mjtot, listsp(leget), &
                     alloc(locuse),mptr)
+        endif
 
-        
+        mkid = lstart(lget+1)
+        if (mkid /= 0) then
+            iclo   = node(ndilo,mkid)/intratx(lget)
+            jclo   = node(ndjlo,mkid)/intraty(lget)
+            ichi   = node(ndihi,mkid)/intratx(lget)
+            jchi   = node(ndjhi,mkid)/intraty(lget)
+            mi      = node(ndihi,mkid)-node(ndilo,mkid) + 1 + 2*nghost
+            mj      = node(ndjhi,mkid)-node(ndjlo,mkid) + 1 + 2*nghost
+            locf    = node(store1,mkid)
+            locfaux = node(storeaux,mkid)
 
+            ! calculate the starting adn ending indices for coarse grid update, if overlap
+            iplo = max(ilo,iclo)
+            jplo = max(jlo,jclo)
+            iphi = min(ihi,ichi)
+            jphi = min(jhi,jchi)        
 
+            if (iplo <= iphi .and. jplo <= jphi) then
+                !calculate the starting index for the fine grid source pts.
+                iff    = iplo*intratx(lget) - node(ndilo,mkid) + nghost + 1
+                jff    = jplo*intraty(lget) - node(ndjlo,mkid) + nghost + 1
+                totrat = intratx(lget) * intraty(lget)
 
+                do 71 i = iplo-ilo+nghost+1, iphi-ilo+nghost+1
+                    do j = jplo-jlo+nghost+1, jphi-jlo+nghost+1
+                        if (uprint) then
+                            String = "(' updating pt. ',2i4,' of grid ',i3,' using ',2i4,' of grid ',i4)"
+                            write(outunit,String) i,j,mptr,iff,jff,mkid                
+                            
+                            String = "(' old vals: ',4e25.15)"
+                            write(outunit,String)(alloc(iadd(ivar,i,j)),ivar=1,nvar)
+                        endif
+                        
+                        if (mcapa == 0) then
+                            capac = 1.0d0
+                        else
+                            capac = alloc(iaddcaux(i,j))
+                        endif
 
+                        bc = alloc(iaddctopo(i,j))
 
+                        etasum = 0.d0
+                        hsum = 0.d0
+                        husum = 0.d0
+                        hvsum = 0.d0
 
+                        nwet = 0
 
+                        do jco = 1, intraty(lget)
+                            do ico = 1, intratx(lget)
+                                if (mcapa == 0) then
+                                    capa = 1.0d0
+                                else
+                                    capa = alloc(iaddfaux(iff+ico-1,jff+jco-1))
+                                endif
+
+                                hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa 
+                                bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
+                                huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa 
+                                hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa 
+
+                                if (hf > dry_tolerance) then
+                                    etaf = hf + bf
+                                    nwet = nwet + 1
+                                else
+                                    etaf = 0.d0
+                                    huf=0.d0
+                                    hvf=0.d0
+                                endif
+
+                                hsum   = hsum + hf
+                                husum  = husum + huf
+                                hvsum  = hvsum + hvf
+                                etasum = etasum + etaf     
+                            enddo
+                        enddo
+
+                        if (nwet > 0) then
+                            etaav = etasum/dble(nwet)
+                            hav = hsum/dble(nwet)
+                            hc = min(hav, (max(etaav-bc*capac, 0.0d0)))
+                            huc = (min(hav, hc) / hsum) * husum
+                            hvc = (mi(hav, hc) / hsum) * hvsum
+                        else
+                            hc = 0.0d0
+                            huc = 0.0d0
+                            hvc = 0.0d0
+                        endif
+
+                        alloc(iadd(1,i,j)) = hc / capac 
+                        alloc(iadd(2,i,j)) = huc / capac 
+                        alloc(iadd(3,i,j)) = hvc / capac 
+
+                        if (uprint) then
+                            String = "(' new vals: ',4e25.15)"
+                            write(outunit, String)(alloc(iadd(ivar, i, j)), ivar=1, nvar)
+                        endif
+
+                        jff = jff + intraty(lget)
+                    enddo
+
+                    iff = iff + intratx(lget)
+                    jff = jplo * intraty(lget) - node(ndjlo, mkid) + nghost + 1
+                enddo
+
+                
+            endif
+            mkid = node(levelptr, mkid)
+            
+        endif
+        continue
+    enddo
+    return
+
+end subroutine
 
 
 
