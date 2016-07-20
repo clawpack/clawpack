@@ -78,7 +78,7 @@ subroutine update (level, nvar, naux)
         endif
 
         mkid = lstart(lget+1)
-        if (mkid /= 0) then
+        do while (mkid /= 0)
             iclo   = node(ndilo,mkid)/intratx(lget)
             jclo   = node(ndjlo,mkid)/intraty(lget)
             ichi   = node(ndihi,mkid)/intratx(lget)
@@ -186,7 +186,7 @@ subroutine update (level, nvar, naux)
             endif
             mkid = node(levelptr, mkid)
 
-        endif
+        enddo
         continue
     enddo
     return
