@@ -191,7 +191,6 @@ subroutine update (level, nvar, naux)
             mkid = node(levelptr, mkid)
 
         enddo
-        continue
     enddo
     return
 
@@ -203,7 +202,7 @@ contains
         iadd = loc + ivar-1 + nvar*((j-1)*mitot+i-1)
     end function iadd
 
-    integer pure function iaddf(ivar,i,j) 
+    integer pure function iaddf(ivar,i,j)
         integer, intent(in) :: i, j, ivar
         iaddf = locf   + ivar-1 + nvar*((j-1)*mi+i-1)
     end function iaddf
