@@ -126,8 +126,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 150
-    clawdata.num_cells[1] = 150
+    clawdata.num_cells[0] = 50
+    clawdata.num_cells[1] = 50
 
     # ---------------
     # Size of system:
@@ -173,7 +173,7 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 40
+        clawdata.num_output_times = 10
         clawdata.tfinal = 1.0
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
@@ -203,7 +203,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 1
+    clawdata.verbosity = 3
 
 
 
@@ -217,7 +217,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Initial time step for variable dt.
     # If dt_variable==0 then dt=dt_initial for all steps:
-    clawdata.dt_initial = 0.00225
+    clawdata.dt_initial = 0.005
 
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1e+99
@@ -330,12 +330,12 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 1
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,6]
-    amrdata.refinement_ratios_y = [2,6]
-    amrdata.refinement_ratios_t = [2,6]
+    amrdata.refinement_ratios_x = [2,2,2]
+    amrdata.refinement_ratios_y = [2,2,2]
+    amrdata.refinement_ratios_t = [2,2,2]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
@@ -350,18 +350,18 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.flag2refine = True
 
     # steps to take on each level L between regriddings of level L+1:
-    amrdata.regrid_interval = 3
+    amrdata.regrid_interval = 2
 
     # width of buffer zone around flagged points:
     # (typically the same as regrid_interval so waves don't escape):
-    amrdata.regrid_buffer_width  = 2
+    amrdata.regrid_buffer_width  = 3
 
     # clustering alg. cutoff for (# flagged pts) / (total # of cells refined)
     # (closer to 1.0 => more small grids may be needed to cover flagged cells)
     amrdata.clustering_cutoff = 0.700000
 
     # print info about each regridding up to this level:
-    amrdata.verbosity_regrid = 0  
+    amrdata.verbosity_regrid = 3  
 
     #  ----- For developers ----- 
     # Toggle debugging print statements:
@@ -469,7 +469,7 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [0.9,1.0]
+    data.rho = [90,100]
     data.eta = [0.0,-0.6]
     
     # Algorithm parameters

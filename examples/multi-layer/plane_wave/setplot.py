@@ -526,15 +526,15 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = [0,1]
-    plotaxes.ylimits = [0,1]
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
     plotaxes.title = 'Grid patches'
     plotaxes.scaled = True
 
     # Set up for item on these axes:
     plotitem = plotaxes.new_plotitem(plot_type='2d_patch')
     plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-    plotitem.amr_celledges_show = [1,1,0]
+    plotitem.amr_celledges_show = [1,0,0]
     plotitem.amr_patchedges_show = [1]
     
     # ========================================================================
