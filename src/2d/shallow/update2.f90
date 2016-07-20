@@ -14,6 +14,9 @@ subroutine update (level, nvar, naux)
 
     use geoclaw_module, only: dry_tolerance
     use amr_module
+
+    use multilayer_module, only: num_layers, rho
+
     implicit none
     ! modified for shallow water on topography to use surface level eta
     ! rather than depth h = q(i,j,1) 
@@ -216,12 +219,12 @@ contains
 
     integer pure function iaddftopo(i,j)
         integer, intent(in) :: i, j
-        iaddftopo = locfaux +  naux*((j-1)*mi + (i-1))
+        iaddftopo = locfaux + naux*((j-1)*mi + (i-1))
     end function iaddftopo
 
     integer pure function iaddctopo(i,j)
         integer, intent(in) :: i, j
-        iaddctopo = loccaux +  naux*((j-1)*mitot+(i-1))
+        iaddctopo = loccaux + naux*((j-1)*mitot+(i-1))
     end function iaddctopo
 
 end subroutine
