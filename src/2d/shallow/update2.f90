@@ -127,51 +127,7 @@ subroutine update (level, nvar, naux)
                         hvsum = 0.d0
 
                         nwet = 0
-
-!                         do jco = 1, intraty(lget)
-!                             do ico = 1, intratx(lget)
-!                                 if (mcapa == 0) then
-!                                     capa = 1.0d0
-!                                 else
-!                                     capa = alloc(iaddfaux(iff+ico-1,jff+jco-1))
-!                                 endif
-
-!                                 hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa 
-!                                 bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
-!                                 huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa 
-!                                 hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa 
-
-!                                 if (hf > dry_tolerance) then
-!                                     etaf = hf + bf
-!                                     nwet = nwet + 1
-!                                 else
-!                                     etaf = 0.d0
-!                                     huf=0.d0
-!                                     hvf=0.d0
-!                                 endif
-
-!                                 hsum   = hsum + hf
-!                                 husum  = husum + huf
-!                                 hvsum  = hvsum + hvf
-!                                 etasum = etasum + etaf     
-!                             enddo
-!                         enddo
-
-!                         if (nwet > 0) then
-!                             etaav = etasum/dble(nwet)
-!                             hav = hsum/dble(nwet)
-!                             hc = min(hav, (max(etaav-bc*capac, 0.0d0)))
-!                             huc = (min(hav, hc) / hsum) * husum
-!                             hvc = (min(hav, hc) / hsum) * hvsum
-!                         else
-!                             hc = 0.0d0
-!                             huc = 0.0d0
-!                             hvc = 0.0d0
-!                         endif
-
-!                         alloc(iadd(1,i,j)) = hc / capac 
-!                         alloc(iadd(2,i,j)) = huc / capac 
-!                         alloc(iadd(3,i,j)) = hvc / capac 
+ 
                         do layer = 1, num_layers
                             do jco = 1, intraty(lget)
                                 do ico = 1, intratx(lget)
