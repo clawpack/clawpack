@@ -18,7 +18,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
     use amr_module, only: outunit, NEEDS_TO_BE_SET
 
-    use multilayer_module, only: num_layers, rho
+    use multilayer_module, only: num_layers, rho, eta_init
 
     use topo_module, only: aux_finalized
     use geoclaw_module, only: dry_tolerance, sea_level
@@ -161,7 +161,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
               do ii=-1,1
                   coarseval(2+ii) = valc(3*layer-2,i+ii,j) / rho(layer)  + auxc(1,i+ii,j)
                   if (valc(3*layer-2,i+ii,j) / rho(layer)  <= dry_tolerance) then
-                      coarseval(2+ii)=sea_level
+                      coarseval(2+ii)=eta_init(layer)
                   end if
               end do
               s1p = coarseval(3) - coarseval(2)
@@ -173,7 +173,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
               do jj=-1,1
                   coarseval(2+jj) = valc(3*layer-2,i,j+jj) / rho(layer) + auxc(1,i,j+jj)
                   if (valc(3*layer-2,i,j+jj) / rho(layer) <= dry_tolerance) then
-                      coarseval(2+jj)=sea_level
+                      coarseval(2+jj)=eta_init(layer)
                   end if
               end do
               s1p = coarseval(3) - coarseval(2)
