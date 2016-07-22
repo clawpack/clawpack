@@ -196,10 +196,10 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                          val(3*layer-2,ifine,jfine) = max(0.d0, val(3*layer-2,ifine,jfine)  &
                                                  - aux(1,ifine,jfine))
                          finemass = finemass + val(3*layer-2,ifine,jfine)
-                         if (val(1,ifine,jfine) <= dry_tolerance) then
+                         if (val(3*layer-2,ifine,jfine) <= dry_tolerance) then
                             fineflag(1) = .true.
-                            val(2,ifine,jfine) = 0.d0
-                            val(3,ifine,jfine) = 0.d0
+                            val(3*layer-1,ifine,jfine) = 0.d0
+                            val(3*layer,ifine,jfine) = 0.d0
                          endif
                       endif
                   end do
@@ -224,22 +224,22 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                        * sign(1.d0,(valc(ivar,i,j+1) - valc(ivar,i,j-1)))
                       if (s1m*s1p <= 0.d0) slopey=0.d0
 
-                      if (valc(1,i,j) > dry_tolerance) then
-                          velmax = valc(ivar,i,j) / valc(1,i,j)
-                          velmin = valc(ivar,i,j) / valc(1,i,j)
+                      if (valc(3*layer-2,i,j) > dry_tolerance) then
+                          velmax = valc(ivar,i,j) / valc(3*layer-2,i,j)
+                          velmin = valc(ivar,i,j) / valc(3*layer-2,i,j)
                       else
                           velmax = 0.d0
                           velmin = 0.d0
                       endif
                  
                       do ii = -1,1,2
-                          if (valc(1,i+ii,j) > dry_tolerance) then
-                              vel = valc(ivar,i+ii,j) / valc(1,i+ii,j)
+                          if (valc(3*layer-2,i+ii,j) > dry_tolerance) then
+                              vel = valc(ivar,i+ii,j) / valc(3*layer-2,i+ii,j)
                               velmax = max(vel,velmax)
                               velmin = min(vel,velmin)
                           endif
-                          if (valc(1,i,j+ii) > dry_tolerance) then
-                              vel = valc(ivar,i,j+ii) / valc(1,i,j+ii)
+                          if (valc(3*layer-2,i,j+ii) > dry_tolerance) then
+                              vel = valc(ivar,i,j+ii) / valc(3*layer-2,i,j+ii)
                               velmax = max(vel,velmax)
                               velmin = min(vel,velmin)
                           endif
@@ -256,7 +256,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                               xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
                               hvf = valc(ivar,i,j) + xoff * slopex &
                                                             + yoff*slopey
-                              vf = hvf / (val(1,ifine,jfine))
+                              vf = hvf / (val(3*layer-2,ifine,jfine))
                               if (vf > velmax .or. vf < velmin) then
                                   fineflag(ivar) = .true.
                                   exit
@@ -271,14 +271,14 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                       if (fineflag(1) .or. fineflag(ivar)) then
                           ! more mass now, conserve momentum
                           area = real(refinement_ratio_x * refinement_ratio_y,kind=8)
-                          dividemass = max(finemass,valc(1,i,j))
+                          dividemass = max(finemass,valc(3*layer-2,i,j))
                           Vnew = area * valc(ivar,i,j) / (dividemass)
 
                               do jco = 1,refinement_ratio_y
                               do ico = 1,refinement_ratio_x
                                   jfine = (j-2) * refinement_ratio_y + nghost + jco
                                   ifine = (i-2) * refinement_ratio_x + nghost + ico
-                                  val(ivar,ifine,jfine) = Vnew * val(1,ifine,jfine)
+                                  val(ivar,ifine,jfine) = Vnew * val(3*layer-2,ifine,jfine)
                               enddo
                           enddo
                       endif

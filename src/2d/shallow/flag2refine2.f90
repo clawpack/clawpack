@@ -24,7 +24,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                        tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
 
     use amr_module, only: mxnest, t0
-    use geoclaw_module, only:dry_tolerance, sea_level
+    use geoclaw_module, only: dry_tolerance, sea_level
     use geoclaw_module, only: spherical_distance, coordinate_system
 
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
@@ -42,7 +42,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     use regions_module, only: num_regions, regions
     use refinement_module
 
-    use multilayer_module, only: rho
+    use multilayer_module, only: rho, num_layers, eta_init
 
     implicit none
 
@@ -62,7 +62,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     external allowflag
 
     ! Generic locals
-    integer :: i,j,m
+    integer :: i, j, m, layer
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
     real(kind=8) :: speed, eta, ds
 
@@ -174,35 +174,36 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! Refinement not forced, so check if it is allowed and if so,
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
+                do layer = 1, num_layers
+                    if (q(3*layer-2,i,j) / rho(layer) > dry_tolerance) then
+                        eta = q(3*layer-2,i,j) / rho(layer) + aux(1,i,j)
 
-                if (q(1,i,j) / rho(1) > dry_tolerance) then
-                    eta = q(1,i,j) / rho(1) + aux(1,i,j)
-
-                    ! Check wave criteria
-                    if (abs(eta - sea_level) > wave_tolerance) then
-                        ! Check to see if we are near shore
-                        if (q(1,i,j) / rho(1) < deep_depth) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
-                        ! Check if we are allowed to flag in deep water
-                        ! anyway
-                        else if (level < max_level_deep) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
+                        ! Check wave criteria
+                        if (abs(eta - eta_init(layer)) > wave_tolerance) then
+                            ! Check to see if we are near shore
+                            if (q(3*layer-2,i,j) / rho(layer) < deep_depth) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            ! Check if we are allowed to flag in deep water
+                            ! anyway
+                            else if (level < max_level_deep) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
                         endif
+
+                        ! Check speed criteria, note that it might be useful to
+                        ! also have a per layer criteria since this is not
+                        ! gradient based
+                        speed = sqrt(q(3*layer-1,i,j)**2 + q(3*layer,i,j)**2) / q(3*layer-2,i,j)
+                        do m=1,min(size(speed_tolerance),mxnest)
+                            if (speed > speed_tolerance(m) .and. level <= m) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
+                        enddo
                     endif
-
-                    ! Check speed criteria, note that it might be useful to
-                    ! also have a per layer criteria since this is not
-                    ! gradient based
-                    speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2) / q(1,i,j)
-                    do m=1,min(size(speed_tolerance),mxnest)
-                        if (speed > speed_tolerance(m) .and. level <= m) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
-                        endif
-                    enddo
-                endif
+                enddo
             endif
 
         enddo x_loop

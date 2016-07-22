@@ -136,7 +136,7 @@ contains
             end if
 
             write(GEO_PARM_UNIT,*) ' '
-            write(GEO_PARM_UNIT,*) '   dry_tolerance:',dry_tolerance
+            write(GEO_PARM_UNIT,*) '   dry_tolerance:', dry_tolerance
 
             module_setup = .true.
         end if
