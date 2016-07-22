@@ -42,6 +42,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     use regions_module, only: num_regions, regions
     use refinement_module
 
+    use multilayer_module, only: rho
+
     implicit none
 
     ! Subroutine arguments
@@ -173,13 +175,13 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
 
-                if (q(1,i,j) > dry_tolerance) then
-                    eta = q(1,i,j) + aux(1,i,j)
+                if (q(1,i,j) / rho(1) > dry_tolerance) then
+                    eta = q(1,i,j) / rho(1) + aux(1,i,j)
 
                     ! Check wave criteria
                     if (abs(eta - sea_level) > wave_tolerance) then
                         ! Check to see if we are near shore
-                        if (q(1,i,j) < deep_depth) then
+                        if (q(1,i,j) / rho(1) < deep_depth) then
                             amrflags(i,j) = DOFLAG
                             cycle x_loop
                         ! Check if we are allowed to flag in deep water
