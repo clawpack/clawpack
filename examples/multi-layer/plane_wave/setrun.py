@@ -169,7 +169,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 1
+    clawdata.output_style = 3
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -289,12 +289,17 @@ def setrun(claw_pkg='geoclaw'):
     #   2 => periodic (must specify this at both boundaries)
     #   3 => solid wall for systems where q(2) is normal velocity
 
-    clawdata.bc_lower[0] = 'extrap'
-    clawdata.bc_upper[0] = 'extrap'
+    # clawdata.bc_lower[0] = 'extrap'
+    # clawdata.bc_upper[0] = 'extrap'
 
-    clawdata.bc_lower[1] = 'extrap'
-    clawdata.bc_upper[1] = 'extrap'
+    # clawdata.bc_lower[1] = 'extrap'
+    # clawdata.bc_upper[1] = 'extrap'
+    
+    clawdata.bc_lower[0] = 'wall'
+    clawdata.bc_upper[0] = 'wall'
 
+    clawdata.bc_lower[1] = 'wall'
+    clawdata.bc_upper[1] = 'wall'
 
 
     # --------------
@@ -433,7 +438,7 @@ def setgeo(rundata):
     geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = 0.0
+    geo_data.sea_level = [0.0, -0.6]
     geo_data.dry_tolerance = 1.e-3
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025

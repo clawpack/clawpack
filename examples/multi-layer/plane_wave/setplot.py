@@ -533,9 +533,9 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
 
     # Set up for item on these axes:
     plotitem = plotaxes.new_plotitem(plot_type='2d_patch')
-    plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-    plotitem.amr_celledges_show = [1,0,0]
-    plotitem.amr_patchedges_show = [1]
+    plotitem.amr_patch_bgcolor = ['#ffffff', '#00ff00', '#ff0000']
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1]
     
     # ========================================================================
     #  Vorticity Plot
