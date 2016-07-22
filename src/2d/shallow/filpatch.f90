@@ -241,7 +241,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                     enddo
 
                     if (h < dry_tolerance) then
-                        eta_coarse(i_coarse,j_coarse) = sea_level
+                        eta_coarse(i_coarse,j_coarse) = sea_level(layer)
                     else
                         eta_coarse(i_coarse,j_coarse) = h + b
                     endif
