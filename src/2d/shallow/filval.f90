@@ -39,7 +39,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
     ! Local storage
     integer :: refinement_ratio_x, refinement_ratio_y, iclo, jclo, ichi, jchi, ng, i, ico, ifine
-    integer :: ii, ivar, j, jco, jfine, jj, layer
+    integer :: ii, ivar, j, jco, jfine, jj, layer, i_layer
+    real(kind=8) :: h, b
     real(kind=8) :: valc(nvar,mic,mjc), auxc(naux,mic,mjc)
     real(kind=8) :: coarseval(3), dx_coarse, dy_coarse, xl, xr, yb, yt, area
     real(kind=8) :: dividemass, finemass, hvf, s1m, s1p, slopex, slopey, vel
@@ -159,10 +160,17 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
               fineflag(1) = .false.
               ! interpolate eta to find depth
               do ii=-1,1
-                  coarseval(2+ii) = valc(3*layer-2,i+ii,j) / rho(layer)  + auxc(1,i+ii,j)
-                  if (valc(3*layer-2,i+ii,j) / rho(layer)  <= dry_tolerance) then
-                      coarseval(2+ii)=eta_init(layer)
-                  end if
+                  h = valc(3*layer-2, i+ii, j) / rho(layer)
+                  b = auxc(1, i+ii, j)
+                  do i_layer = layer+1, num_layers
+                      b = b + valc(3*i_layer-2, i+ii, j) / rho(layer)
+                  enddo
+
+                  if (h < dry_tolerance) then
+                      coarseval(2+ii) = eta_init(layer)
+                  else
+                      coarseval(2+ii) = h + b
+                  endif
               end do
               s1p = coarseval(3) - coarseval(2)
               s1m = coarseval(2) - coarseval(1)
@@ -171,10 +179,18 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
               if (s1m*s1p <= 0.d0) slopex=0.d0
 
               do jj=-1,1
-                  coarseval(2+jj) = valc(3*layer-2,i,j+jj) / rho(layer) + auxc(1,i,j+jj)
-                  if (valc(3*layer-2,i,j+jj) / rho(layer) <= dry_tolerance) then
-                      coarseval(2+jj)=eta_init(layer)
-                  end if
+                  h = valc(3*layer-2, i, j+jj) / rho(layer)
+                  b = auxc(1, i, j+jj)
+                  do i_layer = layer+1, num_layers
+                      b = b + valc(3*i_layer-2, i, j+jj) / rho(layer)
+!                       print *, valc(3*i_layer-2, i, j+jj)/rho(layer)
+                  enddo
+
+                  if (h < dry_tolerance) then
+                      coarseval(2+jj) = eta_init(layer)
+                  else
+                      coarseval(2+jj) = h + b
+                  endif
               end do
               s1p = coarseval(3) - coarseval(2)
               s1m = coarseval(2) - coarseval(1)
