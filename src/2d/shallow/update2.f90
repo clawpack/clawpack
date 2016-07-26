@@ -12,7 +12,7 @@
 
 subroutine update (level, nvar, naux)
 
-    use geoclaw_module, only: dry_tolerance
+    use geoclaw_module, only: dry_tolerance, sea_level
     use amr_module
 
     use multilayer_module, only: num_layers, rho
@@ -30,7 +30,7 @@ subroutine update (level, nvar, naux)
     integer :: ilo, jlo, ihi, jhi, mkid, iclo, jclo, ichi, jchi
     integer :: mi, mj, locf, locfaux, iplo, jplo, iphi, jphi
     integer :: iff, jff, nwet, ico, jco, i, j, ivar, loccaux
-    integer :: listgrids(numgrids(level)), layer
+    integer :: listgrids(numgrids(level)), layer, i_layer
     real(kind=8) :: lget, dt, totrat, bc, etasum, hsum, husum, hvsum
     real(kind=8) :: hf, bf, huf, hvf, etaf, hav, hc, huc, hvc, capa, etaav
     real(kind=8) :: capac
@@ -142,11 +142,15 @@ subroutine update (level, nvar, naux)
                                     huf= alloc(iaddf(3*layer-1,iff+ico-1,jff+jco-1))*capa 
                                     hvf= alloc(iaddf(3*layer,iff+ico-1,jff+jco-1))*capa 
 
+                                    do i_layer = layer+1, num_layers
+                                        bf = bf + alloc(iaddf(3*i_layer-2,iff+ico-1,jff+jco-1))*capa / rho(layer)
+                                    enddo
+
                                     if (hf > dry_tolerance) then
                                         etaf = hf + bf
                                         nwet = nwet + 1
                                     else
-                                        etaf = 0.d0
+                                        etaf = sea_level(layer)
                                         huf=0.d0
                                         hvf=0.d0
                                     endif

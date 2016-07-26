@@ -44,6 +44,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
 
     use multilayer_module, only: rho, num_layers, eta_init
 
+
     implicit none
 
     ! Subroutine arguments

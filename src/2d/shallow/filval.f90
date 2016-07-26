@@ -200,26 +200,27 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
               ! Interpolate from coarse cells to fine grid to find depth
               finemass = 0.d0
-                  do jco = 1,refinement_ratio_y
-                 do ico = 1,refinement_ratio_x
-                      yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
-                      xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
-                      jfine = (j-2) * refinement_ratio_y + nghost + jco
-                      ifine = (i-2) * refinement_ratio_x + nghost + ico
-                      if (setflags(ifine,jfine) .eq. NEEDS_TO_BE_SET) then
-                         val(3*layer-2,ifine,jfine) = (coarseval(2) + xoff * slopex &
-                                                            + yoff * slopey) * rho(layer)
-                         val(3*layer-2,ifine,jfine) = max(0.d0, val(3*layer-2,ifine,jfine)  &
-                                                 - aux(1,ifine,jfine))
-                         finemass = finemass + val(3*layer-2,ifine,jfine)
-                         if (val(3*layer-2,ifine,jfine) <= dry_tolerance) then
-                            fineflag(1) = .true.
-                            val(3*layer-1,ifine,jfine) = 0.d0
-                            val(3*layer,ifine,jfine) = 0.d0
-                         endif
-                      endif
-                  end do
-              end do
+
+                do jco = 1,refinement_ratio_y
+                    do ico = 1,refinement_ratio_x
+                        yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
+                        xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
+                        jfine = (j-2) * refinement_ratio_y + nghost + jco
+                        ifine = (i-2) * refinement_ratio_x + nghost + ico
+                        if (setflags(ifine,jfine) .eq. NEEDS_TO_BE_SET) then
+                            val(3*layer-2,ifine,jfine) = (coarseval(2) + xoff * slopex &
+                                                                + yoff * slopey) * rho(layer)
+                            val(3*layer-2,ifine,jfine) = max(0.d0, val(3*layer-2,ifine,jfine)  &
+                                                     - aux(1,ifine,jfine))
+                            finemass = finemass + val(3*layer-2,ifine,jfine)
+                          if (val(3*layer-2,ifine,jfine) <= dry_tolerance) then
+                              fineflag(1) = .true.
+                              val(3*layer-1,ifine,jfine) = 0.d0
+                              val(3*layer,ifine,jfine) = 0.d0
+                          endif
+                        endif
+                    end do
+                end do
 
               !------ Determine Momentum ----------------------------------
               ! finemass is the total mass in all new fine grid cells
