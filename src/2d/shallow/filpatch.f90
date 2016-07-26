@@ -19,7 +19,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     use amr_module, only: intratx, intraty, iregsz, jregsz
     use amr_module, only: timeSetaux, NEEDS_TO_BE_SET
 
-    use multilayer_module, only: num_layers, rho
+    use multilayer_module, only: num_layers, rho, eta_init
 
     use geoclaw_module, only: sea_level, dry_tolerance
     use topo_module, only: topo_finalized
@@ -241,7 +241,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                     enddo
 
                     if (h < dry_tolerance) then
-                        eta_coarse(i_coarse,j_coarse) = sea_level(layer)
+                        eta_coarse(i_coarse,j_coarse) = eta_init(layer)
                     else
                         eta_coarse(i_coarse,j_coarse) = h + b
                     endif

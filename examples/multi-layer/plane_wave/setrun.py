@@ -117,11 +117,11 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
 
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = -1      # west longitude
-    clawdata.upper[0] = 2.0       # east longitude
+    clawdata.lower[0] = -2      # west longitude
+    clawdata.upper[0] = 4.0       # east longitude
 
-    clawdata.lower[1] = -1.0       # south latitude
-    clawdata.upper[1] = 2.0         # north latitude
+    clawdata.lower[1] = -2.0       # south latitude
+    clawdata.upper[1] = 4.0         # north latitude
 
 
 
@@ -474,7 +474,7 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [90,100]
+    data.rho = [90,1000]
     data.eta = [0.0,-0.6]
     
     # Algorithm parameters

@@ -18,7 +18,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
     use amr_module, only: outunit, NEEDS_TO_BE_SET
 
-    use multilayer_module, only: num_layers, rho
+    use multilayer_module, only: num_layers, rho, eta_init
 
     use topo_module, only: aux_finalized
     use geoclaw_module, only: dry_tolerance, sea_level
@@ -39,7 +39,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
     ! Local storage
     integer :: refinement_ratio_x, refinement_ratio_y, iclo, jclo, ichi, jchi, ng, i, ico, ifine
-    integer :: ii, ivar, j, jco, jfine, jj, layer
+    integer :: ii, ivar, j, jco, jfine, jj, layer, i_layer
+    real(kind=8) :: h, b
     real(kind=8) :: valc(nvar,mic,mjc), auxc(naux,mic,mjc)
     real(kind=8) :: coarseval(3), dx_coarse, dy_coarse, xl, xr, yb, yt, area
     real(kind=8) :: dividemass, finemass, hvf, s1m, s1p, slopex, slopey, vel
@@ -159,10 +160,17 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
               fineflag(1) = .false.
               ! interpolate eta to find depth
               do ii=-1,1
-                  coarseval(2+ii) = valc(3*layer-2,i+ii,j) / rho(layer)  + auxc(1,i+ii,j)
-                  if (valc(3*layer-2,i+ii,j) / rho(layer)  <= dry_tolerance) then
-                      coarseval(2+ii)=sea_level(layer)
-                  end if
+                  h = valc(3*layer-2, i+ii, j) / rho(layer)
+                  b = auxc(1, i+ii, j)
+                  do i_layer = layer+1, num_layers
+                      b = b + valc(3*i_layer-2, i+ii, j) / rho(layer)
+                  enddo
+
+                  if (h < dry_tolerance) then
+                      coarseval(2+ii) = eta_init(layer)
+                  else
+                      coarseval(2+ii) = h + b
+                  endif
               end do
               s1p = coarseval(3) - coarseval(2)
               s1m = coarseval(2) - coarseval(1)
@@ -171,10 +179,18 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
               if (s1m*s1p <= 0.d0) slopex=0.d0
 
               do jj=-1,1
-                  coarseval(2+jj) = valc(3*layer-2,i,j+jj) / rho(layer) + auxc(1,i,j+jj)
-                  if (valc(3*layer-2,i,j+jj) / rho(layer) <= dry_tolerance) then
-                      coarseval(2+jj)=sea_level(layer)
-                  end if
+                  h = valc(3*layer-2, i, j+jj) / rho(layer)
+                  b = auxc(1, i, j+jj)
+                  do i_layer = layer+1, num_layers
+                      b = b + valc(3*i_layer-2, i, j+jj) / rho(layer)
+!                       print *, valc(3*i_layer-2, i, j+jj)/rho(layer)
+                  enddo
+
+                  if (h < dry_tolerance) then
+                      coarseval(2+jj) = eta_init(layer)
+                  else
+                      coarseval(2+jj) = h + b
+                  endif
               end do
               s1p = coarseval(3) - coarseval(2)
               s1m = coarseval(2) - coarseval(1)
@@ -184,6 +200,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
               ! Interpolate from coarse cells to fine grid to find depth
               finemass = 0.d0
+
                 do jco = 1,refinement_ratio_y
                     do ico = 1,refinement_ratio_x
                         yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
@@ -224,22 +241,22 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                        * sign(1.d0,(valc(ivar,i,j+1) - valc(ivar,i,j-1)))
                       if (s1m*s1p <= 0.d0) slopey=0.d0
 
-                      if (valc(1,i,j) > dry_tolerance) then
-                          velmax = valc(ivar,i,j) / valc(1,i,j)
-                          velmin = valc(ivar,i,j) / valc(1,i,j)
+                      if (valc(3*layer-2,i,j) > dry_tolerance) then
+                          velmax = valc(ivar,i,j) / valc(3*layer-2,i,j)
+                          velmin = valc(ivar,i,j) / valc(3*layer-2,i,j)
                       else
                           velmax = 0.d0
                           velmin = 0.d0
                       endif
                  
                       do ii = -1,1,2
-                          if (valc(1,i+ii,j) > dry_tolerance) then
-                              vel = valc(ivar,i+ii,j) / valc(1,i+ii,j)
+                          if (valc(3*layer-2,i+ii,j) > dry_tolerance) then
+                              vel = valc(ivar,i+ii,j) / valc(3*layer-2,i+ii,j)
                               velmax = max(vel,velmax)
                               velmin = min(vel,velmin)
                           endif
-                          if (valc(1,i,j+ii) > dry_tolerance) then
-                              vel = valc(ivar,i,j+ii) / valc(1,i,j+ii)
+                          if (valc(3*layer-2,i,j+ii) > dry_tolerance) then
+                              vel = valc(ivar,i,j+ii) / valc(3*layer-2,i,j+ii)
                               velmax = max(vel,velmax)
                               velmin = min(vel,velmin)
                           endif
@@ -256,7 +273,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                               xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
                               hvf = valc(ivar,i,j) + xoff * slopex &
                                                             + yoff*slopey
-                              vf = hvf / (val(1,ifine,jfine))
+                              vf = hvf / (val(3*layer-2,ifine,jfine))
                               if (vf > velmax .or. vf < velmin) then
                                   fineflag(ivar) = .true.
                                   exit
@@ -271,14 +288,14 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                       if (fineflag(1) .or. fineflag(ivar)) then
                           ! more mass now, conserve momentum
                           area = real(refinement_ratio_x * refinement_ratio_y,kind=8)
-                          dividemass = max(finemass,valc(1,i,j))
+                          dividemass = max(finemass,valc(3*layer-2,i,j))
                           Vnew = area * valc(ivar,i,j) / (dividemass)
 
                               do jco = 1,refinement_ratio_y
                               do ico = 1,refinement_ratio_x
                                   jfine = (j-2) * refinement_ratio_y + nghost + jco
                                   ifine = (i-2) * refinement_ratio_x + nghost + ico
-                                  val(ivar,ifine,jfine) = Vnew * val(1,ifine,jfine)
+                                  val(ivar,ifine,jfine) = Vnew * val(3*layer-2,ifine,jfine)
                               enddo
                           enddo
                       endif
