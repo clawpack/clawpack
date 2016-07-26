@@ -175,11 +175,11 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
                 do layer = 1, num_layers
-                    if (q(3*layer-2,i,j) / rho(layer) > dry_tolerance(layer)) then
+                    if (q(3*layer-2,i,j) / rho(layer) > dry_tolerance) then
                         eta = q(3*layer-2,i,j) / rho(layer) + aux(1,i,j)
 
                         ! Check wave criteria
-                        if (abs(eta - eta_init(layer)) > wave_tolerance(layer)) then
+                        if (abs(eta - eta_init(layer)) > wave_tolerance) then
                             ! Check to see if we are near shore
                             if (q(3*layer-2,i,j) / rho(layer) < deep_depth) then
                                 amrflags(i,j) = DOFLAG
