@@ -24,7 +24,7 @@ module multilayer_module
     integer :: eigen_method,inundation_method
     logical :: check_richardson
     real(kind=8) :: richardson_tolerance
-    real(kind=8), allocatable :: wave_tol(:), dry_tolerance(:)
+    real(kind=8), allocatable :: wave_tolerance(:), dry_tolerance(:)
     
     ! Output files
     integer, parameter :: KAPPA_UNIT = 42
@@ -77,7 +77,7 @@ contains
             read(IOUNIT,"(i3)") num_layers
             allocate(rho(num_layers))
             allocate(eta_init(num_layers))
-            allocate(wave_tol(num_layers))
+            allocate(wave_tolerance(num_layers))
             allocate(dry_tolerance(num_layers))
 
             read(IOUNIT,*) rho
@@ -89,7 +89,7 @@ contains
                 one_minus_r = 0.d0
             endif
             read(IOUNIT, *) eta_init
-            read(IOUNIT, *)
+            read(IOUNIT, *) wave_tolerance
 
             ! Algorithmic parameters
             read(IOUNIT, *) check_richardson
