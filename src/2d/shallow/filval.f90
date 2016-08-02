@@ -18,10 +18,10 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
     use amr_module, only: outunit, NEEDS_TO_BE_SET
 
-    use multilayer_module, only: num_layers, rho, eta_init
+    use multilayer_module, only: num_layers, rho, eta_init, dry_tolerance
 
     use topo_module, only: aux_finalized
-    use geoclaw_module, only: dry_tolerance, sea_level
+    use geoclaw_module, only: sea_level
     use refinement_module, only: varRefTime
     use topo_module, only: aux_finalized
 
@@ -166,12 +166,12 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                       b = b + valc(3*i_layer-2, i+ii, j) / rho(layer)
                   enddo
 
-                  if (h < dry_tolerance) then
+                  if (h < dry_tolerance(layer)) then
                       coarseval(2+ii) = eta_init(layer)
                   else
                       coarseval(2+ii) = h + b
                   endif
-              end do
+              enddo
               s1p = coarseval(3) - coarseval(2)
               s1m = coarseval(2) - coarseval(1)
               slopex = min(abs(s1p), abs(s1m)) &
@@ -183,15 +183,14 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                   b = auxc(1, i, j+jj)
                   do i_layer = layer+1, num_layers
                       b = b + valc(3*i_layer-2, i, j+jj) / rho(layer)
-!                       print *, valc(3*i_layer-2, i, j+jj)/rho(layer)
                   enddo
 
-                  if (h < dry_tolerance) then
+                  if (h < dry_tolerance(layer)) then
                       coarseval(2+jj) = eta_init(layer)
                   else
                       coarseval(2+jj) = h + b
                   endif
-              end do
+              enddo
               s1p = coarseval(3) - coarseval(2)
               s1m = coarseval(2) - coarseval(1)
               slopey = min(abs(s1p), abs(s1m)) &
@@ -213,20 +212,20 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                             val(3*layer-2,ifine,jfine) = max(0.d0, val(3*layer-2,ifine,jfine)  &
                                                      - aux(1,ifine,jfine))
                             finemass = finemass + val(3*layer-2,ifine,jfine)
-                          if (val(3*layer-2,ifine,jfine) <= dry_tolerance) then
+                          if (val(3*layer-2,ifine,jfine) <= dry_tolerance(layer)) then
                               fineflag(1) = .true.
                               val(3*layer-1,ifine,jfine) = 0.d0
                               val(3*layer,ifine,jfine) = 0.d0
                           endif
                         endif
-                    end do
-                end do
+                    enddo
+                enddo
 
               !------ Determine Momentum ----------------------------------
               ! finemass is the total mass in all new fine grid cells
               ! all fine mass has been determined for this coarse grid cell
               ! if all fine cells are dry, momentum has already been set
-              if (finemass >= dry_tolerance) then
+              if (finemass >= dry_tolerance(layer)) then
                   do ivar = 3*layer-1,3*layer
                       fineflag(ivar)=.false.
                       s1p = (valc(ivar,i+1,j) - valc(ivar,i,j))
@@ -241,7 +240,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                        * sign(1.d0,(valc(ivar,i,j+1) - valc(ivar,i,j-1)))
                       if (s1m*s1p <= 0.d0) slopey=0.d0
 
-                      if (valc(3*layer-2,i,j) > dry_tolerance) then
+                      if (valc(3*layer-2,i,j) > dry_tolerance(layer)) then
                           velmax = valc(ivar,i,j) / valc(3*layer-2,i,j)
                           velmin = valc(ivar,i,j) / valc(3*layer-2,i,j)
                       else
@@ -250,12 +249,12 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                       endif
                  
                       do ii = -1,1,2
-                          if (valc(3*layer-2,i+ii,j) > dry_tolerance) then
+                          if (valc(3*layer-2,i+ii,j) > dry_tolerance(layer)) then
                               vel = valc(ivar,i+ii,j) / valc(3*layer-2,i+ii,j)
                               velmax = max(vel,velmax)
                               velmin = min(vel,velmin)
                           endif
-                          if (valc(3*layer-2,i,j+ii) > dry_tolerance) then
+                          if (valc(3*layer-2,i,j+ii) > dry_tolerance(layer)) then
                               vel = valc(ivar,i,j+ii) / valc(3*layer-2,i,j+ii)
                               velmax = max(vel,velmax)
                               velmin = min(vel,velmin)
@@ -291,7 +290,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                           dividemass = max(finemass,valc(3*layer-2,i,j))
                           Vnew = area * valc(ivar,i,j) / (dividemass)
 
-                              do jco = 1,refinement_ratio_y
+                          do jco = 1,refinement_ratio_y
                               do ico = 1,refinement_ratio_x
                                   jfine = (j-2) * refinement_ratio_y + nghost + jco
                                   ifine = (i-2) * refinement_ratio_x + nghost + ico
@@ -299,10 +298,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                               enddo
                           enddo
                       endif
-
                   enddo
               endif
-
           enddo !end of coarse loop
       enddo !end of coarse loop
     enddo

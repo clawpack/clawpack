@@ -19,9 +19,9 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     use amr_module, only: intratx, intraty, iregsz, jregsz
     use amr_module, only: timeSetaux, NEEDS_TO_BE_SET
 
-    use multilayer_module, only: num_layers, rho, eta_init
+    use multilayer_module, only: num_layers, rho, eta_init, dry_tolerance
 
-    use geoclaw_module, only: sea_level, dry_tolerance
+    use geoclaw_module, only: sea_level
     use topo_module, only: topo_finalized
 
     implicit none
@@ -240,7 +240,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                         b = b + valcrse(ivalc(3*i_layer-2,i_coarse,j_coarse)) / rho(layer)
                     enddo
 
-                    if (h < dry_tolerance) then
+                    if (h < dry_tolerance(layer)) then
                         eta_coarse(i_coarse,j_coarse) = eta_init(layer)
                     else
                         eta_coarse(i_coarse,j_coarse) = h + b
@@ -305,7 +305,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
 
                         ! Flag the corresponding coarse cell as needing relimiting
                         ! if one of the fine cells ends up being dry
-                        if (h_fine < dry_tolerance) then
+                        if (h_fine < dry_tolerance(layer)) then
                             fine_flag(1,i_coarse,j_coarse) = .true.
                             reloop = .true.
                         endif
@@ -336,7 +336,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                         endif
 
                         ! Set initial values for max/min of current field
-                        if (valcrse(ivalc(1,i_coarse,j_coarse)) > dry_tolerance) then
+                        if (valcrse(ivalc(1,i_coarse,j_coarse)) > dry_tolerance(layer)) then
                             vel_max(i_coarse,j_coarse) = valcrse(ivalc(n,i_coarse,j_coarse)) /    &
                                                          valcrse(ivalc(1,i_coarse,j_coarse))
                             vel_min(i_coarse,j_coarse) = valcrse(ivalc(n,i_coarse,j_coarse)) /    &
@@ -350,7 +350,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                         ! Necessary since we are interpolating momentum linearly
                         ! but not interpolating depth linearly
                         do i =-1,1,2
-                            if (valcrse(ivalc(1,i_coarse + i,j_coarse)) > dry_tolerance) then
+                            if (valcrse(ivalc(1,i_coarse + i,j_coarse)) > dry_tolerance(layer)) then
                                 vel_max(i_coarse,j_coarse) =  max(vel_max(i_coarse,j_coarse),      &
                                                     valcrse(ivalc(n,i_coarse + i,j_coarse)) /      &
                                                     valcrse(ivalc(1,i_coarse + i,j_coarse)))
@@ -359,7 +359,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                                                     valcrse(ivalc(1,i_coarse + i,j_coarse)))
                             endif
 
-                            if (valcrse(ivalc(1,i_coarse,j_coarse + i)) > dry_tolerance) then
+                            if (valcrse(ivalc(1,i_coarse,j_coarse + i)) > dry_tolerance(layer)) then
                                 vel_max(i_coarse,j_coarse) = max(vel_max(i_coarse,j_coarse),       &
                                                       valcrse(ivalc(n,i_coarse,j_coarse + i)) /    &
                                                       valcrse(ivalc(1,i_coarse,j_coarse + i)))
@@ -423,7 +423,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
 
                             if (flaguse(i_fine,j_fine) == 0) then
                                 if (fine_flag(1,i_coarse,j_coarse) .or. fine_flag(n,i_coarse,j_coarse)) then
-                                    if (fine_mass(i_coarse,j_coarse) > dry_tolerance) then
+                                    if (fine_mass(i_coarse,j_coarse) > dry_tolerance(layer)) then
                                         h_coarse = valcrse(ivalc(1,i_coarse,j_coarse))
                                         h_count = real(fine_cell_count(i_coarse,j_coarse),kind=8)
                                         h_fine_average = fine_mass(i_coarse,j_coarse) / h_count
