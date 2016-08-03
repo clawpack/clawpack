@@ -196,7 +196,14 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
                 ! Interpolate from coarse cells to fine grid to find depth
                 finemass = 0.d0
-
+                if (xleft > -1) then
+                    print *, ' '
+                    print *, 'layer: ', layer
+    !                 print *, 'h:', h
+    !                 print *, 'b:', b
+                    print *, 'eta: ', coarseval(2)
+                    print *, 'xleft: ', xleft
+                endif
                 do jco = 1,refinement_ratio_y
                     do ico = 1,refinement_ratio_x
                         yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
@@ -204,8 +211,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                         jfine = (j-2) * refinement_ratio_y + nghost + jco
                         ifine = (i-2) * refinement_ratio_x + nghost + ico
                         if (setflags(ifine,jfine) .eq. NEEDS_TO_BE_SET) then
-                            val(3*layer-2,ifine,jfine) = ((coarseval(2) - b(1)) + xoff * slopex &
-                                                                + yoff * slopey) * rho(layer)
+                            val(3*layer-2,ifine,jfine) = (coarseval(2) + (xoff * slopex) + (yoff * slopey) - b(1)) * rho(layer)
                             val(3*layer-2,ifine,jfine) = max(0.d0, val(3*layer-2,ifine,jfine))
                             finemass = finemass + val(3*layer-2,ifine,jfine)
                           if (val(3*layer-2,ifine,jfine) <= dry_tolerance(layer)) then
@@ -218,7 +224,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                 enddo
 
                 ! increment b
-                b(1) = b(1) + coarseval(2)
+                b(1) = b(1) + h
 
                 !------ Determine Momentum ----------------------------------
                 ! finemass is the total mass in all new fine grid cells
