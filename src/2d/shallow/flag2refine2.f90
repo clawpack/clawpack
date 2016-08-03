@@ -177,6 +177,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             if (allowflag(x_c,y_c,t,level)) then
                 do layer = 1, num_layers
                     if (q(3*layer-2,i,j) / rho(layer) > dry_tolerance(layer)) then
+                        ! NOT CORRECT BELOW, ETA NEEDS TO BE STEPPED UP BY WATER BELOW
                         eta = q(3*layer-2,i,j) / rho(layer) + aux(1,i,j)
 
                         ! Check wave criteria
