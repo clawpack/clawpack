@@ -29,10 +29,12 @@ subroutine update (level, nvar, naux)
     integer :: ng, levSt, mptr, loc, locaux, nx, ny, mitot, mjtot
     integer :: ilo, jlo, ihi, jhi, mkid, iclo, jclo, ichi, jchi
     integer :: mi, mj, locf, locfaux, iplo, jplo, iphi, jphi
-    integer :: iff, jff, nwet, ico, jco, i, j, ivar, loccaux
+    integer :: iff, jff, nwet(num_layers), ico, jco, i, j, ivar, loccaux
     integer :: listgrids(numgrids(level)), layer, i_layer
-    real(kind=8) :: lget, dt, totrat, bc, etasum, hsum, husum, hvsum
-    real(kind=8) :: hf, bf, huf, hvf, etaf, hav, hc, huc, hvc, capa, etaav
+    real(kind=8) :: lget, dt, totrat, bc, etasum(num_layers), hsum(num_layers)
+    real(kind=8) :: husum(num_layers), hvsum(num_layers)
+    real(kind=8) :: hf, bf, huf, hvf, etaf, hav(num_layers), hc(num_layers)
+    real(kind=8) :: huc(num_layers), hvc(num_layers), capa, etaav(num_layers)
     real(kind=8) :: capac
     character(len=80) :: String
 
@@ -128,9 +130,11 @@ subroutine update (level, nvar, naux)
 
                         nwet = 0
  
-                        do layer = 1, num_layers
-                            do jco = 1, intraty(lget)
-                                do ico = 1, intratx(lget)
+!                         do layer = 1, num_layers
+                        do jco = 1, intraty(lget)
+                            do ico = 1, intratx(lget)
+                                bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
+                                do layer = num_layers, 1, -1
                                     if (mcapa == 0) then
                                         capa = 1.0d0
                                     else
@@ -138,46 +142,51 @@ subroutine update (level, nvar, naux)
                                     endif
 
                                     hf = alloc(iaddf(3*layer-2,iff+ico-1,jff+jco-1))*capa / rho(layer)
-                                    bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
+!                                     bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
                                     huf= alloc(iaddf(3*layer-1,iff+ico-1,jff+jco-1))*capa 
                                     hvf= alloc(iaddf(3*layer,iff+ico-1,jff+jco-1))*capa 
 
-                                    do i_layer = layer+1, num_layers
-                                        bf = bf + alloc(iaddf(3*i_layer-2,iff+ico-1,jff+jco-1))*capa / rho(layer)
-                                    enddo
+!                                     do i_layer = layer+1, num_layers
+!                                         bf = bf + alloc(iaddf(3*i_layer-2,iff+ico-1,jff+jco-1))*capa / rho(layer)
+!                                     enddo
 
                                     if (hf > dry_tolerance(layer)) then
                                         etaf = hf + bf
-                                        nwet = nwet + 1
+                                        nwet(layer) = nwet(layer) + 1
                                     else
                                         etaf = sea_level(layer)
                                         huf=0.d0
                                         hvf=0.d0
                                     endif
 
-                                    hsum   = hsum + hf
-                                    husum  = husum + huf
-                                    hvsum  = hvsum + hvf
-                                    etasum = etasum + etaf     
+                                    hsum(layer)   = hsum(layer) + hf
+                                    husum(layer)  = husum(layer) + huf
+                                    hvsum(layer)  = hvsum(layer) + hvf
+                                    etasum(layer) = etasum(layer) + etaf  
+
+                                    bf = bf + hf   
                                 enddo
                             enddo
+                        enddo
 
-                            if (nwet > 0) then
-                                etaav = etasum/dble(nwet)
-                                hav = hsum/dble(nwet)
-                                hc = min(hav, (max(etaav-bc*capac, 0.0d0)))
-                                huc = (min(hav, hc) / hsum) * husum
-                                hvc = (min(hav, hc) / hsum) * hvsum
+                        do layer = num_layers, 1, -1
+                            if (nwet(layer) > 0) then
+                                etaav(layer) = etasum(layer)/dble(nwet(layer))
+                                hav(layer) = hsum(layer)/dble(nwet(layer))
+                                hc(layer) = min(hav(layer), (max(etaav(layer)-bc*capac, 0.0d0)))
+                                huc(layer) = (min(hav(layer), hc(layer)) / hsum(layer) * husum(layer))
+                                hvc(layer) = (min(hav(layer), hc(layer)) / hsum(layer) * hvsum(layer))
                             else
-                                hc = 0.0d0
-                                huc = 0.0d0
-                                hvc = 0.0d0
+                                hc(layer) = 0.0d0
+                                huc(layer) = 0.0d0
+                                hvc(layer) = 0.0d0
                             endif
 
-                            alloc(iadd(3*layer-2,i,j)) = hc / capac * rho(layer)
-                            alloc(iadd(3*layer-1,i,j)) = huc / capac 
-                            alloc(iadd(3*layer,i,j)) = hvc / capac 
+                            alloc(iadd(3*layer-2,i,j)) = hc(layer) / capac * rho(layer)
+                            alloc(iadd(3*layer-1,i,j)) = huc(layer) / capac 
+                            alloc(iadd(3*layer,i,j)) = hvc(layer) / capac 
                         enddo
+
                         if (uprint) then
                             String = "(' new vals: ',4e25.15)"
                             write(outunit, String)(alloc(iadd(ivar, i, j)), ivar=1, nvar)
