@@ -196,14 +196,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
                 ! Interpolate from coarse cells to fine grid to find depth
                 finemass = 0.d0
-                if (xleft > -1) then
-                    print *, ' '
-                    print *, 'layer: ', layer
-    !                 print *, 'h:', h
-    !                 print *, 'b:', b
-                    print *, 'eta: ', coarseval(2)
-                    print *, 'xleft: ', xleft
-                endif
                 do jco = 1,refinement_ratio_y
                     do ico = 1,refinement_ratio_x
                         yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
