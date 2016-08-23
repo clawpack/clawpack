@@ -300,7 +300,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                         eta_fine = eta_coarse(i_coarse,j_coarse) + eta1 * slope(1,i_coarse,j_coarse) &
                                                                  + eta2 * slope(2,i_coarse,j_coarse)
                         h_fine = max(eta_fine - aux(1,i_fine + nrowst - 1, j_fine + ncolst - 1), 0.d0)
-                        valbig(1,i_fine+nrowst-1, j_fine+ncolst-1) = h_fine * rho(layer)
+                        valbig(3*layer-2,i_fine+nrowst-1, j_fine+ncolst-1) = h_fine * rho(layer)
                         fine_mass(i_coarse,j_coarse) = fine_mass(i_coarse,j_coarse) + h_fine
 
                         ! Flag the corresponding coarse cell as needing relimiting
