@@ -147,7 +147,15 @@ COMMON_SOURCES += \
   $(GEOLIB)/fgmax_values.f90 \
   $(GEOLIB)/fgmax_finalize.f90 \
   $(GEOLIB)/check.f \
-  $(GEOLIB)/restrt.f 
+  $(GEOLIB)/restrt.f \
+  $(GEOLIB)/prepregstep.f \
+  $(GEOLIB)/prepbigstep.f \
+  $(GEOLIB)/coarsen.f \
+  $(GEOLIB)/auxcoarsen.f \
+  $(GEOLIB)/errest.f \
+  $(GEOLIB)/b4step2.f90 \
+  $(GEOLIB)/stepgrid.f \
+  $(GEOLIB)/advanc.f \
 
 # list of source files from ADJLIB library. 
 COMMON_SOURCES += \
@@ -161,11 +169,4 @@ COMMON_SOURCES += \
   $(ADJGEOLIB)/interp_adjoint.f \
   $(ADJGEOLIB)/valout.f \
   $(ADJGEOLIB)/setaux.f90 \
-  $(ADJGEOLIB)/errest.f \
-  $(ADJGEOLIB)/coarsen.f \
-  $(ADJGEOLIB)/auxcoarsen.f \
-  $(ADJGEOLIB)/advanc.f \
-  $(ADJGEOLIB)/b4step2.f90 \
-  $(ADJGEOLIB)/prepregstep.f \
-  $(ADJGEOLIB)/prepbigstep.f \
-  $(ADJGEOLIB)/stepgrid.f \
+
