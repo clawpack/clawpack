@@ -179,11 +179,12 @@ def setplot(plotdata):
     plotitem.plot_var = 4
     plotitem.imshow_cmap = colormaps.white_red
     plotitem.imshow_cmin = 0.0
-    plotitem.imshow_cmax = 0.05
+    plotitem.imshow_cmax = 0.03   # use when plotting inner product with q
+    #plotitem.imshow_cmax = 0.0005   # use when plotting inner product with error
     plotitem.add_colorbar = False
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.amr_patchedges_show = [0]
-    plotitem.amr_data_show = [1,0,0,0]
+    plotitem.amr_data_show = [1,1,0,0]
     
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
