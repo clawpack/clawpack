@@ -65,7 +65,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     ! Generic locals
     integer :: i, j, m, layer
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
-    real(kind=8) :: speed, eta, ds
+    real(kind=8) :: speed, eta, ds, b
 
     ! Storm specific variables
     real(kind=8) :: R_eye(2), wind_speed
@@ -175,20 +175,23 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! Refinement not forced, so check if it is allowed and if so,
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
-                do layer = 1, num_layers
+                b = aux(1,i,j)
+                do layer = num_layers, 1, -1
                     if (q(3*layer-2,i,j) / rho(layer) > dry_tolerance(layer)) then
-                        ! NOT CORRECT BELOW, ETA NEEDS TO BE STEPPED UP BY WATER BELOW
-                        eta = q(3*layer-2,i,j) / rho(layer) + aux(1,i,j)
+
+                        eta = q(3*layer-2,i,j) / rho(layer) + b
 
                         ! Check wave criteria
                         if (abs(eta - eta_init(layer)) > wave_tolerance(layer)) then
                             ! Check to see if we are near shore
                             if (q(3*layer-2,i,j) / rho(layer) < deep_depth) then
+                                print *, "1"
                                 amrflags(i,j) = DOFLAG
                                 cycle x_loop
                             ! Check if we are allowed to flag in deep water
                             ! anyway
                             else if (level < max_level_deep) then
+                                print *, "2"
                                 amrflags(i,j) = DOFLAG
                                 cycle x_loop
                             endif
@@ -204,6 +207,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                                 cycle x_loop
                             endif
                         enddo
+                        b = b + q(3*layer-2,i,j) / rho(layer)
+
                     endif
                 enddo
             endif
