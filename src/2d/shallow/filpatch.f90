@@ -299,7 +299,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                         fine_cell_count(i_coarse,j_coarse) = fine_cell_count(i_coarse,j_coarse) + 1
                         eta_fine = eta_coarse(i_coarse,j_coarse) + eta1 * slope(1,i_coarse,j_coarse) &
                                                                  + eta2 * slope(2,i_coarse,j_coarse)
-                        h_fine = max(eta_fine - aux(1,i_fine + nrowst - 1, j_fine + ncolst - 1), 0.d0)
+                        h_fine = max(eta_fine - b, 0.d0)
                         valbig(3*layer-2,i_fine+nrowst-1, j_fine+ncolst-1) = h_fine * rho(layer)
                         fine_mass(i_coarse,j_coarse) = fine_mass(i_coarse,j_coarse) + h_fine
 
@@ -393,7 +393,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                                 hv_fine = valcrse(ivalc(n,i_coarse,j_coarse))         &
                                                 + eta1 * slope(1,i_coarse,j_coarse)   &
                                                 + eta2 * slope(2,i_coarse,j_coarse)
-                                v_fine = hv_fine  / valbig(1,i_fine+nrowst-1, j_fine+ncolst-1)
+                                v_fine = hv_fine  / valbig(3*layer-2,i_fine+nrowst-1, j_fine+ncolst-1)
                                 if (v_fine<vel_min(i_coarse,j_coarse) .or.  v_fine>vel_max(i_coarse,j_coarse)) then
                                     fine_flag(n,i_coarse,j_coarse) = .true.
                                     reloop = .true.
@@ -428,11 +428,11 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                                         h_count = real(fine_cell_count(i_coarse,j_coarse),kind=8)
                                         h_fine_average = fine_mass(i_coarse,j_coarse) / h_count
                                         divide_mass = max(h_coarse, h_fine_average)
-                                        h_fine = valbig(1, i_fine + nrowst - 1, j_fine + ncolst - 1)
+                                        h_fine = valbig(3*layer-2, i_fine + nrowst - 1, j_fine + ncolst - 1)
                                         v_new = valcrse(ivalc(n,i_coarse,j_coarse)) / (divide_mass)
 
                                         valbig(n,i_fine+nrowst-1,j_fine+ncolst-1) = &
-                                            v_new * valbig(1,i_fine+nrowst-1,j_fine+ncolst-1)
+                                            v_new * valbig(3*layer-2,i_fine+nrowst-1,j_fine+ncolst-1)
                                     else
                                         valbig(n,i_fine+nrowst-1,j_fine+ncolst-1) = 0.d0
                                     endif
