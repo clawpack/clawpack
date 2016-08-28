@@ -162,7 +162,11 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
             do layer = num_layers, 1, -1
                 h = valc(3*layer-2, i, j) / rho(layer)
-                coarseval(2) = h + b(1)
+                if (h < dry_tolerance(layer)) then
+                    coarseval(2) = eta_init(layer)
+                else
+                  coarseval(2) = h + b(1)
+                endif
                 ! interpolate eta to find depth
                 do ii = -1, 1, 2
                     h_i = valc(3*layer-2, i+ii, j) / rho(layer)
