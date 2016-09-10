@@ -45,7 +45,7 @@ else ifeq ($(UNAME), Linux)
 		else
 		    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
 		endif
-	else ifeq($(FC), gfortran)
+	else ifeq ($(FC), gfortran)
 		ifndef LFLAGS
 			LFLAGS = -llapack $(FFLAGS)
 		else
@@ -76,12 +76,10 @@ EXCLUDE_SOURCES = \
 # ----------------------------------------
 
 MODULES = \
- $(GEOLIB)/multilayer/multilayer_module.f90 \
  $(GEOLIB)/multilayer/gauges_module.f90 \
  ./qinit_module.f90
 
 SOURCES = \
-  $(GEOLIB)/multilayer/setprob.f90 \
   ./qinit.f90 \
   $(GEOLIB)/multilayer/setaux.f90 \
   $(GEOLIB)/multilayer/b4step2.f90 \

@@ -9,7 +9,10 @@ c
       use amr_module
       use topo_module, only: dt_max_dtopo, num_dtopo, topo_finalized,
      &                       aux_finalized, topo0work
-      use gauges_module, only: setbestsrc
+      use gauges_module, only: setbestsrc, num_gauges
+      use gauges_module, only: print_gauges_and_reset_nextLoc
+
+      use storm_module, only: landfall, display_landfall_time
 
 
       implicit double precision (a-h,o-z)
@@ -17,6 +20,7 @@ c
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
       integer clock_start, clock_finish, clock_rate
+      character(len=128) :: time_format
       real(kind=8) cpu_start,cpu_finish
 
 c
@@ -158,9 +162,10 @@ c        ## adjust time step  to hit chktime exactly, and do checkpointing
 c
       level        = 1
       ntogo(level) = 1
-      do i = 1, maxlv
-         dtnew(i)  = rinfinity
-      enddo
+      dtnew(1:maxlv) = rinfinity
+C       do i = 1, maxlv
+C          dtnew(i)  = rinfinity
+C       enddo
 
 c     We should take at least one step on all levels after any
 c     moving topography (dtopo) has been finalized to insure that
@@ -255,19 +260,22 @@ c
 
           call advanc(level,nvar,dtlevnew,vtime,naux)
 
-c         # rjl modified 6/17/05 to print out *after* advanc and print cfl
-c         # rjl & mjb changed to cfl_level, 3/17/10
-
+c Output time info
           timenew = tlevel(level)+possk(level)
+          time_format = "(' AMRCLAW: level ',i2,'  CFL = ',e8.3," //
+     &                  "'  dt = ',e10.4,  '  final t = ',e12.6)"
+          if (display_landfall_time) then
+            timenew = (timenew - landfall) / (3.6d3 * 24d0)
+            time_format = "(' AMRCLAW: level ',i2,'  CFL = ',e8.3," //
+     &                  "'  dt = ',e10.4,  '  final t = ', f5.2)"
+          end if
           if (tprint) then
-              write(outunit,100)level,cfl_level,possk(level),timenew
-              endif
+              write(outunit, time_format) level, cfl_level, 
+     &                                    possk(level), timenew
+          endif
           if (method(4).ge.level) then
-              write(6,100)level,cfl_level,possk(level),timenew
-              endif
-100       format(' AMRCLAW: level ',i2,'  CFL = ',e8.3,
-     &           '  dt = ',e10.4,  '  final t = ',e12.6)
-
+              print time_format, level, cfl_level, possk(level), timenew
+          endif
 
 c        # to debug individual grid updates...
 c        call valout(level,level,time,nvar,naux)
@@ -324,6 +332,11 @@ c                   adjust time steps for this and finer levels
      &                             kratio(level-1),level
                      write(6,*) "Writing checkpoint file at t = ",time
                      call check(ncycle,time,nvar,naux)
+                     if (num_gauges .gt. 0) then
+                        do ii = 1, num_gauges
+                           call print_gauges_and_reset_nextLoc(ii, nvar)
+                        end do
+                     endif
                      stop
                  endif
 
@@ -385,11 +398,21 @@ c             ! use same alg. as when setting refinement when first make new fin
      &      mod(ncycle,checkpt_interval).eq.0) .or. dumpchk) then
                 call check(ncycle,time,nvar,naux)
                 dumpchk = .true.
+               if (num_gauges .gt. 0) then
+                  do ii = 1, num_gauges
+                     call print_gauges_and_reset_nextLoc(ii, nvar)
+                  end do
+               endif
        endif
 
        if ((mod(ncycle,iout).eq.0) .or. dumpout) then
          call valout(1,lfine,time,nvar,naux)
          if (printout) call outtre(mstart,.true.,nvar,naux)
+         if (num_gauges .gt. 0) then
+            do ii = 1, num_gauges
+               call print_gauges_and_reset_nextLoc(ii, nvar)
+            end do
+         endif
        endif
 
       go to 20
@@ -419,15 +442,27 @@ c
       if (dump_final) then
            call valout(1,lfine,time,nvar,naux)
            if (printout) call outtre(mstart,.true.,nvar,naux)
+           if (num_gauges .gt. 0) then
+              do ii = 1, num_gauges
+                 call print_gauges_and_reset_nextLoc(ii, nvar)
+              end do
+           endif
       endif
 
 c  # checkpoint everything for possible future restart
 c  # (unless we just did it based on dumpchk)
 c
 
-      if ((checkpt_style .ne. 0) .and. (.not. dumpchk)) then
-           call check(ncycle,time,nvar,naux)
-         endif
+c
+      if (checkpt_style .ne. 0) then  ! want a chckpt
+         ! check if just did it so dont do it twice
+         if (.not. dumpchk) call check(ncycle,time,nvar,naux)
+      endif
+      if (num_gauges .gt. 0) then
+         do ii = 1, num_gauges
+            call print_gauges_and_reset_nextLoc(ii, nvar)
+         end do
+      endif
 
       write(6,*) "Done integrating to time ",time
       return

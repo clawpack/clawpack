@@ -6,6 +6,8 @@ module refinement_module
     implicit none
     save
 
+    logical, private :: module_setup = .false.
+
     ! ========================================================================
     !  Refinement Criteria
     ! ========================================================================
@@ -43,36 +45,41 @@ contains
         integer :: i
         character(len=128) :: line
 
-        write(GEO_PARM_UNIT,*) ' '
-        write(GEO_PARM_UNIT,*) '--------------------------------------------'
-        write(GEO_PARM_UNIT,*) 'Refinement Control Parameters:'
-        write(GEO_PARM_UNIT,*) '------------------------------'
+        if (.not.module_setup) then
 
-        if (present(file_name)) then
-            call opendatafile(unit, file_name)
-        else
-            call opendatafile(unit, 'refinement.data')
-        endif
+            write(GEO_PARM_UNIT,*) ' '
+            write(GEO_PARM_UNIT,*) '--------------------------------------------'
+            write(GEO_PARM_UNIT,*) 'Refinement Control Parameters:'
+            write(GEO_PARM_UNIT,*) '------------------------------'
 
-        ! Basic criteria
-        read(unit,*) wave_tolerance
-        read(unit,'(a)') line
-        allocate(speed_tolerance(get_value_count(line)))
-        read(line,*) speed_tolerance
-        read(unit,*) deep_depth
-        read(unit,*) max_level_deep
-        read(unit,*)
-        read(unit,*) varRefTime
-        close(unit)
-        
-        ! Write out data to parameter file
-        write(GEO_PARM_UNIT,*) '   wave_tolerance:',wave_tolerance
-        write(GEO_PARM_UNIT,*) '   speed_tolerance:',speed_tolerance
-        write(GEO_PARM_UNIT,*) '   maxleveldeep:', max_level_deep
-        write(GEO_PARM_UNIT,*) '   depthdeep:', deep_depth
-        write(GEO_PARM_UNIT,*) '   Variable dt Refinement Ratios:',varRefTime
-        write(GEO_PARM_UNIT,*) ''
-        
+            if (present(file_name)) then
+                call opendatafile(unit, file_name)
+            else
+                call opendatafile(unit, 'refinement.data')
+            endif
+
+            ! Basic criteria
+            read(unit,*) wave_tolerance
+            read(unit,'(a)') line
+            allocate(speed_tolerance(get_value_count(line)))
+            read(line,*) speed_tolerance
+            read(unit,*) deep_depth
+            read(unit,*) max_level_deep
+            read(unit,*)
+            read(unit,*) varRefTime
+            close(unit)
+            
+            ! Write out data to parameter file
+            write(GEO_PARM_UNIT,*) '   wave_tolerance:',wave_tolerance
+            write(GEO_PARM_UNIT,*) '   speed_tolerance:',speed_tolerance
+            write(GEO_PARM_UNIT,*) '   maxleveldeep:', max_level_deep
+            write(GEO_PARM_UNIT,*) '   depthdeep:', deep_depth
+            write(GEO_PARM_UNIT,*) '   Variable dt Refinement Ratios:',varRefTime
+            write(GEO_PARM_UNIT,*) ''
+            
+            module_setup = .true.
+        end if
+
     end subroutine set_refinement
     
     

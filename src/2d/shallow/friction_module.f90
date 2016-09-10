@@ -20,6 +20,8 @@ module friction_module
     implicit none
     save
 
+    logical, private :: module_setup = .false.
+
     ! Parameters
     integer, public, parameter :: friction_index = 4
 
@@ -71,47 +73,52 @@ contains
         integer :: m, file_type
         character(len=128) :: line
 
-        ! Open data file
-        if (present(path)) then
-            call opendatafile(unit,path)
-        else
-            call opendatafile(unit,'friction.data')
-        endif
+        if (.not.module_setup) then
 
-        ! Basic switch to turn on variable friction
-        read(unit,*) variable_friction
-        read(unit,'(a)')
+            ! Open data file
+            if (present(path)) then
+                call opendatafile(unit,path)
+            else
+                call opendatafile(unit,'friction.data')
+            endif
 
-        if (variable_friction) then
-            ! Region based friction
-            read(unit,'(i2)') num_friction_regions
-            allocate(friction_regions(num_friction_regions))
-            read(unit,*)
-            do m=1,num_friction_regions
-                read(unit,*) friction_regions(m)%lower
-                read(unit,*) friction_regions(m)%upper
-                read(unit,'(a)') line
-                allocate(friction_regions(m)%depths(get_value_count(line)))
-                read(line,*) friction_regions(m)%depths
-                read(unit,'(a)') line
-                allocate(friction_regions(m)%manning_coefficients(get_value_count(line)))
-                read(line,*) friction_regions(m)%manning_coefficients
+            ! Basic switch to turn on variable friction
+            read(unit,*) variable_friction
+            read(unit,'(a)')
+
+            if (variable_friction) then
+                ! Region based friction
+                read(unit,'(i2)') num_friction_regions
+                allocate(friction_regions(num_friction_regions))
                 read(unit,*)
-            enddo
+                do m=1,num_friction_regions
+                    read(unit,*) friction_regions(m)%lower
+                    read(unit,*) friction_regions(m)%upper
+                    read(unit,'(a)') line
+                    allocate(friction_regions(m)%depths(get_value_count(line)))
+                    read(line,*) friction_regions(m)%depths
+                    read(unit,'(a)') line
+                    allocate(friction_regions(m)%manning_coefficients(get_value_count(line)))
+                    read(line,*) friction_regions(m)%manning_coefficients
+                    read(unit,*)
+                enddo
 
-            ! File based friction
-            read(unit,"(i2)") num_friction_files
-            allocate(friction_files(num_friction_files))
-            do m=1,num_friction_files
-                read(unit,"(a,i1)") line, file_type
+                ! File based friction
+                read(unit,"(i2)") num_friction_files
+                allocate(friction_files(num_friction_files))
+                do m=1,num_friction_files
+                    read(unit,"(a,i1)") line, file_type
 
-                ! Open and read in friction file
-                print *,"*** WARNING *** File based friction specification unimplemented."
-                friction_files = read_friction_file(line, file_type)
-            enddo
-        endif
+                    ! Open and read in friction file
+                    print *,"*** WARNING *** File based friction specification unimplemented."
+                    friction_files = read_friction_file(line, file_type)
+                enddo
+            endif
 
-        close(unit)
+            close(unit)
+
+            module_setup = .true.
+        end if
 
     end subroutine setup_variable_friction
 

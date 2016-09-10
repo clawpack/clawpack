@@ -23,6 +23,7 @@ module constant_storm_module
 
     end type constant_storm_type
 
+    logical, private :: module_setup = .false.
     logical, private, parameter :: DEBUG = .true.
 
 contains
@@ -42,35 +43,40 @@ contains
         ! Local storage
         integer, parameter :: unit = 701
 
-        ! Storm type does not work for lat-long coordinate systems
-        if (coordinate_system == 2) then
-            stop "Constant storm type does not work on lat-long coordinates."
-        endif
+        if (.not.module_setup) then
+            
+            ! Storm type does not work for lat-long coordinate systems
+            if (coordinate_system == 2) then
+                stop "Constant storm type does not work on lat-long coordinates."
+            endif
 
-        ! Open data file
-        if (present(storm_data_path)) then
-            call opendatafile(unit,storm_data_path)
-        else
-            call opendatafile(unit,'storm.data')
-        endif
+            ! Open data file
+            if (present(storm_data_path)) then
+                call opendatafile(unit,storm_data_path)
+            else
+                call opendatafile(unit,'storm.data')
+            endif
 
-        ! Read in hurricane parameters
-        read(unit,*) storm%ramp_up_time
-        read(unit,*) storm%velocity
-        read(unit,*) storm%R_eye_init
-        read(unit,*) storm%A
-        read(unit,*) storm%B
-        read(unit,*) storm%central_pressure
+            ! Read in hurricane parameters
+            read(unit,*) storm%ramp_up_time
+            read(unit,*) storm%velocity
+            read(unit,*) storm%R_eye_init
+            read(unit,*) storm%A
+            read(unit,*) storm%B
+            read(unit,*) storm%central_pressure
 
-        ! Output to log file
-        write(log_unit,*) "Storm Data - Constant Storm"
-        write(log_unit,"('Ramp Up Time = ',d16.8)") storm%ramp_up_time
-        write(log_unit,"('Velocity = ',2d16.8)") storm%velocity
-        write(log_unit,"('Eye initial position = ',2d16.8)") storm%R_eye_init
-        write(log_unit,"('Holland parameters (A,B) =',2d16.8)") storm%A, storm%B
-        write(log_unit,"('Pressures (Pn,Pc) = ',2d16.8)") storm%ambient_pressure,&
-                                                        storm%central_pressure
-        write(log_unit,"('Density of Air = ',d16.8)") storm%rho_air
+            ! Output to log file
+            write(log_unit,*) "Storm Data - Constant Storm"
+            write(log_unit,"('Ramp Up Time = ',d16.8)") storm%ramp_up_time
+            write(log_unit,"('Velocity = ',2d16.8)") storm%velocity
+            write(log_unit,"('Eye initial position = ',2d16.8)") storm%R_eye_init
+            write(log_unit,"('Holland parameters (A,B) =',2d16.8)") storm%A, storm%B
+            write(log_unit,"('Pressures (Pn,Pc) = ',2d16.8)") storm%ambient_pressure,&
+                                                            storm%central_pressure
+            write(log_unit,"('Density of Air = ',d16.8)") storm%rho_air
+
+            module_setup = .true.
+        end if
 
     end subroutine set_constant_storm
 
