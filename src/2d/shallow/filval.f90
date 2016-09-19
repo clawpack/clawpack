@@ -40,7 +40,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     ! Local storage
     integer :: refinement_ratio_x, refinement_ratio_y, iclo, jclo, ichi, jchi, ng, i, ico, ifine
     integer :: ii, ivar, j, jco, jfine, jj, layer, i_layer
-    real(kind=8) :: h, h_i, h_j, b(5)
+    real(kind=8) :: h, h_i, h_j, b(5), bfine
     real(kind=8) :: valc(nvar,mic,mjc), auxc(naux,mic,mjc)
     real(kind=8) :: coarseval(3), dx_coarse, dy_coarse, xl, xr, yb, yt, area
     real(kind=8) :: dividemass, finemass, hvf, s1m, s1p, slopex, slopey, vel
@@ -158,7 +158,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
       do j=2, mjc-1
           do i=2, mic-1
             fineflag(1) = .false.
-            b = ( (/ aux(1, i, j), aux(1, i-1, j), aux(1, i+1, j), aux(1, i, j-1), aux(1, i, j+1) /) )
+            b = ( (/ auxc(1, i, j), auxc(1, i-1, j), auxc(1, i+1, j), auxc(1, i, j-1), auxc(1, i, j+1) /) )
 
             do layer = num_layers, 1, -1
                 h = valc(3*layer-2, i, j) / rho(layer)
@@ -206,8 +206,12 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                         xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
                         jfine = (j-2) * refinement_ratio_y + nghost + jco
                         ifine = (i-2) * refinement_ratio_x + nghost + ico
+                        bfine = aux(1, ifine, jfine)
+                        do i_layer = layer+1, num_layers
+                            bfine = bfine + val(3*i_layer-2,ifine,jfine)/rho(i_layer)
+                        enddo
                         if (setflags(ifine,jfine) .eq. NEEDS_TO_BE_SET) then
-                            val(3*layer-2,ifine,jfine) = (coarseval(2) + (xoff * slopex) + (yoff * slopey) - b(1)) * rho(layer)
+                            val(3*layer-2,ifine,jfine) = (coarseval(2) + (xoff * slopex) + (yoff * slopey) - bfine) * rho(layer)
                             val(3*layer-2,ifine,jfine) = max(0.d0, val(3*layer-2,ifine,jfine))
                             finemass = finemass + val(3*layer-2,ifine,jfine)
                           if (val(3*layer-2,ifine,jfine) <= dry_tolerance(layer)) then
