@@ -155,11 +155,13 @@ contains
                             friction_regions(m)%upper(1) >= x .and.  &
                             friction_regions(m)%upper(2) >= y) then
 
+                            ! sea_level is not set properly here, just a test case 
+                            
                             do k=1,size(friction_regions(m)%depths) - 1
                                 if (friction_regions(m)%depths(k+1)            &
-                                                <= aux(1,i,j) - sea_level.and. &
+                                                <= aux(1,i,j) - sea_level(1).and. &
                                     friction_regions(m)%depths(k)              &
-                                                 > aux(1,i,j) - sea_level) then
+                                                 > aux(1,i,j) - sea_level(1)) then
 
                                     aux(friction_index,i,j) = &
                                      friction_regions(m)%manning_coefficients(k)
