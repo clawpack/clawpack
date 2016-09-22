@@ -488,7 +488,7 @@ def set_multilayer(rundata):
     rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6
     rundata.qinit_data.epsilon = 0.02
-    rundata.qinit_data.angle = 3.0
+    rundata.qinit_data.angle = numpy.pi
     rundata.qinit_data.sigma = 0.02
     rundata.qinit_data.wave_family = 4
     rundata.qinit_data.init_location = [-0.1,0.0]
