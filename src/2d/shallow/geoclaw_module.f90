@@ -27,7 +27,7 @@ module geoclaw_module
     ! ========================================================================
     !  Physics
     ! ========================================================================
-    real(kind=8) :: grav, earth_radius, sea_level(2)
+    real(kind=8) :: grav, earth_radius, sea_level
     integer :: coordinate_system
 
     ! Rotational velocity of Earth

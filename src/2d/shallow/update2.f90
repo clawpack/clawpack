@@ -15,7 +15,7 @@ subroutine update (level, nvar, naux)
     use geoclaw_module, only: sea_level
     use amr_module
 
-    use multilayer_module, only: num_layers, rho, dry_tolerance
+    use multilayer_module, only: num_layers, rho, dry_tolerance, eta_init
 
     implicit none
     ! modified for shallow water on topography to use surface level eta
@@ -154,7 +154,7 @@ subroutine update (level, nvar, naux)
                                         etaf = hf + bf
                                         nwet(layer) = nwet(layer) + 1
                                     else
-                                        etaf = sea_level(layer)
+                                        etaf = eta_init(layer)
                                         huf=0.d0
                                         hvf=0.d0
                                     endif
