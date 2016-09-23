@@ -126,8 +126,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 250
-    clawdata.num_cells[1] = 250
+    clawdata.num_cells[0] = 150
+    clawdata.num_cells[1] = 150
 
     # ---------------
     # Size of system:
@@ -335,7 +335,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 1
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
     amrdata.refinement_ratios_x = [2,2,2,2,2,2,2]
@@ -474,7 +474,7 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [90,1000]
+    data.rho = [0.9, 1.0]
     data.eta = [0.0,-0.6]
     data.wave_tolerance = [1.e-4, 1.e-4]  # not the right values
     
