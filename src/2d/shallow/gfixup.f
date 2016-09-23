@@ -106,7 +106,6 @@ c                 other reduction variables initialized in stst1
 !$OMP&            REDUCTION(+:timeFilval)
 !$OMP&            SCHEDULE(dynamic,1)
 !$OMP&            DEFAULT(none)
-!$OMP&            REDUCTION(+:timeSetaux)
 
       do  j = 1, newnumgrids(lcheck)
           mptr = listnewgrids(j)

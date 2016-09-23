@@ -7,10 +7,6 @@ c
       implicit double precision (a-h,o-z)
       logical first
 
-      !for setaux timing
-      integer :: clock_start, clock_finish, clock_rate
-      real(kind=8) :: cpu_start, cpu_finish
-
 
 c ::::::::::::::::::::::::::::: GINIT ::::::::::::::::::::::::
 c
@@ -42,14 +38,8 @@ c :::::::::::::::::::::::::::::::::::::::;::::::::::::::::::::
                    alloc(locaux+k-1) = NEEDS_TO_BE_SET ! new system checks this val before setting
                 end do
                 
-                call system_clock(clock_start,clock_rate)
-                call cpu_time(cpu_start)
                 call setaux(nghost,nx,ny,corn1,corn2,hx,hy,
      &                    naux,alloc(locaux))
-                call system_clock(clock_finish,clock_rate)
-                call cpu_time(cpu_finish)
-                timeSetaux = timeSetaux + clock_finish - clock_start
-                timeSetauxCPU = timeSetauxCPU + cpu_finish - cpu_start
               else 
                 locaux = 1
               endif
