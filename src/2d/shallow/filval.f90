@@ -82,7 +82,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     jchi   = (jhi + 1) / refinement_ratio_y - 1 + 1
     ng     = 0
 
-    valc = 2.22222E+10 ! MJB DEBUG
 
     sticksoutxfine = ( (ilo .lt. 0) .or. (ihi .ge. iregsz(level)))
     sticksoutyfine = ( (jlo .lt. 0) .or. (jhi .ge. jregsz(level)))
@@ -118,22 +117,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
     call bc2amr(valc,auxc,mic,mjc,nvar,naux,dx_coarse,dy_coarse,level-1,time,  &
                 xl,xr,yb,yt)
-
-    do jm = 1, mjc
-    do im = 1, mic
-    do nm = 1, nvar
-       if  (valc(nm,im,jm) .eq. 2.22222E+10 .and. .not. DIAGONAL_CORNER(im,jm,mic,mjc)) then
-           write(54,*)" not covered by coarser grid"
-           write(*,*)" not covered by coarser grid"
-           write(*,*) "stop here for grid ",mptr
-           write(54,*) "stop here for grid ",mptr
-           call outlev(newstl(level-1),.false.,nvar,naux)
-           stop
-       endif
-    end do
-    end do
-    end do
-
 
 
 !  NOTE change in order of code.  Since the interp from coarse to fine needs the aux
