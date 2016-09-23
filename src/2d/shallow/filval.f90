@@ -44,7 +44,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     logical :: fineflag(3)
     real(kind=8) :: fliparray((mitot+mjtot)*(nvar+naux))
     real(kind=8) :: aux2(naux,mitot,mjtot)
-    integer :: clock_start, clock_finish, clock_rate
     integer :: nx, ny
     real(kind=8) setflags(mitot,mjtot),maxauxdif
 
