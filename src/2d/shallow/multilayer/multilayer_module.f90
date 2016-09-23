@@ -90,6 +90,7 @@ contains
             endif
             read(IOUNIT, *) eta_init
             read(IOUNIT, *) wave_tolerance
+            read(IOUNIT, *)
 
             ! Algorithmic parameters
             read(IOUNIT, *) check_richardson
