@@ -12,7 +12,7 @@
 !
 subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                   mjc, xleft, xright, ybot, ytop, nvar, mptr, ilo, ihi, &
-                  jlo, jhi, aux, naux,  sp_over_h, thisSetauxTime)
+                  jlo, jhi, aux, naux,  sp_over_h )
 
     use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
     use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
@@ -33,7 +33,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     ! Output
     real(kind=8), intent(in out) :: sp_over_h
     real(kind=8), intent(in out) :: val(nvar,mitot,mjtot), aux(naux,mitot,mjtot)
-    integer, intent (out) ::  thisSetauxTime
 
     ! Local storage
     integer :: refinement_ratio_x, refinement_ratio_y, iclo, jclo, ichi, jchi, ng, i, ico, ifine
@@ -130,10 +129,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
              ! need this so we know where to use coarse grid to set fine solution w/o overwriting
              if (aux_finalized .lt. 2) aux(1,:,:) = NEEDS_TO_BE_SET  ! reset entire aux array since topo moving
                !set remaining aux vals not set by copying from prev existing grids
-               call system_clock(clock_start,clock_rate)
                call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux)
-               call system_clock(clock_finish,clock_rate)
-               thisSetauxTime = thisSetauxTime + clock_finish - clock_start
        else ! either no aux exists, or cant reuse yet  
           ! if topo not final, then setaux called in gfixup before this routine
           ! so only call intcopy (which copies soln) and not icall.
