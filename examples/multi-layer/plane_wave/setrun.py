@@ -476,7 +476,7 @@ def set_multilayer(rundata):
     data.num_layers = 2
     data.rho = [0.9, 1.0]
     data.eta = [0.0,-0.6]
-    data.wave_tolerance = [1.e-4, 1.e-4]  # not the right values
+    data.wave_tolerance = [1.e-3, 1.e-2]  # not the right values
     
     # Algorithm parameters
     data.eigen_method = 2
