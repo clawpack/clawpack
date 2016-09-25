@@ -884,8 +884,8 @@ class Topography(object):
                 elif header_style in ['arcgis','asc']:
                     outfile.write('ncols  %6i\n' % self.Z.shape[1])
                     outfile.write('nrows  %6i\n' % self.Z.shape[0]) 
-                    outfile.write('xlower %22.15e\n' % self.extent[0])
-                    outfile.write('ylower %22.15e\n' % self.extent[2])
+                    outfile.write('xllcorner %22.15e\n' % self.extent[0])
+                    outfile.write('yllcorner %22.15e\n' % self.extent[2])
                     outfile.write('cellsize %22.15e\n'  % self.delta[0])
                     outfile.write('nodata_value  %10i\n' % no_data_value)
                 else:
