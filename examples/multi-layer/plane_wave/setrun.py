@@ -126,8 +126,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 50
-    clawdata.num_cells[1] = 50
+    clawdata.num_cells[0] = 150
+    clawdata.num_cells[1] = 150
 
     # ---------------
     # Size of system:
@@ -169,7 +169,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 3
+    clawdata.output_style = 1
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -338,9 +338,9 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,2,2]
-    amrdata.refinement_ratios_y = [2,2,2]
-    amrdata.refinement_ratios_t = [2,2,2]
+    amrdata.refinement_ratios_x = [2,2,2,2,2,2,2]
+    amrdata.refinement_ratios_y = [2,2,2,2,2,2,2]
+    amrdata.refinement_ratios_t = [2,2,2,2,2,2,2]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
@@ -474,8 +474,9 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [90,1000]
+    data.rho = [0.9, 1.0]
     data.eta = [0.0,-0.6]
+    data.wave_tolerance = [1.e-3, 1.e-2]  # not the right values
     
     # Algorithm parameters
     data.eigen_method = 2
@@ -487,7 +488,7 @@ def set_multilayer(rundata):
     rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6
     rundata.qinit_data.epsilon = 0.02
-    rundata.qinit_data.angle = 0.0
+    rundata.qinit_data.angle = numpy.pi
     rundata.qinit_data.sigma = 0.02
     rundata.qinit_data.wave_family = 4
     rundata.qinit_data.init_location = [-0.1,0.0]
@@ -495,7 +496,7 @@ def set_multilayer(rundata):
     return rundata
 
 
-def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
+def bathy_step(x, y, location=1.5, angle=0.0, left=-1.0, right=-0.2):
     x_c,y_c = transform_p2c(x, y, location, 0.0, angle)
     return ((x_c <= 0.0) * left 
           + (x_c >  0.0) * right)

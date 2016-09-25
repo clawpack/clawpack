@@ -495,6 +495,7 @@ class MultilayerData(clawpack.clawutil.data.ClawData):
         self.add_attribute('num_layers',2)
         self.add_attribute('rho',[1025.0,1028.0])
         self.add_attribute('eta',[0.0,-200.0])
+        self.add_attribute('wave_tolerance',[1.e-1,1.e-1])
         
         # Algorithm parameters
         self.add_attribute('eigen_method',4)
@@ -514,6 +515,7 @@ class MultilayerData(clawpack.clawutil.data.ClawData):
         self.data_write('num_layers', description='(Number of layers)')
         self.data_write('rho',description='(Densities of layers)')
         self.data_write('eta',description='(Initial top surface of each layer)')
+        self.data_write('wave_tolerance',description='(Tolerance of surface purtibation per layer, used for refinement criteria)')
         self.data_write(None)
         self.data_write('check_richardson',description="(Check Richardson number)")
         self.data_write('richardson_tolerance',description='(Tolerance for Richardson number)')
