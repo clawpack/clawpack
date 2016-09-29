@@ -74,7 +74,13 @@ c
      3          numgrids,kcheck,nsteps,
      3          time,matlabu
       write(chkunit) avenumgrids, iregridcount,
-     1               evol,rvol,rvoll,lentot,tmass0,cflmax
+     1               evol,rvol,rvoll,lentot,tmass0,cflmax,
+     2               tvoll,tvollCPU,timeTick,timeTickCPU,
+     3               timeStepgrid,timeStepgridCPU,
+     4               timeBound,timeBoundCPU,
+     5               timeRegridding,timeRegriddingCPU,
+     6               timeValout,timeValoutCPU
+
 c
 c     ### new capability to dump the fgmax data, if exists
 c     ### fortran requires specifying each component, if
