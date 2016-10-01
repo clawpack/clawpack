@@ -316,11 +316,19 @@ contains
         ycent  = ylow + (jindex-.5d0)*hy
         xoff   = (xgauge(ii)-xcent)/hx
         yoff   = (ygauge(ii)-ycent)/hy
-!  IF WANT TO USE, MODIFY TO TEST FOR ROUNDOFF LEVEL DIFF
-!       if (xoff .lt. 0.d0 .or. xoff .gt. 1.d0 .or. &
-!           yoff .lt. 0.d0 .or. yoff .gt. 1.d0) then
-!          write(6,*)" BIG PROBLEM in DUMPGAUGE", i
-!       endif
+
+        ! Gauge interpolation seems to work, so error test is commented out.
+        ! For debugging, use the code below...
+        !   Note: we expect 0 <= xoff, yoff <= 1 but if gauge is exactly 
+        !   at center of cell these might be off by rounding error
+
+        !if (xoff .lt. -1.d-4 .or. xoff .gt. 1.0001d0 .or. &
+        !    yoff .lt. -1.d-4 .or. yoff .gt. 1.0001d0) then
+        !   write(6,*) "*** print_gauges: Interpolation problem at gauge ",&
+        !               igauge(ii)
+        !   write(6,*) "    xoff,yoff: ", xoff,yoff
+        !endif
+
 
      ! ## Modified below from amrclaw/src/2d/gauges_module.f90 
      ! ## to interpolate only where all four cells are
