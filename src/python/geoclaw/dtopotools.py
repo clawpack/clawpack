@@ -449,8 +449,10 @@ class DTopography(object):
         y = self.Y[:,0]
         dx = x[1] - x[0]
         dy = y[1] - y[0]
-        if abs(dx - dy) >= 1e-12:
-            raise ValueError("dx = %g not equal to dy = %g" % (dx,dy))
+
+        # This is no longer required in GeoClaw...
+        #if abs(dx - dy) >= 1e-12:
+        #    raise ValueError("dx = %g not equal to dy = %g" % (dx,dy))
 
         # Construct each interpolating function and evaluate at new grid
         ## Shouldn't need to interpolate in time.
