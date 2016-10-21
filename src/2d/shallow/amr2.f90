@@ -470,7 +470,7 @@ program amr2
         call set_multilayer()             ! Set multilayer SWE parameters
         call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
-        call set_gauges(rest, nvar)       ! Set gauge output
+        call set_gauges(rest, nvar, naux) ! Set gauge output
         call set_fgmax()
 
     else
@@ -493,7 +493,7 @@ program amr2
         call set_multilayer()             ! Set multilayer SWE parameters
         call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
-        call set_gauges(rest, nvar)       ! Set gauge output
+        call set_gauges(rest, nvar, naux) ! Set gauge output
         call set_fgmax()
 
         cflmax = 0.d0   ! otherwise use previously heckpointed val

@@ -99,10 +99,9 @@ contains
         character(len=*), intent(in), optional :: fname
 
         ! Locals
-        integer :: i, n, index, num_fields
+        integer :: i, n, index
         integer :: num, pos, digit
         integer, parameter :: UNIT = 7
-        character(len=128) :: line
         character(len=128) :: header_1
         character(len=20) :: q_column, aux_column
 
@@ -110,12 +109,12 @@ contains
 
             ! Open file
             if (present(fname)) then
-                call opendatafile(iunit,fname)
+                call opendatafile(UNIT,fname)
             else
-                call opendatafile(iunit,'gauges.data')
+                call opendatafile(UNIT,'gauges.data')
             endif
 
-            read(iunit,*) num_gauges
+            read(UNIT,*) num_gauges
             allocate(gauges(num_gauges))
             
             ! Initialize gauge source data
@@ -173,6 +172,9 @@ contains
                 end do
             end do
 
+            ! Count eta as one of the out vars
+            gauges(:)%num_out_vars = gauges(:)%num_out_vars + 1
+
             close(UNIT)
             ! Done reading =====================================================
 
@@ -218,7 +220,7 @@ contains
                             index = index + 1
                         end if  
                     end do
-                    q_column(3 * index + 2:4 + 3 * index) = "], eta, "
+                    q_column(3 * index + 2:4 + 3 * index) = "],"
 
                     aux_column = "["
                     index = 0
@@ -230,8 +232,8 @@ contains
                     end do
                     aux_column(3 * index + 2:4 + 3 * index) = "]"
 
-                    write(OUTGAUGEUNIT, *) "# level, time, q",            &
-                                           trim(q_column), ", aux",       &
+                    write(OUTGAUGEUNIT, *) "# level, time, q",                 &
+                                           trim(q_column), " eta, aux",        &
                                            trim(aux_column)
                endif
 
@@ -371,7 +373,9 @@ contains
         ! Locals
         real(kind=8) :: var(maxvar * 2)
         real(kind=8) :: xcent, ycent, xoff, yoff, tgrid, hx, hy
-        integer :: i, j, i1, i2, iindex, jindex, n, ii, index, level, var_index
+        integer :: level, i1, i2, icell, jcell, ii, iindex, jindex
+        integer :: i, j, n, var_index
+        real(kind=8) :: h(4), mod_dry_tolerance, topo, h_interp
 
         ! No gauges to record, exit
         if (num_gauges == 0) then
@@ -459,113 +463,156 @@ contains
                 ! One of the cells is dry, so just use value from grid cell
                 ! that contains gauge rather than interpolating
             
-                icell = int(1.d0 + (gauge(ii)%x - xlow) / hx)
-                jcell = int(1.d0 + (gauge(ii)%y - ylow) / hy)
+                icell = int(1.d0 + (gauges(ii)%x - xlow) / hx)
+                jcell = int(1.d0 + (gauges(ii)%y - ylow) / hy)
 
-                --------------------------------- STOPPED HERE
+                h_interp = q(1, icell, jcell)
+                var_index = 0
+                do n = 1, size(gauges(ii)%q_out_vars, 1)
+                    if (gauges(ii)%q_out_vars(n)) then
+                        var_index = var_index + 1
+                        var(var_index) = q(n, icell, jcell) 
+                    end if
+                enddo
+                do n=1, size(gauges(ii)%aux_out_vars, 1)
+                    if (gauges(ii)%aux_out_vars(n)) then
+                        var_index = var_index + 1
+                        var(var_index) = aux(n, icell , jcell)
+                    end if
+                end do
 
-            do ivar=1,3
-                var(ivar) = q(ivar,icell,jcell) 
-            enddo
-            ! This is the bottom layer and we should figure out the
-            ! topography
-            topo = aux(1,icell,jcell)
-        else
-            ! Linear interpolation between four cells
-            do ivar=1,3
-                var(ivar) = (1.d0 - xoff) * (1.d0 - yoff) &
-                               * q(ivar,iindex,jindex)  &
-                + xoff*(1.d0 - yoff) * q(ivar,iindex+1,jindex)  &
-                + (1.d0 - xoff) * yoff * q(ivar,iindex,jindex+1)  &
-                + xoff * yoff * q(ivar,iindex+1,jindex+1)
-            enddo
-            topo = (1.d0 - xoff) * (1.d0 - yoff)  &
-                        * aux(1,iindex,jindex)  &
-                 + xoff * (1.d0 - yoff) * aux(1,iindex+1,jindex)  &
-                 + (1.d0 - xoff) * yoff * aux(1,iindex,jindex+1)  &
-                 + xoff * yoff * aux(1,iindex+1,jindex+1)
-        endif
+                ! This is the bottom layer and we should figure out the
+                ! topography
+                topo = aux(1, icell, jcell)
 
-        ! Extract surfaces
-        eta = var(1) + topo
+            else
+                var_index = 0
+                ! Linear interpolation between four cells
+                do n=1, size(gauges(ii)%q_out_vars, 1)
+                    if (gauges(ii)%q_out_vars(n)) then
+                        var_index = var_index + 1
+                        var(var_index) =                                       &
+                           (1.d0 - xoff) * (1.d0 - yoff) * q(n,iindex,jindex)  &
+                          + xoff*(1.d0 - yoff) * q(n,iindex+1,jindex)          &
+                          + (1.d0 - xoff) * yoff * q(n,iindex,jindex+1)        &
+                          + xoff * yoff * q(n,iindex+1,jindex+1)
+                    end if
+                end do
+                ! Note here that we skip one of the var indices to accomodate 
+                ! eta here.
+                var_index = var_index + 1
+                do n=1, size(gauges(ii)%aux_out_vars, 1)
+                    if (gauges(ii)%aux_out_vars(n)) then
+                        var_index = var_index + 1
+                        var(var_index) =                                       &
+                         (1.d0 - xoff) * (1.d0 - yoff) * aux(n,iindex,jindex)  &
+                        + xoff*(1.d0 - yoff) * aux(n,iindex+1,jindex)  &
+                        + (1.d0 - xoff) * yoff * aux(n,iindex,jindex+1)  &
+                        + xoff * yoff * aux(n,iindex+1,jindex+1)
+                    end if
+                end do
+                topo = (1.d0 - xoff) * (1.d0 - yoff) * aux(1,iindex,jindex)  &
+                        + xoff * (1.d0 - yoff) * aux(1,iindex+1,jindex)  &
+                        + (1.d0 - xoff) * yoff * aux(1,iindex,jindex+1)  &
+                        + xoff * yoff * aux(1,iindex+1,jindex+1)
 
-        ! Zero out tiny values to prevent later problems reading data,
-        ! as done in valout.f
-        do j = 1,3
-           if (abs(var(j)) < 1d-90) var(j) = 0.d0
-           end do
-        if (abs(eta) < 1d-90) eta = 0.d0
+                ! Explicitly do depth in case the depth is not computed above
+                if (.not. gauges(ii)%q_out_vars(1)) then
+                    h_interp = (1.d0 - xoff) * (1.d0 - yoff) &
+                               * q(1,iindex,jindex)  &
+                         + xoff*(1.d0 - yoff) * q(1,iindex+1,jindex)  &
+                         + (1.d0 - xoff) * yoff * q(1,iindex,jindex+1)  &
+                         + xoff * yoff * q(1,iindex+1,jindex+1)
+                else
+                    h_interp = var(1)
+                end if
+
+            end if
+
+            ! Check to make sure we grabbed all the values
+            if (gauges(ii)%num_out_vars /= var_index) then
+                print *, gauges(ii)%num_out_vars, var_index
+                print *, gauges(ii)%q_out_vars
+                print *, gauges(ii)%aux_out_vars
+                stop "Somehow we did not grab all the values we wanted..."
+            end if
+
+            ! Extract surfaces
+            var(shape(gauges(ii)%q_out_vars, 1) + 1) = h_interp + topo
+
+            ! Zero out tiny values to prevent later problems reading data,
+            ! as done in valout.f
+            do j = 1, gauges(ii)%num_out_vars
+                if (abs(var(j)) < 1d-90) var(j) = 0.d0
+            end do
        
-        ! save info for this time 
-        index = nextLoc(ii)
- 
-        levelArray(index,ii) = level
-        gaugeArray(1,index,ii) = tgrid
-        gaugeArray(2,index,ii) = var(1)
-        gaugeArray(3,index,ii) = var(2)
-        gaugeArray(4,index,ii) = var(3)
-        gaugeArray(5,index,ii) = eta
-        
-        nextLoc(ii) = nextLoc(ii) + 1
-        if (nextLoc(ii) .gt. MAXDATA) then
-          call print_gauges_and_reset_nextLoc(ii, nvar)  
-        endif
+            ! save info for this time 
+            n = gauges(ii)%buffer_index
+     
+            gauges(ii)%level(n) = level
+            gauges(ii)%data(1,n) = tgrid
+            do j = 1, gauges(ii)%num_out_vars
+                gauges(ii)%data(1 + j, n) = var(j)
+            end do
+            
+            gauges(ii)%buffer_index = n + 1
+            if (gauges(ii)%buffer_index > MAX_BUFFER) then
+                call print_gauges_and_reset_nextLoc(ii)
+            endif
 
- 10     continue  ! end of loop over all gauges
- 
-      end subroutine update_gauges
+            gauges(ii)%last_time = tgrid
+
+        end do ! End of gauge loop =============================================
+
+    end subroutine update_gauges
 !
 ! -------------------------------------------------------------------------
+! Write out gauge data for the gauge specified
 !
-      subroutine print_gauges_and_reset_nextLoc(gaugeNum, nvar)
-!
-!    Array of gauge data for this gauge reached max capacity
-!    print to file.
+    subroutine print_gauges_and_reset_nextLoc(gauge_num)
 
-      implicit none
-      integer :: gaugeNum,j,inum,k,idigit,ipos,myunit,nvar
-      character*14 :: fileName
-      integer :: omp_get_thread_num, mythread
+        implicit none
 
-      ! open file for gauge gaugeNum, figure out name
-      ! not writing gauge number since it is in file name now
-      ! status is old, since file name and info written for
-      ! each file in in set_gauges.
-      !
-      ! NB: output written in different order, losing backward compatibility
+        ! Input
+        integer, intent(in) :: gauge_num
 
+        ! Locals
+        integer :: j, k, myunit
+        integer :: omp_get_thread_num, mythread
+        character(len=32) :: out_format
 
-      fileName = 'gaugexxxxx.txt'    ! NB different name convention too
-      inum = igauge(gaugeNum)
-      do ipos = 10,6,-1              ! do this to replace the xxxxx in the name
-         idigit = mod(inum,10)
-         fileName(ipos:ipos) = char(ichar('0') + idigit)
-         inum = inum / 10
-      end do
+        ! Open unit dependent on thread number
+        mythread = 0
+!$      mythread = omp_get_thread_num()
+        myunit = OUTGAUGEUNIT + mythread
 
+        ! ASCII output
+        if (gauges(gauge_num)%file_format == 1) then
+            ! Construct output format based on number of output variables and
+            ! request format
+            write(out_format, "(A7, i2, A6, A1)") "(i5.2,",                    &
+                                        gauges(gauge_num)%num_out_vars + 1,    &
+                                        gauges(gauge_num)%display_format, ")"
 
-      mythread = 0
-!$    mythread = omp_get_thread_num()
-      myunit = OUTGAUGEUNIT+mythread
+            open(unit=myunit, file=gauges(gauge_num)%file_name, status='old', &
+                              position='append', form='formatted')
+          
+            ! Loop through gauge's buffer writing out all available data.  Also
+            ! reset buffer_index back to beginning of buffer since we are emptying
+            ! the buffer here
+            do j = 1, gauges(gauge_num)%buffer_index - 1
+                write(myunit, out_format) gauges(gauge_num)%level(j),    &
+                    (gauges(gauge_num)%data(k, j), k=1,                  &
+                                             gauges(gauge_num)%num_out_vars + 1)
+            end do
+            gauges(gauge_num)%buffer_index = 1                        
 
-!     add thread number of outgaugeunit to make a unique unit number.
-!     ok since writing to a unique file. in serial, still using only IOUTGAUGEUNIT
-      open(unit=myunit, file=fileName, status='old',    &
-           position='append', form='formatted')
-      
-      ! called either because array is full (write MAXDATA amount of gauge data)
-      ! or checkpoint time, so write whatever is in array and reset.
-      ! nextLoc has already been increment before this subr. called
-      do j = 1, nextLoc(gaugeNum)-1
-        write(myunit,100) levelArray(j,gaugeNum),(gaugeArray(k,j,gaugeNum),k=1,5)
-      end do
-      nextLoc(gaugeNum) = 1                        
-
-      ! if you want to modify number of digits printed, modify this...
-100     format(i5.2, 5e15.7)
-
-      ! close file
-      close(myunit)
+            ! close file
+            close(myunit)
+        else
+            print *, "Unhandled file format ", gauges(gauge_num)%file_format
+            stop
+        end if
 
       end subroutine print_gauges_and_reset_nextLoc
 
