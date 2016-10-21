@@ -392,6 +392,7 @@ contains
         hx = hxposs(level)
         hy = hyposs(level)
 
+        ! Main Gauge Loop ======================================================
         do i = i1, i2
             ii = mbestorder(i)
             if (mptr /= mbestsrc(ii)) then
