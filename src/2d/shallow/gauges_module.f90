@@ -454,6 +454,9 @@ contains
             h(2) = q(1, iindex + 1, jindex) 
             h(3) = q(1, iindex, jindex + 1)
             h(4) = q(1, iindex + 1,jindex + 1)
+            
+            ! Count for number of variables written to var    
+            var_index = 0
         
             if ((h(1) < mod_dry_tolerance) .or.  &
                 (h(2) < mod_dry_tolerance) .or.  &
@@ -474,6 +477,12 @@ contains
                         var(var_index) = q(n, icell, jcell) 
                     end if
                 enddo
+                
+                ! Note here that we skip one of the var indices to accomodate 
+                ! eta here.
+                var_index = var_index + 1
+                eta_index = var_index
+
                 do n=1, size(gauges(ii)%aux_out_vars, 1)
                     if (gauges(ii)%aux_out_vars(n)) then
                         var_index = var_index + 1
@@ -486,7 +495,6 @@ contains
                 topo = aux(1, icell, jcell)
 
             else
-                var_index = 0
                 ! Linear interpolation between four cells
                 do n=1, size(gauges(ii)%q_out_vars, 1)
                     if (gauges(ii)%q_out_vars(n)) then
@@ -498,9 +506,12 @@ contains
                           + xoff * yoff * q(n,iindex+1,jindex+1)
                     end if
                 end do
+                
                 ! Note here that we skip one of the var indices to accomodate 
                 ! eta here.
                 var_index = var_index + 1
+                eta_index = var_index
+                
                 do n=1, size(gauges(ii)%aux_out_vars, 1)
                     if (gauges(ii)%aux_out_vars(n)) then
                         var_index = var_index + 1
@@ -538,7 +549,7 @@ contains
             end if
 
             ! Extract surfaces
-            var(shape(gauges(ii)%q_out_vars, 1) + 1) = h_interp + topo
+            var(eta_index) = h_interp + topo
 
             ! Zero out tiny values to prevent later problems reading data,
             ! as done in valout.f
