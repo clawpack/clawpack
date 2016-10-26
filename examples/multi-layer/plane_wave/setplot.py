@@ -558,13 +558,13 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = [0.0,1.0]
+    plotaxes.xlimits = [0.0, 1.0]
     plotaxes.ylimits = top_surface_limits
     plotaxes.title = 'Top Surface'
 
     # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
-    plotitem.plot_var = 3
+    plotitem.plot_var = 6
     plotitem.plotstyle = 'b-'
 
     # Bottom
