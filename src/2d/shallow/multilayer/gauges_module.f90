@@ -25,6 +25,9 @@
 !     information in new module variables mbestg1, mbestg2.
 !   - print_gauges no longer uses binary search to locate first gauge handled
 !     by a grid.  Instead loop over gauges specified by mbestg1, mbestg2.
+!
+! Note: Updated for Clawpack 5.4.x
+!  - Add gauge formatting capabilities
 
 module gauges_module
 
@@ -546,13 +549,13 @@ contains
 
                 ! Compute rest of q fields
                 do n = 3 * num_layers + 1, size(gauges(ii)%q_out_vars, 1)
-                    if (gauges(ii)%aux_out_vars(n)) then
+                    if (gauges(ii)%q_out_vars(n)) then
                         var_index = var_index + 1
                         var(var_index) = &
-                                (1.d0 - xoff) * (1.d0 - yoff) * q(n + layer_index,     iindex,     jindex)  &
-                              + (       xoff) * (1.d0 - yoff) * q(n + layer_index, 1 + iindex,     jindex)  &
-                              + (1.d0 - xoff) * (       yoff) * q(n + layer_index,     iindex, 1 + jindex)  &
-                              + (       xoff) * (       yoff) * q(n + layer_index, 1 + iindex, 1 + jindex)
+                                (1.d0 - xoff) * (1.d0 - yoff) * q(n,     iindex,     jindex)  &
+                              + (       xoff) * (1.d0 - yoff) * q(n, 1 + iindex,     jindex)  &
+                              + (1.d0 - xoff) * (       yoff) * q(n,     iindex, 1 + jindex)  &
+                              + (       xoff) * (       yoff) * q(n, 1 + iindex, 1 + jindex)
                     end if
                 end do
 
@@ -564,10 +567,10 @@ contains
                     if (gauges(ii)%aux_out_vars(n)) then
                         var_index = var_index + 1
                         var(var_index) = &
-                                (1.d0 - xoff) * (1.d0 - yoff) * aux(n + layer_index,     iindex,     jindex)  &
-                              + (       xoff) * (1.d0 - yoff) * aux(n + layer_index, 1 + iindex,     jindex)  &
-                              + (1.d0 - xoff) * (       yoff) * aux(n + layer_index,     iindex, 1 + jindex)  &
-                              + (       xoff) * (       yoff) * aux(n + layer_index, 1 + iindex, 1 + jindex)
+                                (1.d0 - xoff) * (1.d0 - yoff) * aux(n,     iindex,     jindex)  &
+                              + (       xoff) * (1.d0 - yoff) * aux(n, 1 + iindex,     jindex)  &
+                              + (1.d0 - xoff) * (       yoff) * aux(n,     iindex, 1 + jindex)  &
+                              + (       xoff) * (       yoff) * aux(n, 1 + iindex, 1 + jindex)
                     end if
                 enddo
                     
