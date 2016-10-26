@@ -374,7 +374,7 @@ contains
         real(kind=8) :: var(maxvar * 2)
         real(kind=8) :: xcent, ycent, xoff, yoff, tgrid, hx, hy
         integer :: level, i1, i2, icell, jcell, ii, iindex, jindex
-        integer :: i, j, n, var_index
+        integer :: i, j, n, var_index, eta_index
         real(kind=8) :: h(4), mod_dry_tolerance, topo, h_interp
 
         ! No gauges to record, exit
