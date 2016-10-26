@@ -1,90 +1,97 @@
 Clawpack Git Status 
-Diffs can be found in /Users/rjl/git/clawpack/geoclaw/tests/multilayer/regression_data/claw_git_diffs.txt
+Diffs can be found in /Users/mandli/src/clawpack/geoclaw/tests/multilayer/regression_data/claw_git_diffs.txt
 
-Sun, 09 Oct 2016 09:31:31 PDT
-$CLAW = /Users/rjl/git/clawpack
+Tue, 25 Oct 2016 20:42:57 EDT
+$CLAW = /Users/mandli/src/clawpack
 $FC = gfortran
 
 
 ===========
 classic
 ===========
-/Users/rjl/git/clawpack/classic
+/Users/mandli/src/clawpack/classic
 
 --- last commit ---
-31c9723 Merge pull request #74 from rjleveque/regression_claw_git_status
+1186c88 Add module
 
 --- branch and status ---
-## master...origin/master
+## add-utility-module...clawpack/master [ahead 1]
 
 
 ===========
 amrclaw
 ===========
-/Users/rjl/git/clawpack/amrclaw
+/Users/mandli/src/clawpack/amrclaw
 
 --- last commit ---
-6aada0a Merge pull request #175 from rjleveque/regression_data_copy_gauges
+84a95f4 Add check for gauge number
 
 --- branch and status ---
-## master...origin/master
+## add-gauge-options...clawpack/master [ahead 9]
 
 
 ===========
 clawutil
 ===========
-/Users/rjl/git/clawpack/clawutil
+/Users/mandli/src/clawpack/clawutil
 
 --- last commit ---
-bbc12d6 Merge pull request #105 from mandli/gauge-test-update
+769d8fa Add info for gauge data output
 
 --- branch and status ---
-## master...origin/master
+## add-gauge-options...clawpack/master [ahead 1]
 
 
 ===========
 pyclaw
 ===========
-/Users/rjl/git/clawpack/pyclaw
+/Users/mandli/src/clawpack/pyclaw
 
 --- last commit ---
 314fd93 Merge pull request #541 from mandli/add-new-gauges
 
 --- branch and status ---
-## master...origin/master
+## msater...clawpack/master
 
 
 ===========
 visclaw
 ===========
-/Users/rjl/git/clawpack/visclaw
+/Users/mandli/src/clawpack/visclaw
 
 --- last commit ---
 72ee0db Merge pull request #187 from rjleveque/remove_ioff
 
 --- branch and status ---
-## master...origin/master
+## master...mandli/master [ahead 52]
 
 
 ===========
 riemann
 ===========
-/Users/rjl/git/clawpack/riemann
+/Users/mandli/src/clawpack/riemann
 
 --- last commit ---
 48a46d3 Merge pull request #113 from rjleveque/shallow_roe_needs_grav
 
 --- branch and status ---
-## master...origin/master
+## master...clawpack/master
 
 
 ===========
 geoclaw
 ===========
-/Users/rjl/git/clawpack/geoclaw
+/Users/mandli/src/clawpack/geoclaw
 
 --- last commit ---
-0b125bb added claw_git status files to a test
+ceb5c00 Add eta_index definition
 
 --- branch and status ---
-## master...origin/master [ahead 1]
+## add-gauge-options...clawpack/master [ahead 8]
+ M tests/multilayer/regression_data/claw_git_diffs.txt
+ M tests/multilayer/regression_data/claw_git_status.txt
+ M tests/multilayer/regression_data/gauge00000.txt
+ M tests/multilayer/regression_data/gauge00001.txt
+ M tests/multilayer/regression_data/gauge00002.txt
+ M tests/multilayer/regression_data/gauge00003.txt
+ M tests/multilayer/regression_data/gauge00004.txt
