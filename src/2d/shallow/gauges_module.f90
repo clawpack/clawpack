@@ -359,7 +359,7 @@ contains
 !     by indices from mbestg1(mptr) to mbestg2(mptr)
 
         use amr_module, only: nestlevel, nghost, timemult, rnode, node, maxvar
-        use amr_module, only: hxposs, hyposs
+        use amr_module, only: maxaux, hxposs, hyposs
         use geoclaw_module, only: dry_tolerance
 
         implicit none
@@ -371,7 +371,7 @@ contains
         real(kind=8), intent(in) :: xlow, ylow
 
         ! Locals
-        real(kind=8) :: var(maxvar * 2)
+        real(kind=8) :: var(maxvar + maxaux)
         real(kind=8) :: xcent, ycent, xoff, yoff, tgrid, hx, hy
         integer :: level, i1, i2, icell, jcell, ii, iindex, jindex
         integer :: i, j, n, var_index, eta_index
