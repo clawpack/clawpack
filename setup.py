@@ -14,6 +14,8 @@ http://github.com/clawpack/clawpack
 
 # some of the functionality of this file is reused from the SciPy setup.py script.
 
+from __future__ import absolute_import
+from __future__ import print_function
 DOCLINES = __doc__.split("\n")
 
 import os
@@ -231,11 +233,11 @@ which allows for a consistent clawpack.package namespace.
             while fails < 20 and subprocess.call(['git', 'submodule', 'update', 
                                                   package]):
                 fails = fails+1
-                print "having difficulties updating submodules," + \
-                  "waiting 5s and trying again [fail %d/20]" % fails
+                print("having difficulties updating submodules," + \
+                  "waiting 5s and trying again [fail %d/20]" % fails)
                 time.sleep(5)
 
-        print "Git development environment initialized for:", package
+        print("Git development environment initialized for:", package)
 
 
 def make_symlinks(subpackages):
