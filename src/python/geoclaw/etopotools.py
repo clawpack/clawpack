@@ -7,6 +7,8 @@ See http://www.ngdc.noaa.gov/mgg/global/global.html
 """
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
         output_dir='.', file_name=None, force=False, verbose=True, \
         return_topo=False):
@@ -86,7 +88,7 @@ def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
 
     file_path = os.path.join(output_dir,file_name)
     if os.path.exists(file_path) and (not force):
-        print "Skipping download... file already exists: ",file_path
+        print("Skipping download... file already exists: ",file_path)
 
     else:
         get_remote_file(url, output_dir=output_dir, file_name=file_name, \
@@ -96,7 +98,7 @@ def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
 
         lines = open(file_path).readlines()
         if lines[2].split()[0] != 'xllcorner':
-            print "*** Error downloading, check the file!"
+            print("*** Error downloading, check the file!")
         else:
             lines[2] = 'xllcorner    %1.12f\n' % x1
             lines[3] = 'yllcorner    %1.12f\n' % y1
@@ -104,9 +106,9 @@ def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
             f = open(file_path,'w')
             f.writelines(lines)
             f.close()
-            print "Shifted xllcorner and yllcorner to cell centers"
-            print "   and added nodata_value line"
-        print "Created file: ",file_path
+            print("Shifted xllcorner and yllcorner to cell centers")
+            print("   and added nodata_value line")
+        print("Created file: ",file_path)
 
     if return_topo:
         topo = topotools.Topography()

@@ -6,6 +6,8 @@ that will be read in by the Fortran code.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as numpy
 
 import clawpack.geoclaw.data
@@ -421,7 +423,7 @@ def setgeo(rundata):
     try:
         geo_data = rundata.geo_data
     except:
-        print "*** Error, this rundata has no geo_data attribute"
+        print("*** Error, this rundata has no geo_data attribute")
         raise AttributeError("Missing geo_data attribute")
        
     # == Physics ==
@@ -511,11 +513,11 @@ def write_topo_file(run_data, out_file, **kwargs):
 
     # Write out simple bathy geometry file for communication to the plotting
     with open("./bathy_geometry.data", 'w') as bathy_geometry_file:
-        if kwargs.has_key("location"):
+        if "location" in kwargs:
             location = kwargs['location']
         else:
             location = 0.15
-        if kwargs.has_key("angle"):
+        if "angle" in kwargs:
             angle = kwargs['angle']
         else:
             angle = 0.0

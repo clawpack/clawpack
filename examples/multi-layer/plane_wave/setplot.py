@@ -7,6 +7,7 @@ function setplot is called to set the plot parameters.
     
 """ 
     
+from __future__ import absolute_import
 def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,  
                        bathy_left=-1.0,      bathy_right=-0.2):
     """Setup the plotting data objects.

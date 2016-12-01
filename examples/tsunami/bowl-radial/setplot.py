@@ -8,10 +8,12 @@ function setplot is called to set the plot parameters.
 """ 
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 try:
     from setplotfg import setplotfg
 except:
-    print "Did not find setplotfg.py"
+    print("Did not find setplotfg.py")
     setplotfg = None
 
 
