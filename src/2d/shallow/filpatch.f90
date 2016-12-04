@@ -17,7 +17,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     use amr_module, only: nghost, xlower, ylower, xupper, yupper, outunit
     use amr_module, only: xperdom, yperdom, spheredom, hxposs, hyposs
     use amr_module, only: intratx, intraty, iregsz, jregsz
-    use amr_module, only: timeSetaux, NEEDS_TO_BE_SET
+    use amr_module, only: NEEDS_TO_BE_SET
 
     use multilayer_module, only: num_layers, rho, eta_init, dry_tolerance
 
@@ -202,7 +202,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
             call system_clock(clock_finish,clock_rate)
             clock_dif = clock_finish - clock_start
 !$OMP ATOMIC            
-            timeSetaux = timeSetaux + clock_dif
+
         endif
 
         ! Fill in the edges of the coarse grid
