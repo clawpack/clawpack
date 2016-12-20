@@ -8,6 +8,8 @@ but now they are explicit below.
 Call functions with makeplots==True to create plots of topo, slip, and dtopo.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 
 import clawpack.clawutil.data
@@ -36,7 +38,7 @@ def get_topo(makeplots=False):
         topo.plot()
         fname = os.path.splitext(topo_fname)[0] + '.png'
         plt.savefig(fname)
-        print "Created ",fname
+        print("Created ",fname)
 
 
     
@@ -68,13 +70,13 @@ def make_dtopo(makeplots=False):
     fault = dtopotools.Fault()
     fault.subfaults = [usgs_subfault]
 
-    print "Mw = ",fault.Mw()
+    print("Mw = ",fault.Mw())
 
     if os.path.exists(dtopo_fname):
-        print "*** Not regenerating dtopo file (already exists): %s" \
-                    % dtopo_fname
+        print("*** Not regenerating dtopo file (already exists): %s" \
+                    % dtopo_fname)
     else:
-        print "Using Okada model to create dtopo file"
+        print("Using Okada model to create dtopo file")
 
         x = numpy.linspace(-77, -67, 100)
         y = numpy.linspace(-40, -30, 100)
@@ -89,7 +91,7 @@ def make_dtopo(makeplots=False):
         from matplotlib import pyplot as plt
         if fault.dtopo is None:
             # read in the pre-existing file:
-            print "Reading in dtopo file..."
+            print("Reading in dtopo file...")
             dtopo = dtopotools.DTopography()
             dtopo.read(dtopo_fname, dtopo_type=3)
             x = dtopo.x
@@ -103,7 +105,7 @@ def make_dtopo(makeplots=False):
         dtopo.plot_dZ_colors(1.,axes=ax2)
         fname = os.path.splitext(os.path.split(dtopo_fname)[-1])[0] + '.png'
         plt.savefig(fname)
-        print "Created ",fname
+        print("Created ",fname)
 
 
 if __name__=='__main__':

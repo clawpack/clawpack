@@ -7,6 +7,7 @@ to test, or
 to create new regression data for archiving.
 """
 
+from __future__ import absolute_import
 import os
 import sys
 import unittest

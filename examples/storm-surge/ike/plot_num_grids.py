@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import os
 import sys
 import glob
@@ -9,6 +10,7 @@ import numpy
 
 # Plot customization
 import matplotlib
+from six.moves import range
 
 # Markers and line widths
 matplotlib.rcParams['lines.linewidth'] = 2.0
@@ -90,7 +92,7 @@ if __name__ == "__main__":
     colors = [ (value / 256.0, value / 256.0, value / 256.0) 
                                     for value in [247, 217, 189, 150, 115, 82, 37] ]
     proxy_artists = [plt.Rectangle((0, 0), 1, 1, fc=colors[level], 
-            label="Level %s" % (str(level+1))) for level in xrange(num_levels)]
+            label="Level %s" % (str(level+1))) for level in range(num_levels)]
 
     # Number of grids
     fig = plt.figure()
@@ -104,7 +106,7 @@ if __name__ == "__main__":
     set_day_ticks()
     axes.set_ylabel('Number of Grids')
     axes.set_title("Number of Grids per Level in Time")
-    axes.legend(proxy_artists, ["Level %s" % (str(level+1)) for level in xrange(num_levels)], loc=2)
+    axes.legend(proxy_artists, ["Level %s" % (str(level+1)) for level in range(num_levels)], loc=2)
     fig.savefig("num_grids.png")
 
     # Number of cells
@@ -119,7 +121,7 @@ if __name__ == "__main__":
     axes.set_xlabel('Days from landfall')
     axes.set_ylabel('Number of Cells')
     axes.set_title("Number of Cells per Level in Time")
-    axes.legend(proxy_artists, ["Level %s" % (str(level+1)) for level in xrange(num_levels)], loc=2)
+    axes.legend(proxy_artists, ["Level %s" % (str(level+1)) for level in range(num_levels)], loc=2)
     fig.savefig("num_cells.png")
 
 

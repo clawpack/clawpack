@@ -6,10 +6,13 @@ and to read in the fgmax output after doing a GeoClaw run.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from clawpack.geoclaw import kmltools
 import os
 from numpy import sqrt, ma
 import numpy
+from six.moves import range
 
 
 class FGmaxGrid(object):
@@ -108,7 +111,7 @@ class FGmaxGrid(object):
         if input_file_name is not None:
             self.input_file_name = input_file_name
 
-        print "---------------------------------------------- "
+        print("---------------------------------------------- ")
         point_style = self.point_style
         if point_style not in [0,1,2,3]:
             raise NotImplementedError("make_fgmax not implemented for point_style %i" \
@@ -131,14 +134,14 @@ class FGmaxGrid(object):
             # list of points
             npts = self.npts
         
-            print "Creating unstructured grid of %s points" % npts
+            print("Creating unstructured grid of %s points" % npts)
         
             fid.write("%i                 # npts\n" % (npts))
             for k in range(npts):
                 fid.write("%g   %g \n" % (self.X[k],self.Y[k]))
             fid.close()
             
-            print "Created file ", self.input_file_name
+            print("Created file ", self.input_file_name)
             
 
         elif point_style==1:
@@ -149,21 +152,21 @@ class FGmaxGrid(object):
                 dx = self.dx
                 npts = int(round(sqrt((x2-x1)**2 + (y2-y1)**2)/dx)) + 1
                 if abs((npts-1)*dx + x1 - x2) > 1e-6:
-                    print "Warning: abs((npts-1)*dx + x1 - x2) = ", \
-                          abs((npts-1)*dx + x1 - x2)
+                    print("Warning: abs((npts-1)*dx + x1 - x2) = ", \
+                          abs((npts-1)*dx + x1 - x2))
                     x2 = x1 + dx*(npts-1)
                     y2 = y1 + dx*(npts-1)
-                    print "         resetting x2 to %g" % x2
-                    print "         resetting y2 to %g" % y2
+                    print("         resetting x2 to %g" % x2)
+                    print("         resetting y2 to %g" % y2)
             else:
                 npts = self.npts
                 dx = sqrt((x2-x1)**2 + (y2-y1)**2)/(npts+1.)
                 if self.dx is not None:
-                    print "*** Warning: dx specified over-ridden by: ",dx
+                    print("*** Warning: dx specified over-ridden by: ",dx)
         
         
-            print "Creating 1d fixed grid with %s points" % npts
-            print "   dx = %g" % dx
+            print("Creating 1d fixed grid with %s points" % npts)
+            print("   dx = %g" % dx)
         
         
             fid.write("%i                 # npts\n" % (npts))
@@ -172,10 +175,10 @@ class FGmaxGrid(object):
             fid.close()
             
         
-            print "Created file ", self.input_file_name
-            print "   specifying fixed grid with %i points equally spaced from " \
-                    % npts
-            print "   (%g,%g)  to  (%g,%g)" % (x1,y1,x2,y2)
+            print("Created file ", self.input_file_name)
+            print("   specifying fixed grid with %i points equally spaced from " \
+                    % npts)
+            print("   (%g,%g)  to  (%g,%g)" % (x1,y1,x2,y2))
             
             # not yet implemented:
             #fname_root = os.path.splitext(self.input_file_name)[0]
@@ -190,16 +193,16 @@ class FGmaxGrid(object):
                 dx = self.dx
                 nx = int(round((x2-x1)/dx)) + 1  
                 if abs((nx-1)*dx + x1 - x2) > 1e-6:
-                    print "Warning: abs((nx-1)*dx + x1 - x2) = ", \
-                          abs((nx-1)*dx + x1 - x2)
-                    print "         old x2: %22.16e" % x2
+                    print("Warning: abs((nx-1)*dx + x1 - x2) = ", \
+                          abs((nx-1)*dx + x1 - x2))
+                    print("         old x2: %22.16e" % x2)
                     x2 = x1 + dx*(nx-1)
-                    print "         resetting x2 to %22.16e" % x2
+                    print("         resetting x2 to %22.16e" % x2)
             else:
                 nx = self.nx
                 dx = (x2-x1)/(nx+1.)
                 if self.dx is not None:
-                    print "*** Warning: dx specified over-ridden by: ",dx
+                    print("*** Warning: dx specified over-ridden by: ",dx)
         
             if self.ny is None:
                 dy = self.dy
@@ -207,16 +210,16 @@ class FGmaxGrid(object):
                     dy = dx
                 ny = int(round((y2-y1)/dy)) + 1  
                 if abs((ny-1)*dy + y1 - y2) > 1e-6:
-                    print "Warning: abs((ny-1)*dy + y1 - y2) = ", \
-                          abs((ny-1)*dy + y1 - y2)
-                    print "         old y2: %22.16e" % y2
+                    print("Warning: abs((ny-1)*dy + y1 - y2) = ", \
+                          abs((ny-1)*dy + y1 - y2))
+                    print("         old y2: %22.16e" % y2)
                     y2 = y1 + dy*(ny-1)
-                    print "         resetting y2 to %22.16e" % y2
+                    print("         resetting y2 to %22.16e" % y2)
             else:
                 ny = self.ny
                 dy = (y2-y1)/(ny+1.)
                 if self.dy is not None:
-                    print "*** Warning: dy specified over-ridden by: ",dy
+                    print("*** Warning: dy specified over-ridden by: ",dy)
         
         
             npts = nx*ny
@@ -229,12 +232,12 @@ class FGmaxGrid(object):
             fid.close()
             
         
-            print "Created file ", self.input_file_name
-            print "   specifying fixed grid with shape %i by %i, with  %i points" \
-                    % (nx,ny,npts)
-            print "   lower left  = (%15.10f,%15.10f)" % (x1,y1)
-            print "   upper right = (%15.10f,%15.10f)" % (x2,y2)
-            print "   dx = %15.10e,  dy = %15.10e" % (dx,dy)
+            print("Created file ", self.input_file_name)
+            print("   specifying fixed grid with shape %i by %i, with  %i points" \
+                    % (nx,ny,npts))
+            print("   lower left  = (%15.10f,%15.10f)" % (x1,y1))
+            print("   upper right = (%15.10f,%15.10f)" % (x2,y2))
+            print("   dx = %15.10e,  dy = %15.10e" % (dx,dy))
         
             xy = [x1,x2,y1,y2]
             fname_root = os.path.splitext(self.input_file_name)[0]
@@ -261,14 +264,14 @@ class FGmaxGrid(object):
             fid.close()
             
         
-            print "Created file ", self.input_file_name
-            print "   specifying fixed grid as a quadrilateral"
-            print "       %i by %i, with  %i points" \
-                    % (self.n12,self.n23,npts)
-            print "   corner 1 = (%15.10f,%15.10f)" % (x1,y1)
-            print "   corner 2 = (%15.10f,%15.10f)" % (x2,y2)
-            print "   corner 3 = (%15.10f,%15.10f)" % (x3,y3)
-            print "   corner 4 = (%15.10f,%15.10f)" % (x4,y4)
+            print("Created file ", self.input_file_name)
+            print("   specifying fixed grid as a quadrilateral")
+            print("       %i by %i, with  %i points" \
+                    % (self.n12,self.n23,npts))
+            print("   corner 1 = (%15.10f,%15.10f)" % (x1,y1))
+            print("   corner 2 = (%15.10f,%15.10f)" % (x2,y2))
+            print("   corner 3 = (%15.10f,%15.10f)" % (x3,y3))
+            print("   corner 4 = (%15.10f,%15.10f)" % (x4,y4))
             
             xy = [x1,y1,x2,y2,x3,y3,x4,y4]
             fname_root = os.path.splitext(self.input_file_name)[0]
@@ -292,14 +295,14 @@ class FGmaxGrid(object):
         fname = self.outdir + '/fort.FG%s.valuemax' % self.fgno
         if not os.path.isfile(fname):
             raise IOError("File not found: %s" % fname)
-        print "Reading %s ..." % fname
+        print("Reading %s ..." % fname)
         d = numpy.loadtxt(fname)
     
         fname = os.path.join(self.outdir, '/fort.FG%s.aux1' % self.fgno)
         fname = self.outdir + '/fort.FG%s.aux1' % self.fgno
         if not os.path.isfile(fname):
             raise IOError("File not found: %s" % fname)
-        print "Reading %s ..." % fname
+        print("Reading %s ..." % fname)
         daux = numpy.loadtxt(fname)
     
         ncols = d.shape[1]  
@@ -424,12 +427,12 @@ def adjust_fgmax_grid(x1_desired, x2_desired, x1_domain, dx,
     y1_new, y2_new, ny = adjust_fgmax_1d(y1_desired, y2_desired, y1_domain, dy)
 
     if verbose:
-        print "x:"
-        print "  moved %17.12f to %17.12f by %g" % (x1_desired, x1_new, abs(x1_desired-x1_new))
-        print "  moved %17.12f to %17.12f by %g" % (x2_desired, x2_new, abs(x2_desired-x2_new))
-        print "y:"
-        print "  moved %17.12f to %17.12f by %g" % (y1_desired, y1_new, abs(y1_desired-y1_new))
-        print "  moved %17.12f to %17.12f by %g" % (y2_desired, y2_new, abs(y2_desired-y2_new))
+        print("x:")
+        print("  moved %17.12f to %17.12f by %g" % (x1_desired, x1_new, abs(x1_desired-x1_new)))
+        print("  moved %17.12f to %17.12f by %g" % (x2_desired, x2_new, abs(x2_desired-x2_new)))
+        print("y:")
+        print("  moved %17.12f to %17.12f by %g" % (y1_desired, y1_new, abs(y1_desired-y1_new)))
+        print("  moved %17.12f to %17.12f by %g" % (y2_desired, y2_new, abs(y2_desired-y2_new)))
         #print "  "
         #print "fg.nx = %g" % nx
         #print "fg.ny = %g" % ny
@@ -468,7 +471,7 @@ class fgmax_grid_parameters(object):
 
 def make_fgmax(FG):
     """Deprecated -- use FGmaxGrid.write_input_data"""
-    print "---------------------------------------------- "
+    print("---------------------------------------------- ")
     x1,x2 = FG.x1, FG.x2
     y1,y2 = FG.y1, FG.y2
     point_style = FG.point_style
@@ -482,16 +485,16 @@ def make_fgmax(FG):
             dx = FG.dx
             nx = int(round((x2-x1)/dx)) + 1  
             if abs((nx-1)*dx + x1 - x2) > 1e-6:
-                print "Warning: abs((nx-1)*dx + x1 - x2) = ", \
-                      abs((nx-1)*dx + x1 - x2)
-                print "         old x2: %22.16e" % x2
+                print("Warning: abs((nx-1)*dx + x1 - x2) = ", \
+                      abs((nx-1)*dx + x1 - x2))
+                print("         old x2: %22.16e" % x2)
                 x2 = x1 + dx*(nx-1)
-                print "         resetting x2 to %22.16e" % x2
+                print("         resetting x2 to %22.16e" % x2)
         else:
             nx = FG.nx
             dx = (x2-x1)/(nx+1.)
             if FG.dx is not None:
-                print "*** Warning: dx specified over-ridden by: ",dx
+                print("*** Warning: dx specified over-ridden by: ",dx)
     
         if FG.ny is None:
             dy = FG.dy
@@ -499,16 +502,16 @@ def make_fgmax(FG):
                 dy = dx
             ny = int(round((y2-y1)/dy)) + 1  
             if abs((ny-1)*dy + y1 - y2) > 1e-6:
-                print "Warning: abs((ny-1)*dy + y1 - y2) = ", \
-                      abs((ny-1)*dy + y1 - y2)
-                print "         old y2: %22.16e" % y2
+                print("Warning: abs((ny-1)*dy + y1 - y2) = ", \
+                      abs((ny-1)*dy + y1 - y2))
+                print("         old y2: %22.16e" % y2)
                 y2 = y1 + dy*(ny-1)
-                print "         resetting y2 to %22.16e" % y2
+                print("         resetting y2 to %22.16e" % y2)
         else:
             ny = FG.ny
             dy = (y2-y1)/(ny+1.)
             if FG.dy is not None:
-                print "*** Warning: dy specified over-ridden by: ",dy
+                print("*** Warning: dy specified over-ridden by: ",dy)
     
     
         npts = nx*ny
@@ -531,12 +534,12 @@ def make_fgmax(FG):
         fid.close()
         
     
-        print "Created file ", FG.fname
-        print "   specifying fixed grid with shape %i by %i, with  %i points" \
-                % (nx,ny,npts)
-        print "   lower left  = (%15.10f,%15.10f)" % (x1,y1)
-        print "   upper right = (%15.10f,%15.10f)" % (x2,y2)
-        print "   dx = %15.10e,  dy = %15.10e" % (dx,dy)
+        print("Created file ", FG.fname)
+        print("   specifying fixed grid with shape %i by %i, with  %i points" \
+                % (nx,ny,npts))
+        print("   lower left  = (%15.10f,%15.10f)" % (x1,y1))
+        print("   upper right = (%15.10f,%15.10f)" % (x2,y2))
+        print("   dx = %15.10e,  dy = %15.10e" % (dx,dy))
     
         xy = [x1,x2,y1,y2]
         fname_root = os.path.splitext(FG.fname)[0]
@@ -549,21 +552,21 @@ def make_fgmax(FG):
             dx = FG.dx
             npts = int(round(sqrt((x2-x1)**2 + (y2-y1)**2)/dx)) + 1
             if abs((npts-1)*dx + x1 - x2) > 1e-6:
-                print "Warning: abs((npts-1)*dx + x1 - x2) = ", \
-                      abs((npts-1)*dx + x1 - x2)
+                print("Warning: abs((npts-1)*dx + x1 - x2) = ", \
+                      abs((npts-1)*dx + x1 - x2))
                 x2 = x1 + dx*(npts-1)
                 y2 = y1 + dx*(npts-1)
-                print "         resetting x2 to %g" % x2
-                print "         resetting y2 to %g" % y2
+                print("         resetting x2 to %g" % x2)
+                print("         resetting y2 to %g" % y2)
         else:
             npts = FG.npts
             dx = sqrt((x2-x1)**2 + (y2-y1)**2)/(npts+1.)
             if FG.dx is not None:
-                print "*** Warning: dx specified over-ridden by: ",dx
+                print("*** Warning: dx specified over-ridden by: ",dx)
     
     
-        print "Creating 1d fixed grid with %s points" % npts
-        print "   dx = %g" % dx
+        print("Creating 1d fixed grid with %s points" % npts)
+        print("   dx = %g" % dx)
     
         fid = open(FG.fname,'w')
         fid.write("%g                 # tstart_max\n"  % FG.tstart_max)
@@ -579,10 +582,10 @@ def make_fgmax(FG):
         fid.close()
         
     
-        print "Created file ", FG.fname
-        print "   specifying fixed grid with %i points equally spaced from " \
-                % npts
-        print "   (%g,%g)  to  (%g,%g)" % (x1,y1,x2,y2)
+        print("Created file ", FG.fname)
+        print("   specifying fixed grid with %i points equally spaced from " \
+                % npts)
+        print("   (%g,%g)  to  (%g,%g)" % (x1,y1,x2,y2))
         
         # not yet implemented:
         #fname_root = os.path.splitext(FG.fname)[0]
@@ -616,14 +619,14 @@ def make_fgmax(FG):
         fid.close()
         
     
-        print "Created file ", FG.fname
-        print "   specifying fixed grid as a quadrilateral"
-        print "       %i by %i, with  %i points" \
-                % (FG.n12,FG.n23,npts)
-        print "   corner 1 = (%15.10f,%15.10f)" % (x1,y1)
-        print "   corner 2 = (%15.10f,%15.10f)" % (x2,y2)
-        print "   corner 3 = (%15.10f,%15.10f)" % (x3,y3)
-        print "   corner 4 = (%15.10f,%15.10f)" % (x4,y4)
+        print("Created file ", FG.fname)
+        print("   specifying fixed grid as a quadrilateral")
+        print("       %i by %i, with  %i points" \
+                % (FG.n12,FG.n23,npts))
+        print("   corner 1 = (%15.10f,%15.10f)" % (x1,y1))
+        print("   corner 2 = (%15.10f,%15.10f)" % (x2,y2))
+        print("   corner 3 = (%15.10f,%15.10f)" % (x3,y3))
+        print("   corner 4 = (%15.10f,%15.10f)" % (x4,y4))
         
         xy = [x1,y1,x2,y2,x3,y3,x4,y4]
         fname_root = os.path.splitext(FG.fname)[0]

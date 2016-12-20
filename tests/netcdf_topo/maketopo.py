@@ -3,6 +3,7 @@
 Module to create topo and qinit data files for this example.
 """
 
+from __future__ import absolute_import
 from clawpack.geoclaw.topotools import topo1writer, topo2writer
 from clawpack.geoclaw import topotools
 from numpy import *

@@ -1,9 +1,12 @@
 r"""Basic functions from the old version of topotools for testing purposes."""
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy
 import re
 
 import nose
+from six.moves import range
 
 def topo1writer(outfile, topo, xlower, xupper, ylower, yupper, nxpoints,
                              nypoints):
@@ -17,9 +20,9 @@ def topo1writer(outfile, topo, xlower, xupper, ylower, yupper, nxpoints,
     Z = topo(X,Y).T
     
 
-    for jj in xrange(0,nypoints):
+    for jj in range(0,nypoints):
         y = yupper - jj*dy
-        for i in xrange(0,nxpoints):
+        for i in range(0,nxpoints):
             x =  xlower + i*dx
             j = nypoints - 1 - jj
             z = Z[i,j]
@@ -29,7 +32,7 @@ def topo1writer(outfile, topo, xlower, xupper, ylower, yupper, nxpoints,
 
 def topoheaderread(inputfile, closefile=True):
     topoheader={'ncols':0,'nrows':0,'xll':0.0,'yll':0.0,'cellsize':0.0,'nodata_value':0}
-    keylist=topoheader.keys()
+    keylist=list(topoheader.keys())
 
     keymap = {'ncols':'ncols','nrows':'nrows','xll':'xll','yll':'yll','cellsize':'cellsize','nodata_value':'nodata_value', \
     'xllcenter':'xll','yllcenter':'yll','xllcorner':'xll','yllcorner':'yll'}
@@ -39,17 +42,17 @@ def topoheaderread(inputfile, closefile=True):
     while keyleft> 0 :
         line=fid.readline().split()
         if line:
-            if line[0].lower() in keymap.keys():
+            if line[0].lower() in list(keymap.keys()):
                 topoheader[keymap[line[0].lower()]]= convertd2e(line[1])
                 keyleft=keyleft-1
-            if line[1].lower() in keymap.keys():
+            if line[1].lower() in list(keymap.keys()):
                 topoheader[keymap[line[1].lower()]]= convertd2e(line[0])
                 keyleft=keyleft-1
 
     #check if passes convert strings values to numeric
     for key in keylist :
         if not key in topoheader:
-            print('ERROR: topoheader not fully specified in %s' % (inputfile))
+            print(('ERROR: topoheader not fully specified in %s' % (inputfile)))
             exit
         else:
             if '.' in topoheader[key] or 'nan' in topoheader[key].lower() or 'e' in topoheader[key].lower():
@@ -72,12 +75,12 @@ skipfirstcols=0, skiplastcols=0):
     fid.close()
 
     dataarray=[]
-    for row in xrange(skiplines,len(data)):
+    for row in range(skiplines,len(data)):
         data[row]=convertd2e(data[row])
         data[row]=data[row].split(sep)
         if data[row]!=[]:
             if dtype!=" ":
-                for col in xrange(skipfirstcols,len(data[row])-skiplastcols) :
+                for col in range(skipfirstcols,len(data[row])-skiplastcols) :
                     if dtype=="float":
                         data[row][col]=float(data[row][col])
                     elif dtype=="int":
@@ -103,10 +106,10 @@ def topofile2griddata(inputfile, topotype=2):
         (fin,topoheader)=topoheaderread(inputfile,closefile=False)
         zdata=fin.readlines()
         fin.close()
-        for row in xrange(len(zdata)):
+        for row in range(len(zdata)):
             zdata[row]=convertd2e(zdata[row])
             zdata[row]=zdata[row].split()
-            for col in xrange(len(zdata[row])) :
+            for col in range(len(zdata[row])) :
                 zdata[row][col]=float(zdata[row][col])
 
         Z=numpy.array(zdata)

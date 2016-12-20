@@ -22,6 +22,8 @@ Classes representing parameters for GeoClaw runs
  - LAT2METER factor to convert degrees in latitude to meters
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import numpy
 import clawpack.clawutil.data
@@ -256,7 +258,7 @@ class DTopoData(clawpack.clawutil.data.ClawData):
     def read(self, path, force=False):
         r"""Read a dtopography data file."""
 
-        print self.dtopofiles
+        print(self.dtopofiles)
 
         with open(os.path.abspath(path), 'r') as data_file:
 

@@ -7,6 +7,7 @@ function setplot is called to set the plot parameters.
 
 """
 
+from __future__ import absolute_import
 article = False
 
 import os
