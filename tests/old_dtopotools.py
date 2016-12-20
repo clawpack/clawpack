@@ -726,7 +726,7 @@ def plot_subfaults(subfaults, plot_centerline=False, slip_color=False, \
         if cmin_slip is None:
             cmin_slip = 0.
         if test_random:
-			print("*** test_random == True so slip and rake have been randomized")
+            print("*** test_random == True so slip and rake have been randomized")
         
     y_ave = 0.
     for subfault in subfaults:

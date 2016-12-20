@@ -86,7 +86,7 @@ unit_conversion_factor['N-m'] = 1.
 unit_conversion_factor['dyne-cm'] = 1.e-7
 
 # Check that these are consistent:
-check = [unit_conversion_factor[standard_units[param]] is 1. for param in \
+check = [unit_conversion_factor[standard_units[param]] == 1. for param in \
          standard_units.keys()]
 if not numpy.alltrue(check):
     raise ValueError("Conversion factors should be 1 for all standard_units")

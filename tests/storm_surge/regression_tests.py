@@ -42,7 +42,7 @@ class IkeTest(test.GeoClawRegressionTest):
         with gzip.GzipFile(path, 'r') as gzip_file:
             file_content = gzip_file.read()
         
-        with open(storm_path, 'w') as out_file:
+        with open(storm_path, 'wb') as out_file:
             out_file.write(file_content)
 
         # Download file
