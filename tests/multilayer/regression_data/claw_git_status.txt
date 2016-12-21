@@ -1,97 +1,93 @@
 Clawpack Git Status 
-Diffs can be found in /Users/mandli/src/clawpack/geoclaw/tests/multilayer/regression_data/claw_git_diffs.txt
+Diffs can be found in /Users/rjl/git/clawpack/geoclaw/tests/multilayer/regression_data/claw_git_diffs.txt
 
-Tue, 25 Oct 2016 20:42:57 EDT
-$CLAW = /Users/mandli/src/clawpack
+Tue, 20 Dec 2016 22:06:32 PST
+$CLAW = /Users/rjl/git/clawpack
 $FC = gfortran
 
 
 ===========
 classic
 ===========
-/Users/mandli/src/clawpack/classic
+/Users/rjl/git/clawpack/classic
 
 --- last commit ---
-1186c88 Add module
+8e6d0c2 make plotdata an optional argument in setplot
 
 --- branch and status ---
-## add-utility-module...clawpack/master [ahead 1]
+## setplot_fixes
 
 
 ===========
 amrclaw
 ===========
-/Users/mandli/src/clawpack/amrclaw
+/Users/rjl/git/clawpack/amrclaw
 
 --- last commit ---
-84a95f4 Add check for gauge number
+5c81870 set xlimits and ylimits in quadrants example
 
 --- branch and status ---
-## add-gauge-options...clawpack/master [ahead 9]
+## setplot_fixes
 
 
 ===========
 clawutil
 ===========
-/Users/mandli/src/clawpack/clawutil
+/Users/rjl/git/clawpack/clawutil
 
 --- last commit ---
-769d8fa Add info for gauge data output
+c3950d1 Fix call to StringIO to match new way it is imported
 
 --- branch and status ---
-## add-gauge-options...clawpack/master [ahead 1]
+## claw_git_status_StringIO
 
 
 ===========
 pyclaw
 ===========
-/Users/mandli/src/clawpack/pyclaw
+/Users/rjl/git/clawpack/pyclaw
 
 --- last commit ---
-314fd93 Merge pull request #541 from mandli/add-new-gauges
+695af06 Merge pull request #550 from clawpack/python3
 
 --- branch and status ---
-## msater...clawpack/master
+## master...origin/master
 
 
 ===========
 visclaw
 ===========
-/Users/mandli/src/clawpack/visclaw
+/Users/rjl/git/clawpack/visclaw
 
 --- last commit ---
-72ee0db Merge pull request #187 from rjleveque/remove_ioff
+6833be6 Merge pull request #190 from clawpack/python3
 
 --- branch and status ---
-## master...mandli/master [ahead 52]
+## master...origin/master
 
 
 ===========
 riemann
 ===========
-/Users/mandli/src/clawpack/riemann
+/Users/rjl/git/clawpack/riemann
 
 --- last commit ---
-48a46d3 Merge pull request #113 from rjleveque/shallow_roe_needs_grav
+b68d73d Merge pull request #111 from rjleveque/geoclaw_riemann_utils_update
 
 --- branch and status ---
-## master...clawpack/master
+## master...origin/master
 
 
 ===========
 geoclaw
 ===========
-/Users/mandli/src/clawpack/geoclaw
+/Users/rjl/git/clawpack/geoclaw
 
 --- last commit ---
-ceb5c00 Add eta_index definition
+e29ead0 updated regression data for new Riemann solver from clawpack/riemann#111
 
 --- branch and status ---
-## add-gauge-options...clawpack/master [ahead 8]
+## regression_data_update_riemann
+ M examples/tsunami/bowl-radial/setplot.py
  M tests/multilayer/regression_data/claw_git_diffs.txt
  M tests/multilayer/regression_data/claw_git_status.txt
- M tests/multilayer/regression_data/gauge00000.txt
- M tests/multilayer/regression_data/gauge00001.txt
- M tests/multilayer/regression_data/gauge00002.txt
- M tests/multilayer/regression_data/gauge00003.txt
- M tests/multilayer/regression_data/gauge00004.txt
