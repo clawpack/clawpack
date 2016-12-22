@@ -10,6 +10,7 @@ function setplot is called to set the plot parameters.
 
 from __future__ import absolute_import
 from __future__ import print_function
+
 try:
     from setplotfg import setplotfg
 except:
@@ -18,7 +19,7 @@ except:
 
 
 #--------------------------
-def setplot(plotdata):
+def setplot(plotdata=None):
 #--------------------------
     
     """ 
@@ -27,6 +28,10 @@ def setplot(plotdata):
     Output: a modified version of plotdata.
     
     """ 
+
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
 
 
     from clawpack.visclaw import colormaps, geoplot

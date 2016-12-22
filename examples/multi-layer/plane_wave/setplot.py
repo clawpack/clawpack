@@ -8,7 +8,8 @@ function setplot is called to set the plot parameters.
 """ 
     
 from __future__ import absolute_import
-def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,  
+
+def setplot(plotdata=None,  bathy_location=0.15,  bathy_angle=0.0,  
                        bathy_left=-1.0,      bathy_right=-0.2):
     """Setup the plotting data objects.
 
@@ -31,6 +32,11 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     import clawpack.geoclaw.data
 
     import clawpack.geoclaw.multilayer.plot as ml_plot
+
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
+
 
     # Load data from output
     clawdata = clawutil.ClawInputData(2)
