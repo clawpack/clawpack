@@ -610,6 +610,7 @@ def setplot(plotdata=None,  bathy_location=0.15,  bathy_angle=0.0,
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
+    plotdata.parallel = True                 # make multiple frame png's at once
 
     return plotdata
 
