@@ -21,7 +21,7 @@ except:
     print("*** Could not load DART data file")
 
 #--------------------------
-def setplot(plotdata):
+def setplot(plotdata=None):
 #--------------------------
     
     """ 
@@ -34,6 +34,11 @@ def setplot(plotdata):
 
     from clawpack.visclaw import colormaps, geoplot
     from numpy import linspace
+
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
+
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
 
@@ -171,6 +176,7 @@ def setplot(plotdata):
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
+    plotdata.parallel = True                 # make multiple frame png's at once
 
     return plotdata
 

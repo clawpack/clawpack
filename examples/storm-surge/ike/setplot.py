@@ -67,9 +67,16 @@ gauge_landfall.append(datetime.datetime(2008,9,13 - 1,7)
                                             - datetime.datetime(2008,1,1,0))
 gauge_landfall.append(days2seconds(4.25))
 
-def setplot(plotdata):
+#--------------------------
+def setplot(plotdata=None):
+#--------------------------
+
     r"""Setplot function for surge plotting"""
     
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
+
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
     plotdata.format = 'binary'
@@ -676,6 +683,7 @@ def setplot(plotdata):
         plotdata.latex_figsperline = 2           # layout of plots
         plotdata.latex_framesperline = 1         # layout of plots
         plotdata.latex_makepdf = False           # also run pdflatex?
+    plotdata.parallel = True                 # make multiple frame png's at once
 
     return plotdata
 
