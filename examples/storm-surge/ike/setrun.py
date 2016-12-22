@@ -106,8 +106,6 @@ def setrun(claw_pkg='geoclaw'):
     # clawdata.t0 = days2seconds(ike_landfall.days - 1) + ike_landfall.seconds
 
     # Restart from checkpoint file of a previous run?
-    # Note: If restarting, you must also change the Makefile to set:
-    #    RESTART = True
     # If restarting, t0 above should be from original run, and the
     # restart_file 'fort.chkNNNNN' specified below should be in 
     # the OUTDIR indicated in Makefile.
