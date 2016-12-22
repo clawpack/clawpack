@@ -271,7 +271,7 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.checkpt_style == 3:
         # Checkpoint every checkpt_interval timesteps (on Level 1)
         # and at the final time.
-        clawdata.checkpt_interval = 10
+        clawdata.checkpt_interval = 5
 
 
     # ---------------
@@ -343,8 +343,6 @@ def setrun(claw_pkg='geoclaw'):
     rundata.gaugedata.gauges = []
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
     rundata.gaugedata.gauges.append([32412, -86.392, -17.975, 0., 1.e10])
-    rundata.gaugedata.min_time_increment = 200
-    rundata.gaugedata.display_format = "e16.5"
     
 
     return rundata
