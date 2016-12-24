@@ -7,6 +7,8 @@ To create new regression data use
 """
 
 from __future__ import absolute_import
+from make_fgmax_grid import make_fgmax_grid1
+
 import os
 import sys
 import unittest
@@ -37,7 +39,6 @@ class BowlSloshTest(test.GeoClawRegressionTest):
         topo.write(os.path.join(self.temp_path, "bowl.topotype2"), \
                 topo_type=2, Z_format="%22.15e")
 
-        from make_fgmax_grid import make_fgmax_grid1
         make_fgmax_grid1(self.temp_path)
 
 
