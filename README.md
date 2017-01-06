@@ -4,6 +4,10 @@ The following command is sufficient to get up and running with PyClaw, VisClaw, 
 
     pip install clawpack
 
+If you want to install clawpack in a manner that allows also using the
+Fortran codes (Classic, AMRClaw, and GeoClaw), see
+http://www.clawpack.org/installing.html
+
 # Installation Tools
 
 ## Git
