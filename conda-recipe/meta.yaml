@@ -1,0 +1,27 @@
+package:
+  name: clawpack
+  version: 5.4.0a0
+
+source:
+  path: ..
+
+
+requirements:
+  build:
+    - python
+    - numpy
+
+  run:
+    - python
+    - numpy
+    - matplotlib
+    - hdf5-parallel
+    - petsc4py
+    - scipy
+    - six
+    - mpi4py
+
+test:
+    imports:
+        - clawpack.pyclaw
+        - clawpack.petclaw
