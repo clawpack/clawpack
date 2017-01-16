@@ -1,6 +1,6 @@
 package:
   name: clawpack
-  version: 5.4.0a0
+  version: 5.3.1a0
 
 source:
   path: ..
@@ -20,6 +20,9 @@ requirements:
     - scipy
     - six
     - mpi4py
+
+build:
+  number: 0
 
 test:
     imports:
