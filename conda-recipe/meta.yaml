@@ -13,13 +13,13 @@ requirements:
 
   run:
     - python
-    - numpy
-    - matplotlib
-    - hdf5-parallel
-    - petsc4py
-    - scipy
     - six
+    - numpy
+    - scipy
+    - matplotlib
     - mpi4py
+    - petsc4py
+    - h5py-parallel
 
 build:
   number: 0
@@ -28,3 +28,5 @@ test:
     imports:
         - clawpack.pyclaw
         - clawpack.petclaw
+	- clawpack.pyclaw.io.hdf5
+	- clawpack.riemann.euler_4wave_2D
