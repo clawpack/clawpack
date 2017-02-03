@@ -3,7 +3,10 @@
 Module to create topo and qinit data files for this example.
 """
 
-from clawpack.geoclaw.topotools import topo1writer, topo2writer
+from __future__ import absolute_import
+from __future__ import print_function
+from clawpack.geoclaw.topotools import Topography
+
 from clawpack.geoclaw import dtopotools
 import numpy
 import matplotlib.pyplot as plt
@@ -21,10 +24,13 @@ def maketopo():
     ylower = -10e0
     yupper= 10e0
     outfile= "topo1.topotype2"
-    topo2writer(outfile,topo,xlower,xupper,ylower,yupper,nxpoints,nypoints)
+    topography = Topography(topo_func=topo)
+    topography.x = numpy.linspace(xlower,xupper,nxpoints)
+    topography.y = numpy.linspace(ylower,yupper,nypoints)
+    topography.write(outfile, topo_type=2, Z_format="%22.15e")
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
-    print "==> topo1 has dx = %g, dy = %g" % (dx,dy)
+    print("==> topo1 has dx = %g, dy = %g" % (dx,dy))
 
 def maketopo2():
     """
@@ -37,10 +43,13 @@ def maketopo2():
     ylower = -0.1
     yupper= 0.4
     outfile= "topo2.topotype2"
-    topo2writer(outfile,topo2,xlower,xupper,ylower,yupper,nxpoints,nypoints)
+    topography = Topography(topo_func=topo2)
+    topography.x = numpy.linspace(xlower,xupper,nxpoints)
+    topography.y = numpy.linspace(ylower,yupper,nypoints)
+    topography.write(outfile, topo_type=2, Z_format="%22.15e")
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
-    print "==> topo2 has dx = %g, dy = %g" % (dx,dy)
+    print("==> topo2 has dx = %g, dy = %g" % (dx,dy))
 
 h0 = 1000.
 
@@ -84,7 +93,7 @@ def make_dtopo1(plotfig=None):
 
     dtopo_fname = fname_subfaults.split('.')[0] + '.tt3'
 
-    print "Using Okada model to create %s " % dtopo_fname
+    print("Using Okada model to create %s " % dtopo_fname)
 
     # Needed for extent of dtopo file:
     xlower = -0.4
@@ -98,7 +107,7 @@ def make_dtopo1(plotfig=None):
 
     dx = (xupper-xlower)/(mx-1)
     dy = (yupper-ylower)/(my-1)
-    print "==> dtopo1 has dx = %g, dy = %g" % (dx,dy)
+    print("==> dtopo1 has dx = %g, dy = %g" % (dx,dy))
     x = numpy.linspace(xlower,xupper,mx)
     y = numpy.linspace(ylower,yupper,my)
 
@@ -128,7 +137,7 @@ def make_dtopo2(plotfig=None):
 
     dtopo_fname = fname_subfaults.split('.')[0] + '.tt3'
 
-    print "Using Okada model to create %s " % dtopo_fname
+    print("Using Okada model to create %s " % dtopo_fname)
 
     # Needed for extent of dtopo file:
     xlower = -0.9
@@ -142,7 +151,7 @@ def make_dtopo2(plotfig=None):
 
     dx = (xupper-xlower)/(mx-1)
     dy = (yupper-ylower)/(my-1)
-    print "==> dtopo2 has dx = %g, dy = %g" % (dx,dy)
+    print("==> dtopo2 has dx = %g, dy = %g" % (dx,dy))
 
 
     x = numpy.linspace(xlower,xupper,mx)

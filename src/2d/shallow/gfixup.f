@@ -99,14 +99,13 @@ c                 other reduction variables initialized in stst1
 !$OMP&            PRIVATE(clock_start,clock_finish,clock_rate)
 !$OMP&            PRIVATE(j,mptr,nx,ny,mitot,mjtot,corn1,corn2,loc)
 !$OMP&            PRIVATE(locaux,time,mic,mjc,xl,xr,yb,yt,ilo,ihi)
-!$OMP&            PRIVATE(jlo,jhi,sp_over_h,thisSetauxTime)
+!$OMP&            PRIVATE(jlo,jhi,sp_over_h)
 !$OMP&            SHARED(newnumgrids,listnewgrids,nghost,node,hx,hy)
 !$OMP&            SHARED(rnode,intratx,intraty,lcheck,nvar,alloc,naux)
 !$OMP&            REDUCTION(MAX:this_spoh)
 !$OMP&            REDUCTION(+:timeFilval)
 !$OMP&            SCHEDULE(dynamic,1)
 !$OMP&            DEFAULT(none)
-!$OMP&            REDUCTION(+:timeSetaux)
 
       do  j = 1, newnumgrids(lcheck)
           mptr = listnewgrids(j)
@@ -159,7 +158,7 @@ c          # "interior" of coarser patch to fill fine grid.
      2                 xl,xr,yb,yt,nvar,
      3                 mptr,ilo,ihi,jlo,jhi,
      4                 alloc(locaux),naux,
-     5                 sp_over_h,thisSetauxTime)
+     5                 sp_over_h)
            call system_clock(clock_finish,clock_rate)
            timeFilval = timeFilval + clock_finish - clock_start
            this_spoh = max(this_spoh, sp_over_h)

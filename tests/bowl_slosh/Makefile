@@ -41,6 +41,8 @@ include $(GEOLIB)/Makefile.geoclaw
 EXCLUDE_MODULES = \
 
 EXCLUDE_SOURCES = \
+  $(GEOLIB)/fgmax_interpolate0.f90 \
+
 
 # ----------------------------------------
 # List of custom sources for this program:
@@ -51,6 +53,7 @@ MODULES = \
 
 SOURCES = \
   qinit.f90 \
+  $(GEOLIB)/fgmax_interpolate.f90 \
   $(CLAW)/riemann/src/rpn2_geoclaw.f \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \

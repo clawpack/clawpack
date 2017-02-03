@@ -3,11 +3,14 @@
 
 r"""Calculate refinement resolutions given ratios provided"""
 
+from __future__ import absolute_import
+from __future__ import print_function
 import argparse
 
 import numpy as np
 
-import topotools
+from . import topotools
+from six.moves import range
 
 def calculate_resolution(ratios, base_resolutions=[0.25,0.25], 
                                  lat_long=True,
@@ -18,28 +21,28 @@ def calculate_resolution(ratios, base_resolutions=[0.25,0.25],
     # Calculate resolution on each level
     natural_resolutions = np.empty((num_levels, 2))
     natural_resolutions[0,:] = base_resolutions
-    for level in xrange(1,num_levels):
+    for level in range(1,num_levels):
         natural_resolutions[level, :] = natural_resolutions[level-1, :] / ratios[level-1]
 
     # Print out and convert to meters if applicable
     if lat_long:
         meter_resolutions = np.empty((num_levels,2))
-        for level in xrange(num_levels):
+        for level in range(num_levels):
             meter_resolutions[level,:] = topotools.dist_latlong2meters(
                                                    natural_resolutions[level,0],
                                                    natural_resolutions[level,1],
                                                    latitude)
 
 
-    print "Resolutions:"
-    for level in xrange(num_levels):
+    print("Resolutions:")
+    for level in range(num_levels):
         level_string = " Level %s" % str(level + 1)
         if lat_long:
             level_string = " - ".join((level_string, "(%sº,%sº)" % (natural_resolutions[level,0], natural_resolutions[level,1])))
             level_string = " - ".join((level_string, "(%s m,%s m)" % (meter_resolutions[level,0], meter_resolutions[level,1])))
         else:
             level_string = " - ".join((level_string, "(%s m,%s m)" % (natural_resolutions[level,0], natural_resolutions[level,1])))
-        print level_string
+        print(level_string)
     
 
 if __name__ == "__main__":

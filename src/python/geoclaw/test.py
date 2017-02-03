@@ -6,6 +6,7 @@ Sends output and result/errors to separate files to simplify checking
 results and looking for errors.
 """
 
+from __future__ import absolute_import
 import os
 import glob
 
@@ -15,7 +16,7 @@ import clawpack.clawutil.test
 import clawpack.pyclaw.util
 
 # Clean library files whenever this module is used
-if os.environ.has_key("CLAW"):
+if "CLAW" in os.environ:
     CLAW = os.environ["CLAW"]
 else:
     raise ValueError("Need to set CLAW environment variable.")
@@ -71,7 +72,7 @@ class GeoClawRegressionTest(clawpack.clawutil.test.ClawpackRegressionTest):
         data_sum = numpy.array([fg.h.sum(), fg.s.sum()])
 
         # Get (and save) regression comparison data
-        regression_data_file = os.path.join(self.test_path, \
+        regression_data_file = os.path.join(self.test_path, "regression_data",
                 "regression_data_fgmax.txt")
         if save:
             numpy.savetxt(regression_data_file, data_sum)

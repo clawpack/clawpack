@@ -6,10 +6,13 @@ that will be read in by the Fortran code.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as numpy
 
-import clawpack.geoclaw.multilayer.data as multilayer
+import clawpack.geoclaw.data
 import clawpack.geoclaw.topotools as tt
+
 
 # Rotation transformations
 def transform_c2p(x,y,x0,y0,theta):
@@ -19,6 +22,54 @@ def transform_c2p(x,y,x0,y0,theta):
 def transform_p2c(x,y,x0,y0,theta):
     return ( x*numpy.cos(theta) + y*numpy.sin(theta) - x0,
             -x*numpy.sin(theta) + y*numpy.cos(theta) - y0)
+
+
+# Class containing some setup for the qinit especially for multilayer tests 
+class QinitMultilayerData(clawpack.geoclaw.data.QinitData):
+    r"""
+    Modified Qinit data object for multiple layers
+
+    """
+
+    def __init__(self):
+        super(QinitMultilayerData, self).__init__()
+
+        # Test qinit data > 4
+        self.add_attribute("init_location", [0.0, 0.0])
+        self.add_attribute("wave_family", 1)
+        self.add_attribute("epsilon", 0.02)
+        self.add_attribute("angle", 0.0)
+        self.add_attribute("sigma", 0.02)
+
+    def write(self, data_source='setrun.py'):
+
+        # Initial perturbation
+        self.open_data_file('qinit.data',data_source)
+        self.data_write('qinit_type')
+
+        # Perturbation requested
+        if self.qinit_type == 0:
+            pass
+        elif 0 < self.qinit_type < 5:
+            # Check to see if each qinit file is present and then write the data
+            for tfile in self.qinitfiles:
+                try:
+                    fname = "'%s'" % os.path.abspath(tfile[-1])
+                except:
+                    raise Warning("File %s was not found." % fname)
+                    # raise MissingFile("file not found")
+                self._out_file.write("\n%s  \n" % fname)
+                self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
+        elif self.qinit_type >= 5 and self.qinit_type <= 9:
+            self.data_write('epsilon')
+            self.data_write("init_location")
+            self.data_write("wave_family")
+            self.data_write("angle")
+            self.data_write("sigma")
+        else:
+            raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
+        self.close_data_file()
+
 
 
 #------------------------------
@@ -47,9 +98,7 @@ def setrun(claw_pkg='geoclaw'):
     # GeoClaw specific parameters:
     #------------------------------------------------------------------
     rundata = setgeo(rundata)
-
-    rundata.add_data(multilayer.MultilayerData(), 'multilayer_data')
-    set_multilayer(rundata)
+    rundata = set_multilayer(rundata)
 
     #------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
@@ -105,8 +154,6 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Restart from checkpoint file of a previous run?
-    # Note: If restarting, you must also change the Makefile to set:
-    #    RESTART = True
     # If restarting, t0 above should be from original run, and the
     # restart_file 'fort.chkNNNNN' specified below should be in 
     # the OUTDIR indicated in Makefile.
@@ -374,7 +421,7 @@ def setgeo(rundata):
     try:
         geo_data = rundata.geo_data
     except:
-        print "*** Error, this rundata has no geo_data attribute"
+        print("*** Error, this rundata has no geo_data attribute")
         raise AttributeError("Missing geo_data attribute")
        
     # == Physics ==
@@ -432,14 +479,15 @@ def set_multilayer(rundata):
     # data.wave_tolerance = [0.1,0.1]
     # data.dry_limit = True
 
-    # Set special initial conditions for qinit
-    rundata.replace_data('qinit_data', multilayer.QinitMultilayerData())
+    rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6
     rundata.qinit_data.epsilon = 0.02
     rundata.qinit_data.angle = 0.0
     rundata.qinit_data.sigma = 0.02
     rundata.qinit_data.wave_family = 4
     rundata.qinit_data.init_location = [-0.1,0.0]
+
+    return rundata
 
 
 def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
@@ -463,11 +511,11 @@ def write_topo_file(run_data, out_file, **kwargs):
 
     # Write out simple bathy geometry file for communication to the plotting
     with open("./bathy_geometry.data", 'w') as bathy_geometry_file:
-        if kwargs.has_key("location"):
+        if "location" in kwargs:
             location = kwargs['location']
         else:
             location = 0.15
-        if kwargs.has_key("angle"):
+        if "angle" in kwargs:
             angle = kwargs['angle']
         else:
             angle = 0.0

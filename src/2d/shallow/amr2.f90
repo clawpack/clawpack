@@ -82,8 +82,8 @@ program amr2
     use amr_module, only: tvoll, tvollCPU, rvoll, rvol, mstart, possk, ibuff
     use amr_module, only: timeRegridding,timeUpdating, timeValout
     use amr_module, only: timeBound,timeStepgrid, timeFlagger,timeBufnst,timeFilvalTot
-    use amr_module, only: timeBoundCPU,timeStepGridCPU,timeSetauxCPU,timeRegriddingCPU
-    use amr_module, only: timeSetaux, timeSetauxCPU, timeValoutCPU
+    use amr_module, only: timeBoundCPU,timeStepGridCPU,timeRegriddingCPU
+    use amr_module, only: timeValoutCPU,timeTick,timeTickCPU
     use amr_module, only: kcheck, iorder, lendim, lenmax
 
     use amr_module, only: dprint, eprint, edebug, gprint, nprint, pprint
@@ -91,9 +91,18 @@ program amr2
 
     use amr_module, only: t0, tstart_thisrun
 
-    use regions_module, only: set_regions
+    ! Data modules
+    use geoclaw_module, only: set_geo
+    use topo_module, only: read_topo_settings, read_dtopo_settings
+    use qinit_module, only: set_qinit
+    use fixedgrids_module, only: set_fixed_grids
+    use refinement_module, only: set_refinement
+    use storm_module, only: set_storm
+    use friction_module, only: setup_variable_friction
     use gauges_module, only: set_gauges, num_gauges
+    use regions_module, only: set_regions
     use fgmax_module, only: set_fgmax, FG_num_fgrids
+    use multilayer_module, only: set_multilayer
 
     implicit none
 
@@ -104,11 +113,10 @@ program amr2
     integer :: omp_get_max_threads, maxthreads
     real(kind=8) :: time, ratmet, cut, dtinit, dt_max
     logical :: vtime, rest, output_t0    
-    integer :: num_fgmax
 
     ! Timing variables
     integer :: clock_start, clock_finish, clock_rate, ttotal
-    real(kind=8) :: cpu_start, cpu_finish, ttotalcpu
+    real(kind=8) :: ttotalcpu
 
     ! Common block variables
     real(kind=8) :: dxmin, dymin
@@ -165,7 +173,7 @@ program amr2
         read(inunit,*) nout
         allocate(tout(nout))
         read(inunit,*) (tout(i), i=1,nout)
-        output_t0 = (tout(1) == t0)
+        output_t0 = (abs(tout(1) - t0) < 1e-15)
         ! Move output times down one index
         if (output_t0) then
             nout = nout - 1
@@ -368,13 +376,6 @@ program amr2
     ! Finished with reading in parameters
     ! ==========================================================================
 
-    ! Read in region and gauge data
-    call set_regions('regions.data')
-    call set_gauges(rest,'gauges.data')
-
-    ! New fixed grid routines to keep track of max over computation:
-    call set_fgmax('fgmax.data')
-
     ! Look for capacity function via auxtypes:
     mcapa = 0
     do iaux = 1, naux
@@ -458,6 +459,20 @@ program amr2
         ! Call user routine to set up problem parameters:
         call setprob()
 
+        ! Non-user defined setup routine
+        call set_geo()                    ! sets basic parameters g and coord system
+        call set_refinement()             ! sets refinement control parameters
+        call read_dtopo_settings()        ! specifies file with dtopo from earthquake
+        call read_topo_settings()         ! specifies topography (bathymetry) files
+        call set_qinit()                  ! specifies file with dh if this used instead
+        call set_fixed_grids()            ! Fixed grid settings
+        call setup_variable_friction()    ! Variable friction parameter
+        call set_multilayer()             ! Set multilayer SWE parameters
+        call set_storm()                  ! Set storm parameters
+        call set_regions()                ! Set refinement regions
+        call set_gauges(rest, nvar, naux) ! Set gauge output
+        call set_fgmax()
+
     else
 
         open(outunit, file=outfile, status='unknown', form='formatted')
@@ -466,6 +481,20 @@ program amr2
 
         ! Call user routine to set up problem parameters:
         call setprob()
+
+        ! Non-user defined setup routine
+        call set_geo()                    ! sets basic parameters g and coord system
+        call set_refinement()             ! sets refinement control parameters
+        call read_dtopo_settings()        ! specifies file with dtopo from earthquake
+        call read_topo_settings()         ! specifies topography (bathymetry) files
+        call set_qinit()                  ! specifies file with dh if this used instead
+        call set_fixed_grids()            ! Fixed grid settings
+        call setup_variable_friction()    ! Variable friction parameter
+        call set_multilayer()             ! Set multilayer SWE parameters
+        call set_storm()                  ! Set storm parameters
+        call set_regions()                ! Set refinement regions
+        call set_gauges(rest, nvar, naux) ! Set gauge output
+        call set_fgmax()
 
         cflmax = 0.d0   ! otherwise use previously heckpointed val
 
@@ -565,8 +594,9 @@ program amr2
     call conck(1,nvar,naux,time,rest)
 
     ! Timing
+    ! moved inside tick, so timers can be checkpoint for
+    ! possible restart
     call system_clock(clock_start,clock_rate)
-    call cpu_time(cpu_start)
 
     if (output_t0) then
         call valout(1,lfine,time,nvar,naux)
@@ -589,7 +619,6 @@ program amr2
     
 
     call system_clock(clock_finish,clock_rate)
-    call cpu_time(cpu_finish)
     
     !output timing data
     write(*,*)
@@ -672,11 +701,11 @@ program amr2
     !Total Time
     format_string="('Total time:   ',1f15.3,'        ',1f15.3,'  ')"
     write(outunit,format_string) &
-            real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8), &
-            cpu_finish-cpu_start
+            real(timeTick,kind=8) / real(clock_rate,kind=8), &
+            timeTickCPU         
     write(*,format_string) &
-            real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8), &
-            cpu_finish-cpu_start
+            real(timeTick,kind=8) / real(clock_rate,kind=8), &
+            timeTickCPU         
     
     format_string="('Using',i3,' thread(s)')"
     write(outunit,format_string) maxthreads
@@ -691,6 +720,10 @@ program amr2
     write(outunit,"('Note: The CPU times are summed over all threads.')")
     write(*,"('      Total time includes more than the subroutines listed above')")
     write(outunit,"('      Total time includes more than the subroutines listed above')")
+    if (rest) then
+      write(*,"('      Times for restart runs are cumulative')")
+      write(outunit,"('      Times for restart runs are cumulative')")
+    endif
     
     
     !end of timing data

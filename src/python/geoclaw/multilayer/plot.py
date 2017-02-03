@@ -7,10 +7,12 @@ Plotting routines for multilayer simulations with GeoClaw
     Kyle Mandli (2011-2-07) Initial version
 """
 
+from __future__ import absolute_import
 import numpy
 import matplotlib.pyplot as plt
 
 from clawpack.visclaw import colormaps, geoplot, gaugetools
+from six.moves import range
 
 # ========================================================================
 #  Data extraction routines
@@ -308,7 +310,7 @@ def add_combined_profile_plot(plot_data,slice_value,direction='x',figno=120):
         plt.hold(True)
         plt.xlabel('')
         locs,labels = plt.xticks()
-        labels = ['' for i in xrange(len(locs))]
+        labels = ['' for i in range(len(locs))]
         plt.xticks(locs,labels)
         plt.plot([multilayer_data.bathy_location,multilayer_data.bathy_location],top_surf_zoomed,'--k')
         plt.ylabel('m')
@@ -391,7 +393,7 @@ def add_velocities_profile_plot(plot_data,slice_value,direction='x',figno=130):
         plt.hold(True)
         plt.xlabel('')
         locs,labels = plt.xticks()
-        labels = ['' for i in xrange(len(locs))]
+        labels = ['' for i in range(len(locs))]
         plt.xticks(locs,labels)
         plt.plot([multilayer_data.bathy_location,multilayer_data.bathy_location],velocities_zoomed,'--k')
         plt.ylabel('m/s')

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import shutil
@@ -11,6 +13,7 @@ import numpy
 import nose
 
 import clawpack.geoclaw.dtopotools as dtopotools
+import six
 
 # Set local test directory to get local files
 testdir = os.path.dirname(__file__)
@@ -230,7 +233,7 @@ def test_dtopo_io():
 def test_geometry():
     r"""Test subfault geometry calculation."""
 
-    import old_dtopotools
+    from . import old_dtopotools
 
     subfault_path = os.path.join(testdir, 'data', 'alaska1964.csv')
     input_units = {"length":"km", "width":"km", "depth":"km", "slip":"m", 
@@ -272,7 +275,7 @@ def test_geometry():
 
                     }
 
-        for (values, coord_test) in coord_tests.iteritems():
+        for (values, coord_test) in six.iteritems(coord_tests):
             assert numpy.allclose(coord_test['test'], coord_test['computed']), \
                    "Specification = %s, coords= %s:\n%s !=\n%s" % (
                                                          specification, 
@@ -286,7 +289,7 @@ def test_vs_old_dtopo():
 
     raise nose.SkipTest("Skipping comparison with old tools.")
 
-    import old_dtopotools
+    from . import old_dtopotools
 
     temp_path = tempfile.mkdtemp()
     try:
@@ -371,7 +374,7 @@ def test_dynamic_tohoku(verbose=False, plot=False):
     for s in fault.subfaults:
         tmax = max(tmax, s.rupture_time + s.rise_time + s.rise_time_ending)
     if verbose:
-        print "rupture ends at time ",tmax
+        print("rupture ends at time ",tmax)
 
     times = numpy.linspace(0,tmax,10)
     dtopo = fault.create_dtopography(x,y,times,verbose=True)
@@ -421,7 +424,7 @@ def test_dynamic_tohoku(verbose=False, plot=False):
         shutil.rmtree(temp_path)
 
     if verbose:
-        print 'Created ',fname
+        print('Created ',fname)
 
 
 def test_subdivided_plane_fault(verbose=False, plot=False):
@@ -433,11 +436,11 @@ def test_subdivided_plane_fault(verbose=False, plot=False):
     fault_plane = fault.subfaults[0]
     Mo = fault_plane.Mo()
     if verbose:
-        print "original Mo = ",Mo
+        print("original Mo = ",Mo)
 
     fault2 = dtopotools.SubdividedPlaneFault(fault_plane, nstrike=5, ndip=3)
     if verbose:
-        print "new Mo = ",fault2.Mo()
+        print("new Mo = ",fault2.Mo())
     if plot:
         import matplotlib.pyplot as plt
         fault2.plot_subfaults(slip_color=True)
@@ -447,14 +450,14 @@ def test_subdivided_plane_fault(verbose=False, plot=False):
     fault2 = dtopotools.SubdividedPlaneFault(fault_plane, nstrike=5, ndip=3, 
             slip_function=slip_function, Mo=Mo)
     if verbose:
-        print "new Mo = ",fault2.Mo()
+        print("new Mo = ",fault2.Mo())
     if plot:
         fault2.plot_subfaults(slip_color=True)
         plt.show()
 
     fault2.subdivide(nstrike=20, ndip = 10, slip_function=slip_function, Mo=Mo)
     if verbose:
-        print "with finer resolution, Mo = ",fault2.Mo()
+        print("with finer resolution, Mo = ",fault2.Mo())
     if plot:
         fault2.plot_subfaults(slip_color=True)
         plt.show()
@@ -476,4 +479,4 @@ if __name__ == "__main__":
             test_geometry()
             test_vs_old_dtopo()
         except nose.SkipTest as e:
-            print e.message
+            print(e.message)

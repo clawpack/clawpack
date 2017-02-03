@@ -3,6 +3,7 @@
 Create fgmax_grid.txt input file
 """
 
+from __future__ import absolute_import
 from clawpack.geoclaw import fgmax_tools
 import os
 

@@ -23,6 +23,7 @@ module stommel_storm_module
 
     end type stommel_storm_type
 
+    logical, private :: module_setup = .false.
     logical, private, parameter :: DEBUG = .true.
 
 contains
@@ -42,24 +43,29 @@ contains
         ! Local storage
         integer, parameter :: unit = 701
 
-        ! Storm type does not work for lat-long coordinate systems
-        if (coordinate_system == 2) then
-            stop "Stommel storm type does not work on lat-long coordinates."
-        endif
+        if (.not.module_setup) then
 
-        ! Open data file
-        if (present(storm_data_path)) then
-            call opendatafile(unit,storm_data_path)
-        else
-            call opendatafile(unit,'storm.data')
-        endif
+            ! Storm type does not work for lat-long coordinate systems
+            if (coordinate_system == 2) then
+                stop "Stommel storm type does not work on lat-long coordinates."
+            endif
 
-        ! Read in hurricane parameters
-        read(unit,*) storm%A
+            ! Open data file
+            if (present(storm_data_path)) then
+                call opendatafile(unit,storm_data_path)
+            else
+                call opendatafile(unit,'storm.data')
+            endif
 
-        ! Output to log file
-        write(log_unit,*) "Storm Data - Stommel"
-        write(log_unit,"('Stormmel Wind Field Amplitude A =',d16.8)") storm%A
+            ! Read in hurricane parameters
+            read(unit,*) storm%A
+
+            ! Output to log file
+            write(log_unit,*) "Storm Data - Stommel"
+            write(log_unit,"('Stormmel Wind Field Amplitude A =',d16.8)") storm%A
+
+            module_setup = .true.
+        end if
 
     end subroutine set_stommel_storm
 

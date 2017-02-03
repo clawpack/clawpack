@@ -7,6 +7,7 @@ function setplot is called to set the plot parameters.
     
 """
 
+from __future__ import absolute_import
 article = False
 
 import os
@@ -43,7 +44,6 @@ import clawpack.amrclaw.data as amrclaw
 import clawpack.geoclaw.data as geodata
 
 import clawpack.geoclaw.surge.plot as surgeplot
-import clawpack.geoclaw.surge.data as surgedata
 
 try:
     from setplotfg import setplotfg
@@ -67,9 +67,16 @@ gauge_landfall.append(datetime.datetime(2008,9,13 - 1,7)
                                             - datetime.datetime(2008,1,1,0))
 gauge_landfall.append(days2seconds(4.25))
 
-def setplot(plotdata):
+#--------------------------
+def setplot(plotdata=None):
+#--------------------------
+
     r"""Setplot function for surge plotting"""
     
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
+
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
     plotdata.format = 'binary'
@@ -83,9 +90,9 @@ def setplot(plotdata):
     amrdata.read(os.path.join(plotdata.outdir,'amr.data'))
     physics = geodata.GeoClawData()
     physics.read(os.path.join(plotdata.outdir,'geoclaw.data'))
-    surge_data = surgedata.SurgeData()
+    surge_data = geodata.SurgeData()
     surge_data.read(os.path.join(plotdata.outdir,'surge.data'))
-    friction_data = surgedata.FrictionData()
+    friction_data = geodata.FrictionData()
     friction_data.read(os.path.join(plotdata.outdir,'friction.data'))
 
     # Load storm track
@@ -676,6 +683,7 @@ def setplot(plotdata):
         plotdata.latex_figsperline = 2           # layout of plots
         plotdata.latex_framesperline = 1         # layout of plots
         plotdata.latex_makepdf = False           # also run pdflatex?
+    plotdata.parallel = True                 # make multiple frame png's at once
 
     return plotdata
 

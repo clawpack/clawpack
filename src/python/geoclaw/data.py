@@ -22,6 +22,8 @@ Classes representing parameters for GeoClaw runs
  - LAT2METER factor to convert degrees in latitude to meters
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import numpy
 import clawpack.clawutil.data
@@ -256,7 +258,7 @@ class DTopoData(clawpack.clawutil.data.ClawData):
     def read(self, path, force=False):
         r"""Read a dtopography data file."""
 
-        print self.dtopofiles
+        print(self.dtopofiles)
 
         with open(os.path.abspath(path), 'r') as data_file:
 
@@ -349,6 +351,7 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         # Storm parameters
         self.add_attribute("storm_type",0) # Type of storm
         self.add_attribute("landfall",0.0)
+        self.add_attribute("display_landfall_time", False)
 
         # Storm type 1 - Read in file track
         self.add_attribute("storm_file",'./storm.data')
@@ -406,6 +409,8 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         
         self.data_write("storm_type",description='(Storm specification type)')
         self.data_write('landfall',description="(Landfall time of storm)")
+        self.data_write("display_landfall_time", description='(Display time relative to landfall)')
+
         self.data_write('storm_file',description="(Location of storm data)")
 
         if self.storm_type == 0 or self.storm_type == 1:
@@ -475,4 +480,49 @@ class FrictionData(clawpack.clawutil.data.ClawData):
             for friction_file in self.friction_files:
                 self._out_file.write("'%s' %s\n " % friction_file)
 
+        self.close_data_file()
+
+
+
+class MultilayerData(clawpack.clawutil.data.ClawData):
+    r"""
+    Multilayer SWE data object
+
+    """
+
+    def __init__(self):
+        super(MultilayerData, self).__init__()
+
+        # Physics parameters
+        self.add_attribute('num_layers',2)
+        self.add_attribute('rho',[1025.0,1028.0])
+        self.add_attribute('eta',[0.0,-200.0])
+        
+        # Algorithm parameters
+        self.add_attribute('eigen_method',4)
+        self.add_attribute('inundation_method',2)
+        self.add_attribute('check_richardson',True)
+        self.add_attribute('richardson_tolerance',0.95)
+
+        # Need to adjust refinement module for this, dry_limit is in geodata
+        self.add_attribute('wave_tolerance',[1e-1,2e-1])
+        self.add_attribute('dry_limit',False)
+    
+
+    def write(self,out_file='./multilayer.data',datasource="setrun.py"):
+        
+        self.open_data_file(out_file, datasource)
+        
+        self.data_write('num_layers', description='(Number of layers)')
+        self.data_write('rho',description='(Densities of layers)')
+        self.data_write('eta',description='(Initial top surface of each layer)')
+        self.data_write(None)
+        self.data_write('check_richardson',description="(Check Richardson number)")
+        self.data_write('richardson_tolerance',description='(Tolerance for Richardson number)')
+        self.data_write('eigen_method',description='(Method for calculating eigenspace)')
+        self.data_write('inundation_method',description='(Method for calculating inundation eigenspace)')
+        
+        # self.data_write('wave_tolerance',description='(Tolerance for wave height refinement)')
+        # self.data_write('dry_limit',description='(Turn off limiting when near a dry state)')
+        
         self.close_data_file()
