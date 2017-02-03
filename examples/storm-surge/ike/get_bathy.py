@@ -2,6 +2,7 @@
 
 """Simple implementation of a file fetcher"""
 
+from __future__ import absolute_import
 import sys
 import os
 import clawpack.clawutil.data

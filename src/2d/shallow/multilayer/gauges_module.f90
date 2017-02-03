@@ -25,6 +25,9 @@
 !     information in new module variables mbestg1, mbestg2.
 !   - print_gauges no longer uses binary search to locate first gauge handled
 !     by a grid.  Instead loop over gauges specified by mbestg1, mbestg2.
+!
+! Note: Updated for Clawpack 5.4.x
+!  - Add gauge formatting capabilities
 
 module gauges_module
 
@@ -34,92 +37,214 @@ module gauges_module
     logical, private :: module_setup = .false.
 
     integer, parameter :: OUTGAUGEUNIT=89
-    integer :: num_gauges, inum
-    real(kind=8), allocatable :: xgauge(:), ygauge(:), t1gauge(:), t2gauge(:)
+    integer :: num_gauges
+
+    integer, parameter :: MAX_BUFFER = 1000
+
+    ! Gauge data types
+    type gauge_type
+        ! Gauge number
+        integer :: gauge_num
+
+        character(len=14) :: file_name
+
+        ! Location in time and space
+        real(kind=8) :: x, y, t_start, t_end
+
+        ! Last time recorded
+        real(kind=8) :: last_time
+
+        ! Output settings
+        integer :: file_format
+        real(kind=8) :: min_time_increment
+        character(len=10) :: display_format
+        logical, allocatable :: q_out_vars(:)
+        logical, allocatable :: aux_out_vars(:)
+        integer :: num_out_vars
+
+        ! Data buffers - data holds output and time
+        real(kind=8), allocatable :: data(:, :)
+        integer :: level(MAX_BUFFER)
+
+        ! Where we are in the buffer
+        integer :: buffer_index
+    end type gauge_type
+
+    ! Gague array
+    type(gauge_type), allocatable :: gauges(:)
+
+    ! Gauge source info
     integer, allocatable, dimension(:) ::  mbestsrc, mbestorder, &
-                          igauge, mbestg1, mbestg2, nextLoc
-    
-!    integer, parameter :: MAXDATA=1
-    integer, parameter :: MAXDATA=1000
-    real(kind=8), pointer :: gaugeArray(:,:,:)
-    integer, pointer :: levelArray(:,:)
+                          igauge, mbestg1, mbestg2
 
 contains
 
-    subroutine set_gauges(restart, nvar, fname)
+    subroutine set_gauges(restart, num_eqn, num_aux, fname)
 
-        use amr_module
+        use amr_module, only: maxgr
+        use utility_module, only: get_value_count
+
         use multilayer_module, only: num_layers
 
         implicit none
 
         ! Input
-        character(len=*), intent(in), optional :: fname
         logical, intent(in) :: restart
-        integer, intent(in) :: nvar
+        integer :: num_eqn, num_aux
+        character(len=*), intent(in), optional :: fname
 
         ! Locals
-        integer :: i, ipos, idigit
-        integer, parameter :: iunit = 7
-        character(len=14) ::  fileName
+        integer :: i, n, index
+        integer :: num, pos, digit
+        integer, parameter :: UNIT = 7
+        character(len=128) :: header_1
+        character(len=32) :: q_column, aux_column, eta_column
 
         if (.not.module_setup) then
+
             ! Open file
             if (present(fname)) then
-                call opendatafile(iunit,fname)
+                call opendatafile(UNIT,fname)
             else
-                call opendatafile(iunit,'gauges.data')
+                call opendatafile(UNIT,'gauges.data')
             endif
 
-            read(iunit,*) num_gauges
-
-            allocate(xgauge(num_gauges), ygauge(num_gauges))
-            allocate(t1gauge(num_gauges), t2gauge(num_gauges))
-            allocate(mbestsrc(num_gauges), mbestorder(num_gauges))
-            allocate(igauge(num_gauges))
-            allocate(mbestg1(maxgr), mbestg2(maxgr))
-
-            allocate(nextLoc(num_gauges))
-            print *, 1 + num_layers, nvar, MAXDATA, num_gauges
-            allocate(gaugeArray(1 + num_layers + nvar, MAXDATA, num_gauges))
-            allocate(levelArray(MAXDATA, num_gauges))
+            read(UNIT,*) num_gauges
+            allocate(gauges(num_gauges))
             
+            ! Initialize gauge source data
+            allocate(mbestsrc(num_gauges), mbestorder(num_gauges))
+            allocate(mbestg1(maxgr), mbestg2(maxgr))
+            mbestsrc = 0
+
+            ! Original gauge information
             do i=1,num_gauges
-                read(iunit,*) igauge(i),xgauge(i),ygauge(i),t1gauge(i),t2gauge(i)
+                read(UNIT, *) gauges(i)%gauge_num, gauges(i)%x, gauges(i)%y, &
+                              gauges(i)%t_start, gauges(i)%t_end
+                gauges(i)%buffer_index = 1
+                gauges(i)%last_time = gauges(i)%t_start
             enddo
 
-            close(iunit)
-            
-            ! initialize for starters
-            mbestsrc = 0
-            nextLoc  = 1  ! next location to be filled with gauge info
+            ! Read in output formats
+            read(UNIT, *)
+            read(UNIT, *)
+            read(UNIT, *) (gauges(i)%file_format, i=1, num_gauges)
+            read(UNIT, *)
+            read(UNIT, *)
+            read(UNIT, *) (gauges(i)%display_format, i=1, num_gauges)
+            read(UNIT, *)
+            read(UNIT, *)
+            read(UNIT, *) (gauges(i)%min_time_increment, i=1, num_gauges)
 
+            ! Read in q fields
+            read(UNIT, *)
+            read(UNIT, *)
             do i = 1, num_gauges
-               fileName = 'gaugexxxxx.txt'    ! NB different name convention too
-               inum = igauge(i)
-               do ipos = 10,6,-1              ! do this to replace the xxxxx in the name
-                  idigit = mod(inum,10)
-                  fileName(ipos:ipos) = char(ichar('0') + idigit)
-                  inum = inum / 10
-               end do
+                allocate(gauges(i)%q_out_vars(num_eqn))
+                read(UNIT, *) gauges(i)%q_out_vars
 
-    !          status unknown since might be a restart run. maybe need to test and rewind?
-               if (restart) then
-                  open(unit=OUTGAUGEUNIT, file=fileName, status='old',        &
-                       position='append', form='formatted')
-               else
-                  open(unit=OUTGAUGEUNIT, file=fileName, status='unknown',        &
-                       position='append', form='formatted')
-                  rewind OUTGAUGEUNIT
-                  write(OUTGAUGEUNIT,100) igauge(i), xgauge(i), ygauge(i), 8
- 100              format("# gauge_id= ",i5," location=( ",1e15.7," ",1e15.7," ) num_eqn= ",i2)
-                  write(OUTGAUGEUNIT,101)
- 101              format("# Columns: level time h(1) hu(1) hv(1) eta(1) h(2) hu(2), hv(2) eta(2)")
-                endif
+                ! Count number of vars to be output
+                gauges(i)%num_out_vars = 0
+                do n = 1, size(gauges(i)%q_out_vars, 1)
+                    if (gauges(i)%q_out_vars(n)) then
+                        gauges(i)%num_out_vars = gauges(i)%num_out_vars + 1
+                    end if
+                end do
+            end do
 
-                close(OUTGAUGEUNIT)
+            ! Read in aux fields (num_aux > 0 for geoclaw)
+            read(UNIT, *)
+            read(UNIT, *)
+            do i = 1, num_gauges
+                allocate(gauges(i)%aux_out_vars(num_aux))
+                read(UNIT, *) gauges(i)%aux_out_vars
+
+                ! Count number of vars to be output
+                do n = 1, size(gauges(i)%aux_out_vars, 1)
+                    if (gauges(i)%aux_out_vars(n)) then
+                        gauges(i)%num_out_vars = gauges(i)%num_out_vars + 1
+                    end if
+                end do
+            end do
+
+            ! Count eta as one of the out vars
+            gauges(:)%num_out_vars = gauges(:)%num_out_vars + num_layers
+
+            close(UNIT)
+            ! Done reading =====================================================
+
+            ! Allocate data buffer - Note extra var out due to eta
+            do i = 1, num_gauges
+                allocate(gauges(i)%data(gauges(i)%num_out_vars + 2, MAX_BUFFER))
+            end do
+
+            ! Create gauge output files
+            do i = 1, num_gauges
+                gauges(i)%file_name = 'gaugexxxxx.txt'
+                num = gauges(i)%gauge_num
+                do pos = 10, 6, -1
+                    digit = mod(num,10)
+                    gauges(i)%file_name(pos:pos) = char(ichar('0') + digit)
+                    num = num / 10
+                end do
+
+                ! Handle restart
+                if (restart) then
+                    open(unit=OUTGAUGEUNIT, file=gauges(i)%file_name,       &
+                         status='old', position='append', form='formatted')
+                else
+                    open(unit=OUTGAUGEUNIT, file=gauges(i)%file_name,       &
+                         status='unknown', position='append', form='formatted')
+                    rewind OUTGAUGEUNIT
+
+                    ! Write header
+                    header_1 = "('# gauge_id= ',i5,' " //                   &
+                               "location=( ',1e15.7,' ',1e15.7,' ) " //     &
+                               "num_var= ',i2)"
+                    write(OUTGAUGEUNIT, header_1) gauges(i)%gauge_num,      &
+                                                  gauges(i)%x,              &
+                                                  gauges(i)%y,              &
+                                                  gauges(i)%num_out_vars
+
+                    ! Construct column labels
+                    index = 0
+                    q_column = "["
+                    do n=1, size(gauges(i)%q_out_vars, 1)
+                        if (gauges(i)%q_out_vars(n)) then
+                            write(q_column(3 * index + 2:4 + 3 * index), "(i3)") n
+                            index = index + 1
+                        end if
+                    end do
+                    q_column(3 * index + 2:4 + 3 * index) = "],"
+
+                    ! Add eta
+                    index = 0
+                    eta_column = "["
+                    do n=1, num_layers
+                        write(eta_column(3 * index + 2:4 + 3 * index), "(i3)") n
+                        index = index + 1
+                    end do
+                    eta_column(3 * index + 2:4 + 3 * index) = "],"
+
+                    aux_column = "["
+                    index = 0
+                    do n=1, size(gauges(i)%aux_out_vars, 1)
+                        if (gauges(i)%aux_out_vars(n)) then
+                            write(aux_column(3 * index + 2:4 + 3 * index), "(i3)") n
+                            index = index + 1
+                        end if  
+                    end do
+                    aux_column(3 * index + 2:4 + 3 * index) = "]"
+
+                    write(OUTGAUGEUNIT, *) "# level, time, q", trim(q_column), &
+                                                      " eta", trim(eta_column),&
+                                                      " aux", trim(aux_column)
+               endif
+
+               close(OUTGAUGEUNIT)
 
             end do
+
             module_setup = .true.
         end if
 
@@ -129,7 +254,7 @@ contains
 !
 ! --------------------------------------------------------------------
 !
-      subroutine setbestsrc()
+    subroutine setbestsrc()
 !
 !     Called every time grids change, to set the best source grid patch
 !     for each gauge, i.e. the finest level patch that includes the gauge.
@@ -138,10 +263,10 @@ contains
 !     grid may have disappeared, we still have to look starting
 !     at coarsest level 1.
 !
-      use amr_module
-      implicit none
+        use amr_module
+        implicit none
 
-      integer :: lev, mptr, i, k1, ki
+        integer :: lev, mptr, i, k1, ki
 
 !
 ! ##  set source grid for each loc from coarsest level to finest.
@@ -149,34 +274,32 @@ contains
 ! ##  this code uses fact that grids do not overlap
 
 ! # for debugging, initialize sources to 0 then check that all set
-      do i = 1, num_gauges
-         mbestsrc(i) = 0
-      end do
+        mbestsrc = 0
 
- 
-      do 20 lev = 1, lfine  
-          mptr = lstart(lev)
- 5        do 10 i = 1, num_gauges
-            if ((xgauge(i) .ge. rnode(cornxlo,mptr)) .and. &
-                (xgauge(i) .le. rnode(cornxhi,mptr)) .and. &  
-                (ygauge(i) .ge. rnode(cornylo,mptr)) .and. &
-                (ygauge(i) .le. rnode(cornyhi,mptr)) ) then
-               mbestsrc(i) = mptr
-            endif
- 10       continue
-
-          mptr = node(levelptr, mptr)
-          if (mptr .ne. 0) go to 5
- 20   continue
+        do lev = 1, lfine  
+            mptr = lstart(lev)
+            do
+                do i = 1, num_gauges
+                    if ((gauges(i)%x >= rnode(cornxlo,mptr)) .and. &
+                        (gauges(i)%x <= rnode(cornxhi,mptr)) .and. &  
+                        (gauges(i)%y >= rnode(cornylo,mptr)) .and. &
+                        (gauges(i)%y <= rnode(cornyhi,mptr)) ) then
+                        mbestsrc(i) = mptr
+                    end if
+                end do
+                mptr = node(levelptr, mptr)
+                if (mptr == 0) exit
+            end do 
+        end do
 
 
-      do i = 1, num_gauges
-        if (mbestsrc(i) .eq. 0) &
-            write(6,*)"ERROR in setting grid src for gauge data",i
-      end do
+        do i = 1, num_gauges
+          if (mbestsrc(i) .eq. 0) &
+              print *, "ERROR in setting grid src for gauge data", i
+        end do
 
-!     Sort the source arrays for easy testing during integration
-      call qsorti(mbestorder,num_gauges,mbestsrc)
+        ! Sort the source arrays for easy testing during integration
+        call qsorti(mbestorder,num_gauges,mbestsrc)
 
 !     After sorting,  
 !           mbestsrc(mbestorder(i)) = grid index to be used for gauge i
@@ -191,267 +314,368 @@ contains
 !     This will be used for looping in print_gauges subroutine.
 
       ! initialize arrays to default indicating grids that contain no gauges:
-      mbestg1 = 0
-      mbestg2 = 0
+        mbestg1 = 0
+        mbestg2 = 0
 
-      k1 = 0
-      do i=1,num_gauges
-          ki = mbestsrc(mbestorder(i))
-          if (ki > k1) then
-              ! new grid number seen for first time in list
-              if (k1 > 0) then
-                  ! mark end of gauges seen by previous grid
-                  mbestg2(k1) = i-1
-!                 write(6,*) '+++ k1, mbestg2(k1): ',k1,mbestg2(k1)
-                  endif
-              mbestg1(ki) = i
-!             write(6,*) '+++ ki, mbestg1(ki): ',ki,mbestg1(ki)
-              endif
-          k1 = ki
-          enddo
-      if (num_gauges > 0) then
-          ! finalize 
-          mbestg2(ki) = num_gauges
-!         write(6,*) '+++ ki, mbestg2(ki): ',ki,mbestg2(ki)
-          endif
-
-
+        k1 = 0
+        do i=1,num_gauges
+            ki = mbestsrc(mbestorder(i))
+            if (ki > k1) then
+                ! new grid number seen for first time in list
+                if (k1 > 0) then
+                    ! mark end of gauges seen by previous grid
+                    mbestg2(k1) = i-1
+!                     write(6,*) '+++ k1, mbestg2(k1): ',k1,mbestg2(k1)
+                endif
+                mbestg1(ki) = i
+!               write(6,*) '+++ ki, mbestg1(ki): ',ki,mbestg1(ki)
+            endif
+           k1 = ki
+        enddo
+        if (num_gauges > 0) then
+            ! finalize 
+            mbestg2(ki) = num_gauges
+!           write(6,*) '+++ ki, mbestg2(ki): ',ki,mbestg2(ki)
+        endif
     end subroutine setbestsrc
+
 
     ! ==========================================================================
 
-    subroutine update_gauges(q,aux,xlow,ylow,nvar,mitot,mjtot,naux,mptr)
+    subroutine update_gauges(q, aux, xlow, ylow, num_eqn, mitot, mjtot, num_aux, &
+                             mptr)
+!
+!     This routine is called each time step for each grid patch, to output
+!     gauge values for all gauges for which this patch is the best one to 
+!     use (i.e. at the finest refinement level).  
 
-        ! This routine is called each time step for each grid patch, to output
-        ! gauge values for all gauges for which this patch is the best one to
-        ! use (i.e. at the finest refinement level).
-        
-        ! It is called after ghost cells have been filled from adjacent grids
-        ! at the same level, so bilinear interpolation can be used to to
-        ! compute values at any gauge location that is covered by this grid.
-        
-        ! The grid patch is designated by mptr. We only want to set gauges i
-        ! for which mbestsrc(i) == mptr. The array mbestsrc is reset after
-        ! each regridding to indicate which grid patch is best to use for each
-        ! gauge.
-        
-        ! This is a refactoring of dumpgauge.f from Clawpack 5.2 Loops over
-        ! only the gauges to be handled by this grid, as specified by indices
-        ! from mbestg1(mptr) to mbestg2(mptr)
-        
-        use amr_module
-        use multilayer_module, only: num_layers, dry_tolerance, rho
-        
+!     It is called after ghost cells have been filled from adjacent grids
+!     at the same level, so bilinear interpolation can be used to 
+!     to compute values at any gauge location that is covered by this grid.  
+
+!     The grid patch is designated by mptr.
+!     We only want to set gauges i for which mbestsrc(i) == mptr.
+!     The array mbestsrc is reset after each regridding to indicate which
+!     grid patch is best to use for each gauge.
+
+!     This is a refactoring of dumpgauge.f from Clawpack 5.2 
+!     Loops over only the gauges to be handled by this grid, as specified
+!     by indices from mbestg1(mptr) to mbestg2(mptr)
+
+        use amr_module, only: nestlevel, nghost, timemult, rnode, node, maxvar
+        use amr_module, only: hxposs, hyposs
+
+        use multilayer_module, only: num_layers, dry_tolerance, rho, eta_init
+
         implicit none
-        
-        integer, intent(in) ::  nvar,mitot,mjtot,naux,mptr
-        real(kind=8), intent(in) ::  q(nvar,mitot,mjtot)
-        real(kind=8), intent(in) ::  aux(naux,mitot,mjtot)
-        real(kind=8), intent(in) ::  xlow,ylow
-        
-        ! local variables:
-        real(kind=8) :: var(maxvar)
-        real(kind=8) :: xcent,ycent,xoff,yoff,tgrid,hx,hy
-        integer :: level,i,j,iindex,jindex,ivar, ii,i1,i2
-        real(kind=8) :: drytol2, topo
-        integer :: icell,jcell, index
-        integer :: m, k, layer_index
-        real(kind=8) :: eta(num_layers), h(num_layers, 4)
 
+        ! Input
+        integer, intent(in) ::  num_eqn, mitot, mjtot, num_aux, mptr
+        real(kind=8), intent(in) :: q(num_eqn, mitot, mjtot)
+        real(kind=8), intent(in) :: aux(num_aux, mitot, mjtot)
+        real(kind=8), intent(in) :: xlow, ylow
+
+        ! Locals
+        real(kind=8) :: var(maxvar * 2)
+        real(kind=8) :: xcent, ycent, xoff, yoff, tgrid, hx, hy
+        integer :: level, i1, i2, icell, jcell, ii, iindex, jindex
+        integer :: i, j, n, m, k, var_index, layer_index, eta_index
+        real(kind=8) :: h(4), mod_dry_tolerance, topo
+        real(kind=8) :: h_interp(num_layers), eta(num_layers)
+        logical :: dry_state
+
+        ! No gauges to record, exit
         if (num_gauges == 0) then
-           return
+            return
         endif
+
         i1 = mbestg1(mptr)
         i2 = mbestg2(mptr)
+
         if (i1 == 0) then
-           ! no gauges to be handled by this grid
-           return
+            ! no gauges to be handled by this grid
+            return
         endif
 
-        ! this stuff the same for all gauges on this grid
-        tgrid = rnode(timemult,mptr)
-        level = node(nestlevel,mptr)
-        hx    =  hxposs(level)
-        hy    =  hyposs(level)
+        ! Grid info
+        tgrid = rnode(timemult, mptr)
+        level = node(nestlevel, mptr)
+        hx = hxposs(level)
+        hy = hyposs(level)
 
-        do i = i1,i2
+        ! Main Gauge Loop ======================================================
+        do i = i1, i2
             ii = mbestorder(i)
-            if (mptr .ne. mbestsrc(ii)) then !!! go to 10  ! this patch not used
+            if (mptr /= mbestsrc(ii)) then
                 print *, '*** should not happen... i, ii, mbestsrc(ii), mptr:'
                 print *, i, ii, mbestsrc(ii), mptr
                 stop
-            end if
-            if (tgrid < t1gauge(ii) .or. tgrid > t2gauge(ii)) then
-                ! don't output at this time for gauge i
+            endif
+            if (tgrid < gauges(ii)%t_start .or. tgrid > gauges(ii)%t_end) then
+               cycle
+            endif
+            ! Minimum increment
+            ! TODO Maybe always allow last time output recording?
+            if (tgrid - gauges(ii)%last_time < gauges(ii)%min_time_increment) then
                 cycle
             end if
-    !
-    !    ## if we did not skip to line 10, we need to output gauge i:
-    !    ## prepare to do bilinear interp at gauge location to get vars
-    !
-    !    *** Note: changed 0.5 to  0.5d0 etc. ****************************
-    !
-            iindex =  int(.5d0 + (xgauge(ii)-xlow)/hx)
-            jindex =  int(.5d0 + (ygauge(ii)-ylow)/hy)
-            if ((iindex .lt. nghost .or. iindex .gt. mitot-nghost) .or. &
-                (jindex .lt. nghost .or. jindex .gt. mjtot-nghost)) &
-              write(*,*)"ERROR in output of Gauge Data "
-            xcent  = xlow + (iindex-.5d0)*hx
-            ycent  = ylow + (jindex-.5d0)*hy
-            xoff   = (xgauge(ii)-xcent)/hx
-            yoff   = (ygauge(ii)-ycent)/hy
-    !  IF WANT TO USE, MODIFY TO TEST FOR ROUNDOFF LEVEL DIFF
-    !       if (xoff .lt. 0.d0 .or. xoff .gt. 1.d0 .or. &
-    !           yoff .lt. 0.d0 .or. yoff .gt. 1.d0) then
-    !          write(6,*)" BIG PROBLEM in DUMPGAUGE", i
-    !       endif
 
-         ! ## Modified below from amrclaw/src/2d/gauges_module.f90 
-         ! ## to interpolate only where all four cells are
-         ! ## wet, otherwise just take this cell value:
+            ! Compute indexing and bilinear interpolant weights
+            ! Note: changed 0.5 to  0.5d0 etc.
+            iindex =  int(.5d0 + (gauges(ii)%x - xlow) / hx)
+            jindex =  int(.5d0 + (gauges(ii)%y - ylow) / hy)
+            if ((iindex < nghost .or. iindex > mitot-nghost) .or. &
+                (jindex < nghost .or. jindex > mjtot-nghost)) then
+                    print *, "ERROR in output of Gauge Data "
+            end if
+            xcent  = xlow + (iindex - 0.5d0) * hx
+            ycent  = ylow + (jindex - 0.5d0) * hy
+            xoff   = (gauges(ii)%x - xcent) / hx
+            yoff   = (gauges(ii)%y - ycent) / hy
 
-         ! Check for dry cells by comparing h to drytol2, which should be smaller
-         ! than drytolerance to avoid oscillations since when h < drytolerance the
-         ! velocities are zeroed out which can then lead to increase in h again.
+            ! Gauge interpolation seems to work, so error test is commented out.
+            ! For debugging, use the code below...
+            !   Note: we expect 0 <= xoff, yoff <= 1 but if gauge is exactly 
+            !   at center of cell these might be off by rounding error
+
+            !if (xoff .lt. -1.d-4 .or. xoff .gt. 1.0001d0 .or. &
+            !    yoff .lt. -1.d-4 .or. yoff .gt. 1.0001d0) then
+            !   write(6,*) "*** print_gauges: Interpolation problem at gauge ",&
+            !               igauge(ii)
+            !   write(6,*) "    xoff,yoff: ", xoff,yoff
+            !endif
+
+
+            ! Modified below from amrclaw/src/2d/gauges_module.f90 
+            ! to interpolate only where all four cells are
+            ! wet, otherwise just take this cell value:
+
+            ! Check for dry cells by comparing h to mod_dry_tolerance, which 
+            ! should be smaller than drytolerance to avoid oscillations since  
+            ! when h < drytolerance the velocities are zeroed out which can then 
+            ! lead to increase in h again.
+
+            ! Layer Loop =======================================================
+            dry_state = .false.
+            
+            ! Count for number of variables written to var
+            var_index = 0
 
             do m = 1, num_layers
                 layer_index = 3 * (m - 1)
-                drytol2 = 0.1d0 * dry_tolerance(m)
+                mod_dry_tolerance = 0.1d0 * dry_tolerance(m)
 
-                h(m, 1) = q(1,iindex,jindex) / rho(m)
-                h(m, 2) = q(1,iindex+1,jindex) / rho(m)
-                h(m, 3) = q(1,iindex,jindex+1) / rho(m)
-                h(m, 4) = q(1,iindex+1,jindex+1) / rho(m)
+                h(1) = q(layer_index + 1, iindex, jindex) / rho(m)
+                h(2) = q(layer_index + 1, iindex + 1, jindex) / rho(m)
+                h(3) = q(layer_index + 1, iindex, jindex + 1) / rho(m)
+                h(4) = q(layer_index + 1, iindex + 1, jindex + 1) / rho(m)
             
-                if ((h(m, 1) < drytol2) .or.  &
-                    (h(m, 2) < drytol2) .or.  &
-                    (h(m, 3) < drytol2) .or.  &
-                    (h(m, 4) < drytol2)) then
+
+                if ((h(1) < mod_dry_tolerance) .or.  &
+                    (h(2) < mod_dry_tolerance) .or.  &
+                    (h(3) < mod_dry_tolerance) .or.  &
+                    (h(4) < mod_dry_tolerance)) then
+
                     ! One of the cells is dry, so just use value from grid cell
                     ! that contains gauge rather than interpolating
                     
-                    icell = int(1.d0 + (xgauge(ii) - xlow) / hx)
-                    jcell = int(1.d0 + (ygauge(ii) - ylow) / hy)
-                    do ivar=1,3
-                        var(ivar + layer_index) =                    &
-                                    q(ivar + layer_index, icell, jcell) / rho(m)
-                    enddo
-                    ! This is the bottom layer and we should figure out the
-                    ! topography
-                    if (m == num_layers) then
-                        topo = aux(1, icell, jcell)
-                    end if
+                    dry_state = .true.
+
+                    icell = int(1.d0 + (gauges(ii)%x - xlow) / hx)
+                    jcell = int(1.d0 + (gauges(ii)%y - ylow) / hy)
+
+                    ! Note here that we are directly assuming the number of
+                    ! layer variables, handle other q variables below outside of
+                    ! the layer loop
+                    do n = layer_index + 1, layer_index + 3
+                        if (gauges(ii)%q_out_vars(n)) then
+                            var_index = var_index + 1
+                            var(var_index) = q(n, icell, jcell) / rho(m)
+                        end if
+                    end do
+
+                    h_interp(m) = q(layer_index + 1, icell, jcell)
                 else
                     ! Linear interpolation between four cells
-                    do ivar=1,3
-                        var(ivar + layer_index) = &
-                           (1.d0 - xoff) * (1.d0 - yoff) * q(ivar + layer_index,     iindex,     jindex) / rho(m)  &
-                         + (       xoff) * (1.d0 - yoff) * q(ivar + layer_index, 1 + iindex,     jindex) / rho(m)  &
-                         + (1.d0 - xoff) * (       yoff) * q(ivar + layer_index,     iindex, 1 + jindex) / rho(m)  &
-                         + (       xoff) * (       yoff) * q(ivar + layer_index, 1 + iindex, 1 + jindex) / rho(m)
+                    do n = layer_index + 1, layer_index + 3
+                        if (gauges(ii)%q_out_vars(n)) then
+                            var_index = var_index + 1
+                            var(var_index) = &
+                                    (1.d0 - xoff) * (1.d0 - yoff) * q(n,     iindex,     jindex) / rho(m)  &
+                                  + (       xoff) * (1.d0 - yoff) * q(n, 1 + iindex,     jindex) / rho(m)  &
+                                  + (1.d0 - xoff) * (       yoff) * q(n,     iindex, 1 + jindex) / rho(m)  &
+                                  + (       xoff) * (       yoff) * q(n, 1 + iindex, 1 + jindex) / rho(m)
+                        end if
                     enddo
-                    topo = (1.d0 - xoff) * (1.d0 - yoff) * aux(1,     iindex,     jindex)  &
-                         + (       xoff) * (1.d0 - yoff) * aux(1, 1 + iindex,     jindex)  &
-                         + (1.d0 - xoff) * (       yoff) * aux(1,     iindex, 1 + jindex)  &
-                         + (       xoff) * (       yoff) * aux(1, 1 + iindex, 1 + jindex)
+                    
+                    ! Explicitly do depth in case the depth is not computed above
+                    ! Here we depart from the single-layer case as we would
+                    ! otherwise need to compute exactly where the h might have 
+                    ! been stored
+                    h_interp(m) = &
+                                (1.d0 - xoff) * (1.d0 - yoff) * q(layer_index + 1,     iindex,     jindex) / rho(m)  &
+                              + (       xoff) * (1.d0 - yoff) * q(layer_index + 1, 1 + iindex,     jindex) / rho(m)  &
+                              + (1.d0 - xoff) * (       yoff) * q(layer_index + 1,     iindex, 1 + jindex) / rho(m)  &
+                              + (       xoff) * (       yoff) * q(layer_index + 1, 1 + iindex, 1 + jindex) / rho(m)
                 endif
-            end do
+            end do  ! End of layer loop ========================================
 
-            ! Extract surfaces
-            eta(num_layers) = var(3 * num_layers - 2) + topo
-            do k = num_layers - 1, 1, -1
-                eta(k) = var(3 * k - 2) + eta(k + 1)
-                if (abs(eta(k)) < 1d-90) eta(k) = 0.d0
-            end do
+            ! Handle the rest of the fields
+            if (dry_state) then
+
+                ! Compute rest of q fields
+                do n = 3 * num_layers + 1, size(gauges(ii)%q_out_vars, 1)
+                    if (gauges(ii)%q_out_vars(n)) then
+                        var(var_index) = 0.0
+                    end if
+                end do
+
+                ! Skip over eta spots
+                eta_index = var_index
+                var_index = var_index + num_layers
+
+                ! Compute aux fields
+                do n=1, size(gauges(ii)%aux_out_vars, 1)
+                    if (gauges(ii)%aux_out_vars(n)) then
+                        var_index = var_index + 1
+                        var(var_index) = aux(n, icell , jcell)
+                    end if
+                end do
+                
+                ! Topography
+                topo = aux(1, icell, jcell)
+
+            else
+
+                ! Compute rest of q fields
+                do n = 3 * num_layers + 1, size(gauges(ii)%q_out_vars, 1)
+                    if (gauges(ii)%q_out_vars(n)) then
+                        var_index = var_index + 1
+                        var(var_index) = &
+                                (1.d0 - xoff) * (1.d0 - yoff) * q(n,     iindex,     jindex)  &
+                              + (       xoff) * (1.d0 - yoff) * q(n, 1 + iindex,     jindex)  &
+                              + (1.d0 - xoff) * (       yoff) * q(n,     iindex, 1 + jindex)  &
+                              + (       xoff) * (       yoff) * q(n, 1 + iindex, 1 + jindex)
+                    end if
+                end do
+
+                ! Skip eta spots
+                eta_index = var_index
+                var_index = var_index + num_layers
+
+                do n = 1, size(gauges(ii)%aux_out_vars, 1)
+                    if (gauges(ii)%aux_out_vars(n)) then
+                        var_index = var_index + 1
+                        var(var_index) = &
+                                (1.d0 - xoff) * (1.d0 - yoff) * aux(n,     iindex,     jindex)  &
+                              + (       xoff) * (1.d0 - yoff) * aux(n, 1 + iindex,     jindex)  &
+                              + (1.d0 - xoff) * (       yoff) * aux(n,     iindex, 1 + jindex)  &
+                              + (       xoff) * (       yoff) * aux(n, 1 + iindex, 1 + jindex)
+                    end if
+                enddo
+                    
+                topo = (1.d0 - xoff) * (1.d0 - yoff) * aux(1,     iindex,     jindex)  &
+                     + (       xoff) * (1.d0 - yoff) * aux(1, 1 + iindex,     jindex)  &
+                     + (1.d0 - xoff) * (       yoff) * aux(1,     iindex, 1 + jindex)  &
+                     + (       xoff) * (       yoff) * aux(1, 1 + iindex, 1 + jindex)
+
+            end if
+
+            ! Check to make sure we grabbed all the values
+            if (gauges(ii)%num_out_vars /= var_index) then
+                print *, gauges(ii)%num_out_vars, var_index
+                print *, gauges(ii)%q_out_vars
+                print *, gauges(ii)%aux_out_vars
+                stop "Somehow we did not grab all the values we wanted..."
+            end if
 
             ! Zero out tiny values to prevent later problems reading data,
             ! as done in valout.f
-            do j = 1,3 * num_layers
+            do j = 1, gauges(ii)%num_out_vars
                if (abs(var(j)) < 1d-90) var(j) = 0.d0
             end do
-       
+    
+            ! Extract surfaces - Note that we do this after the zeroing to
+            ! preserve etas that are non-zero
+            eta(num_layers) = h_interp(num_layers) + topo
+            if (abs(eta(num_layers) - eta_init(num_layers)) < 1d-90) then
+                eta(num_layers) = eta_init(num_layers)
+            end if
+            var(eta_index + num_layers) = eta(num_layers)
+            do k = num_layers - 1, 1, -1
+                eta(k) = h_interp(k) + eta(k + 1)
+                if (abs(eta(k) - eta_init(k)) < 1d-90) eta(k) = eta_init(k)
+                var(eta_index + k) = eta(k)
+            end do
+
             ! save info for this time 
-            index = nextLoc(ii)
+            n = gauges(ii)%buffer_index
      
-            levelArray(index,ii) = level
-            gaugeArray(1,index,ii) = tgrid
-            gaugeArray(2,index,ii) = var(1)
-            gaugeArray(3,index,ii) = var(2)
-            gaugeArray(4,index,ii) = var(3)
-            gaugeArray(5,index,ii) = eta(1)
-            gaugeArray(6,index,ii) = var(4)
-            gaugeArray(7,index,ii) = var(5)
-            gaugeArray(8,index,ii) = var(6)
-            gaugeArray(9,index,ii) = eta(2)
+            gauges(ii)%level(n) = level
+            gauges(ii)%data(1,n) = tgrid
+            do j = 1, gauges(ii)%num_out_vars
+                gauges(ii)%data(1 + j, n) = var(j)
+            end do
             
-            nextLoc(ii) = nextLoc(ii) + 1
-            if (nextLoc(ii) .gt. MAXDATA) then
-              call print_gauges_and_reset_nextLoc(ii, nvar)  
+            gauges(ii)%buffer_index = n + 1
+            if (gauges(ii)%buffer_index > MAX_BUFFER) then
+                call print_gauges_and_reset_nextLoc(ii)
             endif
 
-        enddo ! End of gauge loop
+            gauges(ii)%last_time = tgrid
+
+        end do ! End of gauge loop =============================================
  
     end subroutine update_gauges
-
-    ! ==========================================================================
-
-    subroutine print_gauges_and_reset_nextLoc(gaugeNum, nvar)
-    !
-    ! Array of gauge data for this gauge reached max capacity
-    ! print to file.
-
-        use multilayer_module, only: num_layers
+!
+! -------------------------------------------------------------------------
+! Write out gauge data for the gauge specified
+!
+    subroutine print_gauges_and_reset_nextLoc(gauge_num)
 
         implicit none
-      
+
+        ! Input
+        integer, intent(in) :: gauge_num
+
         ! Locals
-        integer :: gaugeNum, j, inum, k, idigit, ipos, myunit, nvar
-        character(len=14) :: fileName
-        integer :: mythread, num_values
-        integer :: omp_get_thread_num
-        character(len=15), parameter :: GAUGE_OUTPUT_FORMAT = "(i5.2, 10e15.7)"
-        ! open file for gauge gaugeNum, figure out name
-        ! not writing gauge number since it is in file name now
-        ! status is old, since file name and info written for
-        ! each file in in set_gauges.
-        !
-        ! NB: output written in different order, losing backward compatibility
+        integer :: j, k, myunit
+        integer :: omp_get_thread_num, mythread
+        character(len=32) :: out_format
 
-        ! Construct file name
-        fileName = 'gaugexxxxx.txt'
-        inum = igauge(gaugeNum)
-        do ipos = 10, 6, -1           ! do this to replace the xxxxx in the name
-            idigit = mod(inum, 10)
-            fileName(ipos:ipos) = char(ichar('0') + idigit)
-            inum = inum / 10
-        end do
-
-
+        ! Open unit dependent on thread number
         mythread = 0
-        ! Following line indexes the thread number and determines a output unit
-        ! based on this number, if 
 !$      mythread = omp_get_thread_num()
         myunit = OUTGAUGEUNIT + mythread
 
-        ! add thread number of outgaugeunit to make a unique unit number.
-        ! ok since writing to a unique file. in serial, still using only 
-        ! IOUTGAUGEUNIT
-        open(unit=myunit, file=fileName, status='old',    &
-             position='append', form='formatted')
-        
-        ! called either because array is full (write MAXDATA amount of gauge 
-        ! data) or checkpoint time, so write whatever is in array and reset.
-        ! nextLoc has already been increment before this subr. called
-        num_values = 1 + nvar + num_layers
-        do j = 1, nextLoc(gaugeNum)-1
-            write(myunit, GAUGE_OUTPUT_FORMAT) levelArray(j,gaugeNum),    &
-                                  (gaugeArray(k, j, gaugeNum), k=1, num_values)
-        end do
-        nextLoc(gaugeNum) = 1                        
-  
-        ! close file
-        close(myunit)
-  
-    end subroutine print_gauges_and_reset_nextLoc
+        ! ASCII output
+        if (gauges(gauge_num)%file_format == 1) then
+            ! Construct output format based on number of output variables and
+            ! request format
+            write(out_format, "(A7, i2, A6, A1)") "(i5.2,",                    &
+                                        gauges(gauge_num)%num_out_vars + 1,    &
+                                        gauges(gauge_num)%display_format, ")"
+
+            open(unit=myunit, file=gauges(gauge_num)%file_name, status='old', &
+                              position='append', form='formatted')
+          
+            ! Loop through gauge's buffer writing out all available data.  Also
+            ! reset buffer_index back to beginning of buffer since we are emptying
+            ! the buffer here
+            do j = 1, gauges(gauge_num)%buffer_index - 1
+                write(myunit, out_format) gauges(gauge_num)%level(j),    &
+                    (gauges(gauge_num)%data(k, j), k=1,                  &
+                                             gauges(gauge_num)%num_out_vars + 1)
+            end do
+            gauges(gauge_num)%buffer_index = 1                        
+
+            ! close file
+            close(myunit)
+        else
+            print *, "Unhandled file format ", gauges(gauge_num)%file_format
+            stop
+        end if
+
+      end subroutine print_gauges_and_reset_nextLoc
   
 end module gauges_module

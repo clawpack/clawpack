@@ -12,11 +12,12 @@
 !
 subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                   mjc, xleft, xright, ybot, ytop, nvar, mptr, ilo, ihi, &
-                  jlo, jhi, aux, naux,  sp_over_h, thisSetauxTime)
+                  jlo, jhi, aux, naux,  sp_over_h )
 
     use amr_module, only: xlower, ylower, intratx, intraty, nghost, xperdom
     use amr_module, only: yperdom, spheredom, xupper, yupper, alloc
     use amr_module, only: outunit, NEEDS_TO_BE_SET
+    use amr_module, only: newstl, iregsz, jregsz
 
     use topo_module, only: aux_finalized
     use geoclaw_module, only: dry_tolerance, sea_level
@@ -33,7 +34,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     ! Output
     real(kind=8), intent(in out) :: sp_over_h
     real(kind=8), intent(in out) :: val(nvar,mitot,mjtot), aux(naux,mitot,mjtot)
-    integer, intent (out) ::  thisSetauxTime
 
     ! Local storage
     integer :: refinement_ratio_x, refinement_ratio_y, iclo, jclo, ichi, jchi, ng, i, ico, ifine
@@ -45,13 +45,19 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     logical :: fineflag(3)
     real(kind=8) :: fliparray((mitot+mjtot)*(nvar+naux))
     real(kind=8) :: aux2(naux,mitot,mjtot)
-    integer :: clock_start, clock_finish, clock_rate
     integer :: nx, ny
     real(kind=8) setflags(mitot,mjtot),maxauxdif
+    integer :: jm, im, nm
+    logical :: sticksoutxfine, sticksoutyfine,sticksoutxcrse,sticksoutycrse
+    logical :: DIAGONAL_CORNER
 
     ! External function definitions
     real(kind=8) :: get_max_speed
 
+    DIAGONAL_CORNER(im,jm,mic,mjc) = (im .eq. 1   .and. jm .eq. mjc)  .or.     &
+                                      (im .eq. mic .and. jm .eq. mjc) .or.     &
+                                      (im .eq. 1   .and. jm .eq. 1)    .or.     &
+                                      (im .eq. mic .and. jm .eq. 1)
 
     refinement_ratio_x = intratx(level-1)
     refinement_ratio_y = intraty(level-1)
@@ -74,16 +80,23 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     jchi   = (jhi + 1) / refinement_ratio_y - 1 + 1
     ng     = 0
 
+
+    sticksoutxfine = ( (ilo .lt. 0) .or. (ihi .ge. iregsz(level)))
+    sticksoutyfine = ( (jlo .lt. 0) .or. (jhi .ge. jregsz(level)))
+    sticksoutxcrse = ((iclo .lt. 0) .or. (ichi .ge. iregsz(level-1)))
+    sticksoutycrse = ((jclo .lt. 0) .or. (jchi .ge. jregsz(level-1)))
+
+
     if (naux == 0) then
         write(*,*)" in filval/geoclaw with naux=0:  how could this happen?"
-        if (xperdom .or. yperdom .or. spheredom) then
+        if ((xperdom .and. sticksoutxcrse) .or. (yperdom.and. sticksoutycrse) .or. spheredom) then
             call preintcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,level-1,fliparray)
         else
             call intcopy(valc,mic,mjc,nvar,iclo,ichi,jclo,jchi,level-1,1,1)
         endif
     else  
         ! intersect grids and copy all (soln and aux)
-        if (xperdom .or. yperdom .or. spheredom) then
+        if ((xperdom .and. sticksoutxcrse) .or. (yperdom.and. sticksoutycrse) .or. spheredom) then
             call preicall(valc,auxc,mic,mjc,nvar,naux,iclo,ichi,jclo,jchi, &
                           level-1,fliparray)
         else
@@ -119,7 +132,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
        if (naux .gt. 0) then 
              aux(1,:,:) = NEEDS_TO_BE_SET  ! will indicate fine cells not yet set
-             if (xperdom .or. yperdom) then
+             if ((xperdom .and. sticksoutxfine)  .or. (yperdom.and.sticksoutyfine)) then
                 call preicall(val,aux,mitot,mjtot,nvar,naux,ilo-nghost,ihi+nghost,  &
                               jlo-nghost,jhi+nghost,level,fliparray)  
              else
@@ -130,14 +143,11 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
              ! need this so we know where to use coarse grid to set fine solution w/o overwriting
              if (aux_finalized .lt. 2) aux(1,:,:) = NEEDS_TO_BE_SET  ! reset entire aux array since topo moving
                !set remaining aux vals not set by copying from prev existing grids
-               call system_clock(clock_start,clock_rate)
                call setaux(nghost,nx,ny,xleft,ybot,dx,dy,naux,aux)
-               call system_clock(clock_finish,clock_rate)
-               thisSetauxTime = thisSetauxTime + clock_finish - clock_start
        else ! either no aux exists, or cant reuse yet  
           ! if topo not final, then setaux called in gfixup before this routine
           ! so only call intcopy (which copies soln) and not icall.
-          if (xperdom .or. yperdom) then
+          if ((xperdom .and. sticksoutxfine)  .or. (yperdom.and.sticksoutyfine)) then
              call preintcopy(val,mitot,mjtot,nvar,ilo-nghost,ihi+nghost,  &
                        jlo-nghost,jhi+nghost,level,1,1,fliparray)
           else

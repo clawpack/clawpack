@@ -20,6 +20,7 @@ c
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
       integer clock_start, clock_finish, clock_rate
+      integer tick_clock_start, tick_clock_finish, tick_clock_rate
       character(len=128) :: time_format
       real(kind=8) cpu_start,cpu_finish
 
@@ -50,6 +51,9 @@ c          each step) to keep track of when that level should
 c          have its error estimated and finer levels should be regridded.
 c ::::::::::::::::::::::::::::::::::::;::::::::::::::::::::::::::
 c
+      call system_clock(tick_clock_start,tick_clock_rate)
+      call cpu_time(tick_cpu_start)
+
 
       ncycle         = nstart
       call setbestsrc()     ! need at very start of run, including restart
@@ -334,7 +338,7 @@ c                   adjust time steps for this and finer levels
                      call check(ncycle,time,nvar,naux)
                      if (num_gauges .gt. 0) then
                         do ii = 1, num_gauges
-                           call print_gauges_and_reset_nextLoc(ii, nvar)
+                           call print_gauges_and_reset_nextLoc(ii)
                         end do
                      endif
                      stop
@@ -400,7 +404,7 @@ c             ! use same alg. as when setting refinement when first make new fin
                 dumpchk = .true.
                if (num_gauges .gt. 0) then
                   do ii = 1, num_gauges
-                     call print_gauges_and_reset_nextLoc(ii, nvar)
+                     call print_gauges_and_reset_nextLoc(ii)
                   end do
                endif
        endif
@@ -410,7 +414,7 @@ c             ! use same alg. as when setting refinement when first make new fin
          if (printout) call outtre(mstart,.true.,nvar,naux)
          if (num_gauges .gt. 0) then
             do ii = 1, num_gauges
-               call print_gauges_and_reset_nextLoc(ii, nvar)
+               call print_gauges_and_reset_nextLoc(ii)
             end do
          endif
        endif
@@ -444,7 +448,7 @@ c
            if (printout) call outtre(mstart,.true.,nvar,naux)
            if (num_gauges .gt. 0) then
               do ii = 1, num_gauges
-                 call print_gauges_and_reset_nextLoc(ii, nvar)
+                 call print_gauges_and_reset_nextLoc(ii)
               end do
            endif
       endif
@@ -452,7 +456,14 @@ c
 c  # checkpoint everything for possible future restart
 c  # (unless we just did it based on dumpchk)
 c
+      call system_clock(tick_clock_finish,tick_clock_rate)
+      call cpu_time(tick_cpu_finish)
+      timeTick = timeTick + tick_clock_finish - tick_clock_start 
+      timeTickCPU = timeTickCPU + tick_cpu_finish - tick_cpu_start 
 
+
+c  # checkpoint everything for possible future restart
+c  # (unless we just did it based on dumpchk)
 c
       if (checkpt_style .ne. 0) then  ! want a chckpt
          ! check if just did it so dont do it twice
@@ -460,7 +471,7 @@ c
       endif
       if (num_gauges .gt. 0) then
          do ii = 1, num_gauges
-            call print_gauges_and_reset_nextLoc(ii, nvar)
+            call print_gauges_and_reset_nextLoc(ii)
          end do
       endif
 

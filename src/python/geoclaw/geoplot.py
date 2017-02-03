@@ -2,10 +2,12 @@
 Useful things for plotting GeoClaw results.
 """
 
+from __future__ import absolute_import
 from clawpack.visclaw import colormaps
 from matplotlib.colors import Normalize 
 from clawpack.geoclaw import topotools
 from numpy import ma
+from six.moves import zip
 
 
 # Colormaps from geoclaw
@@ -216,7 +218,7 @@ def discrete_cmap_1(clines):
     Green = hstack([linspace(1,1,n1),linspace(1,0,n2)])
     Red = hstack([linspace(0,0.8,n1), ones(n2)])
     Blue = hstack([linspace(1,0.2,n1), zeros(n2)])
-    colors = zip(Red,Green,Blue)
+    colors = list(zip(Red,Green,Blue))
     return colors
 
 def discrete_cmap_2(clines):
@@ -232,6 +234,6 @@ def discrete_cmap_2(clines):
     Green = flipud(hstack([linspace(1,1,n1),linspace(1,0,n2)]))
     Red = flipud(hstack([linspace(0,0.8,n1), ones(n2)]))
     Blue = flipud(hstack([linspace(1,0.2,n1), zeros(n2)]))
-    colors = zip(Red,Green,Blue)
+    colors = list(zip(Red,Green,Blue))
     return colors
 

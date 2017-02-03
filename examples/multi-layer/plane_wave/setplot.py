@@ -7,7 +7,9 @@ function setplot is called to set the plot parameters.
     
 """ 
     
-def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,  
+from __future__ import absolute_import
+
+def setplot(plotdata=None,  bathy_location=0.15,  bathy_angle=0.0,  
                        bathy_left=-1.0,      bathy_right=-0.2):
     """Setup the plotting data objects.
 
@@ -30,6 +32,11 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     import clawpack.geoclaw.data
 
     import clawpack.geoclaw.multilayer.plot as ml_plot
+
+    if plotdata is None:
+        from clawpack.visclaw.data import ClawPlotData
+        plotdata = ClawPlotData()
+
 
     # Load data from output
     clawdata = clawutil.ClawInputData(2)
@@ -558,13 +565,13 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = [0.0,1.0]
+    plotaxes.xlimits = [0.0, 1.0]
     plotaxes.ylimits = top_surface_limits
     plotaxes.title = 'Top Surface'
 
     # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
-    plotitem.plot_var = 3
+    plotitem.plot_var = 6
     plotitem.plotstyle = 'b-'
 
     # Bottom
@@ -603,6 +610,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
+    plotdata.parallel = True                 # make multiple frame png's at once
 
     return plotdata
 

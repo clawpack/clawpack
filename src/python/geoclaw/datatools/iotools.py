@@ -12,9 +12,11 @@ iotools
 
 """
 
+from __future__ import absolute_import
 import string
 import re
 import numpy
+from six.moves import range
 
 
 #====================================================================
@@ -51,12 +53,12 @@ def datafile2array (datafile=" ",sep=None, dtype="float",skiplines=0, \
     fid.close()
 
     dataarray=[]
-    for row in xrange(skiplines,len(data)):
+    for row in range(skiplines,len(data)):
         data[row]=convertd2e(data[row])
         data[row]=string.split(data[row],sep)
         if data[row]!=[]:
             if dtype!=" ":
-                for col in xrange(skipfirstcols,len(data[row])-skiplastcols) :
+                for col in range(skipfirstcols,len(data[row])-skiplastcols) :
                     if dtype=="float":
                         data[row][col]=float(data[row][col])
                     elif dtype=="int":
@@ -83,13 +85,13 @@ def array2datafile (dataarray,datafile=" ",sep=""):
     fid=open(datafile,'w')
     shp=numpy.shape(dataarray)
     if len(shp)>1:
-        for row in xrange(shp[0]):
-            for col in xrange(shp[1]):
+        for row in range(shp[0]):
+            for col in range(shp[1]):
                 fid.write("%s %s" % (dataarray[row][col],sep))
 
             fid.write("\n")
     else:
-        for col in xrange(shp[0]) :
+        for col in range(shp[0]) :
             fid.write("%s %s" % (dataarray[col],sep))
 
     fid.close()

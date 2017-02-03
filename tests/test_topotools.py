@@ -1,10 +1,18 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import tempfile
 import shutil
-import urllib2
+
+try:
+    # For Python 3.0 and later
+    from urllib.error import URLError
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import URLError
 
 import numpy
 
@@ -12,6 +20,7 @@ import nose
 
 import clawpack.geoclaw.topotools as topotools
 import clawpack.clawutil.data
+from six.moves import range
 
 # Set local test directory to get local files
 testdir = os.path.dirname(__file__)
@@ -61,7 +70,7 @@ def test_read_write_topo_bowl():
 
     temp_path = tempfile.mkdtemp()
     try:
-        for topo_type in xrange(1, 4):
+        for topo_type in range(1, 4):
             path = os.path.join(temp_path, 'bowl.tt%s' % topo_type)
             topo.write(path, topo_type=topo_type,Z_format="%22.15e")
 
@@ -113,7 +122,7 @@ def test_against_old():
     Compare bowl.tt1 to bowl_old.tt1
     """
     
-    import old_topotools
+    from . import old_topotools
 
     nxpoints = 5
     nypoints = 4
@@ -170,7 +179,7 @@ def test_read_write_topo_bowl_hill():
         topo.x = numpy.linspace(-1.5, 2.5, 101)
         topo.y = numpy.linspace(-1.0, 2.0, 76)
 
-        for topo_type in xrange(1,4):
+        for topo_type in range(1,4):
             file_path = os.path.join(temp_path, 'bowl_hill.tt%s' % topo_type)
             topo.write(file_path, topo_type=topo_type,Z_format="%22.15e")
             topo_in = topotools.Topography(path=file_path, topo_type=topo_type)
@@ -232,7 +241,7 @@ def test_netcdf():
     except RuntimeError as e:
         raise nose.SkipTest("NetCDF topography test skipped due to " +
                             "runtime failure.")
-    except urllib2.URLError:
+    except URLError:
         raise nose.SkipTest("Could not fetch remote file, skipping test.")
     
     finally:
@@ -263,7 +272,7 @@ def test_get_remote_file():
         shutil.copy(local_path, os.path.join(os.getcwd(), "remote_file.tt2"))
         raise e
 
-    except urllib2.URLError:
+    except URLError:
         raise nose.SkipTest("Could not fetch remote file, skipping test.")
 
     finally:
@@ -351,14 +360,14 @@ def plot_topo_bowl_hill():
     topo.plot()
     fname = "bowl_hill.png"
     plt.savefig(fname)
-    print "Created ",fname
+    print("Created ",fname)
 
     topo2 = topo.crop([0.5, 1.5, 0., 2.])
     topo2.plot()
     plt.title("Cropped topography")
     fname = "bowl_hill_crop.png"
     plt.savefig(fname)
-    print "Created ",fname
+    print("Created ",fname)
 
 
 def plot_kahului():
@@ -387,7 +396,7 @@ def plot_kahului():
     plt.title("Kahului Harbor at 1 second resolution")
     fname = "kahului_imshow.png"
     plt.savefig(fname)
-    print "Created ",fname
+    print("Created ",fname)
 
     assert K.Z.shape == (46, 65), "*** K.Z is wrong shape"
     assert numpy.allclose(K.Z[:3,:3], \
@@ -416,7 +425,7 @@ def plot_kahului():
               fontsize=12)
     fname = "kahului_contour.png"
     plt.savefig(fname)
-    print "Created ",fname
+    print("Created ",fname)
 
 
 if __name__ == "__main__":
@@ -437,4 +446,4 @@ if __name__ == "__main__":
         test_unstructured_topo()
         test_netcdf()
 
-        print "All tests passed."
+        print("All tests passed.")

@@ -4,6 +4,7 @@ Plot fgmax output from GeoClaw run.
 
 """
 
+from __future__ import absolute_import
 from pylab import *
 from numpy import ma
 from clawpack.geoclaw import fgmax_tools

@@ -1,6 +1,7 @@
 language: python
 python:
   - 2.7
+  - 3.5
 env:
   - BUILD_TYPE="Release"
   
@@ -8,9 +9,9 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install gfortran liblapack-dev
   # Print NumPy version that is already installed by Travis CI:
-  - python -c "import numpy; print numpy.__version__"
+  - python -c "import numpy; print(numpy.__version__)"
   # - pip install matplotlib
-  # - python -c "import matplotlib; print matplotlib.__version__"
+  # - python -c "import matplotlib; print(matplotlib.__version__)"
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - python setup.py symlink-only

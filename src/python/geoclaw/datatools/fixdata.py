@@ -12,12 +12,14 @@ fixdata
 
 """
 
+from __future__ import absolute_import
 import string
 import re
 import numpy
 from numpy import *
 
-import iotools
+from . import iotools
+from six.moves import range
 
 #==============================================================================
 def findbadindices (Z,badvalue=inf,removenans=True):
@@ -26,8 +28,8 @@ def findbadindices (Z,badvalue=inf,removenans=True):
     """
 
     badind=[]
-    for i in xrange(shape(Z)[0]) :
-        for j in xrange(shape(Z)[1]):
+    for i in range(shape(Z)[0]) :
+        for j in range(shape(Z)[1]):
 
             if Z[i,j]==inf:
                 badind.append((i,j))
@@ -59,8 +61,8 @@ def fillbaddata (Z,badinds):
         indbad=True
         while indbad and r < max(m,n):
             r=r+1 #radius of ball around badinds in inf-norm (square)
-            irange=range(max(0,i-r),min(i+r+1,m))
-            jrange=range(max(0,j-r),min(j+r+1,n))
+            irange=list(range(max(0,i-r),min(i+r+1,m)))
+            jrange=list(range(max(0,j-r),min(j+r+1,n)))
             summands=0
             sum=0.
             for ii in irange:
@@ -92,8 +94,8 @@ def filterdata (Z,filterinds,radius=1):
         j=ind[1]
         r=radius
 
-        irange=range(max(0,i-r),min(i+r+1,m))
-        jrange=range(max(0,j-r),min(j+r+1,n))
+        irange=list(range(max(0,i-r),min(i+r+1,m)))
+        jrange=list(range(max(0,j-r),min(j+r+1,n)))
         summands=0
         sum=0.
         for ii in irange:

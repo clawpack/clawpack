@@ -30,6 +30,8 @@ topography (bathymetry) files.
  - Add more robust plotting capabilities
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 
 import numpy
@@ -37,6 +39,8 @@ import numpy
 import clawpack.geoclaw.util as util
 import clawpack.clawutil.data
 import clawpack.geoclaw.data
+import six
+from six.moves import range
 
 # ==============================================================================
 #  Topography Related Functions
@@ -111,7 +115,7 @@ def create_topo_func(loc,verbose=False):
     """
     
     cmd_str = "lambda x,y: (x <= %s) * %s" % (loc[0][0],loc[0][1])
-    for i in xrange(0,len(loc)-1):
+    for i in range(0,len(loc)-1):
         loc_str = " + (%s < x) * (x <= %s)" % (loc[i][0],loc[i+1][0])
         loc_str = "".join((loc_str," * ((%s - %s) " % (loc[i][1],loc[i+1][1])))
         loc_str = "".join((loc_str," / (%s - %s)" % (loc[i][0],loc[i+1][0])))
@@ -120,7 +124,7 @@ def create_topo_func(loc,verbose=False):
     cmd_str = "".join((cmd_str," + (%s < x) * %s" % (loc[-1][0],loc[-1][1])))
     
     if verbose:
-        print cmd_str
+        print(cmd_str)
     return eval(cmd_str)
 
 
@@ -384,8 +388,8 @@ class Topography(object):
                 dx = numpy.infty
                 dy = numpy.infty
                 num_comparisons = self.x.shape[0] - 1
-                for i in xrange(self.x.shape[0]):
-                    for j in xrange(num_comparisons):
+                for i in range(self.x.shape[0]):
+                    for j in range(num_comparisons):
                         dx = min(dx, numpy.abs(self.x[i + j + 1] - self.x[i]))
                         dy = min(dy, numpy.abs(self.y[i + j + 1] - self.y[i]))
 
@@ -664,7 +668,7 @@ class Topography(object):
                     x_var = nc_params.get('x_var', None)
                     y_var = nc_params.get('y_var', None)
                     z_var = nc_params.get('z_var', None)
-                    for (key, var) in nc_file.variables.iteritems():
+                    for (key, var) in six.iteritems(nc_file.variables):
                         if 'axis' in var.ncattrs():
                             if var.axis.lower() == "x" and x_var is None:
                                 x_var = key
@@ -884,8 +888,8 @@ class Topography(object):
                 elif header_style in ['arcgis','asc']:
                     outfile.write('ncols  %6i\n' % self.Z.shape[1])
                     outfile.write('nrows  %6i\n' % self.Z.shape[0]) 
-                    outfile.write('xlower %22.15e\n' % self.extent[0])
-                    outfile.write('ylower %22.15e\n' % self.extent[2])
+                    outfile.write('xllcorner %22.15e\n' % self.extent[0])
+                    outfile.write('yllcorner %22.15e\n' % self.extent[2])
                     outfile.write('cellsize %22.15e\n'  % self.delta[0])
                     outfile.write('nodata_value  %10i\n' % no_data_value)
                 else:
@@ -900,8 +904,8 @@ class Topography(object):
                         Z_filled = numpy.flipud(self.Z.filled())
                     else:
                         Z_filled = numpy.flipud(self.Z)
-                    for i in xrange(self.Z.shape[0]):
-                        for j in xrange(self.Z.shape[1]):
+                    for i in range(self.Z.shape[0]):
+                        for j in range(self.Z.shape[1]):
                             outfile.write(Z_format % Z_filled[i,j])
                     if masked_Z:
                         del Z_filled
@@ -911,8 +915,8 @@ class Topography(object):
                         Z_flipped = numpy.flipud(self.Z.filled())
                     else:
                         Z_flipped = numpy.flipud(self.Z)
-                    for i in xrange(self.Z.shape[0]):
-                        for j in xrange(self.Z.shape[1]):
+                    for i in range(self.Z.shape[0]):
+                        for j in range(self.Z.shape[1]):
                             outfile.write(Z_format % (Z_flipped[i,j]))
                         outfile.write("\n")
                     if masked_Z:
@@ -1201,7 +1205,7 @@ class Topography(object):
                 # Create proximity mask
                 if proximity_radius > 0.0:
                     indices = (~all_mask).nonzero()
-                    for n in xrange(indices[0].shape[0]):
+                    for n in range(indices[0].shape[0]):
                         i = indices[0][n]
                         all_mask[i] = numpy.any(numpy.sqrt((self.x - x_fill[i])**2 
                                                          + (self.y - y_fill[i])**2)
@@ -1239,7 +1243,7 @@ class Topography(object):
                 if proximity_radius > 0.0:
                 
                     indices = (~all_mask).nonzero()
-                    for n in xrange(indices[0].shape[0]):
+                    for n in range(indices[0].shape[0]):
                         i = indices[0][n]
                         j = indices[1][n]
                         all_mask[i,j] = numpy.any(numpy.sqrt((self.x - X_fill[i,j])**2 
@@ -1296,7 +1300,7 @@ class Topography(object):
 
         # Construct edges
         edges = []
-        for edge in xrange(len(polygon) - 1):
+        for edge in range(len(polygon) - 1):
             edges.append([polygon[edge], polygon[edge+1]])
         edges.append([polygon[-1], polygon[0]])
 
@@ -1339,8 +1343,8 @@ class Topography(object):
                 point_replaced = False
                 while not point_replaced and r < max(self.Z.shape):
                     r = r + 1
-                    i_range = range(max(0, index[0] - r), min(index[0] + r + 1, self.Z.shape[0]))
-                    j_range = range(max(0, index[1] - r), min(index[1] + r + 1, self.Z.shape[1]))
+                    i_range = list(range(max(0, index[0] - r), min(index[0] + r + 1, self.Z.shape[0])))
+                    j_range = list(range(max(0, index[1] - r), min(index[1] + r + 1, self.Z.shape[1])))
                     num_points = 0
                     summation = 0.0
                     for i in i_range:
@@ -1415,9 +1419,9 @@ class Topography(object):
 
         index_range = [None, None]
         for index in indices:
-            for n in xrange(2):
-                index_range[n] = range(max(0, index[n] - r), 
-                                       min(index[n] + r + 1, self.Z.shape[n]))
+            for n in range(2):
+                index_range[n] = list(range(max(0, index[n] - r), 
+                                       min(index[n] + r + 1, self.Z.shape[n])))
             num_points = 0
             summation = 0.0
             for i in index_range[0]:

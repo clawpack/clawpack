@@ -6,7 +6,10 @@ topotools.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os, glob, re
+from six.moves import range
 
 def most2tt3(fname, fname2=None):
     """
@@ -22,7 +25,7 @@ def most2tt3(fname, fname2=None):
     yll = float(f[nrows+ncols])
     dy =  float(f[nrows+ncols-1]) - yll
     if abs(dx-dy) > 1.e-6:
-        print '*** WARNING: dx = ',dx,'  dy = ',dy
+        print('*** WARNING: dx = ',dx,'  dy = ',dy)
     cellsize = dx
 
     if fname2 is None:
@@ -33,7 +36,7 @@ def most2tt3(fname, fname2=None):
           % (ncols,nrows,xll,yll,cellsize))
     f2.writelines(f[nrows+ncols+1:])
     f2.close()
-    print "Created ",fname2
+    print("Created ",fname2)
 
 def most2fortt(fnameprefix):
     """
@@ -52,7 +55,7 @@ def most2fortt(fnameprefix):
             minutes = result.group("minutes")
             seconds = result.group("seconds")
         except:
-            print "*** Cannot parse fname: ",fname
+            print("*** Cannot parse fname: ",fname)
             raise
         t = int(hours)*3600. + int(minutes)*60. + int(seconds)
         fortname = "fort.t" + str(frameno).zfill(4)
@@ -63,7 +66,7 @@ def most2fortt(fnameprefix):
         f.write("%5i                  ndim\n" % 0)
         f.write("%5i                  maux\n" % 2)
         f.close()
-        print "Created %s from %s at time t = %s" % (fortname, fname, t)
+        print("Created %s from %s at time t = %s" % (fortname, fname, t))
         frameno = frameno + 1
 
 
@@ -85,7 +88,7 @@ def most2fortq(fnameprefix):
         yll = float(f[nrows+ncols])
         dy =  float(f[nrows+ncols-1]) - yll
         if abs(dx-dy) > 1.e-6:
-            print '*** WARNING: dx = ',dx,'  dy = ',dy
+            print('*** WARNING: dx = ',dx,'  dy = ',dy)
         cellsize = dx
     
         fortname = 'fort.q' + str(frameno).zfill(4)
@@ -105,7 +108,7 @@ def most2fortq(fnameprefix):
                 z = float(s)
                 f2.write("%18.8e\n" % z)
         f2.close()
-        print "Created %s from %s" % (fortname,fname)
+        print("Created %s from %s" % (fortname,fname))
         frameno += 1
 
 def get_comMIT_topo(x1,x2,y1,y2, dx='1m', fname='most_topo.most'):
@@ -146,17 +149,17 @@ def get_comMIT_topo(x1,x2,y1,y2, dx='1m', fname='most_topo.most'):
     lines = open(fname_most).readlines()
     attempts = 1
     while (len(lines) < 2) and (attempts < 5):
-        print "Status: ",lines[0]
-        print "Will retry in %s seconds..." % wait_time
+        print("Status: ",lines[0])
+        print("Will retry in %s seconds..." % wait_time)
         time.sleep(wait_time)
         subprocess.check_call(s,shell=True)
         lines = open(fname_most).readlines()
         attempts += 1
     if attempts<5:
-        print "File downloaded with dimensions: ",lines[0]
+        print("File downloaded with dimensions: ",lines[0])
     else:
-        print "Tried %s times and file not ready... " % attempts
-        print "     wait a bit and try same call again"
+        print("Tried %s times and file not ready... " % attempts)
+        print("     wait a bit and try same call again")
 
 
 

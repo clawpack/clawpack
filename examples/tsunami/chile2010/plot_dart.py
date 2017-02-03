@@ -2,6 +2,7 @@
 Compare DART buoy results to NOAA results.
 """
 
+from __future__ import absolute_import
 import pylab 
 from pyclaw.plotters.data import ClawPlotData
 from matplotlib import image
