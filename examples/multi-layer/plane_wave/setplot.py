@@ -124,7 +124,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     ylimits = [-1.5, 2.5]        # ploting extra space to see edges more clearly
     
     eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
-    top_surface_limits = [eta[0]-0.03,eta[0]+0.03]
+    top_surface_limits = [eta[0]-1e-14,eta[0]+1e-14]
     internal_surface_limits = [eta[1]-0.015,eta[1]+0.015]
     # top_surface_limits = [eta[0]-0.3,eta[0]+0.3]
     # internal_surface_limits = [eta[1]-0.15,eta[1]+0.15]
