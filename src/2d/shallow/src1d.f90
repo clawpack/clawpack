@@ -113,11 +113,13 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     ! ========================================================================
     
     ! == Pressure Forcing ====================================================
+    ! Handled in Riemann solver
+
     ! Need to add dx and dy to calling signature from qad in order for this to 
     ! work, can probably get it from amr_module but need to know which grid we
     ! are working on
-    if (.false.) then
-        stop "Not sure how to proceed, need direction and the right dx or dy."
-    endif
+    ! if (.false.) then
+    !     stop "Not sure how to proceed, need direction and the right dx or dy."
+    ! endif
 
 end subroutine src1d
