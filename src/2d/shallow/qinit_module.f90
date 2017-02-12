@@ -77,7 +77,7 @@ contains
     end subroutine set_qinit
 
 
-    subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
+    subroutine add_perturbation(meqn,mbc,mx,my,xlow_patch,ylow_patch,dx,dy,q,maux,aux)
     
         use geoclaw_module, only: sea_level, coordinate_system
         use amr_module, only: mcapa
@@ -86,7 +86,7 @@ contains
     
         ! Subroutine arguments
         integer, intent(in) :: meqn,mbc,mx,my,maux
-        real(kind=8), intent(in) :: xlower,ylower,dx,dy
+        real(kind=8), intent(in) :: xlow_patch,ylow_patch,dx,dy
         real(kind=8), intent(inout) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
         real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
         
@@ -99,11 +99,11 @@ contains
         
         if (qinit_type > 0) then
             do i=1-mbc,mx+mbc
-                x = xlower + (i-0.5d0)*dx
+                x = xlow_patch + (i-0.5d0)*dx
                 xim = x - 0.5d0*dx
                 xip = x + 0.5d0*dx
                 do j=1-mbc,my+mbc
-                    y = ylower + (j-0.5d0)*dy
+                    y = ylow_patch + (j-0.5d0)*dy
                     yjm = y - 0.5d0*dy
                     yjp = y + 0.5d0*dy
 
