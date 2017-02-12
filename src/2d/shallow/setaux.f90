@@ -15,11 +15,10 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     use amr_module, only: mcapa, xupper, yupper, xlower, ylower, NEEDS_TO_BE_SET
 
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
-    use geoclaw_module, only: sea_level
+    use geoclaw_module, only: sea_level, ambient_pressure
 
     use storm_module, only: wind_forcing, pressure_forcing
     use storm_module, only: wind_index, pressure_index, set_storm_fields
-    use storm_module, only: ambient_pressure
 
     use friction_module, only: variable_friction, friction_index
     use friction_module, only: set_friction_field

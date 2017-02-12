@@ -101,8 +101,8 @@ contains
 
     subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use geoclaw_module, only: sea_level, pi, g => grav
-        use multilayer_module, only: aux_layer_index, rho, r
+        use geoclaw_module, only: sea_level, pi, g => grav, rho
+        use multilayer_module, only: aux_layer_index, r
     
         implicit none
     

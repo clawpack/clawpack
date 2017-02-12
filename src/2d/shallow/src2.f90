@@ -6,9 +6,9 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use geoclaw_module, only: manning_break, num_manning
     use geoclaw_module, only: spherical_distance, coordinate_system
     use geoclaw_module, only: RAD2DEG, pi, dry_tolerance
+    use geoclaw_module, only: rho_air
       
-    use storm_module, only: wind_forcing, pressure_forcing
-    use storm_module, only: rho_air, wind_drag, ambient_pressure
+    use storm_module, only: wind_forcing, pressure_forcing, wind_drag
     use storm_module, only: wind_index, pressure_index
     use storm_module, only: storm_direction, storm_location
 

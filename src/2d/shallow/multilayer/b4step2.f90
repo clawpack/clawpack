@@ -17,7 +17,7 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
     use amr_module, only: yhidomain => yupper
     use amr_module, only: xperdom, yperdom, spheredom
 
-    use geoclaw_module, only: g => grav
+    use geoclaw_module, only: g => grav, rho
 
     use topo_module, only: num_dtopo, topotime
     use topo_module, only: aux_finalized
@@ -25,7 +25,7 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
 
     use storm_module, only: set_storm_fields
 
-    use multilayer_module, only: num_layers, rho, KAPPA_UNIT, dry_tolerance
+    use multilayer_module, only: num_layers, KAPPA_UNIT, dry_tolerance
     use multilayer_module, only: check_richardson, richardson_tolerance
     
     implicit none

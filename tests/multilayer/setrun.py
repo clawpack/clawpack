@@ -432,6 +432,7 @@ def setgeo(rundata):
     geo_data.gravity = 9.81
     geo_data.coordinate_system = 1
     geo_data.earth_radius = 6367.5e3
+    geo_data.rho = [0.9, 1.0]
 
     # == Forcing Options
     geo_data.coriolis_forcing = False
@@ -477,7 +478,6 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [0.9,1.0]
     data.eta = [0.0,-0.6]
     
     # Algorithm parameters
