@@ -16,7 +16,6 @@ c
       integer newnumgrids(maxlv),listnewgrids(maxnumnewgrids)
 
       integer clock_start, clock_finish, clock_rate
-      integer wallclock_start, wallclock_finish
       integer mbad
 c
 c ::::::::::::::::::::::::: GFIXUP ::::::::::::::::::::::::::::::::;
@@ -93,7 +92,6 @@ c   first get space, since cant do that part in parallel
 c   
 c                 other reduction variables initialized in stst1
        this_spoh = 0.d0
-       call system_clock(wallclock_start,clock_rate)  
 
 !$OMP PARALLEL DO 
 !$OMP&            PRIVATE(clock_start,clock_finish,clock_rate)
@@ -103,7 +101,6 @@ c                 other reduction variables initialized in stst1
 !$OMP&            SHARED(newnumgrids,listnewgrids,nghost,node,hx,hy)
 !$OMP&            SHARED(rnode,intratx,intraty,lcheck,nvar,alloc,naux)
 !$OMP&            REDUCTION(MAX:this_spoh)
-!$OMP&            REDUCTION(+:timeFilval)
 !$OMP&            SCHEDULE(dynamic,1)
 !$OMP&            DEFAULT(none)
 
@@ -152,21 +149,15 @@ c          # "interior" of coarser patch to fill fine grid.
            jlo   = node(ndjlo, mptr)
            jhi   = node(ndjhi, mptr)
  
-           call system_clock(clock_start,clock_rate)
            call filval(alloc(loc),mitot,mjtot,hx,hy,lcheck,time,
      1                 mic,mjc,
      2                 xl,xr,yb,yt,nvar,
      3                 mptr,ilo,ihi,jlo,jhi,
      4                 alloc(locaux),naux,
      5                 sp_over_h)
-           call system_clock(clock_finish,clock_rate)
-           timeFilval = timeFilval + clock_finish - clock_start
            this_spoh = max(this_spoh, sp_over_h)
          end do
 !$OMP END PARALLEL DO
-
-       call system_clock(wallclock_finish,clock_rate)  
-       timeFilvalTot = timeFilvalTot + wallclock_finish-wallclock_start
 
        spoh(lcheck) = this_spoh
  

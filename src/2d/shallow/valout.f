@@ -278,7 +278,7 @@ c
 
       write(6,601) matlabu,time
   601 format('AMRCLAW: Frame ',i4,
-     &       ' output files done at time t = ', d12.6,/)
+     &       ' output files done at time t = ', d13.6,/)
 
       matlabu = matlabu + 1
 
