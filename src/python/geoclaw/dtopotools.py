@@ -28,6 +28,8 @@ dtopo files, and calculating Okada based deformations.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import re
@@ -41,6 +43,8 @@ import clawpack.geoclaw.util as util
 #  Constants
 # ==============================================================================
 from clawpack.geoclaw.data import DEG2RAD, LAT2METER
+import six
+from six.moves import range
 
 # Poisson ratio for Okada 
 poisson = 0.25
@@ -82,7 +86,7 @@ unit_conversion_factor['N-m'] = 1.
 unit_conversion_factor['dyne-cm'] = 1.e-7
 
 # Check that these are consistent:
-check = [unit_conversion_factor[standard_units[param]] is 1. for param in \
+check = [unit_conversion_factor[standard_units[param]] == 1. for param in \
          standard_units.keys()]
 if not numpy.alltrue(check):
     raise ValueError("Conversion factors should be 1 for all standard_units")
@@ -105,7 +109,7 @@ def convert_units(value, io_units, direction=1, verbose=False):
         factor = unit_conversion_factor[io_units]
     except:
         factor = 1.
-        print "*** Warning: unrecoginized units in convert_units, not converting"
+        print("*** Warning: unrecoginized units in convert_units, not converting")
         #raise ValueError("Unrecognized io_units %s, must be one of %s" \
         #      % (io_units, unit_conversion_factor.keys()))
     if direction == 1:
@@ -134,10 +138,10 @@ def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
 
     if len(clines) > 0:
         if verbose:
-            print "Plotting contour lines at: ",clines
+            print("Plotting contour lines at: ",clines)
         axes.contour(x, y, dZ, clines, colors='k')
     else:   
-        print "No contours to plot"
+        print("No contours to plot")
 
     return axes
 
@@ -178,10 +182,10 @@ def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
     clines = list(-numpy.flipud(clines1)) + list(clines1)
     if len(clines) > 0:
         if verbose:
-            print "Plotting contour lines at: ",clines
+            print("Plotting contour lines at: ",clines)
         axes.contour(x,y,dZ,clines,colors='k',linestyles='solid')
     elif verbose:
-        print "No contours to plot"
+        print("No contours to plot")
 
     y_ave = 0.5 * (y.min() + y.max())
     axes.set_aspect(1. / numpy.cos(y_ave * numpy.pi / 180.))
@@ -336,11 +340,11 @@ class DTopography(object):
         if dtopo_type == 1:
             data = numpy.loadtxt(path)
             if verbose:
-                print "Loaded file %s with %s lines" %(path,data.shape[0])
+                print("Loaded file %s with %s lines" %(path,data.shape[0]))
             t = list(set(data[:,0]))
             t.sort()
             if verbose:
-                print "times found: ",t
+                print("times found: ",t)
             ntimes = len(t)
             tlast = t[-1]
             lastlines = data[data[:,0]==tlast]
@@ -349,12 +353,12 @@ class DTopography(object):
             mx = len(xvals)
             my = len(lastlines) / mx
             if verbose:
-                print "Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes)
+                print("Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes))
             X = numpy.reshape(lastlines[:,1],(my,mx))
             Y = numpy.reshape(lastlines[:,2],(my,mx))
             Y = numpy.flipud(Y)
             if verbose:
-                print "Returning dZ as a list of mx*my arrays"
+                print("Returning dZ as a list of mx*my arrays")
             dZ = None
             for n in range(ntimes):
                 i1 = n*mx*my
@@ -449,8 +453,10 @@ class DTopography(object):
         y = self.Y[:,0]
         dx = x[1] - x[0]
         dy = y[1] - y[0]
-        if abs(dx - dy) >= 1e-12:
-            raise ValueError("dx = %g not equal to dy = %g" % (dx,dy))
+
+        # This is no longer required in GeoClaw...
+        #if abs(dx - dy) >= 1e-12:
+        #    raise ValueError("dx = %g not equal to dy = %g" % (dx,dy))
 
         # Construct each interpolating function and evaluate at new grid
         ## Shouldn't need to interpolate in time.
@@ -462,8 +468,8 @@ class DTopography(object):
                 Y_flipped = numpy.flipud(self.Y)
                 dZ_flipped = numpy.flipud(self.dZ[-1,:,:]) 
 
-                for j in xrange(self.Y.shape[0]):
-                    for i in xrange(self.X.shape[1]):
+                for j in range(self.Y.shape[0]):
+                    for i in range(self.X.shape[1]):
                         data_file.write("%s %s %s\n" % self.X[j,i], 
                             Y_flipped[j,i], dZ_flipped[j,i])
 
@@ -477,8 +483,8 @@ class DTopography(object):
                     #dZ_flipped = numpy.flipud(alpha * self.dZ[:,:])
                     dZ_flipped = numpy.flipud(self.dZ[n,:,:])  
 
-                    for j in xrange(self.Y.shape[0]):
-                        for i in xrange(self.X.shape[1]):
+                    for j in range(self.Y.shape[0]):
+                        for i in range(self.X.shape[1]):
                             data_file.write("%s %s %s %s\n" % (self.times[n],
                                 self.X[j,i], Y_flipped[j,i], dZ_flipped[j,i]))
         
@@ -657,12 +663,12 @@ class Fault(object):
         self.input_units = standard_units.copy()
         self.input_units.update(input_units)
         self.subfaults = []
-        for n in xrange(data.shape[0]):
+        for n in range(data.shape[0]):
 
             new_subfault = SubFault()
             new_subfault.coordinate_specification = coordinate_specification
             
-            for (var, column) in column_map.iteritems():
+            for (var, column) in six.iteritems(column_map):
                 if isinstance(column, tuple) or isinstance(column, list):
                     setattr(new_subfault, var, [None for k in column])
                     for (k, index) in enumerate(column):
@@ -671,7 +677,7 @@ class Fault(object):
                     setattr(new_subfault, var, data[n, column])
 
             if defaults is not None:
-                for param in defaults.iterkeys():
+                for param in six.iterkeys(defaults):
                     setattr(new_subfault, param, defaults[param]) 
 
             new_subfault.convert_to_standard_units(self.input_units)
@@ -747,7 +753,7 @@ class Fault(object):
                 s = ""
                 for param in column_list:
                     value = getattr(subfault,param)
-                    if output_units.has_key(param):
+                    if param in output_units:
                         converted_value = convert_units(value, 
                                     self.output_units[param], direction=2)
                     s = s + format[param] % value + delimiter 
@@ -792,8 +798,8 @@ class Fault(object):
         dtopo.times = times
 
         if verbose:
-            print "Making Okada dz for each of %s subfaults" \
-                  % len(self.subfaults)
+            print("Making Okada dz for each of %s subfaults" \
+                  % len(self.subfaults))
 
         for k,subfault in enumerate(self.subfaults):
             if verbose:
@@ -904,7 +910,7 @@ class Fault(object):
             max_slip = max(abs(slip), max_slip)
             min_slip = min(abs(slip), min_slip)
         if verbose:
-            print "Max slip, Min slip: ",max_slip, min_slip
+            print("Max slip, Min slip: ",max_slip, min_slip)
     
         if slip_color:
             if cmap_slip is None:
@@ -1208,15 +1214,15 @@ class SubFault(object):
         Convert parameters from the units used for input into the standard
         units used in this module.
         """
-        params = input_units.keys()
+        params = list(input_units.keys())
         for param in params:
             value = getattr(self, param)
             converted_value = convert_units(value, input_units[param], 1)
             setattr(self,param,converted_value)
             if verbose:
-                print "%s %s %s converted to %s %s" \
+                print("%s %s %s converted to %s %s" \
                     % (param, value, input_units[param], converted_value, \
-                       standard_units[param])
+                       standard_units[param]))
 
 
     def Mo(self):
@@ -1714,20 +1720,20 @@ class CSVFault(Fault):
                     column_name = column_heading[:unit_start].lower()
                     units = column_heading[unit_start+1:unit_end]
                     if verbose and input_units.get(column_name,units) != units:
-                        print "*** Warning: input_units[%s] reset to %s" \
-                              % (column_name, units)
-                        print "    based on file header"
+                        print("*** Warning: input_units[%s] reset to %s" \
+                              % (column_name, units))
+                        print("    based on file header")
                         input_units[column_name] = units
 
                 else:
                     column_name = column_heading.lower()
                 column_name = column_name.strip()
-                if column_name in param.keys():
+                if column_name in list(param.keys()):
                     column_key = param[column_name]
                     column_map[column_key] = n
                 else:
-                    print "*** Warning: column name not recognized: %s" \
-                        % column_name
+                    print("*** Warning: column name not recognized: %s" \
+                        % column_name)
 
         super(CSVFault, self).read(path, column_map=column_map, skiprows=1,
                                 delimiter=",", input_units=input_units,
@@ -1779,7 +1785,7 @@ class SiftFault(Fault):
                     and value = magnitude of slip to assign (in meters).
         """
         self.subfaults = []
-        for k,v in sift_slip.iteritems():
+        for k,v in six.iteritems(sift_slip):
             subfault = self.sift_subfaults[k]
             subfault.slip = v
             self.subfaults.append(subfault)

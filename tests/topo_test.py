@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import glob
 import tempfile
@@ -113,7 +115,7 @@ def test_topography_object(plot=False):
                 fig.suptitle('Bathymetry / topography, topo type = %s' % topo_type)
                 plt.savefig('topotest%s.png' % (n + 2))
 
-            print n, topo_type
+            print(n, topo_type)
             if n + 1 != len(topo_types):
                 bowl_path = os.path.join(base_path, 'bowl.tt%s' % topo_types[n+1])
                 hill_path = os.path.join(base_path, 'hill.tt%s' % topo_types[n+1])
@@ -144,10 +146,10 @@ def test_topography_object(plot=False):
 
 
 if __name__=='__main__':
-    print "Starting procedural test..."
+    print("Starting procedural test...")
     test1()
-    print "Done performing procedural test."
+    print("Done performing procedural test.")
 
-    print "Starting object test..."
+    print("Starting object test...")
     test_topography_object(plot=True)
-    print "Done performing object test..."
+    print("Done performing object test...")

@@ -6,6 +6,8 @@ To create new regression data use
     `python regression_tests.py True`
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import unittest
@@ -81,7 +83,7 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
                                 "failure to build test program.")
 
         except RuntimeError as e:
-            print e.message
+            print(e.message)
             self.netcdf_passed = False
             self.success = True
             raise nose.SkipTest("NetCDF topography test skipped due to " +

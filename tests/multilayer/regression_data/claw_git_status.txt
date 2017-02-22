@@ -1,0 +1,93 @@
+Clawpack Git Status 
+Diffs can be found in /Users/rjl/git/clawpack/geoclaw/tests/multilayer/regression_data/claw_git_diffs.txt
+
+Tue, 20 Dec 2016 22:06:32 PST
+$CLAW = /Users/rjl/git/clawpack
+$FC = gfortran
+
+
+===========
+classic
+===========
+/Users/rjl/git/clawpack/classic
+
+--- last commit ---
+8e6d0c2 make plotdata an optional argument in setplot
+
+--- branch and status ---
+## setplot_fixes
+
+
+===========
+amrclaw
+===========
+/Users/rjl/git/clawpack/amrclaw
+
+--- last commit ---
+5c81870 set xlimits and ylimits in quadrants example
+
+--- branch and status ---
+## setplot_fixes
+
+
+===========
+clawutil
+===========
+/Users/rjl/git/clawpack/clawutil
+
+--- last commit ---
+c3950d1 Fix call to StringIO to match new way it is imported
+
+--- branch and status ---
+## claw_git_status_StringIO
+
+
+===========
+pyclaw
+===========
+/Users/rjl/git/clawpack/pyclaw
+
+--- last commit ---
+695af06 Merge pull request #550 from clawpack/python3
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+visclaw
+===========
+/Users/rjl/git/clawpack/visclaw
+
+--- last commit ---
+6833be6 Merge pull request #190 from clawpack/python3
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+riemann
+===========
+/Users/rjl/git/clawpack/riemann
+
+--- last commit ---
+b68d73d Merge pull request #111 from rjleveque/geoclaw_riemann_utils_update
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+geoclaw
+===========
+/Users/rjl/git/clawpack/geoclaw
+
+--- last commit ---
+e29ead0 updated regression data for new Riemann solver from clawpack/riemann#111
+
+--- branch and status ---
+## regression_data_update_riemann
+ M examples/tsunami/bowl-radial/setplot.py
+ M tests/multilayer/regression_data/claw_git_diffs.txt
+ M tests/multilayer/regression_data/claw_git_status.txt

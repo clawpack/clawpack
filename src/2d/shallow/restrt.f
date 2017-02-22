@@ -56,7 +56,13 @@ c     # need to allocate for dynamic memory:
      3       numgrids,kcheck1,nsteps,time,
      3       matlabu
       read(rstunit) avenumgrids, iregridcount,
-     1              evol,rvol,rvoll,lentot,tmass0,cflmax
+     1              evol,rvol,rvoll,lentot,tmass0,cflmax,
+     2              tvoll,tvollCPU,timeTick,timeTickCPU,
+     3              timeStepgrid,timeStepgridCPU,
+     4              timeBound,timeBoundCPU,
+     5              timeRegridding,timeRegriddingCPU,
+     6              timeValout,timeValoutCPU
+
 
 c     ### if fgmax grids exist, read them back in.
 c     ### ASSUMES fgmax stuff already set up (main calls set_fgmax) 

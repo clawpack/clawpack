@@ -7,15 +7,18 @@ function setplot is called to set the plot parameters.
     
 """ 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 
 from clawpack.geoclaw import topotools
+from six.moves import range
 
 try:
     TG32412 = np.loadtxt('32412_notide.txt')
 except:
-    print "*** Could not load DART data file"
+    print("*** Could not load DART data file")
 
 
 #--------------------------

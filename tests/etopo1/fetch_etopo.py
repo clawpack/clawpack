@@ -11,6 +11,8 @@ vs. cell registered?).  This needs further investigation.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 from clawpack.geoclaw import etopotools
 
@@ -30,7 +32,7 @@ try:
     etopo_dir = os.environ['ETOPO']
     os.chdir(etopo_dir)  # make sure it's a valid directory
 except:
-    print "ETOPO not set or invalid directory, setting etopo_dir='.'"
+    print("ETOPO not set or invalid directory, setting etopo_dir='.'")
     etopo_dir = '.'
 
 topo = etopotools.etopo1_download(xlimits,ylimits, dx=resolution, \
@@ -46,5 +48,5 @@ if plot_topo:
     fname = os.path.splitext(topo_file_name)[0] + '.png'
     fname = os.path.join(etopo_dir, fname)
     plt.savefig(fname)
-    print 'Created %s' % fname
+    print('Created %s' % fname)
 

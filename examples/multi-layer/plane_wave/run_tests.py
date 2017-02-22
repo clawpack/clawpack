@@ -17,6 +17,8 @@ This test suite requires the `batch` package.
 #                     http://www.opensource.org/licenses/
 # ============================================================================
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy
 
@@ -174,11 +176,11 @@ if __name__ == "__main__":
                 tests_to_run.append(tests[int(test)])
 
         controller = batch.BatchController(tests_to_run)
-        print controller
+        print(controller)
         controller.run()
 
     else:
         controller = batch.BatchController(tests)
-        print controller
+        print(controller)
 
 

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 from pylab import *
 
 outdir = '_output'

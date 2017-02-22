@@ -15,6 +15,7 @@ Module provides provides utility functions.
  - inv_haversine - Inverts the haversine distance
 """
 
+from __future__ import absolute_import
 import numpy
 
 # ==============================================================================
