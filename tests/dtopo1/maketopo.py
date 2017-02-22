@@ -3,6 +3,8 @@
 Module to create topo and qinit data files for this example.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from clawpack.geoclaw.topotools import Topography
 
 from clawpack.geoclaw import dtopotools
@@ -28,7 +30,7 @@ def maketopo():
     topography.write(outfile, topo_type=2, Z_format="%22.15e")
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
-    print "==> topo1 has dx = %g, dy = %g" % (dx,dy)
+    print("==> topo1 has dx = %g, dy = %g" % (dx,dy))
 
 def maketopo2():
     """
@@ -47,7 +49,7 @@ def maketopo2():
     topography.write(outfile, topo_type=2, Z_format="%22.15e")
     dx = (xupper-xlower)/(nxpoints-1)
     dy = (yupper-ylower)/(nypoints-1)
-    print "==> topo2 has dx = %g, dy = %g" % (dx,dy)
+    print("==> topo2 has dx = %g, dy = %g" % (dx,dy))
 
 h0 = 1000.
 
@@ -91,7 +93,7 @@ def make_dtopo1(plotfig=None):
 
     dtopo_fname = fname_subfaults.split('.')[0] + '.tt3'
 
-    print "Using Okada model to create %s " % dtopo_fname
+    print("Using Okada model to create %s " % dtopo_fname)
 
     # Needed for extent of dtopo file:
     xlower = -0.4
@@ -105,7 +107,7 @@ def make_dtopo1(plotfig=None):
 
     dx = (xupper-xlower)/(mx-1)
     dy = (yupper-ylower)/(my-1)
-    print "==> dtopo1 has dx = %g, dy = %g" % (dx,dy)
+    print("==> dtopo1 has dx = %g, dy = %g" % (dx,dy))
     x = numpy.linspace(xlower,xupper,mx)
     y = numpy.linspace(ylower,yupper,my)
 
@@ -135,7 +137,7 @@ def make_dtopo2(plotfig=None):
 
     dtopo_fname = fname_subfaults.split('.')[0] + '.tt3'
 
-    print "Using Okada model to create %s " % dtopo_fname
+    print("Using Okada model to create %s " % dtopo_fname)
 
     # Needed for extent of dtopo file:
     xlower = -0.9
@@ -149,7 +151,7 @@ def make_dtopo2(plotfig=None):
 
     dx = (xupper-xlower)/(mx-1)
     dy = (yupper-ylower)/(my-1)
-    print "==> dtopo2 has dx = %g, dy = %g" % (dx,dy)
+    print("==> dtopo2 has dx = %g, dy = %g" % (dx,dy))
 
 
     x = numpy.linspace(xlower,xupper,mx)

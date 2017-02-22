@@ -2,12 +2,19 @@
 
 """Regression test for GeoClaw's storm surge functionality"""
 
+from __future__ import absolute_import
 import sys
 import os
 import unittest
 import gzip
-import urllib2
 import nose
+
+try:
+    # For Python 3.0 and later
+    from urllib.error import URLError
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import URLError
 
 import numpy
 
@@ -26,7 +33,7 @@ class IkeTest(test.GeoClawRegressionTest):
         remote_url = "http://ftp.nhc.noaa.gov/atcf/archive/2008/bal092008.dat.gz"
         try:
             path = self.get_remote_file(remote_url, unpack=False)
-        except urllib2.URLError:
+        except URLError:
             raise nose.SkipTest("Could not fetch remote file, skipping test.")
         
         storm_path = os.path.join(os.path.dirname(path), 'ike.storm')
@@ -35,7 +42,7 @@ class IkeTest(test.GeoClawRegressionTest):
         with gzip.GzipFile(path, 'r') as gzip_file:
             file_content = gzip_file.read()
         
-        with open(storm_path, 'w') as out_file:
+        with open(storm_path, 'wb') as out_file:
             out_file.write(file_content)
 
         # Download file

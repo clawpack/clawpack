@@ -144,8 +144,8 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     ! Determine indices of cell containing fixed grid point (x(k),y(k))
 
     do k=1,fg%npts 
-        ik(k) = int((fg%x(k) - xlower + 0.5d0*dx) / dx)
-        jk(k) = int((fg%y(k) - ylower + 0.5d0*dy) / dy)
+        ik(k) = int((fg%x(k) - xlower + dx) / dx)
+        jk(k) = int((fg%y(k) - ylower + dy) / dy)
         enddo
 
     if (debug) then

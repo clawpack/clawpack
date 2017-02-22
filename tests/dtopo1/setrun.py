@@ -6,6 +6,8 @@ that will be read in by the Fortran code.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import numpy as np
 
@@ -337,7 +339,7 @@ def setgeo(rundata):
     try:
         geo_data = rundata.geo_data
     except:
-        print "*** Error, this rundata has no geo_data attribute"
+        print("*** Error, this rundata has no geo_data attribute")
         raise AttributeError("Missing geo_data attribute")
 
        

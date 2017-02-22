@@ -12,6 +12,8 @@ Plotting routines for storm surge simulations with GeoClaw
 #                     http://www.opensource.org/licenses/
 # ==============================================================================
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -64,7 +66,7 @@ class track_data(object):
 
             # Check to make sure that this fixed the problem
             if self._data.shape[0] < frame + 1:
-                print " *** WARNING *** Could not find track data for frame %s." % frame
+                print(" *** WARNING *** Could not find track data for frame %s." % frame)
                 return None, None, None
                 # raise Exception("Could not find data for frame %s." % frame)
 

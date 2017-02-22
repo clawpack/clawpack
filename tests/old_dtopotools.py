@@ -11,6 +11,8 @@ dtopo files, and calculating Okada based deformations.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import copy
@@ -21,6 +23,7 @@ import numpy
 
 # Poisson ratio for Okada 
 from clawpack.geoclaw.util import DEG2RAD, LAT2METER
+from six.moves import range
 poisson = 0.25
 
 class DTopo(object):
@@ -104,7 +107,7 @@ def read_subfault_model(fname, columns, units=None, \
                      % (len(columns), ncols))
 
     nfaults = data.shape[0]
-    print "Read %s faultslip datasets from %s" % (nfaults,fname)
+    print("Read %s faultslip datasets from %s" % (nfaults,fname))
 
     subfaults = []
     total_slip = 0.
@@ -134,12 +137,12 @@ def read_subfault_model(fname, columns, units=None, \
         #print "Subfault slip*length*width = ",subfault_slip
         #import pdb; pdb.set_trace()
 
-    print "Total slip*length*width = ",total_slip
+    print("Total slip*length*width = ",total_slip)
     if 1:
         for mu in [3e11, 4e11, 6e11]:
             Mo = 0.1*mu*total_slip  # 0.1 factor to convert to Nm
             Mw = 2./3. * (numpy.log10(Mo) - 9.05)
-            print "With mu = %6.1e, moment magnitude is Mw = %5.2f" % (mu,Mw)
+            print("With mu = %6.1e, moment magnitude is Mw = %5.2f" % (mu,Mw))
     return subfaults
     
 
@@ -206,11 +209,11 @@ def read_subfault_model_ucsb(fname):
             dy = float(result_dy.group('dy'))
             nx = int(result_nx.group('nx'))
             ny = int(result_ny.group('ny'))
-            print "Found dx = %s, dy = %s, nx = %s, ny = %s in line %s" \
-                  % (dx, dy, nx, ny, i_dxdy)
+            print("Found dx = %s, dy = %s, nx = %s, ny = %s in line %s" \
+                  % (dx, dy, nx, ny, i_dxdy))
             
     if i_dxdy == -1:
-        print "*** Did not find a line containing both Dx and Dy"
+        print("*** Did not find a line containing both Dx and Dy")
         raise Exception()
     
     
@@ -324,8 +327,8 @@ def make_okada_final_dz(faultparamss, dtopo_params):
     y=numpy.linspace(dtopo_params['ylower'],dtopo_params['yupper'],my)
     dz = numpy.zeros((my,mx))
     
-    print "Making Okada dz for each of %s subfaults" \
-            % len(subfaults)
+    print("Making Okada dz for each of %s subfaults" \
+            % len(subfaults))
 
     for k,subfault in enumerate(subfaults):
             sys.stdout.write("%s.." % k)
@@ -469,8 +472,8 @@ def make_dtopo_from_subfaults(subfaults, dtopo_params):
 
     if faulttype == 'static':
 
-        print "Making Okada dz for each of %s subfaults" \
-                % len(subfaults)
+        print("Making Okada dz for each of %s subfaults" \
+                % len(subfaults))
         for k,subfault in enumerate(subfaults):
             dZk = okadamap(subfault, x, y)
             sys.stdout.write("%s.." % k)
@@ -503,8 +506,8 @@ def make_dtopo_from_subfaults(subfaults, dtopo_params):
                 if dfrac > 0.:
                     if subfault.get('dZ',None) is None:
                         subfault.dZ = okadamap(subfault, x, y)
-                        print '+++ Applying Okada to subfault %s at t = %s' \
-                            % (k,t)
+                        print('+++ Applying Okada to subfault %s at t = %s' \
+                            % (k,t))
                     dZ = dZ + dfrac * subfault.dZ
 
                 if plot_rupture:
@@ -528,7 +531,7 @@ def make_dtopo_from_subfaults(subfaults, dtopo_params):
     else:   
         raise Exception("Unrecognized faulttype: %s" % faulttype)
 
-    print "Created ",fname
+    print("Created ",fname)
     fid.close()
 
     dtopo = DTopo()
@@ -558,7 +561,7 @@ def write_dz(fname,X,Y,dZ,t0=0.,tend=1.,ntimes=2):
                        % (t,X[i],Y[j],alpha*dZ[j,i]))
 
     fid.close()
-    print "Created ",fname
+    print("Created ",fname)
 
     
 def write_dz_witht(fname,X,Y,dZ,times):
@@ -571,7 +574,7 @@ def write_dz_witht(fname,X,Y,dZ,times):
                      % (times[it],X[i],Y[j],dZ[it,j,i]))
 
     fid.close()
-    print "Created ",fname
+    print("Created ",fname)
 
 
 def read_dtopo_old(fname, deftype=None, only_last=True):
@@ -590,15 +593,15 @@ def read_dtopo_old(fname, deftype=None, only_last=True):
         elif fext=='.xyz':
             deftype = 'static'
         else:
-            print "*** Error determining deftype from file extension"
+            print("*** Error determining deftype from file extension")
             return
 
     if deftype == 'dynamic':
         d = numpy.loadtxt(fname)
-        print "Loaded file %s with %s lines" %(fname,d.shape[0])
+        print("Loaded file %s with %s lines" %(fname,d.shape[0]))
         t = list(set(d[:,0]))
         t.sort()
-        print "times found: ",t
+        print("times found: ",t)
         ntimes = len(t)
         tlast = t[-1]
         lastlines = d[d[:,0]==tlast]
@@ -606,9 +609,9 @@ def read_dtopo_old(fname, deftype=None, only_last=True):
         xvals.sort()
         mx = len(xvals)
         my = len(lastlines) / mx
-        print "Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes)
+        print("Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes))
         if only_last:
-            print "Using only last time with mx=%s and my=%s" % (mx,my)
+            print("Using only last time with mx=%s and my=%s" % (mx,my))
             if mx*my != len(lastlines):
                 raise Exception("*** Error in determining mx and my!\nlen(lastlines)=%s" \
                                   % len(lastlines))      
@@ -619,7 +622,7 @@ def read_dtopo_old(fname, deftype=None, only_last=True):
             X = numpy.reshape(lastlines[:,1],(my,mx))
             Y = numpy.reshape(lastlines[:,2],(my,mx))
             dZ = []
-            print "Returning dZ as a list of mx*my arrays"
+            print("Returning dZ as a list of mx*my arrays")
             for n in range(ntimes):
                 i1 = n*mx*my
                 i2 = (n+1)*mx*my
@@ -630,7 +633,7 @@ def read_dtopo_old(fname, deftype=None, only_last=True):
         xvals.sort()
         mx = len(xvals)
         my = len(d) / mx
-        print "Read dtopo: mx=%s and my=%s" % (mx,my)
+        print("Read dtopo: mx=%s and my=%s" % (mx,my))
         if mx*my != len(d):
             raise Exception("*** Error in determining mx and my!\nlen(d)=%s" \
                               % len(d))
@@ -638,7 +641,7 @@ def read_dtopo_old(fname, deftype=None, only_last=True):
         Y = numpy.reshape(d[:,1],(my,mx))
         dZ = numpy.reshape(d[:,2],(my,mx))
     else:
-        print "*** Unrecognized deftype: ",deftype
+        print("*** Unrecognized deftype: ",deftype)
         raise
 
     return X,Y,dZ
@@ -711,7 +714,7 @@ def plot_subfaults(subfaults, plot_centerline=False, slip_color=False, \
         slip = subfault['slip']
         max_slip = max(abs(slip), max_slip)
         min_slip = min(abs(slip), min_slip)
-    print "Max slip, Min slip: ",max_slip, min_slip
+    print("Max slip, Min slip: ",max_slip, min_slip)
 
     if slip_color:
         if cmap_slip is None:
@@ -723,7 +726,7 @@ def plot_subfaults(subfaults, plot_centerline=False, slip_color=False, \
         if cmin_slip is None:
             cmin_slip = 0.
         if test_random:
-			print "*** test_random == True so slip and rake have been randomized"
+            print("*** test_random == True so slip and rake have been randomized")
         
     y_ave = 0.
     for subfault in subfaults:
@@ -818,7 +821,7 @@ def plot_dz_contours(x,y,dz,dz_interval=0.5):
     clines1 = numpy.arange(dz_interval, dzmax, dz_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
 
-    print "Plotting contour lines at: ",clines
+    print("Plotting contour lines at: ",clines)
     plt.contour(x,y,dz,clines,colors='k')
 
 def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
@@ -841,7 +844,7 @@ def plot_dz_colors(x,y,dz,cmax_dz=None,dz_interval=None):
         dz_interval = cmax_dz/10.
     clines1 = numpy.arange(dz_interval, dzmax + dz_interval, dz_interval)
     clines = list(-numpy.flipud(clines1)) + list(clines1)
-    print "Plotting contour lines at: ",clines
+    print("Plotting contour lines at: ",clines)
     plt.contour(x,y,dz,clines,colors='k',linestyles='solid')
     y_ave = 0.5*(y.min() + y.max())
     plt.gca().set_aspect(1./numpy.cos(y_ave*numpy.pi/180.))
@@ -909,9 +912,9 @@ def builddeffile (okadaparamfile,faultparamfile,outfile):
 
     dZ = filtermask(dZ,faultparams)
     #pdb.set_trace()
-    for jj in xrange(faultparams['my']):
+    for jj in range(faultparams['my']):
         j=-1-jj
-        for i in xrange(faultparams['mx']) :
+        for i in range(faultparams['mx']) :
             fid.write('%012.6e %012.6e %012.6e \n' % (X[i],Y[j],dZ[j,i]))
 
     fid.close()
@@ -939,9 +942,9 @@ def builddynamicdeffile (okadaparamfile,faultparamfile,outfile,t0=0.0, tend=1.0,
     #pdb.set_trace()
     for it in T:
         alpha=(it-t0)/(tend-t0)
-        for jj in xrange(faultparams['my']):
+        for jj in range(faultparams['my']):
             j=-1-jj
-            for i in xrange(faultparams['mx']) :
+            for i in range(faultparams['mx']) :
                 fid.write('%012.6e %012.6e %012.6e %012.6e \n' % (it,X[i],Y[j],alpha*dZ[j,i]))
 
     fid.close()
@@ -975,7 +978,7 @@ def getokadaparams (infile):
 
     for key in keylist :
         if not key in okadaparams:
-            print('ERROR: parameters for okada fault not fully specified in %s' % (infile))
+            print(('ERROR: parameters for okada fault not fully specified in %s' % (infile)))
             exit
 
     fid.close()
@@ -1012,19 +1015,19 @@ def getfaultparams (infile):
     faultgridparams['mx'] = int(faultgridparams['mx'])
     faultgridparams['my'] = int(faultgridparams['my'])
 
-    if faultgridparams.has_key('dx')& faultgridparams.has_key('dy'):
+    if ('dx' in faultgridparams)& ('dy' in faultgridparams):
         faultgridparams['xupper'] = faultgridparams['xlower'] + faultgridparams['dx']*(faultgridparams['mx']-1)
         faultgridparams['yupper'] = faultgridparams['ylower'] + faultgridparams['dy']*(faultgridparams['my']-1)
-    elif faultgridparams.has_key('xupper')&faultgridparams.has_key('yupper'):
+    elif ('xupper' in faultgridparams)&('yupper' in faultgridparams):
         faultgridparams['dx'] = (faultgridparams['xupper']-faultgridparams['xlower'])/(faultgridparams['mx']-1)
         faultgridparams['dy'] = (faultgridparams['yupper']-faultgridparams['ylower'])/(faultgridparams['my']-1)
     else:
-        print('ERROR: parameters for fault grid not fully specified in %s' % (infile))
+        print(('ERROR: parameters for fault grid not fully specified in %s' % (infile)))
         exit
 
     for key in keylist :
         if not key in faultgridparams:
-            print('ERROR: parameters for fault grid not fully specified in %s' % (infile))
+            print(('ERROR: parameters for fault grid not fully specified in %s' % (infile)))
             exit
 
     fid.close()
@@ -1069,7 +1072,7 @@ def okadamap(okadaparams,X,Y):
         #clf()
 
     if print_xy:
-        print "x0,y0: ",x0,y0
+        print("x0,y0: ",x0,y0)
 
 
     if location == "top center":
@@ -1124,12 +1127,12 @@ def okadamap(okadaparams,X,Y):
     dy2 = 0.5*L*numpy.cos(ang_strike) / lat2meter
 
     if print_xy:
-        print "del_x, del_y: ",del_x,del_y
-        print "original x0,y0: ",x0,y0
-        print "bottom: ",x_bottom, y_bottom
-        print "centroid: ",x_centroid, y_centroid
-        print "top: ",x_top, y_top
-        print "dx2,dy2: ",dx2,dy2
+        print("del_x, del_y: ",del_x,del_y)
+        print("original x0,y0: ",x0,y0)
+        print("bottom: ",x_bottom, y_bottom)
+        print("centroid: ",x_centroid, y_centroid)
+        print("top: ",x_top, y_top)
+        print("dx2,dy2: ",dx2,dy2)
     if plot_plane:
         plt.figure(203)
         plt.subplot(211)
@@ -1290,11 +1293,11 @@ def filtermask (dZ,faultparams):
     else:
         drange = 1.2 * npix_x
 
-    print("Filtering deformation using a circle of radius %s" % (drange))
+    print(("Filtering deformation using a circle of radius %s" % (drange)))
 
     #!-- Create the filtering mask ----------
-    for i in xrange(nx):
-        for j in xrange(ny) :
+    for i in range(nx):
+        for j in range(ny) :
             dist = numpy.sqrt((i+1-xpix)**2+(j+1-ypix)**2)
             if dist > drange :
                 filterindices.append((j,i))

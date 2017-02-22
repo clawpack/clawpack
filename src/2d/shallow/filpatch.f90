@@ -37,7 +37,6 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     real(kind=8), intent(in out) :: aux(naux,mx,my)
 
     ! Local storage
-    integer  :: clock_start, clock_finish, clock_rate, clock_dif
     integer  :: iplo, iphi, jplo, jphi
 
     ! Flagging of set cells
@@ -182,7 +181,6 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
         
         if (naux > 0) then
             nghost_patch = 0
-            call system_clock(clock_start,clock_rate)
   
             ! update topography if needed
             !if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
@@ -199,9 +197,6 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
             call setaux(nghost_patch, mx_coarse, my_coarse,       &
                         xlow_coarse, ylow_coarse,                 &
                         dx_coarse,dy_coarse,naux,auxcrse)
-            call system_clock(clock_finish,clock_rate)
-            clock_dif = clock_finish - clock_start
-!$OMP ATOMIC            
 
         endif
 

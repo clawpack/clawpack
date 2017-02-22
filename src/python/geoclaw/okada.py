@@ -17,6 +17,8 @@ Going forward, dtopotools.okadamap should be used instead.
     Xiaoming Wang.
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import pdb
 import numpy
 #import scipy
@@ -27,7 +29,8 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as pyplot
 import os
 import string
-from datatools import *
+from .datatools import *
+from six.moves import range
 
 #=================================================================================
 def builddeffile (okadaparamfile,faultparamfile,outfile):
@@ -47,9 +50,9 @@ def builddeffile (okadaparamfile,faultparamfile,outfile):
 
     dZ = filtermask(dZ,faultparams)
     #pdb.set_trace()
-    for jj in xrange(faultparams['my']):
+    for jj in range(faultparams['my']):
         j=-1-jj
-        for i in xrange(faultparams['mx']) :
+        for i in range(faultparams['mx']) :
             fid.write('%012.6e %012.6e %012.6e \n' % (X[i],Y[j],dZ[j,i]))
 
     fid.close()
@@ -77,9 +80,9 @@ def builddynamicdeffile (okadaparamfile,faultparamfile,outfile,t0=0.0, tend=1.0,
     #pdb.set_trace()
     for it in T:
         alpha=(it-t0)/(tend-t0)
-        for jj in xrange(faultparams['my']):
+        for jj in range(faultparams['my']):
             j=-1-jj
-            for i in xrange(faultparams['mx']) :
+            for i in range(faultparams['mx']) :
                 fid.write('%012.6e %012.6e %012.6e %012.6e \n' % (it,X[i],Y[j],alpha*dZ[j,i]))
 
     fid.close()
@@ -113,7 +116,7 @@ def getokadaparams (infile):
 
     for key in keylist :
         if not key in okadaparams:
-            print('ERROR: parameters for okada fault not fully specified in %s' % (infile))
+            print(('ERROR: parameters for okada fault not fully specified in %s' % (infile)))
             exit
 
     fid.close()
@@ -150,19 +153,19 @@ def getfaultparams (infile):
     faultgridparams['mx'] = int(faultgridparams['mx'])
     faultgridparams['my'] = int(faultgridparams['my'])
 
-    if faultgridparams.has_key('dx')& faultgridparams.has_key('dy'):
+    if ('dx' in faultgridparams)& ('dy' in faultgridparams):
         faultgridparams['xupper'] = faultgridparams['xlower'] + faultgridparams['dx']*(faultgridparams['mx']-1)
         faultgridparams['yupper'] = faultgridparams['ylower'] + faultgridparams['dy']*(faultgridparams['my']-1)
-    elif faultgridparams.has_key('xupper')&faultgridparams.has_key('yupper'):
+    elif ('xupper' in faultgridparams)&('yupper' in faultgridparams):
         faultgridparams['dx'] = (faultgridparams['xupper']-faultgridparams['xlower'])/(faultgridparams['mx']-1)
         faultgridparams['dy'] = (faultgridparams['yupper']-faultgridparams['ylower'])/(faultgridparams['my']-1)
     else:
-        print('ERROR: parameters for fault grid not fully specified in %s' % (infile))
+        print(('ERROR: parameters for fault grid not fully specified in %s' % (infile)))
         exit
 
     for key in keylist :
         if not key in faultgridparams:
-            print('ERROR: parameters for fault grid not fully specified in %s' % (infile))
+            print(('ERROR: parameters for fault grid not fully specified in %s' % (infile)))
             exit
 
     fid.close()
@@ -348,11 +351,11 @@ def filtermask (dZ,faultparams):
     else:
         drange = 1.2 * npix_x
 
-    print("Filtering deformation using a circle of radius %s" % (drange))
+    print(("Filtering deformation using a circle of radius %s" % (drange)))
 
     #!-- Create the filtering mask ----------
-    for i in xrange(nx):
-        for j in xrange(ny) :
+    for i in range(nx):
+        for j in range(ny) :
             dist = sqrt((i+1-xpix)**2+(j+1-ypix)**2)
             if dist > drange :
                 filterindices.append((j,i))
