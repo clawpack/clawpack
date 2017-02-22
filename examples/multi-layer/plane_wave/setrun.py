@@ -128,8 +128,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 200
-    clawdata.num_cells[1] = 200
+    clawdata.num_cells[0] = 180
+    clawdata.num_cells[1] = 180
 
     # ---------------
     # Size of system:
