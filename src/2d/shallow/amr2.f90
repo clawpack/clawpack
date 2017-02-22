@@ -699,13 +699,13 @@ program amr2
     write(outunit,*)
     
     !Total Time
-    format_string="('Total time:   ',1f15.3,'        ',1f15.3,'  ')"
-    write(outunit,format_string) &
-            real(timeTick,kind=8) / real(clock_rate,kind=8), &
-            timeTickCPU         
-    write(*,format_string) &
-            real(timeTick,kind=8) / real(clock_rate,kind=8), &
-            timeTickCPU         
+!     format_string="('Total time:   ',1f15.3,'        ',1f15.3,'  ')"
+!     write(outunit,format_string) &
+!             real(timeTick,kind=8) / real(clock_rate,kind=8), &
+!             timeTickCPU         
+!     write(*,format_string) &
+!             real(timeTick,kind=8) / real(clock_rate,kind=8), &
+!             timeTickCPU         
     
     format_string="('Using',i3,' thread(s)')"
     write(outunit,format_string) maxthreads
