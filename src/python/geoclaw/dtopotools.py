@@ -1373,12 +1373,11 @@ class SubFault(object):
                / lat2meter)
             top_center_longitude = self.longitude - up_strike[0]
             top_center_latitude = self.latitude - up_strike[1]
-            self._centers[0][:2] = (top_center_longitude, self.latitude)
+            self._centers[0][:2] = (top_center_longitude, top_center_latitude)
             self._centers[1][:2] = (top_center_longitude - 0.5 * up_dip[0],
-                                                self.latitude - 0.5 * up_dip[1])
+                                        top_center_latitude - 0.5 * up_dip[1])
             self._centers[2][:2] = (top_center_longitude - up_dip[0],
-                                                self.latitude - up_dip[1])
-
+                                        top_center_latitude - up_dip[1])
 
         else:
             raise ValueError("Unknown coordinate specification '%s'."       \
