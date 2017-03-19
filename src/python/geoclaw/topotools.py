@@ -975,7 +975,7 @@ class Topography(object):
 
     def plot(self, axes=None, contour_levels=None, contour_kwargs={}, 
              limits=None, cmap=None, add_colorbar=True, 
-             plot_box=False, fig_kwargs={}):
+             plot_box=False, fig_kwargs={}, data_break=0.):
         r"""Plot the topography.
 
         :Input:
@@ -994,6 +994,10 @@ class Topography(object):
          - *fig_kwargs* (dict) - keyword arguments to be passed to figure.
          - *plot_box* (bool or color specifier) - If evaluates to True, plot
            a box around limits of this topo. 
+         - *data_break* (float) - when default cmap is used, the value to use
+           to break between water and land colormaps.
+           Defaults to 0., but for some topo files may need to use e.g. 0.01
+           Or may want to show plots at different tide stage.
 
         :Output:
          - *axes* (matplotlib.pyplot.axes) - the axes on which plot created.
@@ -1048,7 +1052,7 @@ class Topography(object):
             else:
                 cmap, norm = colormaps.add_colormaps((land_cmap, sea_cmap), 
                                                      data_limits=topo_extent,
-                                                     data_break=0.0)
+                                                     data_break=data_break)
         else:
             norm = colors.Normalize(vmin=topo_extent[0], vmax=topo_extent[1])
 
