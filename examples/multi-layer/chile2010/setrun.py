@@ -395,12 +395,12 @@ def setgeo(rundata):
     topo_data.topofiles.append([2, 1, 3, 0., 1.e10, topo_path])
 
     # == setdtopo.data values ==
-    dtopo_data = rundata.dtopo_data
-    # for moving topography, append lines of the form :   (<= 1 allowed for now!)
-    #   [topotype, minlevel,maxlevel,fname]
-    dtopo_path = os.path.join(scratch_dir, 'dtopo_usgs100227.tt3')
-    dtopo_data.dtopofiles.append([3,3,3,dtopo_path])
-    dtopo_data.dt_max_dtopo = 0.2
+    # dtopo_data = rundata.dtopo_data
+    # # for moving topography, append lines of the form :   (<= 1 allowed for now!)
+    # #   [topotype, minlevel,maxlevel,fname]
+    # dtopo_path = os.path.join(scratch_dir, 'dtopo_usgs100227.tt3')
+    # dtopo_data.dtopofiles.append([3,3,3,dtopo_path])
+    # dtopo_data.dt_max_dtopo = 0.2
 
 
     # == setqinit.data values ==
@@ -427,7 +427,7 @@ def set_multilayer(rundata):
     # Physics parameters
     data.num_layers = 2
     data.rho = [0.9, 1.0]
-    data.eta = [0.0,-100.6]
+    data.eta = [0.0,-100.0]
     data.wave_tolerance = [1.e-3, 1.e-2]  # not the right values
     
     # Algorithm parameters

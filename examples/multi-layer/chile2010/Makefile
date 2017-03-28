@@ -76,7 +76,8 @@ EXCLUDE_SOURCES = \
 
 MODULES = \
  $(GEOLIB)/multilayer/gauges_module.f90 \
- # ./qinit_module.f90
+ $(GEOLIB)/multilayer/qinit_module.f90 
+ # $(GEOLIB)/multilayer/qinit_module.f90
 
 SOURCES = \
   $(GEOLIB)/multilayer/setaux.f90 \
@@ -85,6 +86,7 @@ SOURCES = \
   $(GEOLIB)/multilayer/stepgrid.f \
   $(GEOLIB)/multilayer/valout.f \
   $(GEOLIB)/multilayer/src2.f90 \
+  $(GEOLIB)/multilayer/qinit.f90 \
   $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/rpt2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f
