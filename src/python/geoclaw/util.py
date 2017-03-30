@@ -128,3 +128,29 @@ def inv_haversine(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
     if units=='degrees':
         dx = dx * RAD2DEG
     return dx
+
+def haversine_dist_from_x0y0(x0, y0, x1, y1, units='degrees'):
+
+    """
+    x0,y0 is assumed to be a point (or an array with the same shapes as x1,y1)
+    x1,y1 is a point or two arrays of points (of the same dimension)
+    returns array with same shape as x1 and y1 containing distance of each point
+    from (x0,y0).
+    """
+    
+
+    if units == 'degrees':
+        # convert to radians:
+        x0 = x0*DEG2RAD
+        y0 = y0*DEG2RAD
+        x1 = x1*DEG2RAD
+        y1 = y1*DEG2RAD
+
+    dx = x1 - x0
+    dy = y1 - y0
+
+    # angle subtended by two points, using Haversine formula:
+    dsigma = 2.0 * numpy.arcsin( numpy.sqrt( numpy.sin(0.5 * dy)**2   \
+            + numpy.cos(y0) * numpy.cos(y1) * numpy.sin(0.5 * dx)**2))
+
+    return Rearth * dsigma
