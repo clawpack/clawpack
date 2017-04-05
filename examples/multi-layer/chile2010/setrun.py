@@ -11,6 +11,9 @@ from __future__ import print_function
 import os
 import numpy as np
 
+import clawpack.geoclaw.data
+import clawpack.geoclaw.topotools as tt
+
 try:
     CLAW = os.environ['CLAW']
 except:
@@ -19,6 +22,53 @@ except:
 # Scratch directory for storing topo and dtopo files:
 scratch_dir = os.path.join(CLAW, 'geoclaw', 'scratch')
 
+# Class containing some setup for the qinit especially for multilayer tests 
+class QinitMultilayerData(clawpack.geoclaw.data.QinitData):
+    r"""
+    Modified Qinit data object for multiple layers
+
+    """
+    import numpy as numpy
+
+
+    def __init__(self):
+        super(QinitMultilayerData, self).__init__()
+
+        # Test qinit data > 4
+        self.add_attribute("init_location", [0.0, 0.0])
+        self.add_attribute("wave_family", 1)
+        self.add_attribute("epsilon", 0.02)
+        self.add_attribute("angle", 0.0)
+        self.add_attribute("sigma", 0.02)
+
+    def write(self, data_source='setrun.py'):
+
+        # Initial perturbation
+        self.open_data_file('qinit.data',data_source)
+        self.data_write('qinit_type')
+
+        # Perturbation requested
+        if self.qinit_type == 0:
+            pass
+        elif 0 < self.qinit_type < 5:
+            # Check to see if each qinit file is present and then write the data
+            for tfile in self.qinitfiles:
+                try:
+                    fname = "'%s'" % os.path.abspath(tfile[-1])
+                except:
+                    raise Warning("File %s was not found." % fname)
+                    # raise MissingFile("file not found")
+                self._out_file.write("\n%s  \n" % fname)
+                self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
+        elif self.qinit_type >= 5 and self.qinit_type <= 9:
+            self.data_write("epsilon")
+            self.data_write("init_location")
+            self.data_write("wave_family")
+            self.data_write("angle")
+            self.data_write("sigma")
+        else:
+            raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
+        self.close_data_file()
 
 #------------------------------
 def setrun(claw_pkg='geoclaw'):
@@ -404,14 +454,14 @@ def setgeo(rundata):
     dtopo_data = rundata.dtopo_data
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
-    dtopo_path = os.path.join(scratch_dir, 'dtopo_usgs100227.tt3')
-    dtopo_data.dtopofiles.append([3,3,3,dtopo_path])
-    dtopo_data.dt_max_dtopo = 0.2
+    # dtopo_path = os.path.join(scratch_dir, 'dtopo_usgs100227.tt3')
+    # dtopo_data.dtopofiles.append([3,3,3,dtopo_path])
+    # dtopo_data.dt_max_dtopo = 0.2
 
 
     # == setqinit.data values ==
-    rundata.qinit_data.qinit_type = 0
-    rundata.qinit_data.qinitfiles = []
+    # rundata.qinit_data.qinit_type = 0
+    # rundata.qinit_data.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
 
@@ -443,13 +493,13 @@ def set_multilayer(rundata):
     # data.wave_tolerance = [0.1,0.1]
     # data.dry_limit = True
 
-    # rundata.replace_data('qinit_data', QinitMultilayerData())
-    # rundata.qinit_data.qinit_type = 6
-    # rundata.qinit_data.epsilon = 0.00
-    # rundata.qinit_data.angle = numpy.pi
-    # rundata.qinit_data.sigma = 0.02
-    # rundata.qinit_data.wave_family = 4
-    # rundata.qinit_data.init_location = [-0.1,0.0]
+    rundata.replace_data('qinit_data', QinitMultilayerData())
+    rundata.qinit_data.qinit_type = 6
+    rundata.qinit_data.epsilon = 0.02
+    rundata.qinit_data.angle = np.pi
+    rundata.qinit_data.sigma = 0.02
+    rundata.qinit_data.wave_family = 4
+    rundata.qinit_data.init_location = [-100.0,0.0]
 
     return rundata
 
