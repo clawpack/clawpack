@@ -436,9 +436,13 @@ contains
 
         ! NetCDF Support
         character(len=10) :: direction
-        character(len=1) :: axis_string
+        ! character(len=1) :: axis_string
         real(kind=8), allocatable :: nc_buffer(:, :)
-        integer :: ios, root_id, z_var_id, var_ids(10), num_vars, row_index
+        
+        integer(kind=4) :: ios, nc_file, num_values
+        integer(kind=4) :: dim_ids(2), num_dims, var_type, var_ids(2), num_vars
+        character(len=10) :: z_var_name, var_name
+        integer(kind=4) :: z_var_id, row_index
 
         print *, ' '
         print *, 'Reading topography file  ', fname
@@ -534,36 +538,69 @@ contains
             case(4)
 #ifdef NETCDF
                 ! Open file    
-                call check_netcdf_error(nf90_open(fname, nf90_nowrite, root_id))
+                call check_netcdf_error(nf90_open(fname, nf90_nowrite, nc_file))
                 
-                ! Find z_var_id
-                call check_netcdf_error(nf90_inq_varids(root_id, num_vars, var_ids))
+                ! Again assume that the topography is the only variable that has
+                ! two dimensions
+                call check_netcdf_error(nf90_inq_varids(nc_file, num_vars, var_ids))
+                ! print *, "n, var_name, var_type, num_dims, dim_ids"
                 z_var_id = -1
-                do n=1,num_vars
-                    ios = nf90_get_att(root_id, var_ids(n), 'Axis', axis_string)
-                    if (ios /= NF90_NOERR) then
-                        ios = nf90_get_att(root_id, var_ids(n), 'axis', axis_string)
+                do n=1, num_vars
+                    call check_netcdf_error(nf90_inquire_variable(nc_file, n, var_name, var_type, num_dims, dim_ids))
+
+                    if (num_dims == 2) then
+                        z_var_name = var_name
+                        call check_netcdf_error(nf90_inq_varid(nc_file, z_var_name, z_var_id))
                     end if
-                    if (ios /= NF90_NOERR) then
-                        z_var_id = var_ids(n)
-                    end if
+
                 end do
+
+                if (z_var_id == -1) then
+                    stop "Unable to find topography data!"
+                end if
 
                 ! Load in data
                 ! TODO: Provide striding into data if need be
                 ! TODO: Only grab section of data within the domain
-                row_index = mx + 1
-                do j=1, my
-                    row_index = row_index - 1
-                    call check_netcdf_error(nf90_get_var(root_id, z_var_id,  &
-                          topo((row_index-1)*mx + 1:(row_index-1)*mx + mx),  &
-                                    start = (/ 1, j /), count=(/ mx, 1 /)))
+                ! ! i = mx + 1
+                ! +--------------------+
+                ! |                    | <--- start on this row
+                ! |                    |
+                ! |                    |
+                ! |                    |
+                ! +--------------------+
+
+
+                allocate(nc_buffer(mx, my))
+                ! print *, size(topo, 1)
+                call check_netcdf_error(nf90_get_var(nc_file, z_var_id, nc_buffer))
+                do j = 0, my - 1
+                    topo(j * mx + 1:(j + 1) * mx) = nc_buffer(:, my - j)
                 end do
+                deallocate(nc_buffer)
+                ! do j=1, my
+                !     i = i - 1
+                !     topo((i - 1) * mx + 1:)
+                ! print *, mx, my
+                ! do j=1, my
+                !     row_index = row_index - 1
+                !     print *, row_index
+                !     print *, (row_index-1)*mx + 1, (row_index-1)*mx + mx
+                !     ! call check_netcdf_error(nf90_get_var(nc_file, z_var_id,    &
+                !             ! topo))
+                !     ! call check_netcdf_error(nf90_get_var(nc_file, z_var_id,  &
+                !     !       topo((row_index-1)*mx + 1:(row_index-1)*mx + mx),  &
+                !     !                 start = (/ 1, j /), count=(/ mx, 1 /)))
+                !     call check_netcdf_error(nf90_get_var(nc_file, z_var_id,  &
+                !           nc_buffer, start = (/ 1, j /), count=(/ mx, 1 /)))
+                !     topo((row_index - 1) * mx + 1:(row_index - 1) * mx + mx) = &
+                !             nc_buffer
+                ! end do
 
                 ! Check if the topography was defined positive down and flip the
                 ! sign if need be.  Just in case this is true but topo_type < 0
                 ! we do not do anything here on this to avoid doing it twice.
-                ios = nf90_get_att(root_id, z_var_id, 'positive', direction)
+                ios = nf90_get_att(nc_file, z_var_id, 'positive', direction)
                 if (ios == NF90_NOERR) then
                     if (to_lower(direction) == "down") then
                         if (topo_type < 0) then
@@ -641,32 +678,39 @@ contains
         ! Input and Output
         character(len=150), intent(in) :: fname
         integer, intent(in) :: topo_type
-        integer, intent(out) :: mx,my
-        real(kind=8), intent(out) :: xll,yll,xhi,yhi,dx,dy
+        integer, intent(out) :: mx, my
+        real(kind=8), intent(out) :: xll, yll, xhi, yhi, dx, dy
 
         ! Local
         integer, parameter :: iunit = 19
-        integer :: topo_size, status, n
+        integer :: topo_size, status, n, i
         real(kind=8) :: x,y,z,nodata_value
         logical :: found_file
         real(kind=8) :: values(10)
         character(len=80) :: str
 
         ! NetCDF Support
-        character(len=1) :: axis_string
-        character(len=6) :: convention_string
-        character(len=10) :: x_dim_name, y_dim_name, z_dim_name
-        character(len=10) :: x_var_name, y_var_name, z_var_name
-        integer :: ios, root_id, x_var_id, y_var_id, z_var_id, var_ids(10)
-        integer :: num_dims, num_vars, type, x_dim_id, y_dim_id, num_values
-        integer :: dim_ids(2)
-        real(kind=8) :: convention_version(10), buffer(10)
+        ! character(len=1) :: axis_string
+        ! character(len=6) :: convention_string
+        ! integer(kind=4) :: convention_version
+        integer(kind=4) :: ios, nc_file, num_values
 
-        ! New
-        real(kind=8), allocatable :: lat(:), long(:)
-        character(len=80) :: temp(6)
+        integer(kind=4) :: dim_ids(2), num_dims, var_type, var_ids(2), num_vars
+        character(len=10) :: var_name
 
-        inquire(file=fname,exist=found_file)
+        character(len=10) :: x_dim_name, x_var_name, y_dim_name, y_var_name, z_var_name
+        integer(kind=4) :: x_var_id, y_var_id, z_var_id
+        logical :: verbose
+        ! character(len=10) :: x_dim_name, y_dim_name, z_dim_name
+        ! character(len=10) :: x_var_name, y_var_name, z_var_name
+        ! integer :: ios, root_id, x_var_id, y_var_id, z_var_id, var_ids(10)
+        ! integer :: num_dims, num_vars, type, x_dim_id, y_dim_id, num_values
+        ! ! integer :: dim_ids(2), z_type
+        ! real(kind=8) :: convention_version(10), buffer(10)
+
+        verbose = .true.
+
+        inquire(file=fname, exist=found_file)
         if (.not. found_file) then
             print *, 'Missing topography file:'
             print *, '   ', fname
@@ -754,75 +798,91 @@ contains
 #ifdef NETCDF
 
                 ! Open file    
-                call check_netcdf_error(nf90_open(fname, nf90_nowrite, root_id))
+                call check_netcdf_error(nf90_open(fname, nf90_nowrite, nc_file))
 
                 ! NetCDF4 GEBCO topography, should conform to CF metadata
                 ! standard
-                ios = nf90_get_att(root_id, NF90_GLOBAL, 'Conventions', convention_string)
-                if (ios /= NF90_NOERR .or. convention_string(1:3) /= "CF-") then
-                    print *, "Topography file does not conform to the CF"
-                    print *, "conventions and meta-data.  Please see the"
-                    print *, "information at "
-                    print *, ""
-                    print *, "    cfconventions.org"
-                    print *, ""
-                    print *, "to find out more info."
-                    stop
+                ! ios = nf90_get_att(nc_file, NF90_GLOBAL, 'Conventions', convention_string)
+                ! if (verbose) then
+                    ! print *, convention_string
+                ! end if
+                ! if (ios /= NF90_NOERR .or. convention_string(1:3) /= "CF-") then
+                !     print *, "Topography file does not conform to the CF"
+                !     print *, "conventions and meta-data.  Please see the"
+                !     print *, "information at "
+                !     print *, ""
+                !     print *, "    cfconventions.org"
+                !     print *, ""
+                !     print *, "to find out more info."
+                !     stop
+                ! end if
+
+                ! call parse_values(convention_string(4:6), num_values, convention_version)
+                ! if (convention_version(1) < CONVENTION_REQUIREMENT) then
+                !     print *, "Topography file conforms to a CF version that"
+                !     print *, "is too old (", convention_version, ").  "
+                !     print *, "Please refer to"
+                !     print *, ""
+                !     print *, "    cfconventions.org"
+                !     print *, ""
+                !     print *, "to find out more info."
+                !     stop
+                ! end if
+
+                ! Get dimensions - Assume the lon-lat are dimensions 1 and 2
+                call check_netcdf_error(nf90_inquire_dimension(nc_file, 1, x_dim_name, mx))
+                call check_netcdf_error(nf90_inquire_dimension(nc_file, 2, y_dim_name, my))
+
+                if (verbose) then
+                    print *, "Names = (", x_dim_name, ", ", y_dim_name, ")"
+                    print *, "Size = (", mx, ", ", my, ")"
                 end if
 
-                call parse_values(convention_string(4:6), num_values, convention_version)
-                if (convention_version(1) < CONVENTION_REQUIREMENT) then
-                    print *, "Topography file conforms to a CF version that"
-                    print *, "is too old (", convention_version, ").  "
-                    print *, "Please refer to"
-                    print *, ""
-                    print *, "    cfconventions.org"
-                    print *, ""
-                    print *, "to find out more info."
-                    stop
-                end if
-
-                ! Find axis identifiers
-                call check_netcdf_error(nf90_inq_varids(root_id, num_vars, var_ids))
-                x_var_id = -1
-                y_var_id = -1
-                do n=1,num_vars
-                    ios = nf90_get_att(root_id, var_ids(n), 'Axis', axis_string)
-                    if (ios /= NF90_NOERR) then
-                        ios = nf90_get_att(root_id, var_ids(n), 'axis', axis_string)
+                ! Read in variables
+                call check_netcdf_error(nf90_inq_varids(nc_file, num_vars, var_ids))
+                print *, "n, var_name, var_type, num_dims, dim_ids"
+                do n=1, num_vars
+                    call check_netcdf_error(nf90_inquire_variable(nc_file, n, var_name, var_type, num_dims, dim_ids))
+                    if (verbose) then
+                        print *, n, ": ", var_name, "|", var_type, "|", num_dims, "|", dim_ids
                     end if
-                    if (ios == NF90_NOERR) then
-                        if (axis_string == "X" .or. axis_string == "x") then
-                            x_var_id = var_ids(n)
-                            call check_netcdf_error(nf90_inquire_variable(root_id, x_var_id, dimids=dim_ids))
-                            x_dim_id = dim_ids(1)
-                        else if ( axis_string == "Y" .or. axis_string == "y" ) then
-                            y_var_id = var_ids(n)
-                            call check_netcdf_error(nf90_inquire_variable(root_id, y_var_id, dimids=dim_ids))
-                            y_dim_id = dim_ids(1)
-                        else
-                            print *,"What happened?"
-                            stop
+
+                    ! Assume dim names are same as var ids
+                    if (var_name == x_dim_name) then
+                        x_var_name = var_name
+                        call check_netcdf_error(nf90_inq_varid(nc_file, x_var_name, x_var_id))
+                        ! x_var_id = n
+                        ! x_var_name = var_name
+                    else if (var_name == y_dim_name) then
+                        y_var_name = var_name
+                        call check_netcdf_error(nf90_inq_varid(nc_file, y_var_name, y_var_id))
+                        ! y_var_id = n
+                        ! y_var_name = var_name
+                    ! Assume that this is the topography data
+                    else if (num_dims == 2) then
+                        z_var_name = var_name
+                        call check_netcdf_error(nf90_inq_varid(nc_file, z_var_name, z_var_id))
+                        ! z_var_id = n
+                        ! z_var_name = var_name
+                    else
+                        if (verbose) then
+                            print *, "Not using var_id ", n
                         end if
                     end if
+
                 end do
 
-                if (x_var_id == -1 .or. y_var_id == -1) then
-                    print *, "Did not identify one of the dimension fields."
-                    stop
-                end if
+                print *, "x_var_name, x_var_id = ", x_var_name, x_var_id
+                print *, "x_var_name, x_var_id = ", y_var_name, y_var_id
+                print *, "x_var_name, x_var_id = ", z_var_name, z_var_id
 
-                ! Read in spatial data
-                call check_netcdf_error(nf90_inquire_dimension(root_id, x_dim_id, len=mx))
-                call check_netcdf_error(nf90_get_var(root_id, x_var_id, xll, start=(/ 1 /)))
-                call check_netcdf_error(nf90_get_var(root_id, x_var_id, xhi, start=(/ mx /)))
-!                 call check_netcdf_error(nf90_inquire)
-                
-                call check_netcdf_error(nf90_inquire_dimension(root_id, y_dim_id, len=my))
-                call check_netcdf_error(nf90_get_var(root_id, y_var_id, yll, start=(/ 1 /)))
-                call check_netcdf_error(nf90_get_var(root_id, y_var_id, yhi, start=(/ my /)))
+                call check_netcdf_error(nf90_get_var(nc_file, x_var_id, xll, start=(/ 1 /)))
+                call check_netcdf_error(nf90_get_var(nc_file, x_var_id, xhi, start=(/ mx /)))
 
-                call check_netcdf_error(nf90_close(root_id))
+                call check_netcdf_error(nf90_get_var(nc_file, y_var_id, yll, start=(/ 1 /)))
+                call check_netcdf_error(nf90_get_var(nc_file, y_var_id, yhi, start=(/ my /)))
+
+                call check_netcdf_error(nf90_close(nc_file))
                 
                 dx = (xhi - xll) / (mx - 1)
                 dy = (yhi - yll) / (my - 1)
