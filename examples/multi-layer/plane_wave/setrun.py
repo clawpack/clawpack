@@ -1,9 +1,7 @@
 """
 Module to set up run time parameters for Clawpack.
-
 The values set in the function setrun are then written out to data files
 that will be read in by the Fortran code.
-
 """
 
 from __future__ import absolute_import
@@ -28,7 +26,6 @@ def transform_p2c(x,y,x0,y0,theta):
 class QinitMultilayerData(clawpack.geoclaw.data.QinitData):
     r"""
     Modified Qinit data object for multiple layers
-
     """
 
     def __init__(self):
@@ -78,13 +75,10 @@ def setrun(claw_pkg='geoclaw'):
 
     """
     Define the parameters used for running Clawpack.
-
     INPUT:
         claw_pkg expected to be "geoclaw" for this setrun.
-
     OUTPUT:
         rundata - object of class ClawRunData
-
     """
 
     from clawpack.clawutil import data
@@ -119,17 +113,17 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
 
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = -2      # west longitude
-    clawdata.upper[0] = 4.0       # east longitude
+    clawdata.lower[0] = -1      # west longitude
+    clawdata.upper[0] = 2.0       # east longitude
 
-    clawdata.lower[1] = -2.0       # south latitude
-    clawdata.upper[1] = 4.0         # north latitude
+    clawdata.lower[1] = -1.0       # south latitude
+    clawdata.upper[1] = 2.0         # north latitude
 
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 40
-    clawdata.num_cells[1] = 40
+    clawdata.num_cells[0] = 80
+    clawdata.num_cells[1] = 80
 
     # ---------------
     # Size of system:
@@ -174,7 +168,7 @@ def setrun(claw_pkg='geoclaw'):
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
         clawdata.num_output_times = 10
-        clawdata.tfinal = 1.0
+        clawdata.tfinal = 0.3
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -203,7 +197,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 3
+    clawdata.verbosity = 1
 
 
 
@@ -217,7 +211,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # Initial time step for variable dt.
     # If dt_variable==0 then dt=dt_initial for all steps:
-    clawdata.dt_initial = 0.005
+    clawdata.dt_initial = 0.00225
 
     # Max time step to be allowed if variable dt used:
     clawdata.dt_max = 1e+99
@@ -266,7 +260,6 @@ def setrun(claw_pkg='geoclaw'):
     #   3 or 'mc'       ==> MC limiter
     #   4 or 'vanleer'  ==> van Leer
     clawdata.limiter = ['mc', 'mc', 'mc', 'mc', 'mc', 'mc']
-    # clawdata.limiter = ['none', 'none', 'none', 'none', 'none', 'none']
 
     clawdata.use_fwaves = True    # True ==> use f-wave version of algorithms
     
@@ -290,17 +283,12 @@ def setrun(claw_pkg='geoclaw'):
     #   2 => periodic (must specify this at both boundaries)
     #   3 => solid wall for systems where q(2) is normal velocity
 
-    # clawdata.bc_lower[0] = 'extrap'
-    # clawdata.bc_upper[0] = 'extrap'
+    clawdata.bc_lower[0] = 'extrap'
+    clawdata.bc_upper[0] = 'extrap'
 
-    # clawdata.bc_lower[1] = 'extrap'
-    # clawdata.bc_upper[1] = 'extrap'
-    
-    clawdata.bc_lower[0] = 'wall'
-    clawdata.bc_upper[0] = 'wall'
+    clawdata.bc_lower[1] = 'extrap'
+    clawdata.bc_upper[1] = 'extrap'
 
-    clawdata.bc_lower[1] = 'wall'
-    clawdata.bc_upper[1] = 'wall'
 
 
     # --------------
@@ -336,12 +324,12 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 1
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,2,2,2,2,2,2]
-    amrdata.refinement_ratios_y = [2,2,2,2,2,2,2]
-    amrdata.refinement_ratios_t = [2,2,2,2,2,2,2]
+    amrdata.refinement_ratios_x = [2,4]
+    amrdata.refinement_ratios_y = [2,4]
+    amrdata.refinement_ratios_t = [2,4]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
@@ -356,18 +344,18 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.flag2refine = True
 
     # steps to take on each level L between regriddings of level L+1:
-    amrdata.regrid_interval = 2
+    amrdata.regrid_interval = 3
 
     # width of buffer zone around flagged points:
     # (typically the same as regrid_interval so waves don't escape):
-    amrdata.regrid_buffer_width  = 3
+    amrdata.regrid_buffer_width  = 2
 
     # clustering alg. cutoff for (# flagged pts) / (total # of cells refined)
     # (closer to 1.0 => more small grids may be needed to cover flagged cells)
     amrdata.clustering_cutoff = 0.700000
 
     # print info about each regridding up to this level:
-    amrdata.verbosity_regrid = 3  
+    amrdata.verbosity_regrid = 0  
 
     #  ----- For developers ----- 
     # Toggle debugging print statements:
@@ -439,7 +427,7 @@ def setgeo(rundata):
     geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = [0.0, -0.6]
+    geo_data.sea_level = [0.0, -.6]
     geo_data.dry_tolerance = 1.e-3
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025
@@ -475,21 +463,20 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [0.9, 1.0]
-    data.eta = [0.0,-1.6]
-    data.wave_tolerance = [1.e-3, 1.e-2]  # not the right values
+    data.rho = [0.9,1.0]
+    data.eta = [0.0,-0.6]
     
     # Algorithm parameters
     data.eigen_method = 2
     data.inundation_method = 2
     data.richardson_tolerance = 0.95
-    # data.wave_tolerance = [0.1,0.1]
+    data.wave_tolerance = [1e-3,1e-2]
     # data.dry_limit = True
 
     rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6
     rundata.qinit_data.epsilon = 0.02
-    rundata.qinit_data.angle = numpy.pi
+    rundata.qinit_data.angle = 0.0
     rundata.qinit_data.sigma = 0.02
     rundata.qinit_data.wave_family = 4
     rundata.qinit_data.init_location = [-0.1,0.0]
@@ -497,7 +484,7 @@ def set_multilayer(rundata):
     return rundata
 
 
-def bathy_step(x, y, location=1.5, angle=0.0, left=-1.0, right=-1.0):
+def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
     x_c,y_c = transform_p2c(x, y, location, 0.0, angle)
     return ((x_c <= 0.0) * left 
           + (x_c >  0.0) * right)
