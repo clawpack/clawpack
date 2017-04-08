@@ -196,7 +196,7 @@ contains
                 ! Handle restart
                 if (restart) then
                     open(unit=OUTGAUGEUNIT, file=gauges(i)%file_name,       &
-                         status='old', position='append', form='formatted')
+                         status='unknown', position='append', form='formatted')
                 else
                     open(unit=OUTGAUGEUNIT, file=gauges(i)%file_name,       &
                          status='unknown', position='append', form='formatted')
