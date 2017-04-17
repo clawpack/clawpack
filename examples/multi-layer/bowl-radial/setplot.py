@@ -7,16 +7,19 @@ function setplot is called to set the plot parameters.
     
 """ 
 
-
 from __future__ import absolute_import
 from __future__ import print_function
+import numpy as np
+import matplotlib.pyplot as plt
+
+from clawpack.geoclaw import topotools
+from six.moves import range
+import os
 
 try:
-    from setplotfg import setplotfg
+    TG32412 = np.loadtxt('32412_notide.txt')
 except:
-    print("Did not find setplotfg.py")
-    setplotfg = None
-
+    print("*** Could not load DART data file")
 
 #--------------------------
 def setplot(plotdata=None):
@@ -29,27 +32,39 @@ def setplot(plotdata=None):
     
     """ 
 
+    import os
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    from clawpack.visclaw import geoplot, gaugetools, colormaps
+
+    import clawpack.clawutil.data as clawutil
+    import clawpack.amrclaw.data as amrclaw
+    import clawpack.geoclaw.data
+
+    import clawpack.geoclaw.multilayer.plot as ml_plot
+
     if plotdata is None:
         from clawpack.visclaw.data import ClawPlotData
         plotdata = ClawPlotData()
 
+    from numpy import linspace
 
-    from clawpack.visclaw import colormaps, geoplot
+
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
+    plotdata.save_frames = False
 
-    plotdata.format = 'ascii'                # Format of output
-    # plotdata.format = 'netcdf'             
-
-    def set_drytol(current_data):
-        # The drytol parameter is used in masking land and water and
-        # affects what color map is used for cells with small water depth h.
-        # The cell will be plotted as dry if h < drytol.
-        # The best value to use often depends on the application and can
-        # be set here (measured in meters):
-        current_data.user['drytol'] = 1.e-2
-
-    plotdata.beforeframe = set_drytol
+    # Load data from output
+    clawdata = clawutil.ClawInputData(2)
+    clawdata.read(os.path.join(plotdata.outdir,'claw.data'))
+    amrdata = amrclaw.AmrclawInputData(clawdata)
+    amrdata.read(os.path.join(plotdata.outdir,'amr.data'))
+    geodata = clawpack.geoclaw.data.GeoClawData()
+    geodata.read(os.path.join(plotdata.outdir,'geoclaw.data'))
+    multilayer_data = clawpack.geoclaw.data.MultilayerData()
+    multilayer_data.read(os.path.join(plotdata.outdir,'multilayer.data'))
 
     # To plot gauge locations on pcolor or contour plot, use this as
     # an afteraxis function:
@@ -58,201 +73,168 @@ def setplot(plotdata=None):
         from clawpack.visclaw import gaugetools
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos='all', format_string='ko', add_labels=True)
+
+    # ========================================================================
+    #  Generic helper functions
+    # ========================================================================
+    # def pcolor_afteraxes(current_data):
+    #     bathy_ref_lines(current_data)
+    #     gauge_locations(current_data)
+        
+    def contour_afteraxes(current_data):
+        # gauge_locations(current_data)
+        # m_to_km_labels()
+        plt.hold(True)
+        pos = -80.0 * (23e3 / 180) + 500e3 - 5e3
+        plt.plot([pos,pos],[-300e3,300e3],'b',[pos-5e3,pos-5e3],[-300e3,300e3],'y')
+        plt.hold(False)
+        wind_contours(current_data)
+        bathy_ref_lines(current_data)
+        
+    def profile_afteraxes(current_data):
+        pass
+        
+    # def bathy_ref_lines(current_data):
+    #     plt.hold(True)
+    #     for ref_line in ref_lines:
+    #         x1 = ref_line[0][0]
+    #         y1 = ref_line[0][1]
+    #         x2 = ref_line[1][0]
+    #         y2 =  ref_line[1][1]
+    #         plt.plot([x1,x2],[y1,y2],'y--',linewidth=1)
+    #     plt.hold(False)
+        
+    def gauge_locations(current_data,gaugenos='all'):
+        plt.hold(True)
+        gaugetools.plot_gauge_locations(current_data.plotdata, \
+             gaugenos=gaugenos, format_string='kx', add_labels=True)
+        plt.hold(False)
+    
+     # ========================================================================
+    # Axis limits
+    # xlimits = [amrdata.xlower,amrdata.xupper]
+    xlimits = [-100.0, 100.0]
+    # xlimits = [-80.0, -70.0]
+
+    # ylimits = [amrdata.ylower,amrdata.yupper]
+    ylimits = [-100.0, 100.0]
+    # ylimits = [-40.0, -30.0]
+    
+    eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
+    print('Avi: eta = ', eta) 
+
+    top_surface_limits = [eta[0]-1,eta[0]+1]
+    internal_surface_limits = [eta[1]-1,eta[1]+1]
+    # top_surface_limits = [eta[0]-0.3,eta[0]+0.3]
+    # internal_surface_limits = [eta[1]-0.15,eta[1]+0.15]
+    top_speed_limits = [0.0,0.1]
+    internal_speed_limits = [0.0,0.03]
+    
+    # Single layer test limits
+    # top_surface_limits = [eta[0]-2.5,eta[0]+2.5]
+    # top_speed_limits = [0.0,6.0]
     
 
-    #-----------------------------------------
-    # Figure for pcolor plot
-    #-----------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='pcolor', figno=0)
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes('pcolor')
-    plotaxes.title = 'Surface'
+    # ========================================================================
+    #  Surface Elevations
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
+    plotfigure.show = True
+    plotfigure.kwargs = {'figsize':(14,4)}
+    
+    # Top surface
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Top Surface'
+    plotaxes.axescmd = 'subplot(1,2,1)'
     plotaxes.scaled = True
-
-    # Water
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    #plotitem.plot_var = geoplot.surface
-    plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    plotitem.pcolor_cmin = -0.9
-    plotitem.pcolor_cmax = 0.9
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [1,1,0]
-    plotitem.amr_patchedges_show = [1]
-
-    # Land
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = geoplot.land
-    plotitem.pcolor_cmap = geoplot.land_colors
-    plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 100.0
-    plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [1,1,0]
-    plotaxes.xlimits = [-100,100]
-    plotaxes.ylimits = [-100,100]
-
-
-
-    #-----------------------------------------
-    # Figure for zoom
-    #-----------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='Zoom', figno=10)
-    #plotfigure.show = False
-    plotfigure.kwargs = {'figsize':[12,7]}
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes('diag zoom')
-    plotaxes.axescmd = 'axes([0.0,0.1,0.6,0.6])'
-    plotaxes.title = 'On diagonal'
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    # plotaxes.afteraxes = pcolor_afteraxes
+    ml_plot.add_surface_elevation(plotaxes,1,bounds=top_surface_limits)
+    # ml_plot.add_surface_elevation(plotaxes,1,bounds=[-0.06,0.06])
+    # ml_plot.add_surface_elevation(plotaxes,1)
+    ml_plot.add_land(plotaxes)
+    
+    # Bottom surface
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Internal Surface'
+    plotaxes.axescmd = 'subplot(1,2,2)'
     plotaxes.scaled = True
-    plotaxes.xlimits = [55,66]
-    plotaxes.ylimits = [55,66]
-    plotaxes.afteraxes = addgauges
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    # plotaxes.afteraxes = pcolor_afteraxes
+    # ml_plot.add_surface_elevation(plotaxes,2,bounds=[-300-0.5,-300+0.5])
+    ml_plot.add_surface_elevation(plotaxes,2,bounds=internal_surface_limits)
+    ml_plot.add_colorbar = True
+    # ml_plot.add_surface_elevation(plotaxes,2)
+    ml_plot.add_land(plotaxes)
 
-    # Water
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    #plotitem.plot_var = geoplot.surface
-    plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    plotitem.pcolor_cmin = -0.9
-    plotitem.pcolor_cmax = 0.9
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [1,1,0]
-    plotitem.amr_patchedges_show = [1]
+    # #-----------------------------------------
+    # # Figure for surface
+    # #-----------------------------------------
+    # plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
 
-    # Land
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = geoplot.land
-    plotitem.pcolor_cmap = geoplot.land_colors
-    plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 100.0
-    plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [1,1,0]
+    # # Set up for axes in this figure:
+    # plotaxes = plotfigure.new_plotaxes('pcolor')
+    # plotaxes.title = 'Surface'
+    # plotaxes.scaled = True
 
-    # Add contour lines of bathymetry:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.plot_var = geoplot.topo
-    from numpy import arange, linspace
-    plotitem.contour_levels = arange(-10., 0., 1.)
-    plotitem.amr_contour_colors = ['k']  # color on each level
-    plotitem.kwargs = {'linestyles':'solid'}
-    plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.celledges_show = 0
-    plotitem.patchedges_show = 0
-    plotitem.show = True
+    # def fixup(current_data):
+    #     import pylab
+    #     addgauges(current_data)
+    #     t = current_data.t
+    #     t = t / 3600.  # hours
+    #     pylab.title('Surface at %4.2f hours' % t, fontsize=20)
+    #     pylab.xticks(fontsize=15)
+    #     pylab.yticks(fontsize=15)
+    # plotaxes.afteraxes = fixup
 
-    # Add contour lines of topography:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.plot_var = geoplot.topo
-    from numpy import arange, linspace
-    plotitem.contour_levels = arange(0., 11., 1.)
-    plotitem.amr_contour_colors = ['g']  # color on each level
-    plotitem.kwargs = {'linestyles':'solid'}
-    plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.celledges_show = 0
-    plotitem.patchedges_show = 0
-    plotitem.show = True
+    # # Water
+    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    # #plotitem.plot_var = geoplot.surface
+    # plotitem.plot_var = geoplot.surface_or_depth
+    # plotitem.pcolor_cmap = geoplot.tsunami_colormap
+    # plotitem.pcolor_cmin = -0.2
+    # plotitem.pcolor_cmax = 0.2
+    # plotitem.add_colorbar = True
+    # plotitem.amr_celledges_show = [0,0,0]
+    # plotitem.patchedges_show = 1
 
-    # Add dashed contour line for shoreline
-    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.plot_var = geoplot.topo
-    plotitem.contour_levels = [0.]
-    plotitem.amr_contour_colors = ['k']  # color on each level
-    plotitem.kwargs = {'linestyles':'dashed'}
-    plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.celledges_show = 0
-    plotitem.patchedges_show = 0
-    plotitem.show = True
+    # # Land
+    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    # plotitem.plot_var = geoplot.land
+    # plotitem.pcolor_cmap = geoplot.land_colors
+    # plotitem.pcolor_cmin = 0.0
+    # plotitem.pcolor_cmax = 100.0
+    # plotitem.add_colorbar = False
+    # plotitem.amr_celledges_show = [1,1,0]
+    # plotitem.patchedges_show = 1
+    # plotaxes.xlimits = [-120,-60]
+    # plotaxes.ylimits = [-60,0]
 
-
-
-    #-----------------------------------------
-    # Figure for zoom near axis
-    #-----------------------------------------
-    #plotfigure = plotdata.new_plotfigure(name='Zoom2', figno=11)
-    # now included in same figure as zoom on diagonal
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes('x zoom')
-    plotaxes.show = True
-    plotaxes.axescmd = 'axes([0.5,0.1,0.6,0.6])'
-    plotaxes.title = 'On x-axis'
-    plotaxes.scaled = True
-    plotaxes.xlimits = [82,93]
-    plotaxes.ylimits = [-5,6]
-    plotaxes.afteraxes = addgauges
-
-    # Water
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    #plotitem.plot_var = geoplot.surface
-    plotitem.plot_var = geoplot.surface_or_depth
-    plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    plotitem.pcolor_cmin = -0.9
-    plotitem.pcolor_cmax = 0.9
-    plotitem.add_colorbar = True
-    plotitem.amr_celledges_show = [1,1,0]
-    plotitem.amr_patchedges_show = [1]
-
-    # Land
-    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    plotitem.plot_var = geoplot.land
-    plotitem.pcolor_cmap = geoplot.land_colors
-    plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 100.0
-    plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [1,1,0]
-
-
-    # Add contour lines of bathymetry:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.plot_var = geoplot.topo
-    from numpy import arange, linspace
-    plotitem.contour_levels = arange(-10., 0., 1.)
-    plotitem.amr_contour_colors = ['k']  # color on each level
-    plotitem.kwargs = {'linestyles':'solid'}
-    plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.celledges_show = 0
-    plotitem.patchedges_show = 0
-    plotitem.show = True
-
-    # Add contour lines of topography:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.plot_var = geoplot.topo
-    from numpy import arange, linspace
-    plotitem.contour_levels = arange(0., 11., 1.)
-    plotitem.amr_contour_colors = ['g']  # color on each level
-    plotitem.kwargs = {'linestyles':'solid'}
-    plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.celledges_show = 0
-    plotitem.patchedges_show = 0
-    plotitem.show = True
-
-    # Add dashed contour line for shoreline
-    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    plotitem.plot_var = geoplot.topo
-    plotitem.contour_levels = [0.]
-    plotitem.amr_contour_colors = ['k']  # color on each level
-    plotitem.kwargs = {'linestyles':'dashed'}
-    plotitem.amr_contour_show = [0,0,1]  # show contours only on finest level
-    plotitem.celledges_show = 0
-    plotitem.patchedges_show = 0
-    plotitem.show = True
-
+    # # add contour lines of bathy if desired:
+    # plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+    # plotitem.show = False
+    # plotitem.plot_var = geoplot.topo
+    # plotitem.contour_levels = linspace(-3000,-3000,1)
+    # plotitem.amr_contour_colors = ['y']  # color on each level
+    # plotitem.kwargs = {'linestyles':'solid','linewidths':2}
+    # plotitem.amr_contour_show = [1,0,0]  
+    # plotitem.celledges_show = 0
+    # plotitem.patchedges_show = 0
 
 
     #-----------------------------------------
     # Figures for gauges
     #-----------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='Surface & topo', figno=300, \
+    plotfigure = plotdata.new_plotfigure(name='Surface at gauges', figno=300, \
                     type='each_gauge')
-
     plotfigure.clf_each_gauge = True
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = 'auto'
-    plotaxes.ylimits = [-2.0, 2.0]
+    plotaxes.ylimits = 'auto'
     plotaxes.title = 'Surface'
 
     # Plot surface as blue curve:
@@ -262,6 +244,7 @@ def setplot(plotdata=None):
 
     # Plot topo as green curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
+    plotitem.show = False
 
     def gaugetopo(current_data):
         q = current_data.q
@@ -272,62 +255,27 @@ def setplot(plotdata=None):
         
     plotitem.plot_var = gaugetopo
     plotitem.plotstyle = 'g-'
+
     def add_zeroline(current_data):
-        from pylab import plot, legend
-        t = current_data.t
-        legend(('surface','topography'),loc='lower left')
+        from pylab import plot, legend, xticks, floor, axis, xlabel
+        t = current_data.t 
+        gaugeno = current_data.gaugeno
+
+        if gaugeno == 32412:
+            try:
+                plot(TG32412[:,0], TG32412[:,1], 'r')
+                legend(['GeoClaw','Obs'],loc='lower right')
+            except: pass
+            axis((0,t.max(),-0.3,0.3))
+
         plot(t, 0*t, 'k')
+        n = int(floor(t.max()/3600.) + 2)
+        xticks([3600*i for i in range(n)], ['%i' % i for i in range(n)])
+        xlabel('time (hours)')
 
     plotaxes.afteraxes = add_zeroline
 
 
-    #-----------------------------------------
-    # Figure for patches alone
-    #-----------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='patches', figno=2)
-    plotfigure.show = False
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = [0,1]
-    plotaxes.ylimits = [0,1]
-    plotaxes.title = 'patches'
-    plotaxes.scaled = True
-
-    # Set up for item on these axes:
-    plotitem = plotaxes.new_plotitem(plot_type='2d_patch')
-    plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-    plotitem.amr_celledges_show = [1,1,0]   
-    plotitem.amr_patchedges_show = [1]     
-
-    #-----------------------------------------
-    # Scatter plot of surface for radially symmetric
-    #-----------------------------------------
-    plotfigure = plotdata.new_plotfigure(name='Scatter', figno=200)
-    plotfigure.show = False
-    # Note: will not look very good unless more of domain is refined
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = [0., 100.]
-    plotaxes.ylimits = [-1.5, 2.]
-    plotaxes.title = 'Scatter plot of surface'
-
-    # Set up for item on these axes:
-    plotitem = plotaxes.new_plotitem(plot_type='1d_from_2d_data')
-    plotitem.plot_var = geoplot.surface
-    def q_vs_radius(current_data):
-        from numpy import sqrt
-        x = current_data.x
-        y = current_data.y
-        r = sqrt(x**2 + y**2)
-        q = current_data.var
-        return r,q
-    plotitem.map_2d_to_1d = q_vs_radius
-    plotitem.plotstyle = 'o'
-    plotitem.amr_color=['b','r','g']
-    plotaxes.afteraxes = "import pylab; pylab.legend(['Level 1','Level 2'])"
-    
 
     #-----------------------------------------
     
@@ -337,7 +285,7 @@ def setplot(plotdata=None):
     plotdata.printfigs = True                # print figures
     plotdata.print_format = 'png'            # file format
     plotdata.print_framenos = 'all'          # list of frames to print
-    plotdata.print_gaugenos = [4,5,104,105]  # list of gauges to print
+    plotdata.print_gaugenos = 'all'          # list of gauges to print
     plotdata.print_fignos = 'all'            # list of figures to print
     plotdata.html = True                     # create html files of plots?
     plotdata.html_homelink = '../README.html'   # pointer for top of index
@@ -349,4 +297,3 @@ def setplot(plotdata=None):
 
     return plotdata
 
-    

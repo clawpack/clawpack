@@ -57,7 +57,7 @@ def qinit(x,y):
     """
     from numpy import where
     ze = -((x+0e0)**2 + (y+0e0)**2)/10.
-    z = where(ze>-10., 40.e0*exp(ze), 0.)
+    z = where(ze>-10., 10.e0*exp(ze), 0.)
     return z
 
 if __name__=='__main__':
