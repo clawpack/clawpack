@@ -61,6 +61,7 @@ SUBPACKAGES = {
     'pyclaw': {
         'python_src_dir': [('pyclaw', 'src'),
                            ('petclaw', 'src'),
+                           ('forestclaw', 'src'),
                            (join('pyclaw','examples'), '..')]
     },
     'riemann': {
