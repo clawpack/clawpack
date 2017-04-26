@@ -121,7 +121,6 @@ def setplot(plotdata=None):
     # ylimits = [-40.0, -30.0]
     
     eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
-    print('Avi: eta = ', eta) 
 
     top_surface_limits = [eta[0]-1,eta[0]+1]
     internal_surface_limits = [eta[1]-1,eta[1]+1]
@@ -153,7 +152,7 @@ def setplot(plotdata=None):
     ml_plot.add_surface_elevation(plotaxes,1,bounds=top_surface_limits)
     # ml_plot.add_surface_elevation(plotaxes,1,bounds=[-0.06,0.06])
     # ml_plot.add_surface_elevation(plotaxes,1)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
     
     # Bottom surface
     plotaxes = plotfigure.new_plotaxes()
@@ -167,7 +166,7 @@ def setplot(plotdata=None):
     ml_plot.add_surface_elevation(plotaxes,2,bounds=internal_surface_limits)
     ml_plot.add_colorbar = True
     # ml_plot.add_surface_elevation(plotaxes,2)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 2)
 
     # #-----------------------------------------
     # # Figure for surface
