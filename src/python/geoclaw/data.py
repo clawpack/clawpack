@@ -313,14 +313,15 @@ class QinitData(clawpack.clawutil.data.ClawData):
         # Perturbation requested
         if self.qinit_type == 0:
             pass
-        elif 0 < self.qinit_type < 5:
+        # elif 0 < self.qinit_type < 5:
+        else:
             # Check to see if each qinit file is present and then write the data
             for tfile in self.qinitfiles:
                 fname = "'%s'" % os.path.abspath(tfile[-1])
                 self._out_file.write("\n%s  \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
-        else:
-            raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
+        # else:
+        #     raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
         self.close_data_file()
 
 

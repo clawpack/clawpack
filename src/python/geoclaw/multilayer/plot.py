@@ -18,7 +18,47 @@ from six.moves import range
 #  Data extraction routines
 #     0    1     2     3    4     5      6     7      8      9
 #   h(1),hu(1),hv(1),h(2),hu(2),hv(2),eta(1),eta(2),wind_x,wind_y    
-# ========================================================================    
+# ======================================================================== 
+# def layered_land(surface):
+#     if surface == 1:
+#         def land(cd):
+#             """
+#             Return a masked array containing the surface elevation only in dry cells.
+#             """
+#             drytol = 10**-3
+#             q = cd.q
+#             h = q[0,:,:]
+#             eta = q[6,:,:]
+#             land = numpy.ma.masked_where(h>drytol, eta)
+#             return land
+#     elif surface == 2:
+#         def land(cd):
+#             """
+#             Return a masked array containing the surface elevation only in dry cells.
+#             """
+#             drytol = 10**-3
+#             q = cd.q
+#             h = q[1,:,:]
+#             eta = q[7,:,:]
+#             land = numpy.ma.masked_where(h>drytol, eta)
+#             return land
+#     return land
+
+
+def layered_land(surface, DRY_TOL=10**-3):
+
+    def land(cd):
+        """
+        Return a masked array containing the surface elevation only in dry cells.
+        """
+        q = cd.q
+        h = q[surface-1,:,:]
+        eta = q[surface+5,:,:]
+        land = numpy.ma.masked_where(h>DRY_TOL, eta)
+        return land
+    
+    return land
+
 def extract_eta(h,eta,DRY_TOL=10**-3):
     masked_eta = numpy.ma.masked_where(numpy.abs(h) < DRY_TOL, eta)
     # index = numpy.nonzero((numpy.abs(h) < DRY_TOL) + (h == numpy.nan))
@@ -32,6 +72,14 @@ def eta1(cd):
 def eta2(cd):
     # return cd.q[:,:,7]
     return extract_eta(cd.q[3,:,:],cd.q[7,:,:])
+
+# def h1(cd):
+#     # return cd.q[:,:,6]
+#     return extract_h(cd.q[0,:,:],cd.q[6,:,:])
+    
+# def h2(cd):
+#     # return cd.q[:,:,7]
+#     return extract_h(cd.q[3,:,:],cd.q[7,:,:])
 
 def b(current_data):
     h1 = current_data.q[0,:,:]
@@ -212,32 +260,32 @@ def add_y_velocity(plotaxes,layer,plot_type='pcolor',bounds=None):
 
 
 # Land
-def add_land(plotaxes,plot_type='pcolor'):
+def add_land(plotaxes, surface, plot_type='pcolor'):
     r"""Add plot item for land"""
-    
-    if plot_type == 'pcolor':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
-        plotitem.show = True
-        plotitem.plot_var = geoplot.land
-        plotitem.imshow_cmap = geoplot.land_colors
-        plotitem.imshow_cmin = 0.0
-        plotitem.imshow_cmax = 80.0
-        plotitem.add_colorbar = False
-        plotitem.amr_celledges_show = [0,0,0]
-        plotitem.amr_patchedges_show = [1,1,1]
-    elif plot_type == 'contour':            
-        plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-        plotitem.plot_var = geoplot.land
-        plotitem.contour_nlevels = 40
-        plotitem.contour_min = 0.0
-        plotitem.contour_max = 100.0
-        plotitem.amr_contour_colors = ['g']  # color on each level
-        plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-        plotitem.celledges_show = 0
-        plotitem.patchedges_show = 0
-        plotitem.show = True
-    else:
-        raise NotImplementedError("Plot type %s not implemented" % plot_type)
+    if surface == 1 or surface == 2:
+        if plot_type == 'pcolor':
+            plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+            plotitem.show = True
+            plotitem.plot_var = layered_land(surface)
+            plotitem.imshow_cmap = geoplot.land_colors
+            plotitem.imshow_cmin = 0.0
+            plotitem.imshow_cmax = 80.0
+            plotitem.add_colorbar = False
+            plotitem.amr_celledges_show = [0,0,0]
+            plotitem.amr_patchedges_show = [1,1,1]
+        elif plot_type == 'contour':            
+            plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+            plotitem.plot_var = geoplot.land
+            plotitem.contour_nlevels = 40
+            plotitem.contour_min = 0.0
+            plotitem.contour_max = 100.0
+            plotitem.amr_contour_colors = ['g']  # color on each level
+            plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+            plotitem.celledges_show = 0
+            plotitem.patchedges_show = 0
+            plotitem.show = True
+        else:
+            raise NotImplementedError("Plot type %s not implemented" % plot_type)
         
 def add_combined_profile_plot(plot_data,slice_value,direction='x',figno=120):
     def slice_index(cd):
