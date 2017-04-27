@@ -1269,6 +1269,8 @@ class SubFault(object):
                          This mixed convention is used by the NOAA SIFT
                          database and "unit sources", see:
                          http://nctr.pmel.noaa.gov/propagation-database.html
+          - "top upstrike corner": (longitude,latitude) and depth at 
+                         corner of fault that is both updip and upstrike.
 
         The Okada model is expressed assuming (longitude,latitude) and depth
         are at the bottom center of the fault plane, so values must be

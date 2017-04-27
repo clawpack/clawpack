@@ -83,28 +83,41 @@ def dist_meters2latlong(dx, dy, latitude=0.0):
     return dxd, dyd
 
 
-def haversine(x, y, units='degrees'):
-    r"""Compute the great circle distance on the earth between points x and y.
-
+def haversine(x0, y0, x1=None, y1=None, units='degrees'):
 
     """
+    x0,y0 is assumed to be a point (or an array with the same shapes as x1,y1)
+    x1,y1 is a point or two arrays of points (of the same dimension)
+    returns array with same shape as x1 and y1 containing distance of each point
+    from (x0,y0).
+
+    For backward compatibility, also allows x0,y0 to be 2-tuples specifying
+    two points, but this is not suggested since the notation is not consistent.
+    """
+    
+    if x1 is None:
+        # for backward compatibility, assume in this case that x0 and y0 
+        # are tuples for the two desired points:
+        assert len(x0)==len(y0)==2, "*** Unexpected input"
+        x1,y1 = y0
+        x0,y0 = x0
+
     if units == 'degrees':
         # convert to radians:
-        x *= DEG2RAD
-        y *= DEG2RAD
+        x0 = x0*DEG2RAD
+        y0 = y0*DEG2RAD
+        x1 = x1*DEG2RAD
+        y1 = y1*DEG2RAD
 
-    delta = [x[0] - y[0], x[1] - y[1]]
+    dx = x1 - x0
+    dy = y1 - y0
 
     # angle subtended by two points, using Haversine formula:
-    dsigma = 2.0 * numpy.arcsin( numpy.sqrt( numpy.sin(0.5 * delta[1])**2   \
-            + numpy.cos(x[1]) * numpy.cos(y[1]) * numpy.sin(0.5 * delta[0])**2))
-
-    # alternative formula that may have more rounding error:
-    #dsigma2 = arccos(sin(y1)*sin(y2)+ cos(y1)*cos(y2)*cos(dx))
-    #print "max diff in dsigma: ", abs(dsigma-dsigma2).max()
+    dsigma = 2.0 * numpy.arcsin( numpy.sqrt( numpy.sin(0.5 * dy)**2   \
+            + numpy.cos(y0) * numpy.cos(y1) * numpy.sin(0.5 * dx)**2))
 
     return Rearth * dsigma
-    
+
 
 def inv_haversine(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
     r"""Invert the Haversine function to find dx given a distance and point.

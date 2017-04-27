@@ -115,8 +115,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             x = 0.5d0*(xm+xp)
 
 
-            !write(*,444)ii,jj,aux(1,ii,jj)
-444         format("in setaux ",2i4,e12.5)
+            !write(*,"("in setaux ",2i4,e12.5)")ii,jj,aux(1,ii,jj)
 
             ! Set lat-long cell info
             if (coordinate_system == 2) then
@@ -197,16 +196,16 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     if (.false.) then
         print *,'Writing out aux arrays'
         print *,' '
-        write(23,230)  mbc,mx,my,dx,dy,xlow,ylow
- 230    format('==> mbc, mx, my:  ',3i5,'  dx, dy:',2f10.6, &
-                '  xlow,ylow:', 2f10.6)
+        write(23, "('==> mbc, mx, my:  ',3i5," //                     &
+                  "'  dx, dy:',2f10.6,'  xlow,ylow:', 2f10.6)")    &
+                    mbc,mx,my,dx,dy,xlow,ylow
         do jj=1-mbc,my+mbc
             do ii=1-mbc,mx+mbc
                 x = xlow + (ii-0.5d0)*dx
                 y = ylow + (jj-0.5d0)*dy
                 if ((x>223) .and. (x<232) .and. (y<37)) &
-                write(23,231) ii,jj,x,y,(aux(m,ii,jj),m=1,maux)
- 231            format(2i4,2f10.3,3e20.10)
+                write(23,"(2i4,2f10.3,3e20.10)")        &
+                                         ii,jj,x,y,(aux(m,ii,jj),m=1,maux)
             enddo
         enddo
     endif
