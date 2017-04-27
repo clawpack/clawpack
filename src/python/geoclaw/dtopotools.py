@@ -1269,6 +1269,8 @@ class SubFault(object):
                          This mixed convention is used by the NOAA SIFT
                          database and "unit sources", see:
                          http://nctr.pmel.noaa.gov/propagation-database.html
+          - "top upstrike corner": (longitude,latitude) and depth at 
+                         corner of fault that is both updip and upstrike.
 
         The Okada model is expressed assuming (longitude,latitude) and depth
         are at the bottom center of the fault plane, so values must be
@@ -1289,7 +1291,8 @@ class SubFault(object):
 
         # Set depths
         if self.coordinate_specification == 'top center' or \
-           self.coordinate_specification == 'noaa sift':
+           self.coordinate_specification == 'noaa sift' or \
+           self.coordinate_specification == 'top upstrike corner':
 
             self._centers[0][2] = self.depth
             self._centers[1][2] = self.depth            \
@@ -1332,6 +1335,11 @@ class SubFault(object):
                               / (LAT2METER * numpy.cos(self.latitude * DEG2RAD)),
                    self.width * numpy.cos(self.dip * DEG2RAD)           \
                               * numpy.sin(self.strike * DEG2RAD) / LAT2METER)
+
+        # Vector *up_strike* goes along the top edge from point 0 to point a
+        # in the figure in the class docstring.
+
+
         if self.coordinate_specification == 'top center':
 
             self._centers[0][:2] = (self.longitude, self.latitude)
@@ -1358,18 +1366,36 @@ class SubFault(object):
                                                 self.latitude + 0.5 * up_dip[1])
             self._centers[2][:2] = (self.longitude, self.latitude)
 
+
+        elif self.coordinate_specification == 'top upstrike corner':
+            latitude_for_scaling = self.latitude
+            up_strike = (0.5 * self.length * numpy.sin(self.strike * DEG2RAD) \
+               / (lat2meter * numpy.cos(latitude_for_scaling * DEG2RAD)),
+                         0.5 * self.length * numpy.cos(self.strike * DEG2RAD) \
+               / lat2meter)
+            top_center_longitude = self.longitude - up_strike[0]
+            top_center_latitude = self.latitude - up_strike[1]
+            self._centers[0][:2] = (top_center_longitude, top_center_latitude)
+            self._centers[1][:2] = (top_center_longitude - 0.5 * up_dip[0],
+                                        top_center_latitude - 0.5 * up_dip[1])
+            self._centers[2][:2] = (top_center_longitude - up_dip[0],
+                                        top_center_latitude - up_dip[1])
+
         else:
             raise ValueError("Unknown coordinate specification '%s'."       \
                                                 % self.coordinate_specification)
 
-        # Calculate coordinates of corners:
-        # Vector *strike* goes along the top edge from point 1 to point a
-        # in the figure in the class docstring.
 
-        up_strike = (0.5 * self.length * numpy.sin(self.strike * DEG2RAD) \
-           / (lat2meter * numpy.cos(self._centers[2][1] * DEG2RAD)),
-                     0.5 * self.length * numpy.cos(self.strike * DEG2RAD) \
-           / lat2meter)
+        # Calculate coordinates of corners:
+
+        if self.coordinate_specification != 'top upstrike corner':
+            # use center latitude unless a corner was originally specified
+            latitude_for_scaling = self._centers[2][1]
+            up_strike = (0.5 * self.length * numpy.sin(self.strike * DEG2RAD) \
+               / (lat2meter * numpy.cos(latitude_for_scaling * DEG2RAD)),
+                         0.5 * self.length * numpy.cos(self.strike * DEG2RAD) \
+               / lat2meter)
+
         
         self._corners[0][:2] = (self._centers[0][0] 
                                                                  + up_strike[0],
