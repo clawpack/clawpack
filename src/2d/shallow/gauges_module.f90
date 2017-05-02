@@ -204,7 +204,7 @@ contains
 
                     ! Write header
                     header_1 = "('# gauge_id= ',i5,' " //                   &
-                               "location=( ',1e15.7,' ',1e15.7,' ) " //     &
+                               "location=( ',1e17.10,' ',1e17.10,' ) " //   &
                                "num_var= ',i2)"
                     write(OUTGAUGEUNIT, header_1) gauges(i)%gauge_num,      &
                                                   gauges(i)%x,              &
