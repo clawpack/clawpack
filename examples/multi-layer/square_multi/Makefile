@@ -22,6 +22,36 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 FFLAGS ?=
 
+# Include flags for LAPACK linking
+UNAME = $(shell uname)
+ifeq ($(UNAME), Darwin)
+	ifndef LFLAGS
+		LFLAGS = -framework accelerate $(FFLAGS)
+	else
+		LFLAGS += -framework accelerate $(FFLAGS)
+	endif
+else ifeq ($(UNAME), Linux)
+	ifeq ($(FC), ifort)
+		# Created using Intel MKL Link Line Advisor
+		# Please refer to 
+		# http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
+		# for other installation types
+		FFLAGS += -I$(MKLROOT)/include
+		ifndef LFLAGS                                                                                                                                    
+		    LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+		else
+		    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+		endif
+	else ifeq ($(FC), gfortran)
+		ifndef LFLAGS
+			LFLAGS = -llapack $(FFLAGS)
+		else
+			LFLAGS += -llapack $(FFLAGS)
+		endif
+	endif
+endif
+
+
 # ---------------------------------
 # package sources for this program:
 # ---------------------------------
@@ -46,11 +76,30 @@ EXCLUDE_SOURCES = \
 RIEMANN = $(CLAW)/riemann/src
 
 MODULES = \
+ $(GEOLIB)/multilayer/gauges_module.f90 \
+ $(GEOLIB)/multilayer/qinit_module.f90 
 
 SOURCES = \
-  $(RIEMANN)/rpn2_geoclaw.f \
-  $(RIEMANN)/rpt2_geoclaw.f \
-  $(RIEMANN)/geoclaw_riemann_utils.f \
+  $(GEOLIB)/multilayer/b4step2.f90 \
+  $(GEOLIB)/multilayer/getmaxspeed.f90 \
+  $(GEOLIB)/multilayer/qinit.f90 \
+  $(GEOLIB)/multilayer/setaux.f90 \
+  $(GEOLIB)/multilayer/src2.f90 \
+  $(GEOLIB)/multilayer/stepgrid.f \
+  $(GEOLIB)/multilayer/valout.f \
+  $(RIEMANN)/rpn2_layered_shallow_water.f90 \
+  $(RIEMANN)/rpt2_layered_shallow_water.f90 \
+  $(RIEMANN)/geoclaw_riemann_utils.f
+  # $(GEOLIB)/multilayer/qinit.f90 \
+  # $(GEOLIB)/multilayer/setaux.f90 \
+  # $(GEOLIB)/multilayer/b4step2.f90 \
+  # $(GEOLIB)/multilayer/getmaxspeed.f90 \
+  # $(GEOLIB)/multilayer/stepgrid.f \
+  # $(GEOLIB)/multilayer/valout.f \
+  # $(GEOLIB)/multilayer/src2.f90 \
+  # $(RIEMANN)/rpn2_geoclaw.f \
+  # $(RIEMANN)/rpt2_geoclaw.f \
+  # $(RIEMANN)/geoclaw_riemann_utils.f \
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:

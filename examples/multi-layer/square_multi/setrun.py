@@ -45,6 +45,12 @@ def setrun(claw_pkg='geoclaw'):
     rundata = data.ClawRunData(claw_pkg, ndim)
 
     #------------------------------------------------------------------
+    # GeoClaw specific parameters:
+    #------------------------------------------------------------------
+    rundata = setgeo(rundata)
+    rundata = set_multilayer(rundata)
+
+    #------------------------------------------------------------------
     # Problem-specific parameters to be written to setprob.data:
     #------------------------------------------------------------------
 
@@ -84,10 +90,10 @@ def setrun(claw_pkg='geoclaw'):
     # ---------------
 
     # Number of equations in the system:
-    clawdata.num_eqn = 3
+    clawdata.num_eqn = 6
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 4 + 3 + 2
+    clawdata.num_aux = 4 + rundata.multilayer_data.num_layers
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
@@ -119,7 +125,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 1
+    clawdata.output_style = 3
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -139,15 +145,15 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 1
+        clawdata.total_steps = 5
         clawdata.output_t0 = True
 
 
-    clawdata.output_format = 'binary'      # 'ascii' or 'netcdf' 
+    clawdata.output_format = 'ascii'      # 'ascii' or 'netcdf' 
 
     clawdata.output_q_components = 'all'   # could be list such as [True,True]
-    clawdata.output_aux_components = 'all' # could be list
-    clawdata.output_aux_onlyonce = False    # output aux arrays only at t0
+    clawdata.output_aux_components = 'none' # could be list
+    clawdata.output_aux_onlyonce = True   # output aux arrays only at t0
 
 
     # ---------------------------------------------------
@@ -206,7 +212,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.transverse_waves = 2
 
     # Number of waves in the Riemann solution:
-    clawdata.num_waves = 3
+    clawdata.num_waves = 6
     
     # List of limiters to use for each wave family:  
     # Required:  len(limiter) == num_waves
@@ -216,7 +222,7 @@ def setrun(claw_pkg='geoclaw'):
     #   2 or 'superbee' ==> superbee
     #   3 or 'mc'       ==> MC limiter
     #   4 or 'vanleer'  ==> van Leer
-    clawdata.limiter = ['mc', 'mc', 'mc']
+    clawdata.limiter = ['mc', 'mc', 'mc', 'mc', 'mc', 'mc']
 
     clawdata.use_fwaves = True    # True ==> use f-wave version of algorithms
     
@@ -276,7 +282,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 3
+    amrdata.amr_levels_max = 1
 
     # List of refinement ratios at each level (length at least mxnest-1)
     # Run resolution.py 2 2 4 8 16 to see approximate resolutions
@@ -289,8 +295,7 @@ def setrun(claw_pkg='geoclaw'):
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    amrdata.aux_type = ['center','capacity','center','center','center',
-                         'center','center','center','center']
+    amrdata.aux_type = ['center','capacity','yleft','center','center', 'center']
 
 
     # Flag using refinement routine flag2refine rather than richardson error
@@ -331,17 +336,17 @@ def setrun(claw_pkg='geoclaw'):
     gauges = rundata.gaugedata.gauges
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
     N_gauges = 21
-    for i in xrange(0,N_gauges):
-        x = clawdata.lower[0] + 4.55 # This is right where the shelf turns into beach, 100 meter of water
-        y = clawdata.lower[1] + 5.0 / (N_gauges + 1) * (i+1)       # Start 25 km inside domain
-        gauges.append([i, x, y, 0.0, 1e10])
-        print("Gauge %s: (%s,%s)" % (i,x,y))
+    # for i in xrange(0,N_gauges):
+    #     x = clawdata.lower[0] + 4.55 # This is right where the shelf turns into beach, 100 meter of water
+    #     y = clawdata.lower[1] + 5.0 / (N_gauges + 1) * (i+1)       # Start 25 km inside domain
+    #     gauges.append([i, x, y, 0.0, 1e10])
+    #     print("Gauge %s: (%s,%s)" % (i,x,y))
 
     #------------------------------------------------------------------
     # GeoClaw specific parameters:
     #------------------------------------------------------------------
 
-    rundata = setgeo(rundata)   # Defined below
+    # rundata = setgeo(rundata)   # Defined below
 
 
     return rundata
@@ -375,7 +380,7 @@ def setgeo(rundata):
     geo_data.friction_depth = 1e6
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = 0.28  # Due to seasonal swelling of gulf
+    geo_data.sea_level = [0.0, -25000000.0]  # Due to seasonal swelling of gulf
     geo_data.dry_tolerance = 1.e-2
 
     # Refinement Criteria
@@ -447,7 +452,6 @@ def setgeo(rundata):
     data.A = 23.0
     data.B = 1.5
     data.Pc = 950.0 * 1e2 # Have to convert this to Pa instead of millibars
-
     # surge.data.write_idealized_holland_storm_data(data.storm_file, data)
 
     # =======================
@@ -456,7 +460,7 @@ def setgeo(rundata):
     data = rundata.friction_data
 
     # Variable friction
-    data.variable_friction = True
+    data.variable_friction =  False #True
 
     # Region based friction
     # Entire domain
@@ -469,6 +473,31 @@ def setgeo(rundata):
     # end of function setgeo
     # ----------------------
 
+def set_multilayer(rundata):
+
+    data = rundata.multilayer_data
+
+    # Physics parameters
+    data.num_layers = 2
+    data.rho = [0.9, 1.0]
+    data.eta = [0.0, -20000050.0]
+    
+    # Algorithm parameters
+    data.eigen_method = 2
+    data.inundation_method = 2
+    data.richardson_tolerance = 0.95
+    data.wave_tolerance = [5e-2,1e-2]
+    # data.dry_limit = True
+
+    # rundata.replace_data('qinit_data', QinitMultilayerData())
+    rundata.qinit_data.qinit_type = 0
+    # rundata.qinit_data.epsilon = 0.02
+    # rundata.qinit_data.angle = 0.0
+    # rundata.qinit_data.sigma = 0.02
+    # rundata.qinit_data.wave_family = 4
+    # rundata.qinit_data.init_location = [-0.1,0.0]
+
+    return rundata
 
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
