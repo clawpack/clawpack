@@ -92,13 +92,11 @@ def setrun(claw_pkg='geoclaw'):
     # ---------------
 
     # Number of equations in the system:
-
     clawdata.num_eqn = 6
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
     clawdata.num_aux = 4 + rundata.multilayer_data.num_layers
-
-
+    
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 2
 
@@ -128,10 +126,7 @@ def setrun(claw_pkg='geoclaw'):
     # Specify at what times the results should be written to fort.q files.
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
-
-
     clawdata.output_style = 3
-
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -220,7 +215,6 @@ def setrun(claw_pkg='geoclaw'):
 
     # Number of waves in the Riemann solution:
     clawdata.num_waves = 6
-
     
     # List of limiters to use for each wave family:  
     # Required:  len(limiter) == num_waves
@@ -457,7 +451,6 @@ def setgeo(rundata):
     data.A = 23.0
     data.B = 1.5
     data.Pc = 950.0 * 1e2 # Have to convert this to Pa instead of millibars
-
     # surge.data.write_idealized_holland_storm_data(data.storm_file, data)
 
     # =======================
