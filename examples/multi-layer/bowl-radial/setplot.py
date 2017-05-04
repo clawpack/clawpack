@@ -138,7 +138,7 @@ def setplot(plotdata=None):
     #  Surface Elevations
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
-    plotfigure.show = True
+    plotfigure.show = False
     plotfigure.kwargs = {'figsize':(14,4)}
     
     # Top surface
@@ -168,6 +168,23 @@ def setplot(plotdata=None):
     # ml_plot.add_surface_elevation(plotaxes,2)
     ml_plot.add_land(plotaxes, 2)
 
+    # ========================================================================
+    # Figure for cross section
+    # ========================================================================
+    
+    plotfigure = plotdata.new_plotfigure(name='cross-section', figno=1)
+    plotfigure.show = True
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.title = 'Cross section at y=0'
+    ml_plot.add_cross_section(plotaxes, 1)
+    ml_plot.add_cross_section(plotaxes, 2)
+    ml_plot.add_land_cross_section(plotaxes)
+
+
+   
     # #-----------------------------------------
     # # Figure for surface
     # #-----------------------------------------
