@@ -19,30 +19,6 @@ from six.moves import range
 #     0    1     2     3    4     5      6     7      8      9
 #   h(1),hu(1),hv(1),h(2),hu(2),hv(2),eta(1),eta(2),wind_x,wind_y    
 # ======================================================================== 
-# def layered_land(surface):
-#     if surface == 1:
-#         def land(cd):
-#             """
-#             Return a masked array containing the surface elevation only in dry cells.
-#             """
-#             drytol = 10**-3
-#             q = cd.q
-#             h = q[0,:,:]
-#             eta = q[6,:,:]
-#             land = numpy.ma.masked_where(h>drytol, eta)
-#             return land
-#     elif surface == 2:
-#         def land(cd):
-#             """
-#             Return a masked array containing the surface elevation only in dry cells.
-#             """
-#             drytol = 10**-3
-#             q = cd.q
-#             h = q[1,:,:]
-#             eta = q[7,:,:]
-#             land = numpy.ma.masked_where(h>drytol, eta)
-#             return land
-#     return land
 
 
 def layered_land(surface, DRY_TOL=10**-3):
@@ -52,7 +28,7 @@ def layered_land(surface, DRY_TOL=10**-3):
         Return a masked array containing the surface elevation only in dry cells.
         """
         q = cd.q
-        h = q[surface-1,:,:]
+        h = q[(surface-1)*3,:,:]
         eta = q[surface+5,:,:]
         land = numpy.ma.masked_where(h>DRY_TOL, eta)
         return land
@@ -458,4 +434,55 @@ def add_velocities_profile_plot(plot_data,slice_value,direction='x',figno=130):
     plotitem.map_2d_to_1d = bottom_speed
     plotitem.amr_plotstyle = ['-','+','x']
     plotitem.color = 'k'
-    plotitem.show = True  
+    plotitem.show = True
+
+
+
+
+def add_cross_section(plotaxes, surface):
+    r""" Add cross section view of surface"""
+    if surface == 1: plot_eta = eta1
+    if surface == 2: plot_eta = eta2
+
+    def xsec(current_data):
+        # Return x value and surface eta at this point, along y=0
+        from pylab import find,ravel
+        x = current_data.x
+        y = current_data.y
+        dy = current_data.dy
+
+        ij = find((y <= dy/2.) & (y > -dy/2.))
+        x_slice = ravel(x)[ij]
+        eta_slice = ravel(plot_eta(current_data))[ij]
+        return x_slice, eta_slice
+
+    plotitem = plotaxes.new_plotitem(plot_type='1d_from_2d_data')
+    plotitem.map_2d_to_1d = xsec
+
+    plotitem.show = True
+
+def add_land_cross_section(plotaxes):
+    r""" Add cross section view of topo"""
+
+    def plot_topo_xsec(current_data):
+        from pylab import find,ravel
+        x = current_data.x
+        y = current_data.y
+        dy = current_data.dy
+
+        ij = find((y <= dy/2.) & (y > -dy/2.))
+        x_slice = ravel(x)[ij]
+        b_slice = ravel(b(current_data))[ij]
+        return x_slice, b_slice
+
+    plotitem = plotaxes.new_plotitem(plot_type='1d_from_2d_data')
+    plotitem.map_2d_to_1d = plot_topo_xsec
+
+    plotitem.show = True
+
+
+
+
+
+
+
