@@ -134,7 +134,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 1
+    clawdata.output_style = 3
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -290,7 +290,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 1
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
     amrdata.refinement_ratios_x = [2,6]
@@ -403,21 +403,24 @@ def setgeo(rundata):
     topo_path = os.path.join(scratch_dir, 'etopo10min120W60W60S0S.asc')
     topo_data.topofiles.append([2, 1, 3, 0., 1.e10, topo_path])
 
+    topo_path = os.path.join(scratch_dir, 'etopo1.asc')
+    topo_data.topofiles.append([3, 1, 3, 0., 1.e10, topo_path])
+
     #== setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
     # # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   # [topotype, minlevel,maxlevel,fname]
-    # dtopo_path = os.path.join(scratch_dir, 'dtopo_usgs100227.tt3')
-    # dtopo_data.dtopofiles.append([3,3,3,dtopo_path])
-    # dtopo_data.dt_max_dtopo = 0.2
+    dtopo_path = os.path.join(scratch_dir, 'dtopo_usgs100227.tt3')
+    dtopo_data.dtopofiles.append([3,3,3,dtopo_path])
+    dtopo_data.dt_max_dtopo = 0.2
 
 
     # == setqinit.data values ==
-    rundata.qinit_data.qinit_type = 7
+    rundata.qinit_data.qinit_type = 0
     rundata.qinit_data.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
-    rundata.qinit_data.qinitfiles.append([1, 3, 'line.xyz'])
+    # rundata.qinit_data.qinitfiles.append([1, 3, 'line.xyz'])
 
     # == setfixedgrids.data values ==
     fixed_grids = rundata.fixed_grid_data.fixedgrids
@@ -436,7 +439,7 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [1.0, 1.1]
+    data.rho = [0.98, 1.0]
     data.eta = [0.0,-250.0]
     data.wave_tolerance = [1.e-3, 1.e-2]  # not the right values
     
@@ -448,7 +451,7 @@ def set_multilayer(rundata):
     # data.dry_limit = True
 
     # rundata.replace_data('qinit_data', QinitMultilayerData())
-    rundata.qinit_data.qinit_type = 7
+    rundata.qinit_data.qinit_type = 0
     # rundata.qinit_data.epsilon = 0.02
     # rundata.qinit_data.angle = np.pi
     # rundata.qinit_data.sigma = 0.02
