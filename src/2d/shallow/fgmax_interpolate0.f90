@@ -166,11 +166,17 @@ subroutine fgmax_interpolate(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     
                 i = ik(k)
                 j = jk(k)
-                if ((i==mx+1) .or. (j==my+1)) then
-                    write(6,*) '**** Warning from fgmax_interpolate:'
-                    write(6,*) '**** Expected i <= mx, j<= my'
-                    write(6,*) 'i,j,mx,my: ',i,j,mx,my
-                    endif
+
+                ! Do not print the warning message below
+                ! It is possible that i==0 or mx+1, or j==0 or my+1
+                ! if the fg%x(k) or fg%y(k) was approx on the boundary of
+                ! the patch, but in this case it should be ok to use the
+                ! the ghost cell value. 
+                !if ((i==mx+1) .or. (j==my+1)) then
+                !    write(6,*) '**** Warning from fgmax_interpolate:'
+                !    write(6,*) '**** Expected i <= mx, j<= my'
+                !    write(6,*) 'i,j,mx,my: ',i,j,mx,my
+                !    endif
 
                 if ((values(mv,i,j)==FG_NOTSET)) then
                     fg_values(mv,k) = FG_NOTSET

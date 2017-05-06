@@ -351,7 +351,7 @@ class DTopography(object):
             xvals = list(set(lastlines[:,1]))
             xvals.sort()
             mx = len(xvals)
-            my = len(lastlines) / mx
+            my = len(lastlines) // mx
             if verbose:
                 print("Read dtopo: mx=%s and my=%s, at %s times" % (mx,my,ntimes))
             X = numpy.reshape(lastlines[:,1],(my,mx))

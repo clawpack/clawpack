@@ -634,7 +634,7 @@ class Topography(object):
                     if y != y0:
                         N[1] = n + 1
                         break
-                N[0] = data.shape[0] / N[1]
+                N[0] = data.shape[0] // N[1]
 
                 self._x = data[:N[1],0]
                 self._y = data[::N[1],1]
