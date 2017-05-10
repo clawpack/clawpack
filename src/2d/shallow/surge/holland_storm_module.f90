@@ -293,11 +293,11 @@ contains
                 total_days = total_days + 28
             endif
         endif
-        if (months > 3)  total_days = total_days + 30
-        if (months > 4)  total_days = total_days + 31
-        if (months > 5)  total_days = total_days + 30
-        if (months > 6)  total_days = total_days + 31
-        if (months > 7)  total_days = total_days + 30
+        if (months > 3)  total_days = total_days + 31
+        if (months > 4)  total_days = total_days + 30
+        if (months > 5)  total_days = total_days + 31
+        if (months > 6)  total_days = total_days + 30
+        if (months > 7)  total_days = total_days + 31
         if (months > 8)  total_days = total_days + 31
         if (months > 9)  total_days = total_days + 30
         if (months > 10) total_days = total_days + 31
