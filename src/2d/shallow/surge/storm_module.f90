@@ -52,10 +52,6 @@ module storm_module
     type(constant_storm_type), save :: constant_storm
     type(stommel_storm_type), save :: stommel_storm
 
-    ! Store physics here for ease of use
-    ! WARNING:  If these do not agree with the storm data objects things will break!
-    real(kind=8) :: rho_air, ambient_pressure
-
     ! Wind drag maximum limit
     real(kind=8), parameter :: WIND_DRAG_LIMIT = 2.d-3
 
@@ -103,12 +99,6 @@ contains
             else
                 call opendatafile(unit,'surge.data')
             endif
-            
-            ! Read in parameters
-            ! Physics
-            ! TODO: These are currently set directly in the types, should change!
-            read(unit,"(1d16.8)") rho_air
-            read(unit,"(1d16.8)") ambient_pressure
 
             ! Forcing terms
             read(unit,*) wind_forcing
@@ -161,10 +151,6 @@ contains
 
             ! Print log messages
             open(unit=log_unit, file="fort.surge", status="unknown", action="write")
-            
-            write(log_unit,"(a,1d16.8)") "rho_air =          ",rho_air
-            write(log_unit,"(a,1d16.8)") "ambient_pressure = ",ambient_pressure
-            write(log_unit,*) ""
 
     !         write(log_unit,"(a,1d16.8)") "wind_tolerance =     ", wind_tolerance
     !         write(log_unit,"(a,1d16.8)") "pressure_tolerance = ", pressure_tolerance

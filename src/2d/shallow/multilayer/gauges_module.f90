@@ -365,7 +365,9 @@ contains
         use amr_module, only: nestlevel, nghost, timemult, rnode, node, maxvar
         use amr_module, only: hxposs, hyposs
 
-        use multilayer_module, only: num_layers, dry_tolerance, rho, eta_init
+        use geoclaw_module, only: rho
+
+        use multilayer_module, only: num_layers, dry_tolerance, eta_init
 
         implicit none
 

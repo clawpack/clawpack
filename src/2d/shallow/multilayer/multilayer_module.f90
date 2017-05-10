@@ -17,7 +17,7 @@ module multilayer_module
     
     ! Physical parameters
     integer :: num_layers
-    real(kind=8), allocatable :: rho(:), eta_init(:)
+    real(kind=8), allocatable :: eta_init(:)
     real(kind=8) :: r, one_minus_r
     
     ! Algorithm parameters
@@ -50,7 +50,8 @@ contains
     ! ========================================================================
     subroutine set_multilayer(data_file)
 
-        use geoclaw_module, only: GEO_PARM_UNIT, geo_dry_tolerance => dry_tolerance
+        use geoclaw_module, only: GEO_PARM_UNIT, rho
+        use geoclaw_module, only: geo_dry_tolerance => dry_tolerance
         use storm_module, only: storm_type
 
         implicit none
@@ -75,12 +76,19 @@ contains
 
             ! Read in parameters
             read(IOUNIT,"(i3)") num_layers
-            allocate(rho(num_layers))
             allocate(eta_init(num_layers))
             allocate(wave_tol(num_layers))
             allocate(dry_tolerance(num_layers))
 
-            read(IOUNIT,*) rho
+            ! read(IOUNIT,*) rho
+            ! The densities are in the geoclaw_module, check here to make surge
+            ! there are enough values
+            if (size(rho, 1) /= num_layers) then
+                print *, "The number of values of the water density " //       &
+                          "(", size(rho, 1),") does not match the number " //  &
+                          "of layers (", num_layers,")."
+                stop
+            end if
             if (num_layers > 1) then
                 r = rho(1) / rho(2)
                 one_minus_r = 1.d0 - r
