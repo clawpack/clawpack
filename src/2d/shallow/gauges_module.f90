@@ -290,10 +290,11 @@ contains
             end do 
         end do
 
-
         do i = 1, num_gauges
-          if (mbestsrc(i) .eq. 0) &
-              print *, "ERROR in setting grid src for gauge data", i
+            if (mbestsrc(i) .eq. 0) then
+                print *, "ERROR in setting grid src for gauge data",      &
+                         gauges(i)%gauge_num
+            end if
         end do
 
         ! Sort the source arrays for easy testing during integration
