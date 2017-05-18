@@ -317,6 +317,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
     if (varRefTime) then   ! keep consistent with setgrd_geo and qinit_geo
         sp_over_h = get_max_speed(val,mitot,mjtot,nvar,aux,naux,nghost,dx,dy)
+    else
+        sp_over_h = 0.d0  ! not used but set so do not get exceptions
     endif
 
 end subroutine filval
