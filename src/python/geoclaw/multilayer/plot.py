@@ -441,8 +441,12 @@ def add_velocities_profile_plot(plot_data,slice_value,direction='x',figno=130):
 
 def add_cross_section(plotaxes, surface):
     r""" Add cross section view of surface"""
-    if surface == 1: plot_eta = eta1
-    if surface == 2: plot_eta = eta2
+    if surface == 1: 
+        plot_eta = eta1
+        clr = 'b'
+    if surface == 2: 
+        plot_eta = eta2
+        clr = 'c'
 
     def xsec(current_data):
         # Return x value and surface eta at this point, along y=0
@@ -458,6 +462,7 @@ def add_cross_section(plotaxes, surface):
 
     plotitem = plotaxes.new_plotitem(plot_type='1d_from_2d_data')
     plotitem.map_2d_to_1d = xsec
+    plotitem.color = clr
 
     plotitem.show = True
 
@@ -477,6 +482,7 @@ def add_land_cross_section(plotaxes):
 
     plotitem = plotaxes.new_plotitem(plot_type='1d_from_2d_data')
     plotitem.map_2d_to_1d = plot_topo_xsec
+    plotitem.color = 'g'
 
     plotitem.show = True
 
