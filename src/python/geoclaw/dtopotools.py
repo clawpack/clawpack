@@ -1792,7 +1792,7 @@ class SiftFault(Fault):
     results in a fault with two specified subfaults with slip of 2 and 3 meters.
     """
 
-    def __init__(self, sift_slip=None):
+    def __init__(self, sift_slip=None, longitude_shift=0.):
         r"""SiftFault initialization routine.
         
         See :class:`SiftFault` for more info.
@@ -1800,7 +1800,7 @@ class SiftFault(Fault):
         """
         
         super(SiftFault, self).__init__()
-        self._load_sift_unit_sources()
+        self._load_sift_unit_sources(longitude_shift=longitude_shift)
         if sift_slip is not None:
             self.set_subfaults(sift_slip)
             
@@ -1817,7 +1817,7 @@ class SiftFault(Fault):
             self.subfaults.append(subfault)
 
 
-    def _load_sift_unit_sources(self):
+    def _load_sift_unit_sources(self, longitude_shift=0.):
         r"""
         Load SIFT unit source subfault data base. 
         File was downloaded from
@@ -1839,7 +1839,7 @@ class SiftFault(Fault):
                 name = tokens[0]
                 # url = tokens[1]
                 subfault = SubFault()
-                subfault.longitude = float(tokens[2])
+                subfault.longitude = float(tokens[2]) + longitude_shift
                 subfault.latitude = float(tokens[3])
                 subfault.slip = float(tokens[4])
                 subfault.strike = float(tokens[5])
