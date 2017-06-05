@@ -1,1 +1,1 @@
-__all__ = ['clawutil','pyclaw','petclaw','riemann','visclaw']
+__all__ = ['clawutil','pyclaw','petclaw','forestclaw','riemann','visclaw']
