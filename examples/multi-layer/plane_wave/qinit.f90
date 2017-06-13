@@ -1,6 +1,6 @@
 subroutine qinit(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-    use qinit_module, only: qinit_type, add_perturbation
+    use qinit_module, only: qinit_type, add_perturbation, set_qinit
     use multilayer_module, only: num_layers, rho, eta_init
     
     implicit none
@@ -32,6 +32,7 @@ subroutine qinit(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
     ! Add perturbation to initial conditions
     if (qinit_type > 0) then
+        call set_qinit()
         call add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     endif
 
