@@ -68,8 +68,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 100
-    clawdata.num_cells[1] = 100
+    clawdata.num_cells[0] = 81
+    clawdata.num_cells[1] = 81
 
 
     # ---------------
@@ -114,8 +114,8 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 10
-        clawdata.tfinal = 8.0
+        clawdata.num_output_times = 25
+        clawdata.tfinal = 50.0
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -124,8 +124,8 @@ def setrun(claw_pkg='geoclaw'):
 
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
-        clawdata.output_step_interval = 4
-        clawdata.total_steps = 50
+        clawdata.output_step_interval = 10
+        clawdata.total_steps = 200
         clawdata.output_t0 = True
         
 
@@ -165,7 +165,10 @@ def setrun(claw_pkg='geoclaw'):
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    clawdata.cfl_desired = 0.9
+    # clawdata.cfl_desired = 0.9
+    # clawdata.cfl_max = 1.0
+
+    clawdata.cfl_desired = 0.75
     clawdata.cfl_max = 1.0
 
     # Maximum number of time steps to allow between output times:
@@ -259,7 +262,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 3
+    amrdata.amr_levels_max = 1
 
     # List of refinement ratios at each level (length at least mxnest-1)
     amrdata.refinement_ratios_x = [2,2,2]
@@ -324,20 +327,20 @@ def setrun(claw_pkg='geoclaw'):
     # rundata.gaugedata.add_gauge()
 
     # gauges along x-axis:
-    gaugeno = 0
-    for r in np.linspace(86., 93., 9):
-        gaugeno = gaugeno+1
-        x = r + .001  # shift a bit away from cell corners
-        y = .001
-        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
+    # gaugeno = 0
+    # for r in np.linspace(86., 93., 9):
+    #     gaugeno = gaugeno+1
+    #     x = r + .001  # shift a bit away from cell corners
+    #     y = .001
+    #     rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
 
-    # gauges along diagonal:
-    gaugeno = 100
-    for r in np.linspace(86., 93., 9):
-        gaugeno = gaugeno+1
-        x = (r + .001) / np.sqrt(2.)
-        y = (r + .001) / np.sqrt(2.)
-        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
+    # # gauges along diagonal:
+    # gaugeno = 100
+    # for r in np.linspace(86., 93., 9):
+    #     gaugeno = gaugeno+1
+    #     x = (r + .001) / np.sqrt(2.)
+    #     y = (r + .001) / np.sqrt(2.)
+    #     rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
     
 
     return rundata
@@ -370,7 +373,7 @@ def setgeo(rundata):
 
     # == Algorithm and Initial Conditions ==
     geo_data.sea_level = [0.0, -20.0]
-    geo_data.dry_tolerance = 1.e-3
+    geo_data.dry_tolerance = 1.e-1
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025
     geo_data.friction_depth = 20.0
@@ -394,7 +397,7 @@ def setgeo(rundata):
     #   [topotype, minlevel,maxlevel,fname]
 
     # == setqinit.data values ==
-    rundata.qinit_data.qinit_type = 7
+    rundata.qinit_data.qinit_type = 4
     rundata.qinit_data.qinitfiles = []
     # for qinit perturbations, append lines of the form: (<= 1 allowed for now!)
     #   [minlev, maxlev, fname]
@@ -422,12 +425,12 @@ def set_multilayer(rundata):
     # Algorithm parameters
     data.eigen_method = 2
     data.inundation_method = 2
-    data.richardson_tolerance = 0.95
+    data.richardson_tolerance = np.infty
     data.wave_tolerance = [1e-3,1e-2]
     # data.dry_limit = True
 
     # rundata.replace_data('qinit_data', QinitMultilayerData())
-    rundata.qinit_data.qinit_type = 7
+    rundata.qinit_data.qinit_type = 4
     # rundata.qinit_data.epsilon = 0.02
     # rundata.qinit_data.angle = 0.0
     # rundata.qinit_data.sigma = 0.02

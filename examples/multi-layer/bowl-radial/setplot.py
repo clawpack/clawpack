@@ -122,8 +122,8 @@ def setplot(plotdata=None):
     
     eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
 
-    top_surface_limits = [eta[0]-1,eta[0]+1]
-    internal_surface_limits = [eta[1]-1,eta[1]+1]
+    top_surface_limits = [eta[0]-10,eta[0]+10]
+    internal_surface_limits = [eta[1]-10,eta[1]+10]
     # top_surface_limits = [eta[0]-0.3,eta[0]+0.3]
     # internal_surface_limits = [eta[1]-0.15,eta[1]+0.15]
     top_speed_limits = [0.0,0.1]
@@ -138,7 +138,7 @@ def setplot(plotdata=None):
     #  Surface Elevations
     # ========================================================================
     plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
-    plotfigure.show = False
+    plotfigure.show = True
     plotfigure.kwargs = {'figsize':(14,4)}
     
     # Top surface
@@ -172,7 +172,7 @@ def setplot(plotdata=None):
     # Figure for cross section
     # ========================================================================
     
-    plotfigure = plotdata.new_plotfigure(name='cross-section', figno=1)
+    plotfigure = plotdata.new_plotfigure(name='cross-section', figno=4)
     plotfigure.show = True
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
@@ -183,6 +183,91 @@ def setplot(plotdata=None):
     ml_plot.add_cross_section(plotaxes, 2)
     ml_plot.add_land_cross_section(plotaxes)
 
+
+
+    # ========================================================================
+    #  Water Speed
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='speed', figno=1)
+    plotfigure.show = False
+    plotfigure.kwargs = {'figsize':(14,4)}
+
+    # Top layer speed
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Currents - Top Layer'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(1,2,1)'
+    # plotaxes.afteraxes = pcolor_afteraxes
+    # add_speed(plotaxes,1,bounds=[0.00,0.2])
+    ml_plot.add_speed(plotaxes,1,bounds=top_speed_limits)
+    # add_speed(plotaxes,1)
+    ml_plot.add_land(plotaxes, 1)
+    
+    # Bottom layer speed
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Currents - Bottom Layer'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(1,2,2)'
+    # plotaxes.afteraxes = pcolor_afteraxes
+    # add_speed(plotaxes,2,bounds=[0.0,1e-10])
+    ml_plot.add_speed(plotaxes,2,bounds=internal_speed_limits)
+    # add_speed(plotaxes,2)
+    ml_plot.add_land(plotaxes, 2)
+    
+    # Individual components
+    plotfigure = plotdata.new_plotfigure(name='speed_components',figno=401)
+    plotfigure.show = False
+    plotfigure.kwargs = {'figsize':(14,14)}
+    
+    # Top layer
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = "X-Velocity - Top Layer"
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(2,2,1)'
+    # plotaxes.afteraxes = pcolor_afteraxes
+    # add_x_velocity(plotaxes,1,bounds=[-1e-10,1e-10])
+    ml_plot.add_x_velocity(plotaxes,1)
+    ml_plot.add_land(plotaxes, 1)
+    
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = "Y-Velocity - Top Layer"
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(2,2,2)'
+    # plotaxes.afteraxes = pcolor_afteraxes
+    # add_y_velocity(plotaxes,1,bounds=[-0.000125,0.000125])
+    ml_plot.add_y_velocity(plotaxes,1)
+    ml_plot.add_land(plotaxes, 1)
+    
+    # Bottom layer
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = "X-Velocity - Bottom Layer"
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(2,2,3)'
+    # plotaxes.afteraxes = pcolor_afteraxes
+    # add_x_velocity(plotaxes,2,bounds=[-1e-10,1e-10])
+    ml_plot.add_x_velocity(plotaxes,2)
+    ml_plot.add_land(plotaxes, 2)
+    
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = "Y-Velocity - Bottom Layer"
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(2,2,4)'
+    # plotaxes.afteraxes = pcolor_afteraxes
+    # add_y_velocity(plotaxes,2,bounds=[-0.8e-6,.8e-6])
+    ml_plot.add_y_velocity(plotaxes,2)
+    ml_plot.add_land(plotaxes, 2)
 
    
     # #-----------------------------------------

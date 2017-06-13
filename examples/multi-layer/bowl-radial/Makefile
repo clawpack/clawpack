@@ -1,4 +1,3 @@
-
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
@@ -22,7 +21,7 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?=
+FFLAGS ?= 
 
 # Include flags for LAPACK linking
 UNAME = $(shell uname)
@@ -76,10 +75,10 @@ EXCLUDE_SOURCES = \
 
 MODULES = \
  $(GEOLIB)/multilayer/gauges_module.f90 \
- $(GEOLIB)/multilayer/qinit_module.f90 
+ ./qinit_module.f90
 
 SOURCES = \
-  $(GEOLIB)/multilayer/qinit.f90 \
+  ./qinit.f90 \
   $(GEOLIB)/multilayer/setaux.f90 \
   $(GEOLIB)/multilayer/b4step2.f90 \
   $(GEOLIB)/multilayer/getmaxspeed.f90 \
