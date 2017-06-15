@@ -54,10 +54,11 @@ subroutine update (level, nvar, naux)
 !$OMP                    jplo,jphi,iff,jff,totrat,i,j,ivar,capac, &
 !$OMP                    capa,bc,etasum,hsum,husum,hvsum, &
 !$OMP                    levSt,ico,jco,hf,bf,huf,hvf, &
-!$OMP                    etaf,etaav,hav,nwet,hc,huc,hvc), &
+!$OMP                    etaf,etaav,hav,nwet,hc,huc,hvc, String), &
 !$OMP             SHARED(numgrids,listOfGrids,level,intratx,intraty, &
 !$OMP                   nghost,uprint,nvar,naux,mcapa,node,listsp, &
-!$OMP                   alloc,lstart,dry_tolerance,listStart,lget), &
+!$OMP                   alloc,lstart,dry_tolerance,listStart,lget, &
+!$OMP                   num_layers, rho, eta_init), &
 !$OMP            DEFAULT(none)
 
     ! need to set up data structure for parallel distribution of grids
