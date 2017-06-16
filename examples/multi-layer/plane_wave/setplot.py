@@ -1,37 +1,38 @@
 
-""" 
+"""
 Set up the plot figures, axes, and items to be done for each frame.
 
 This module is imported by the plotting routines and then the
 function setplot is called to set the plot parameters.
-    
-""" 
-    
-from __future__ import absolute_import
 
-def setplot(plotdata=None,  bathy_location=0.15,  bathy_angle=0.0,  
-                       bathy_left=-1.0,      bathy_right=-0.2):
+"""
+
+from __future__ import absolute_import
+from __future__ import print_function
+
+import os
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from clawpack.visclaw import geoplot, gaugetools
+
+import clawpack.clawutil.data as clawutil
+import clawpack.amrclaw.data as amrclaw
+import clawpack.geoclaw.data
+
+import clawpack.geoclaw.multilayer.plot as ml_plot
+
+def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
+            bathy_left=-1.0, bathy_right=-0.2):
     """Setup the plotting data objects.
 
     Input:  plotdata, an instance of pyclaw.plotters.data.ClawPlotData.
     Output: a modified version of plotdata.
-    
+
     returns plotdata object
 
-    """ 
-
-    import os
-
-    import numpy as np
-    import matplotlib.pyplot as plt
-
-    from clawpack.visclaw import geoplot, gaugetools
-
-    import clawpack.clawutil.data as clawutil
-    import clawpack.amrclaw.data as amrclaw
-    import clawpack.geoclaw.data
-
-    import clawpack.geoclaw.multilayer.plot as ml_plot
+    """
 
     if plotdata is None:
         from clawpack.visclaw.data import ClawPlotData
