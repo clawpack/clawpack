@@ -32,10 +32,7 @@ speed_cmap = plt.get_cmap('PuBu')
 friction_cmap = plt.get_cmap('YlOrRd')
 wind_cmap = plt.get_cmap('PuBu')
 pressure_cmap = plt.get_cmap('PuBu')
-land_cmap = colormaps.make_colormap({-1: [0.3, 0.2, 0.1],
-                                     -0.00001: [0.95, 0.9, 0.7],
-                                     0.00001: [.5, .7, 0],
-                                     1: [.2, .5, .2]})
+land_cmap = geoplot.land_colors
 
 
 class track_data(object):
@@ -43,11 +40,11 @@ class track_data(object):
 
     def __init__(self, path=None):
         if path is None:
-            path = "fort.surge"
+            path = "fort.track"
 
         try:
             self._path = path
-            self._data = np.loadtxt(self._path, skiprows=11)
+            self._data = np.loadtxt(self._path)
         except:
             self._data = None
 
@@ -89,29 +86,22 @@ def gaugetopo(current_data):
     return topo
 
 
-def gauge_afteraxes(current_data):
-    # Add sea level line
-    add_zeroline(current_data)
+def plot_landfall_gauge(gauge, axes, landfall=0.0, style='b', kwargs={}):
+    """Plot gauge data on the axes provided
 
-    # Change time to days
-    plt.xlabel('t (days)')
-    plt.ylabel('m')
-    locs, labels = plt.xticks()
-    labels = [r"$%s$" % str(np.trunc(value/(3600.0 * 24))) for value in locs]
-    # locs = np.linspace(-12.0,40,52)
-    # labels = range(-12,41)
-    plt.xticks(locs, labels)
+    This will transform the plot so that it is relative to the landfall value
+    provided.
+    """
+    axes = plt.gca()
+
+    # Add GeoClaw gauge data
+    t = sec2days(gauge.t - landfall)
+    axes.plot(t, gauge.q[3, :], style, **kwargs)
 
 
 # ========================================================================
 #  Surge related helper functions
 # ========================================================================
-# Surge eye location
-def eye_location(cd, track):
-    track = track.get_track(cd.frameno)
-    return track[1], track[2], track[3]
-
-
 def days_figure_title(current_data, land_fall=0.0):
     t = (current_data.t - land_fall) / (60**2 * 24)
     days = int(t)
@@ -122,15 +112,21 @@ def days_figure_title(current_data, land_fall=0.0):
 
 
 def surge_afteraxes(current_data, track, land_fall=0.0, plot_direction=False,
-                    style='rd', kwargs={}):
-    x, y, theta = eye_location(current_data, track)
+                    style='ro', kwargs={}):
+    """Default surge plotting after axes function
 
-    if x is not None and y is not None:
+    Includes changing the title to something relative to landfall and plotting
+    the location of the storm eye according to the track object.
+    """
+
+    track_data = track.get_track(current_data.frameno)
+
+    if track_data[0] is not None and track_data[1] is not None:
         axes = plt.gca()
-        axes.plot(x, y, style, **kwargs)
-        print(x, y)
+        axes.plot(track_data[0], track_data[1], style, **kwargs)
         if plot_direction:
-            axes.quiver(x, y, np.cos(theta), np.sin(theta))
+            axes.quiver(track_data[0], track_data[1],
+                        np.cos(track_data[2]), np.sin(track_data[2]))
     days_figure_title(current_data, land_fall)
 
 

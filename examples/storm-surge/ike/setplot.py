@@ -45,16 +45,18 @@ def setplot(plotdata=None):
     friction_data.read(os.path.join(plotdata.outdir, 'friction.data'))
 
     # Load storm track
-    track = surgeplot.track_data(os.path.join(plotdata.outdir, 'fort.surge'))
+    track = surgeplot.track_data(os.path.join(plotdata.outdir, 'fort.track'))
 
-    # Calculate landfall time, off by a day, maybe leap year issue?
+    # Calculate landfall time
+    # Landfall for Ike in Houston was September 13th, at 7 UTC
     landfall_dt = datetime.datetime(2008, 9, 13, 7) - \
                   datetime.datetime(2008, 1, 1,  0)
     landfall = landfall_dt.days * 24.0 * 60**2 + landfall_dt.seconds
 
     # Set afteraxes function
     def surge_afteraxes(cd):
-        surgeplot.surge_afteraxes(cd, track, landfall, plot_direction=False)
+        surgeplot.surge_afteraxes(cd, track, landfall, plot_direction=False,
+                                  kwargs={"markersize": 4})
 
     # Color limits
     surface_limits = [physics.sea_level - 5.0, physics.sea_level + 5.0]
@@ -184,26 +186,6 @@ def setplot(plotdata=None):
     plotfigure.show = True
     plotfigure.clf_each_gauge = True
 
-    def gauge_after_axes(cd):
-
-        if cd.gaugeno in [1, 2, 3, 4]:
-            axes = plt.gca()
-
-            # Add GeoClaw gauge data
-            geoclaw_gauge = cd.gaugesoln
-            t = seconds2days(geoclaw_gauge.t - landfall)
-            axes.plot(t, geoclaw_gauge.q[3, :], 'b--')
-
-            # Fix up plot - in particular fix time labels
-            axes.set_title('Station %s' % cd.gaugeno)
-            axes.set_xlabel('Days relative to landfall')
-            axes.set_ylabel('Surface (m)')
-            axes.set_xlim([-2, 1])
-            axes.set_ylim([-1, 5])
-            axes.set_xticks([-2, -1, 0, 1])
-            axes.set_xticklabels([r"$-2$", r"$-1$", r"$0$", r"$1$"])
-            axes.grid(True)
-
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.xlimits = [-2, 1]
@@ -211,7 +193,22 @@ def setplot(plotdata=None):
     # plotaxes.ylabel = "Surface (m)"
     plotaxes.ylimits = [-1, 5]
     plotaxes.title = 'Surface'
-    # plotaxes.afteraxes = gauge_after_axes
+
+    def gauge_afteraxes(cd):
+
+        axes = plt.gca()
+        surgeplot.plot_landfall_gauge(cd.gaugesoln, axes, landfall=landfall)
+
+        # Fix up plot - in particular fix time labels
+        axes.set_title('Station %s' % cd.gaugeno)
+        axes.set_xlabel('Days relative to landfall')
+        axes.set_ylabel('Surface (m)')
+        axes.set_xlim([-2, 1])
+        axes.set_ylim([-1, 5])
+        axes.set_xticks([-2, -1, 0, 1])
+        axes.set_xticklabels([r"$-2$", r"$-1$", r"$0$", r"$1$"])
+        axes.grid(True)
+    plotaxes.afteraxes = gauge_afteraxes
 
     # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
@@ -221,7 +218,7 @@ def setplot(plotdata=None):
     #
     #  Gauge Location Plot
     #
-    def gauge_after_axes(cd):
+    def gauge_location_afteraxes(cd):
         plt.subplots_adjust(left=0.12, bottom=0.06, right=0.97, top=0.97)
         surge_afteraxes(cd)
         gaugetools.plot_gauge_locations(cd.plotdata, gaugenos='all',
@@ -236,7 +233,7 @@ def setplot(plotdata=None):
     plotaxes.scaled = True
     plotaxes.xlimits = [-95.5, -94]
     plotaxes.ylimits = [29.0, 30.0]
-    plotaxes.afteraxes = gauge_after_axes
+    plotaxes.afteraxes = gauge_location_afteraxes
     surgeplot.add_surface_elevation(plotaxes, bounds=surface_limits)
     add_custom_colorbar_ticks_to_axes(plotaxes, 'surface', surface_ticks,
                                       surface_labels)
