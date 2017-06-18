@@ -304,15 +304,15 @@ def add_combined_profile_plot(plot_data, slice_value, direction='x',
     plotaxes.ylimits = top_surf_zoomed
 
     def top_surf_afteraxes(cd):
-        plt.hold(True)
-        plt.xlabel('')
+        axes = plt.gca()
+        axes.set_xlabel('')
         locs, labels = plt.xticks()
         labels = ['' for i in range(len(locs))]
         plt.xticks(locs, labels)
-        plt.plot([multilayer_data.bathy_location,
+        axes.plot([multilayer_data.bathy_location,
                   multilayer_data.bathy_location], top_surf_zoomed, '--k')
-        plt.ylabel('m')
-        plt.hold(False)
+        axes.set_ylabel('m')
+
     plotaxes.afteraxes = top_surf_afteraxes
     plotitem = plotaxes.new_plotitem(plot_type="1d_from_2d_data")
     plotitem.map_2d_to_1d = upper_surface
@@ -330,13 +330,12 @@ def add_combined_profile_plot(plot_data, slice_value, direction='x',
     plotaxes.ylimits = bottom_surf_zoomed
 
     def internal_surf_afteraxes(cd):
-        plt.hold(True)
-        plt.title('')
-        plt.ylabel('m')
-        plt.subplots_adjust(hspace=0.05)
-        plt.plot([multilayer_data.bathy_location,
+        axes = plt.gca()
+        axes.set_title('')
+        axes.set_ylabel('m')
+        axes.subplots_adjust(hspace=0.05)
+        axes.plot([multilayer_data.bathy_location,
                   multilayer_data.bathy_location], bottom_surf_zoomed, '--k')
-        plt.hold(False)
     plotaxes.afteraxes = internal_surf_afteraxes
     plotitem = plotaxes.new_plotitem(plot_type='1d_from_2d_data')
     plotitem.map_2d_to_1d = lower_surface
@@ -390,15 +389,14 @@ def add_velocities_profile_plot(plot_data, slice_value, direction='x',
     plotaxes.ylimits = velocities_zoomed
 
     def velocity_afteraxes(cd):
-        plt.hold(True)
-        plt.xlabel('')
+        axes = plt.gca()
+        axes.set_xlabel('')
         locs, labels = plt.xticks()
         labels = ['' for i in range(len(locs))]
         plt.xticks(locs, labels)
-        plt.plot([multilayer_data.bathy_location,
+        axes.plot([multilayer_data.bathy_location,
                   multilayer_data.bathy_location], velocities_zoomed, '--k')
-        plt.ylabel('m/s')
-        plt.hold(False)
+        axes.set_ylabel('m/s')
     plotaxes.afteraxes = velocity_afteraxes
 
     plotitem = plotaxes.new_plotitem(plot_type="1d_from_2d_data")
