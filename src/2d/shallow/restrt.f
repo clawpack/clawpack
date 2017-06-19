@@ -64,16 +64,24 @@ c     # need to allocate for dynamic memory:
      6              timeValout,timeValoutCPU
 
 
-c     ### if fgmax grids exist, read them back in.
-c     ### ASSUMES fgmax stuff already set up (main calls set_fgmax) 
-c     ### BEFORE  this restart routine called
-      do ifg = 1, FG_num_fgrids
-        fg => FG_fgrids(ifg)
+      if (mxnest .gt. mxnold) then
+        do ifg = 1, FG_num_fgrids
+          fg => FG_fgrids(ifg)
+          read(rstunit) fg%levelmax
+          read(rstunit) fg%auxdone(1:mxnold) 
+          read(rstunit) fg%x,fg%y,fg%valuemax,fg%tmax,
+     &       fg%arrival_time,fg%aux(1:mxnold,:,:),fg%t_last_updated
+        end do
+      else
+        do ifg = 1, FG_num_fgrids
+          fg => FG_fgrids(ifg)
           read(rstunit) fg%levelmax
           read(rstunit) fg%auxdone
           read(rstunit) fg%x,fg%y,fg%valuemax,fg%tmax,
-     &          fg%arrival_time,fg%aux,fg%t_last_updated
-      end do
+     &         fg%arrival_time,fg%aux,fg%t_last_updated
+        end do
+      endif
+
 c
       close(rstunit) 
 

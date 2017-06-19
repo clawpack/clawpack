@@ -27,7 +27,9 @@ module geoclaw_module
     ! ========================================================================
     !  Physics
     ! ========================================================================
-    real(kind=8) :: grav, earth_radius, sea_level
+    real(kind=8) :: grav, rho_air, ambient_pressure, earth_radius, sea_level
+    ! Water density can be an array to handle multiple layers
+    real(kind=8), allocatable :: rho(:)
     integer :: coordinate_system
 
     ! Rotational velocity of Earth
@@ -53,7 +55,10 @@ contains
     ! ========================================================================
     subroutine set_geo(file_name)
 
+        use utility_module, only: get_value_count
+        
         use amr_module, only: mcapa, rinfinity
+
         implicit none
 
         ! Input
@@ -61,6 +66,9 @@ contains
 
         ! Locals
         integer, parameter :: unit = 127
+
+        integer :: i
+        character(len=128) :: line
 
         if (.not.module_setup) then
             open(unit=GEO_PARM_UNIT,file='fort.geo',status="unknown",action="write")
@@ -78,6 +86,11 @@ contains
             endif
 
             read(unit,*) grav
+            read(unit,'(a)') line
+            allocate(rho(get_value_count(line)))
+            read(line,*) (rho(i), i=1, size(rho, 1))
+            read(unit,*) rho_air
+            read(unit,*) ambient_pressure
             read(unit,*) earth_radius
             read(unit,*) coordinate_system
             read(unit,*) sea_level
@@ -120,6 +133,9 @@ contains
             endif
 
             write(GEO_PARM_UNIT,*) '   gravity:',grav
+            write(GEO_PARM_UNIT,*) '   density water:',rho
+            write(GEO_PARM_UNIT,*) '   density air:',rho_air
+            write(GEO_PARM_UNIT,*) '   ambient pressure:',ambient_pressure
             write(GEO_PARM_UNIT,*) '   earth_radius:',earth_radius
             write(GEO_PARM_UNIT,*) '   coordinate_system:',coordinate_system
             write(GEO_PARM_UNIT,*) '   sea_level:',sea_level

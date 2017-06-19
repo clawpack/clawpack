@@ -84,6 +84,8 @@ module gauges_module
     integer, allocatable, dimension(:) ::  mbestsrc, mbestorder, &
                           igauge, mbestg1, mbestg2
 
+    logical, parameter :: INTERPOLATE = .true.
+
 contains
 
     subroutine set_gauges(restart, num_eqn, num_aux, fname)
@@ -196,7 +198,7 @@ contains
                 ! Handle restart
                 if (restart) then
                     open(unit=OUTGAUGEUNIT, file=gauges(i)%file_name,       &
-                         status='old', position='append', form='formatted')
+                         status='unknown', position='append', form='formatted')
                 else
                     open(unit=OUTGAUGEUNIT, file=gauges(i)%file_name,       &
                          status='unknown', position='append', form='formatted')
@@ -204,7 +206,7 @@ contains
 
                     ! Write header
                     header_1 = "('# gauge_id= ',i5,' " //                   &
-                               "location=( ',1e15.7,' ',1e15.7,' ) " //     &
+                               "location=( ',1e17.10,' ',1e17.10,' ) " //   &
                                "num_var= ',i2)"
                     write(OUTGAUGEUNIT, header_1) gauges(i)%gauge_num,      &
                                                   gauges(i)%x,              &
@@ -288,10 +290,11 @@ contains
             end do 
         end do
 
-
         do i = 1, num_gauges
-          if (mbestsrc(i) .eq. 0) &
-              print *, "ERROR in setting grid src for gauge data", i
+            if (mbestsrc(i) .eq. 0) then
+                print *, "ERROR in setting grid src for gauge data",      &
+                         gauges(i)%gauge_num
+            end if
         end do
 
         ! Sort the source arrays for easy testing during integration
@@ -413,57 +416,59 @@ contains
                 cycle
             end if
 
-            ! Compute indexing and bilinear interpolant weights
-            ! Note: changed 0.5 to  0.5d0 etc.
-            iindex =  int(.5d0 + (gauges(ii)%x - xlow) / hx)
-            jindex =  int(.5d0 + (gauges(ii)%y - ylow) / hy)
-            if ((iindex < nghost .or. iindex > mitot-nghost) .or. &
-                (jindex < nghost .or. jindex > mjtot-nghost)) then
-                    print *, "ERROR in output of Gauge Data "
-            end if
-            xcent  = xlow + (iindex - 0.5d0) * hx
-            ycent  = ylow + (jindex - 0.5d0) * hy
-            xoff   = (gauges(ii)%x - xcent) / hx
-            yoff   = (gauges(ii)%y - ycent) / hy
-
-            ! Gauge interpolation seems to work, so error test is commented out.
-            ! For debugging, use the code below...
-            !   Note: we expect 0 <= xoff, yoff <= 1 but if gauge is exactly 
-            !   at center of cell these might be off by rounding error
-
-            !if (xoff .lt. -1.d-4 .or. xoff .gt. 1.0001d0 .or. &
-            !    yoff .lt. -1.d-4 .or. yoff .gt. 1.0001d0) then
-            !   write(6,*) "*** print_gauges: Interpolation problem at gauge ",&
-            !               igauge(ii)
-            !   write(6,*) "    xoff,yoff: ", xoff,yoff
-            !endif
-
-
-            ! Modified below from amrclaw/src/2d/gauges_module.f90 
-            ! to interpolate only where all four cells are
-            ! wet, otherwise just take this cell value:
-
-            ! Check for dry cells by comparing h to mod_dry_tolerance, which 
-            ! should be smaller than drytolerance to avoid oscillations since  
-            ! when h < drytolerance the velocities are zeroed out which can then 
-            ! lead to increase in h again.
-
-            mod_dry_tolerance = 0.1d0 * dry_tolerance
-
-            h(1) = q(1, iindex, jindex) 
-            h(2) = q(1, iindex + 1, jindex) 
-            h(3) = q(1, iindex, jindex + 1)
-            h(4) = q(1, iindex + 1,jindex + 1)
-            
-            ! Count for number of variables written to var    
-            var_index = 0
+            if (INTERPOLATE) then
+                ! Compute indexing and bilinear interpolant weights
+                ! Note: changed 0.5 to  0.5d0 etc.
+                iindex =  int(.5d0 + (gauges(ii)%x - xlow) / hx)
+                jindex =  int(.5d0 + (gauges(ii)%y - ylow) / hy)
+                if ((iindex < nghost .or. iindex > mitot-nghost) .or. &
+                    (jindex < nghost .or. jindex > mjtot-nghost)) then
+                        print *, "ERROR in output of Gauge Data "
+                end if
+                xcent  = xlow + (iindex - 0.5d0) * hx
+                ycent  = ylow + (jindex - 0.5d0) * hy
+                xoff   = (gauges(ii)%x - xcent) / hx
+                yoff   = (gauges(ii)%y - ycent) / hy
+    
+                ! Gauge interpolation seems to work, so error test is commented out.
+                ! For debugging, use the code below...
+                !   Note: we expect 0 <= xoff, yoff <= 1 but if gauge is exactly 
+                !   at center of cell these might be off by rounding error
+    
+                !if (xoff .lt. -1.d-4 .or. xoff .gt. 1.0001d0 .or. &
+                !    yoff .lt. -1.d-4 .or. yoff .gt. 1.0001d0) then
+                !   write(6,*) "*** print_gauges: Interpolation problem at gauge ",&
+                !               igauge(ii)
+                !   write(6,*) "    xoff,yoff: ", xoff,yoff
+                !endif
+    
+    
+                ! Modified below from amrclaw/src/2d/gauges_module.f90 
+                ! to interpolate only where all four cells are
+                ! wet, otherwise just take this cell value:
+    
+                ! Check for dry cells by comparing h to mod_dry_tolerance, which 
+                ! should be smaller than drytolerance to avoid oscillations since  
+                ! when h < drytolerance the velocities are zeroed out which can then 
+                ! lead to increase in h again.
+    
+                mod_dry_tolerance = 0.1d0 * dry_tolerance
+    
+                h(1) = q(1, iindex, jindex) 
+                h(2) = q(1, iindex + 1, jindex) 
+                h(3) = q(1, iindex, jindex + 1)
+                h(4) = q(1, iindex + 1,jindex + 1)
+                
+                endif
         
-            if ((h(1) < mod_dry_tolerance) .or.  &
+            if ((.not. INTERPOLATE) .or.         &
+                (h(1) < mod_dry_tolerance) .or.  &
                 (h(2) < mod_dry_tolerance) .or.  &
                 (h(3) < mod_dry_tolerance) .or.  &
                 (h(4) < mod_dry_tolerance)) then
 
-                ! One of the cells is dry, so just use value from grid cell
+                ! If never interpolating, or if 
+                ! one of the cells is dry, just use value from grid cell
                 ! that contains gauge rather than interpolating
             
                 icell = int(1.d0 + (gauges(ii)%x - xlow) / hx)
@@ -496,6 +501,8 @@ contains
 
             else
                 ! Linear interpolation between four cells
+                ! Count for number of variables written to var    
+                var_index = 0
                 do n=1, size(gauges(ii)%q_out_vars, 1)
                     if (gauges(ii)%q_out_vars(n)) then
                         var_index = var_index + 1
