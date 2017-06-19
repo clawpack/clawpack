@@ -12,7 +12,11 @@ import numpy
 import matplotlib.pyplot as plt
 
 from clawpack.visclaw import colormaps, geoplot, gaugetools
+from clawpack.visclaw.data import ClawPlotData
 from six.moves import range
+import clawpack.geoclaw.data
+import os
+plotdata = ClawPlotData()
 
 # ========================================================================
 #  Data extraction routines
@@ -48,6 +52,71 @@ def eta1(cd):
 def eta2(cd):
     # return cd.q[:,:,7]
     return extract_eta(cd.q[3,:,:],cd.q[7,:,:])
+
+def eta_elevation(surface, DRY_TOL=10**-3):
+
+    def eta_func(cd):
+        ml_data = clawpack.geoclaw.data.MultilayerData()
+        ml_data.read(os.path.join(plotdata.outdir,'multilayer.data'))
+
+        h1 = cd.q[0,:,:]
+        h2 = cd.q[3,:,:]
+        b = cd.q[6,:,:] - h1 - h2
+        if surface == 1: 
+            h = h1
+            eta = eta1(cd)
+            eta_init = ml_data.eta[0]
+        elif surface == 2:
+            h = h2
+            eta = eta2(cd)
+            eta_init = ml_data.eta[1]
+        return numpy.ma.masked_where(b < eta_init, eta, numpy.ma.masked_where(numpy.abs(h) < DRY_TOL, h))
+
+    return eta_func
+
+def initially_wet(surface, DRY_TOL=10**-3):
+
+    def eta_func(cd):
+        ml_data = clawpack.geoclaw.data.MultilayerData()
+        ml_data.read(os.path.join(plotdata.outdir,'multilayer.data'))
+
+        h1 = cd.q[0,:,:]
+        h2 = cd.q[3,:,:]
+        b = cd.q[6,:,:] - h1 - h2
+        if surface == 1: 
+            h = h1
+            eta = eta1(cd)
+            eta_init = ml_data.eta[0]
+        elif surface == 2:
+            h = h2
+            eta = eta2(cd)
+            eta_init = ml_data.eta[1]
+        mask = numpy.logical_or(b>eta_init, numpy.abs(h)<DRY_TOL)
+        return numpy.ma.masked_where(mask, eta)
+
+    return eta_func
+
+def inundated(surface, DRY_TOL=10**-3):
+
+    def h_func(cd):
+        ml_data = clawpack.geoclaw.data.MultilayerData()
+        ml_data.read(os.path.join(plotdata.outdir,'multilayer.data'))
+
+        h1 = cd.q[0,:,:]
+        h2 = cd.q[3,:,:]
+        b = cd.q[6,:,:] - h1 - h2
+        if surface == 1: 
+            h = h1
+            eta = eta1(cd)
+            eta_init = ml_data.eta[0]
+        elif surface == 2:
+            h = h2
+            eta = eta2(cd)
+            eta_init = ml_data.eta[1]
+        mask = numpy.logical_or(b<eta_init, numpy.abs(h)<DRY_TOL)
+        return numpy.ma.masked_where(mask, h)
+
+    return h_func
 
 # def h1(cd):
 #     # return cd.q[:,:,6]
@@ -138,14 +207,29 @@ def water_quiver2(current_data):
 # ========================================================================
 #  Plot items
 # ========================================================================
+def add_inundation(plotaxes,surface,bounds=None,plot_type='pcolor'):
+    if plot_type == 'pcolor' or plot_type == 'imshow':
+        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem.plot_var = inundated(surface)        
+        if bounds is not None:                
+            plotitem.pcolor_cmin = bounds[0]
+            plotitem.pcolor_cmax = bounds[1]
+        plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'b',0.0:'c'})
+        plotitem.add_colorbar = True
+        plotitem.amr_celledges_show = [0,0,0]
+        plotitem.amr_patchedges_show = [0,0,0]
+
 def add_surface_elevation(plotaxes,surface,bounds=None,plot_type='pcolor'):
     if plot_type == 'pcolor' or plot_type == 'imshow':
         plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
         # plotitem.plot_var = geoplot.surface
-        if surface == 1:
-            plotitem.plot_var = eta1
-        elif surface == 2:
-            plotitem.plot_var = eta2
+        # plotitem.plot_var = eta_elevation(surface)
+        plotitem.plot_var = initially_wet(surface)        
+
+        # if surface == 1:
+        #     plotitem.plot_var = eta1
+        # elif surface == 2:
+        #     plotitem.plot_var = eta2
         if bounds is not None:                
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
@@ -444,9 +528,11 @@ def add_cross_section(plotaxes, surface):
     if surface == 1: 
         plot_eta = eta1
         clr = 'b'
+        sty = 'x'
     if surface == 2: 
         plot_eta = eta2
         clr = 'c'
+        sty = '+'
 
     def xsec(current_data):
         # Return x value and surface eta at this point, along y=0
@@ -463,6 +549,7 @@ def add_cross_section(plotaxes, surface):
     plotitem = plotaxes.new_plotitem(plot_type='1d_from_2d_data')
     plotitem.map_2d_to_1d = xsec
     plotitem.color = clr
+    plotitem.plotstyle = sty
 
     plotitem.show = True
 
