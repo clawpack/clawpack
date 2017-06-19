@@ -249,7 +249,8 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
 
     # Top
     plotfigure = plotdata.new_plotfigure(name='Surface & topo',
-                                         type='each_gauge')
+                                         type='each_gauge',
+                                         figno=301)
     plotfigure.show = True
     plotfigure.clf_each_gauge = True
 
@@ -266,7 +267,8 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
 
     # Bottom
     plotfigure = plotdata.new_plotfigure(name='Bottom Surface Gauge',
-                                         type='each_gauge')
+                                         type='each_gauge',
+                                         figno=302)
     plotfigure.show = True
     plotfigure.clf_each_gauge = True
 
