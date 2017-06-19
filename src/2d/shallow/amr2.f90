@@ -81,7 +81,7 @@ program amr2
     use amr_module, only: lfine, lentot, iregridcount, avenumgrids
     use amr_module, only: tvoll, tvollCPU, rvoll, rvol, mstart, possk, ibuff
     use amr_module, only: timeRegridding,timeUpdating, timeValout
-    use amr_module, only: timeBound,timeStepgrid, timeFlagger,timeBufnst,timeFilvalTot
+    use amr_module, only: timeBound,timeStepgrid, timeFlagger,timeBufnst
     use amr_module, only: timeBoundCPU,timeStepGridCPU,timeRegriddingCPU
     use amr_module, only: timeValoutCPU,timeTick,timeTickCPU
     use amr_module, only: kcheck, iorder, lendim, lenmax
@@ -449,6 +449,8 @@ program amr2
         open(outunit, file=outfile, status='unknown', position='append', &
                       form='formatted')
 
+        ! moved upt before restrt or won't properly initialize 
+        call set_fgmax()   
         call restrt(nsteps,time,nvar,naux)
         nstart  = nsteps
         tstart_thisrun = time
@@ -471,7 +473,6 @@ program amr2
         call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar, naux) ! Set gauge output
-        call set_fgmax()
 
     else
 
@@ -779,13 +780,6 @@ program amr2
     !format_string = "('   Total gfixup     time  (clock)   ',1f16.8,' s')"
     !write(outunit,format_string)  real(timeGrdfit2,kind=8) / real(clock_rate,kind=8)
     !write(*,format_string) real(timeGrdfit2,kind=8) / real(clock_rate,kind=8)
-    !format_string = "('      Total filval (wall) time      ',1f16.8,' s')"
-    !write(outunit,format_string)  real(timeFilvalTot,kind=8) / real(clock_rate,kind=8)
-    !write(*,format_string) real(timeFilvalTot,kind=8) / real(clock_rate,kind=8)
-
-    !format_string = "('          Total filval (all cores) time     ',1f16.8,' s')"
-    !write(outunit,format_string)  real(timeFilval,kind=8) / real(clock_rate,kind=8)
-    !write(*,format_string) real(timeFilval,kind=8) / real(clock_rate,kind=8)
 
     !write(*,*)
     !format_string = "('Total setaux (all cores) time:',1f16.8,' s')"

@@ -23,9 +23,7 @@ module holland_storm_module
         ! Track is a triplet with (time,longitude,latitude)
         real(kind=8), allocatable :: track(:,:)
 
-        ! Storm physics
-        real(kind=8) :: ambient_pressure = 101.3d3 ! Pascals
-        real(kind=8) :: rho_air = 1.3d0
+        ! Storm parameterization
         real(kind=8), allocatable :: max_wind_radius(:)
         real(kind=8), allocatable :: max_wind_speed(:)
         real(kind=8), allocatable :: central_pressure(:)
@@ -293,11 +291,11 @@ contains
                 total_days = total_days + 28
             endif
         endif
-        if (months > 3)  total_days = total_days + 30
-        if (months > 4)  total_days = total_days + 31
-        if (months > 5)  total_days = total_days + 30
-        if (months > 6)  total_days = total_days + 31
-        if (months > 7)  total_days = total_days + 30
+        if (months > 3)  total_days = total_days + 31
+        if (months > 4)  total_days = total_days + 30
+        if (months > 5)  total_days = total_days + 31
+        if (months > 6)  total_days = total_days + 30
+        if (months > 7)  total_days = total_days + 31
         if (months > 8)  total_days = total_days + 31
         if (months > 9)  total_days = total_days + 30
         if (months > 10) total_days = total_days + 31
@@ -328,8 +326,8 @@ contains
         ! Junk storage
         real(kind=8) :: junk(2)
 
-        call get_holland_storm_data(t,storm,location, &
-                                        junk,junk(1),junk(1),junk(1),junk(1))
+        call get_holland_storm_data(t, storm, location, junk, junk(1),        &
+                                    junk(1), junk(1), junk(1))
 
     end function holland_storm_location
 
@@ -350,7 +348,7 @@ contains
 
         ! Fetch velocity of storm which has direction encoded in it
         call get_holland_storm_data(t, storm, junk, velocity, junk(1),  &
-                                                    junk(1), junk(1), junk(1))
+                                    junk(1), junk(1), junk(1))
 
         ! Unit directional vector
         theta = atan2(velocity(2),velocity(1))
@@ -504,7 +502,7 @@ contains
                                     ylower,dx,dy,t,aux, wind_index, &
                                     pressure_index, storm)
 
-        use geoclaw_module, only: g => grav
+        use geoclaw_module, only: g => grav, rho_air, ambient_pressure
         use geoclaw_module, only: coriolis, deg2rad
         use geoclaw_module, only: spherical_distance
 
@@ -534,7 +532,7 @@ contains
         call get_holland_storm_data(t,storm,sloc,tv,mwr,mws,Pc,rrp)
         
         ! Other quantities of interest
-        Pa = storm%ambient_pressure
+        Pa = ambient_pressure
 
         ! Calculate Holland parameters
         ! Subtract translational speed of storm from maximum wind speed
@@ -552,7 +550,7 @@ contains
         if (dp < 100.d0) dp = 100.d0
 
         ! Calculate Holland parameters and limit the result
-        B = storm%rho_air * exp(1.d0) * (mod_mws**2) / dp
+        B = rho_air * exp(1.d0) * (mod_mws**2) / dp
         if (B <  1.d0) B = 1.d0
         if (B > 2.5d0) B = 2.5d0
 

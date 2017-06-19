@@ -4,7 +4,8 @@ c
       subroutine valout (lst, lend, time, nvar, naux)
 c
       use amr_module
-      use multilayer_module, only: num_layers, rho
+      use geoclaw_module, only: rho
+      use multilayer_module, only: num_layers
       implicit double precision (a-h,o-z)
       character(len=10) :: fname1, fname2, fname3, fname4
 

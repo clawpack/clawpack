@@ -49,15 +49,9 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     real(kind=8) setflags(mitot,mjtot),maxauxdif
     integer :: jm, im, nm
     logical :: sticksoutxfine, sticksoutyfine,sticksoutxcrse,sticksoutycrse
-    logical :: DIAGONAL_CORNER
 
     ! External function definitions
     real(kind=8) :: get_max_speed
-
-    DIAGONAL_CORNER(im,jm,mic,mjc) = (im .eq. 1   .and. jm .eq. mjc)  .or.     &
-                                      (im .eq. mic .and. jm .eq. mjc) .or.     &
-                                      (im .eq. 1   .and. jm .eq. 1)    .or.     &
-                                      (im .eq. mic .and. jm .eq. 1)
 
     refinement_ratio_x = intratx(level-1)
     refinement_ratio_y = intraty(level-1)
@@ -323,6 +317,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
     if (varRefTime) then   ! keep consistent with setgrd_geo and qinit_geo
         sp_over_h = get_max_speed(val,mitot,mjtot,nvar,aux,naux,nghost,dx,dy)
+    else
+        sp_over_h = 0.d0  ! not used but set so do not get exceptions
     endif
 
 end subroutine filval
