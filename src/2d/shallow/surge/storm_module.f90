@@ -412,7 +412,7 @@ contains
         ! We open this here so that the file flushes and writes to disk
         open(unit=track_unit,file="fort.track",action="write",position='append')
 
-        write(track_unit,"(4e26.16)") t,storm_location(t),storm_direction(t)
+        write(track_unit, "(4e26.16)") t, storm_location(t), storm_direction(t)
         
         close(track_unit)
 
