@@ -296,8 +296,9 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Flag using refinement routine flag2refine rather than richardson error
-    amrdata.flag_richardson = False    # use Richardson?
-    amrdata.flag2refine = True
+    amrdata.flag_richardson = True    # use Richardson?
+    amrdata.flag_richardson_tol = 0.002  # Richardson tolerance
+    amrdata.flag2refine = False
 
     # steps to take on each level L between regriddings of level L+1:
     amrdata.regrid_interval = 3
