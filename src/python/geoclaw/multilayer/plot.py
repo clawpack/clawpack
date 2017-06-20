@@ -15,8 +15,11 @@ from clawpack.visclaw import colormaps, geoplot, gaugetools
 from six.moves import range
 
 # Definition of colormpas
-surface_cmap = colormaps.make_colormap({1.0: 'r', 0.5: 'w', 0.0: 'b'})
-surface_cmap = plt.get_cmap("RdBu_r")
+surface_cmap = plt.get_cmap("bwr")
+speed_cmap = plt.get_cmap('PuBu')
+land_cmap = geoplot.land_colors
+velocity_cmap = plt.get_cmap('PiYG')
+vorticity_cmap = plt.get_cmap('PRGn')
 
 # ========================================================================
 #  Data extraction routines
@@ -120,7 +123,6 @@ def add_surface_elevation(plotaxes, surface, bounds=None, plot_type='pcolor'):
         if bounds is not None:
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
-        # plotitem.pcolor_cmap = geoplot.tsunami_colormap
         plotitem.pcolor_cmap = surface_cmap
         plotitem.add_colorbar = True
         plotitem.amr_celledges_show = [0] * 10
@@ -165,7 +167,7 @@ def add_speed(plotaxes, layer, bounds=None, plot_type='pcolor'):
             plotitem.plot_var = water_speed1
         elif layer == 2:
             plotitem.plot_var = water_speed2
-        plotitem.imshow_cmap = plt.get_cmap('PuBu')
+        plotitem.imshow_cmap = speed_cmap
         if bounds is not None:
             plotitem.imshow_cmin = bounds[0]
             plotitem.imshow_cmax = bounds[1]
@@ -186,7 +188,7 @@ def add_x_velocity(plotaxes, layer, plot_type='pcolor', bounds=None):
             plotitem.imshow_cmin = bounds[0]
             plotitem.imshow_cmax = bounds[1]
         plotitem.add_colorbar = True
-        plotitem.imshow_cmap = plt.get_cmap('PiYG')
+        plotitem.imshow_cmap = velocity_cmap
         plotitem.amr_celledges_show = [0] * 10
         plotitem.amr_patchedges_show = [1] * 10
 
@@ -202,7 +204,7 @@ def add_y_velocity(plotaxes, layer, plot_type='pcolor', bounds=None):
         if bounds is not None:
             plotitem.imshow_cmin = bounds[0]
             plotitem.imshow_cmax = bounds[1]
-        plotitem.imshow_cmap = plt.get_cmap('PiYG')
+        plotitem.imshow_cmap = velocity_cmap
         plotitem.add_colorbar = True
         plotitem.amr_celledges_show = [0] * 10
         plotitem.amr_patchedges_show = [1] * 10
@@ -216,7 +218,7 @@ def add_land(plotaxes, plot_type='pcolor'):
         plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
         plotitem.show = True
         plotitem.plot_var = geoplot.land
-        plotitem.imshow_cmap = geoplot.land_colors
+        plotitem.imshow_cmap = land_cmap
         plotitem.imshow_cmin = 0.0
         plotitem.imshow_cmax = 80.0
         plotitem.add_colorbar = False
