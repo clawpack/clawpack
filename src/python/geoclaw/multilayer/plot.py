@@ -16,6 +16,7 @@ from six.moves import range
 
 # Definition of colormpas
 surface_cmap = colormaps.make_colormap({1.0: 'r', 0.5: 'w', 0.0: 'b'})
+surface_cmap = plt.get_cmap("RdBu_r")
 
 # ========================================================================
 #  Data extraction routines
@@ -25,17 +26,18 @@ surface_cmap = colormaps.make_colormap({1.0: 'r', 0.5: 'w', 0.0: 'b'})
 #  Momenta in the x and y directions are `+ 2` and `+ 3` respectively.
 #
 #  Note also that all layer indices are 0-indexed
-layer_index = [0, 2]
+layer_index = [0, 3]
+eta_index = 6
 
 
-def extract_eta(h, eta, DRY_TOL=10**-3):
+def extract_eta(h, eta, DRY_TOL=1e-3):
     masked_eta = numpy.ma.masked_where(numpy.abs(h) < DRY_TOL, eta)
     return masked_eta
 
 
 def eta(cd, layer):
-    return extract_eta(cd.q[layer_index[0] + layer * 3, :, :],
-                       cd.q[layer_index[1] + layer * 3, :, :])
+    return extract_eta(cd.q[layer_index[layer], :, :],
+                       cd.q[eta_index + layer, :, :])
 
 
 def eta1(cd):
@@ -47,10 +49,10 @@ def eta2(cd):
 
 
 def b(current_data):
-    h1 = current_data.q[0, :, :]
-    h2 = current_data.q[3, :, :]
+    h1 = current_data.q[layer_index[0], :, :]
+    h2 = current_data.q[layer_index[1], :, :]
 
-    return current_data.q[6, :, :] - h1 - h2
+    return eta1(cd) - h1 - h2
 
 
 def extract_velocity(h, hu, DRY_TOL=10**-8):
@@ -60,43 +62,48 @@ def extract_velocity(h, hu, DRY_TOL=10**-8):
     return u
 
 
+def water_u(cd, direction, layer):
+    return extract_velocity(cd.q[layer_index[layer], :, :],
+                            cd.q[layer_index[layer] + direction + 1, :, :])
+
+
 def water_u1(cd):
-    return extract_velocity(cd.q[0, :, :], cd.q[1, :, :])
+    return water_u(cd, 0, 0)
 
 
 def water_u2(cd):
-    return extract_velocity(cd.q[3, :, :], cd.q[4, :, :])
+    return water_u(cd, 0, 1)
 
 
 def water_v1(cd):
-    return extract_velocity(cd.q[0, :, :], cd.q[2, :, :])
+    return water_u(cd, 1, 0)
 
 
 def water_v2(cd):
-    return extract_velocity(cd.q[3, :, :], cd.q[5, :, :])
+    return water_u(cd, 1, 1)
 
 
 def water_speed1(current_data):
     u = water_u1(current_data)
     v = water_v1(current_data)
 
-    return numpy.sqrt(u**2+v**2)
+    return numpy.sqrt(u**2 + v**2)
 
 
 def water_speed2(current_data):
     u = water_u2(current_data)
     v = water_v2(current_data)
 
-    return numpy.sqrt(u**2+v**2)
+    return numpy.sqrt(u**2 + v**2)
 
 
 def water_speed_depth_ave(current_data):
-    h1 = current_data.q[0, :, :]
-    h2 = current_data.q[3, :, :]
+    h1 = current_data.q[layer_index[0], :, :]
+    h2 = current_data.q[layer_index[1], :, :]
     u1 = water_speed1(current_data)
     u2 = water_speed1(current_data)
 
-    return (h1*u1 + h2*u2) / (h1+h2)
+    return (h1 * u1 + h2 * u2) / (h1 + h2)
 
 
 # ========================================================================

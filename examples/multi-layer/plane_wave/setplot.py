@@ -253,9 +253,11 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
                                          figno=301)
     plotfigure.show = True
     plotfigure.clf_each_gauge = True
+    plotfigure.kwargs = {'figsize': (14, 4)}
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = 'subplot(1, 2, 1)'
     plotaxes.xlimits = [0.0, 1.0]
     plotaxes.ylimits = top_surface_limits
     plotaxes.title = 'Top Surface'
@@ -265,17 +267,11 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     plotitem.plot_var = 6
     plotitem.plotstyle = 'b-'
 
-    # Bottom
-    plotfigure = plotdata.new_plotfigure(name='Bottom Surface Gauge',
-                                         type='each_gauge',
-                                         figno=302)
-    plotfigure.show = True
-    plotfigure.clf_each_gauge = True
-
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes()
+    plotaxes.axescmd = 'subplot(1, 2, 2)'
     plotaxes.xlimits = [0.0, 1.0]
-    # plotaxes.ylimits = internal_surface_limits
+    plotaxes.ylimits = internal_surface_limits
     plotaxes.title = 'Bottom Surface'
 
     # Plot surface as blue curve:
@@ -286,7 +282,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     # =========================================================================
     #  Other plots
 
-    # Gauge Locations
+    # Gauge Locations - Enable to see where gauges are located
     def locations_afteraxes(current_data, gaugenos='all'):
         gaugetools.plot_gauge_locations(current_data.plotdata,
                                         gaugenos=gaugenos,
@@ -295,7 +291,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
         pcolor_afteraxes(current_data)
 
     plotfigure = plotdata.new_plotfigure(name='Gauge Locations')
-    plotfigure.show = True
+    plotfigure.show = False
     plotfigure.kwargs = {'figsize': (14, 4)}
 
     # Top surface
