@@ -9,7 +9,7 @@ c
 
        use amr_module, only: rnode,cornylo,cornxlo,evol,hxposs,hyposs
        use amr_module, only: NEEDS_TO_BE_SET,nghost,store2,timemult
-       use amr_module, only: timeSetaux,possk,alloc,node,timeSetauxCPU
+       use amr_module, only: possk,alloc,node
        use amr_module, only: auxtype
        use topo_module, only: aux_finalized
        implicit none
@@ -67,8 +67,6 @@ c             # Generate aux for fine grid
      &                    naux,auxdub)
               call system_clock(clock_finish, clock_rate)
               call cpu_time(cpu_finish)
-              timeSetaux = timeSetaux + clock_finish - clock_start
-              timeSetauxCPU = timeSetauxCPU + cpu_finish - cpu_start
 c
 c             # Generate aux for coarse grid
 c             # Call setaux first to set capacity functions
