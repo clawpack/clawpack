@@ -12,10 +12,10 @@ from __future__ import absolute_import
 
 import numpy
 
+import clawpack.geoclaw.units as units
+
 # =============================================================================
 #  Basic storm class
-
-
 class Storm(object):
     r"""
     Storm data object

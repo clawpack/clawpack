@@ -53,6 +53,8 @@ poisson = 0.25
 #  Units dictionaries
 # ==============================================================================
 
+# TODO:  Depend on the units module instead
+
 # Dictionary for standard units to be used for all subfault models.
 # The data might be read in from a file where different units are used,
 # in which case the *input_units* argument of the *read* method can be used
