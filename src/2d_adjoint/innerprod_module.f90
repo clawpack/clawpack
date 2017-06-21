@@ -26,8 +26,8 @@ contains
                 t_nm = 0.d0
             endif
 
-            if (t < adjoints(r)%time .and. &
-                (t +(trange_final - trange_start))>= t_nm) then
+            if ((t+adjoints(r)%time) >= trange_start .and. &
+                (t+adjoints(r)%time) <=trange_final) then
 
                 q_innerprod1 = 0.d0
                 q_innerprod2 = 0.d0
