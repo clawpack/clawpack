@@ -30,10 +30,10 @@ def makeqinit():
     """
     nxpoints = 101
     nypoints = 101
-    xlower = -50.e0
-    xupper = 50.e0
-    yupper = 50.e0
-    ylower = -50.e0
+    xlower = -100.e0
+    xupper = 100.e0
+    yupper = 100.e0
+    ylower = -100.e0
     outfile= "hump.xyz"     
 
     topography = Topography(topo_func=qinit)

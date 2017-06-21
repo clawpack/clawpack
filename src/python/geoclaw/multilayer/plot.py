@@ -214,7 +214,7 @@ def add_inundation(plotaxes,surface,bounds=None,plot_type='pcolor'):
         if bounds is not None:                
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
-        plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'b',0.0:'c'})
+        plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'b',0.0:'r'})
         plotitem.add_colorbar = True
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [0,0,0]

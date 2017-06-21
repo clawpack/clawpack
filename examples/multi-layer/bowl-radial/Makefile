@@ -21,7 +21,7 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?= 
+FFLAGS ?= -O2 -fopenmp
 
 # Include flags for LAPACK linking
 UNAME = $(shell uname)

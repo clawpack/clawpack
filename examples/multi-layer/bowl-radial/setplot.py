@@ -77,9 +77,9 @@ def setplot(plotdata=None):
     # ========================================================================
     #  Generic helper functions
     # ========================================================================
-    # def pcolor_afteraxes(current_data):
-    #     bathy_ref_lines(current_data)
-    #     gauge_locations(current_data)
+    def pcolor_afteraxes(current_data):
+        # bathy_ref_lines(current_data)
+        gauge_locations(current_data)
         
     def contour_afteraxes(current_data):
         # gauge_locations(current_data)
@@ -377,7 +377,7 @@ def setplot(plotdata=None):
         xticks([3600*i for i in range(n)], ['%i' % i for i in range(n)])
         xlabel('time (hours)')
 
-    plotaxes.afteraxes = add_zeroline
+    # plotaxes.afteraxes = add_zeroline
 
 
 

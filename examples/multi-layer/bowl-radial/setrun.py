@@ -11,6 +11,8 @@ from __future__ import print_function
 import os
 import numpy as np
 
+import clawpack.geoclaw.data
+import clawpack.geoclaw.topotools as tt
 
 #------------------------------
 def setrun(claw_pkg='geoclaw'):
@@ -68,8 +70,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 81
-    clawdata.num_cells[1] = 81
+    clawdata.num_cells[0] = 41
+    clawdata.num_cells[1] = 41
 
 
     # ---------------
@@ -114,8 +116,8 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 25
-        clawdata.tfinal = 50.0
+        clawdata.num_output_times = 10
+        clawdata.tfinal = 30.0
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -125,7 +127,7 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
         clawdata.output_step_interval = 10
-        clawdata.total_steps = 200
+        clawdata.total_steps = 500
         clawdata.output_t0 = True
         
 
@@ -262,12 +264,12 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 1
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,2,2]
-    amrdata.refinement_ratios_y = [2,2,2]
-    amrdata.refinement_ratios_t = [2,2,2]
+    amrdata.refinement_ratios_x = [2,2,6]
+    amrdata.refinement_ratios_y = [2,2,6]
+    amrdata.refinement_ratios_t = [2,2,6]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
@@ -327,20 +329,20 @@ def setrun(claw_pkg='geoclaw'):
     # rundata.gaugedata.add_gauge()
 
     # gauges along x-axis:
-    # gaugeno = 0
-    # for r in np.linspace(86., 93., 9):
-    #     gaugeno = gaugeno+1
-    #     x = r + .001  # shift a bit away from cell corners
-    #     y = .001
-    #     rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
+    gaugeno = 0
+    for r in np.linspace(56., 63., 9):
+        gaugeno = gaugeno+1
+        x = r + .001  # shift a bit away from cell corners
+        y = .001
+        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
 
-    # # gauges along diagonal:
-    # gaugeno = 100
-    # for r in np.linspace(86., 93., 9):
-    #     gaugeno = gaugeno+1
-    #     x = (r + .001) / np.sqrt(2.)
-    #     y = (r + .001) / np.sqrt(2.)
-    #     rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
+    # gauges along diagonal:
+    gaugeno = 100
+    for r in np.linspace(56., 63., 9):
+        gaugeno = gaugeno+1
+        x = (r + .001) / np.sqrt(2.)
+        y = (r + .001) / np.sqrt(2.)
+        rundata.gaugedata.gauges.append([gaugeno, x, y, 0., 1e10])
     
 
     return rundata
@@ -372,7 +374,7 @@ def setgeo(rundata):
     geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = [0.0, -20.0]
+    geo_data.sea_level = [0.0, -20]
     geo_data.dry_tolerance = 1.e-1
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025
@@ -390,11 +392,13 @@ def setgeo(rundata):
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
     topo_data.topofiles.append([2, 1, 3, 0., 1.e10, 'bowl.topotype2'])
+    # topo_data.topofiles.append([2, 1, 5, 0.0, 1e10, 'topo.tt2'])
 
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
     # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
+
 
     # == setqinit.data values ==
     rundata.qinit_data.qinit_type = 4
@@ -420,7 +424,7 @@ def set_multilayer(rundata):
     # Physics parameters
     data.num_layers = 2
     data.rho = [0.9, 1.0]
-    data.eta = [0.0, -20.0]
+    data.eta = [0.0, -20]
     
     # Algorithm parameters
     data.eigen_method = 2
@@ -439,6 +443,46 @@ def set_multilayer(rundata):
 
     return rundata
 
+# Rotation transformations
+def transform_c2p(x,y,x0,y0,theta):
+    return ((x+x0)*np.cos(theta) - (y+y0)*np.sin(theta),
+            (x+x0)*np.sin(theta) + (y+y0)*np.cos(theta))
+
+def transform_p2c(x,y,x0,y0,theta):
+    return ( x*np.cos(theta) + y*np.sin(theta) - x0,
+            -x*np.sin(theta) + y*np.cos(theta) - y0)
+    
+def bathy_step(x, y, location=0.15, angle=0.0, left=-80.0, right=-10.0):
+    x_c,y_c = transform_p2c(x, y, location, 0.0, angle)
+    return ((x_c <= 0.0) * left 
+          + (x_c >  0.0) * right)
+
+
+def write_topo_file(run_data, out_file, **kwargs):
+
+    # Make topography
+    topo_func = lambda x, y: bathy_step(x, y, **kwargs)
+    topo = tt.Topography(topo_func=topo_func)
+    topo.x = np.linspace(run_data.clawdata.lower[0], 
+                            run_data.clawdata.upper[0], 
+                            run_data.clawdata.num_cells[0] + 8)
+    topo.y = np.linspace(run_data.clawdata.lower[1], 
+                            run_data.clawdata.upper[1], 
+                            run_data.clawdata.num_cells[1] + 8)
+    topo.write(out_file)
+
+    # Write out simple bathy geometry file for communication to the plotting
+    with open("./bathy_geometry.data", 'w') as bathy_geometry_file:
+        if "location" in kwargs:
+            location = kwargs['location']
+        else:
+            location = 0.15
+        if "angle" in kwargs:
+            angle = kwargs['angle']
+        else:
+            angle = 0.0
+        bathy_geometry_file.write("%s\n%s" % (location, angle) )
+
 
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
@@ -446,3 +490,4 @@ if __name__ == '__main__':
     rundata = setrun(*sys.argv[1:])
     rundata.write()
 
+    write_topo_file(rundata, 'topo.tt2')
