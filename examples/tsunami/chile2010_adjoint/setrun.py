@@ -485,8 +485,6 @@ def setadjoint(rundata):
         fname = '../' + fname.replace('tck','chk')
         adjointdata.add_param('file' + str(counter), fname, \
             'Checkpoint file' + str(counter))
-        adjointdata.add_param('time' + str(counter), float(time), \
-            'Time for file' + str(counter))
         counter = counter + 1
 
     return rundata
