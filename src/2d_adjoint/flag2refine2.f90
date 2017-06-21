@@ -156,12 +156,10 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                              (t,x_c,y_c,eta,q(2,i,j),q(3,i,j),aux(1,i,j))
 
             ! Check wave criteria
-            if(abs(eta - sea_level) > wave_tolerance) then
               if (aux(innerprod_index,i,j) > tolsp) then
                 amrflags(i,j) = DOFLAG
                 cycle x_loop
               endif
-            endif
         endif
       enddo x_loop
     enddo y_loop
