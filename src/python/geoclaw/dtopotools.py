@@ -700,7 +700,7 @@ class Fault(object):
                 for param in column_list:
                     value = getattr(subfault, param)
                     if param in output_units:
-                        converted_value = units.convert_units(value,
+                        converted_value = units.convert(value,
                                                     standard_units[param],
                                                     self.output_units[param])
                     s = s + format[param] % value + delimiter
@@ -1159,7 +1159,7 @@ class SubFault(object):
         params = list(input_units.keys())
         for param in params:
             value = getattr(self, param)
-            converted_value = units.convert_units(value, input_units[param],
+            converted_value = units.convert(value, input_units[param],
                                                   standard_units[param])
             setattr(self, param, converted_value)
             if verbose:
