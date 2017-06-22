@@ -4,9 +4,9 @@
 r"""
 GeoClaw dtopotools Module  `$CLAW/geoclaw/src/python/geoclaw/dtopotools.py`
 
-Module provides several functions for dealing with changes to topography (usually
-due to earthquakes) including reading sub-fault specifications, writing out 
-dtopo files, and calculating Okada based deformations.
+Module provides several functions for dealing with changes to topography
+(usually due to earthquakes) including reading sub-fault specifications,
+writing out dtopo files, and calculating Okada based deformations.
 
 :Classes:
 
@@ -17,9 +17,8 @@ dtopo files, and calculating Okada based deformations.
   - CSVFault
   - SiftFault
   - SegmentedPlaneFault
-    
+
 :Functions:
-  - convert_units
   - plot_dz_contours
   - plot_dz_colors
   - Mw
@@ -30,6 +29,10 @@ dtopo files, and calculating Okada based deformations.
 
 from __future__ import absolute_import
 from __future__ import print_function
+
+import six
+from six.moves import range
+
 import os
 import sys
 import re
@@ -38,22 +41,19 @@ import numpy
 
 import clawpack.geoclaw.topotools as topotools
 import clawpack.geoclaw.util as util
+import clawpack.geoclaw.units as units
 
 # ==============================================================================
 #  Constants
 # ==============================================================================
 from clawpack.geoclaw.data import DEG2RAD, LAT2METER
-import six
-from six.moves import range
 
-# Poisson ratio for Okada 
+# Poisson ratio for Okada
 poisson = 0.25
 
 # ==============================================================================
 #  Units dictionaries
 # ==============================================================================
-
-# TODO:  Depend on the units module instead
 
 # Dictionary for standard units to be used for all subfault models.
 # The data might be read in from a file where different units are used,
@@ -67,65 +67,9 @@ standard_units['depth'] = 'm'
 standard_units['slip'] = 'm'
 standard_units['mu'] = 'Pa'
 
-# Dictionary for converting input_units specified by user to or from
-# standard units used internally:
-# (Conversion is performed by the module function *convert_units*, which
-# is called by *SubFault.convert_to_standard_units*)
-
-unit_conversion_factor = {}  
-# for length, width, depth, slip:  (standard units = 'm')
-unit_conversion_factor['m'] = 1.
-unit_conversion_factor['cm'] = 0.01
-unit_conversion_factor['km'] = 1000.
-unit_conversion_factor['nm'] = 1852.0  # nautical miles
-# for rigidity (shear modulus) mu:  (standard units = 'Pa')
-unit_conversion_factor['Pa'] = 1.
-unit_conversion_factor['GPa'] = 1.e9
-unit_conversion_factor['dyne/cm^2'] = 0.1
-unit_conversion_factor['dyne/m^2'] = 1.e-5
-# for seismic moment Mo:  (standard units = 'N-m', Newton-meters)
-unit_conversion_factor['N-m'] = 1.
-unit_conversion_factor['dyne-cm'] = 1.e-7
-
-# Check that these are consistent:
-check = [unit_conversion_factor[standard_units[param]] == 1. for param in \
-         standard_units.keys()]
-if not numpy.alltrue(check):
-    raise ValueError("Conversion factors should be 1 for all standard_units")
-
-
-# ==============================================================================
-#  General utility functions
-# ==============================================================================
-def convert_units(value, io_units, direction=1, verbose=False):
-    r"""
-    convert *value* to standard units from *io_units* or vice versa.
-    *io_units* (str) refers to the units used in the subfault file read or to be
-    written.  The standard units are those used internally in this module.
-    See the comments below for the standard units.
-    If *direction==1*, *value* is in *io_units* and convert to standard.
-    If *direction==2*, *value* is in standard units and convert to *io_units*.
-
-    """
-    try:
-        factor = unit_conversion_factor[io_units]
-    except:
-        factor = 1.
-        print("*** Warning: unrecoginized units in convert_units, not converting")
-        #raise ValueError("Unrecognized io_units %s, must be one of %s" \
-        #      % (io_units, unit_conversion_factor.keys()))
-    if direction == 1:
-        converted_value = value * factor
-    elif direction == 2:
-        converted_value = value / factor
-    else:
-        raise ValueError("Unrecognized direction, must be 1 or 2")
-
-    return converted_value
-
 
 def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
-                               fig_kwargs={}):
+                     fig_kwargs={}):
     r"""For plotting seafloor deformation dZ"""
     import matplotlib.pyplot as plt
 
@@ -140,9 +84,9 @@ def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
 
     if len(clines) > 0:
         if verbose:
-            print("Plotting contour lines at: ",clines)
+            print("Plotting contour lines at: ", clines)
         axes.contour(x, y, dZ, clines, colors='k')
-    else:   
+    else:
         print("No contours to plot")
 
     return axes
@@ -754,17 +698,16 @@ class Fault(object):
             for subfault in self.subfaults:
                 s = ""
                 for param in column_list:
-                    value = getattr(subfault,param)
+                    value = getattr(subfault, param)
                     if param in output_units:
-                        converted_value = convert_units(value, 
-                                    self.output_units[param], direction=2)
-                    s = s + format[param] % value + delimiter 
+                        converted_value = units.convert_units(value,
+                                                    standard_units[param],
+                                                    self.output_units[param])
+                    s = s + format[param] % value + delimiter
                 data_file.write(s + '\n')
-                
-
 
     def Mo(self):
-        r""" 
+        r"""
         Calculate the seismic moment for a fault composed of subfaults,
         in units N-m.
         """
@@ -774,12 +717,10 @@ class Fault(object):
             total_Mo += subfault.Mo()
         return total_Mo
 
-
     def Mw(self):
         r"""Calculate the moment magnitude for a fault composed of subfaults."""
         return Mw(self.Mo())
 
-    
     def create_dtopography(self, x, y, times=[0., 1.], verbose=False):
         r"""Compute change in topography and construct a dtopography object.
 
@@ -794,7 +735,7 @@ class Fault(object):
         dtopo = DTopography()
         dtopo.x = x
         dtopo.y = y
-        X, Y = numpy.meshgrid(x,y)
+        X, Y = numpy.meshgrid(x, y)
         dtopo.X = X
         dtopo.Y = Y
         dtopo.times = times
@@ -1210,7 +1151,6 @@ class SubFault(object):
         self._centers = None
         self._corners = None
 
-
     def convert_to_standard_units(self, input_units, verbose=False):
         r"""
         Convert parameters from the units used for input into the standard
@@ -1219,12 +1159,13 @@ class SubFault(object):
         params = list(input_units.keys())
         for param in params:
             value = getattr(self, param)
-            converted_value = convert_units(value, input_units[param], 1)
-            setattr(self,param,converted_value)
+            converted_value = units.convert_units(value, input_units[param],
+                                                  standard_units[param])
+            setattr(self, param, converted_value)
             if verbose:
-                print("%s %s %s converted to %s %s" \
-                    % (param, value, input_units[param], converted_value, \
-                       standard_units[param]))
+                print("%s %s %s converted to %s %s"
+                      % (param, value, input_units[param], converted_value,
+                         standard_units[param]))
 
 
     def Mo(self):
@@ -1459,48 +1400,47 @@ class SubFault(object):
         slip = self.slip
 
         halfL = 0.5*length
-        w  =  width
+        w = width
 
         # convert angles to radians:
         ang_dip = DEG2RAD * self.dip
         ang_rake = DEG2RAD * self.rake
         ang_strike = DEG2RAD * self.strike
-    
-        X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
-    
+
+        X, Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
+
         # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
         # meters:
-        xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_bottom)   
+        xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_bottom)
         yy = LAT2METER * (Y - y_bottom)
-    
-    
+
         # Convert to distance along strike (x1) and dip (x2):
-        x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
-        x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike) 
-    
+        x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike)
+        x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike)
+
         # In Okada's paper, x2 is distance up the fault plane, not down dip:
         x2 = -x2
-    
+
         p = x2 * numpy.cos(ang_dip) + depth_bottom * numpy.sin(ang_dip)
         q = x2 * numpy.sin(ang_dip) - depth_bottom * numpy.cos(ang_dip)
-    
+
         f1 = self._strike_slip(x1 + halfL, p,     ang_dip, q)
         f2 = self._strike_slip(x1 + halfL, p - w, ang_dip, q)
         f3 = self._strike_slip(x1 - halfL, p,     ang_dip, q)
         f4 = self._strike_slip(x1 - halfL, p - w, ang_dip, q)
-    
-        g1=self._dip_slip(x1 + halfL, p,     ang_dip, q)
-        g2=self._dip_slip(x1 + halfL, p - w, ang_dip, q)
-        g3=self._dip_slip(x1 - halfL, p,     ang_dip, q)
-        g4=self._dip_slip(x1 - halfL, p - w, ang_dip, q)
-    
+
+        g1 = self._dip_slip(x1 + halfL, p,     ang_dip, q)
+        g2 = self._dip_slip(x1 + halfL, p - w, ang_dip, q)
+        g3 = self._dip_slip(x1 - halfL, p,     ang_dip, q)
+        g4 = self._dip_slip(x1 - halfL, p - w, ang_dip, q)
+
         # Displacement in direction of strike and dip:
         ds = slip * numpy.cos(ang_rake)
         dd = slip * numpy.sin(ang_rake)
-    
+
         us = (f1 - f2 - f3 + f4) * ds
         ud = (g1 - g2 - g3 + g4) * dd
-    
+
         dz = (us+ud)
 
         dtopo = DTopography()
@@ -1525,10 +1465,9 @@ class SubFault(object):
         xx = numpy.sqrt(y1**2 + q**2)
         a4 = 2.0*poisson/cs*(numpy.log(r+d_bar) - sn*numpy.log(r+y2))
         f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*3.14159)
-    
+
         return f
-    
-    
+
     def _dip_slip(self, y1, y2, ang_dip, q):
         """
         Based on Okada's paper (1985)
@@ -1536,16 +1475,15 @@ class SubFault(object):
         """
         sn = numpy.sin(ang_dip)
         cs = numpy.cos(ang_dip)
-    
-        d_bar = y2*sn - q*cs;
+
+        d_bar = y2*sn - q*cs
         r = numpy.sqrt(y1**2 + y2**2 + q**2)
         xx = numpy.sqrt(y1**2 + q**2)
         a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
         f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
-    
+
         return f
 
-    
     def dynamic_slip(self, t):
         r"""
         For a dynamic fault, compute the slip at time t.
@@ -1562,10 +1500,9 @@ class SubFault(object):
 
         t0 = self.rupture_time
         t1 = self.rise_time
-        t2 = getattr(self,'rise_time_ending',None)
-        rf = rise_fraction(t,t0,t1,t2)
+        t2 = getattr(self, 'rise_time_ending', None)
+        rf = rise_fraction(t, t0, t1, t2)
         return rf * self.slip
-            
 
 
 
