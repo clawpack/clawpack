@@ -326,8 +326,8 @@ contains
         ! Junk storage
         real(kind=8) :: junk(2)
 
-        call get_holland_storm_data(t,storm,location, &
-                                        junk,junk(1),junk(1),junk(1),junk(1))
+        call get_holland_storm_data(t, storm, location, junk, junk(1),        &
+                                    junk(1), junk(1), junk(1))
 
     end function holland_storm_location
 
@@ -348,7 +348,7 @@ contains
 
         ! Fetch velocity of storm which has direction encoded in it
         call get_holland_storm_data(t, storm, junk, velocity, junk(1),  &
-                                                    junk(1), junk(1), junk(1))
+                                    junk(1), junk(1), junk(1))
 
         ! Unit directional vector
         theta = atan2(velocity(2),velocity(1))
