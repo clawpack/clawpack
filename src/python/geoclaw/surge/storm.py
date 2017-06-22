@@ -5,6 +5,8 @@ Module defines a class and routines for managing parameterized storm input.
 
 :Formats Supported:
 
+:Models Supported:
+
 """
 
 from __future__ import print_function
@@ -50,10 +52,9 @@ class Storm(object):
     """
 
     # Define supported formats and models
-    _supported_formats = ["HURDAT", "HURDAT2", "JMA", "IMD"]
-    _supported_models = ["Holland_80", "Holland_10", "CLE"]
+    _supported_formats = ["GEOCLAW", "HURDAT", "HURDAT2", "JMA", "IMD"]
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, **kwargs):
         r"""Storm Initiatlization Routine
 
         See :class:`Storm` for more info.
@@ -67,33 +68,84 @@ class Storm(object):
         self.storm_radius = None
 
         if path is None:
-            self.read(path)
+            self.read(path, **kwargs)
 
-    def read(self, path, file_format="hurdat"):
+    # =========================================================================
+    # Read Routines
+    def read(self, path, file_format="hurdat2"):
         r""""""
 
         if file_format.upper() not in _supported_formats:
-            raise ValueError("")
+            raise ValueError("File format %s not available." % file_format)
 
+        getattr(self, 'read_%s' % file_format.lower())(path)
+
+    def read_geoclaw(self, path):
+        r""""""
+        raise NotImplementedError("GeoClaw format not fully implemented.")
+
+    def read_hurdat(self, path):
+        r""""""
+        raise NotImplementedError("HURDAT format not fully implemented.")
+
+    def read_hurdat2(self, path):
+        r""""""
+        raise NotImplementedError("HURDAT2 format not fully implemented.")
+
+    def read_jma(self, path):
+        r""""""
+        raise NotImplementedError("JMA format not fully implemented.")
+
+    def read_imd(self, path):
+        r""""""
+        raise NotImplementedError("IMD format not fully implemented.")
+
+    # =========================================================================
+    # Write Routines
     def write(self, path, file_format="geoclaw"):
         r""""""
 
-        pass
+        if file_format.upper() not in _supported_formats:
+            raise ValueError("File format %s not available." % file_format)
 
-    def wind(self, x, t):
+        getattr(self, 'write_%s' % file_format.lower())(path)
+
+    def write_geoclaw(self, path):
         r""""""
-        pass
+        raise NotImplementedError("GeoClaw format not fully implemented.")
 
-    def pressure(self, t):
+    def write_hurdat(self, path):
         r""""""
-        pass
+        raise NotImplementedError("HURDAT format not fully implemented.")
 
-# =============================================================================
-# Plotting functions
+    def write_hurdat2(self, path):
+        r""""""
+        raise NotImplementedError("HURDAT2 format not fully implemented.")
+
+    def write_jma(self, path):
+        r""""""
+        raise NotImplementedError("JMA format not fully implemented.")
+
+    def write_imd(self, path):
+        r""""""
+        raise NotImplementedError("IMD format not fully implemented.")
+
+
+# =========================================================================
+# Model field construction - Models supported are
+#  - Holland 1980 [1]
+#  - Holland 2010 [2]
+#  - Chavas, Lin, Emmanuel [3]
 #
-def holland_08_fields():
+def wind(self, x, t, model="holland_80"):
     r""""""
     pass
+
+
+def pressure(self, x, t, model="holland_80"):
+    r""""""
+    pass
+
 
 # =============================================================================
 # Plotting functions
