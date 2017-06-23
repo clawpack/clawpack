@@ -12,9 +12,16 @@ Module defines a class and routines for managing parameterized storm input.
 from __future__ import print_function
 from __future__ import absolute_import
 
+import sys
+
 import numpy
 
+
 import clawpack.geoclaw.units as units
+
+# Define supported formats and models
+_supported_formats = ["GEOCLAW", "HURDAT", "HURDAT2", "JMA", "IMD"]
+_supported_models = ["holland_1980", "holland_2010", "cle_2015"]
 
 # =============================================================================
 #  Basic storm class
@@ -50,9 +57,6 @@ class Storm(object):
     :Initialization:
 
     """
-
-    # Define supported formats and models
-    _supported_formats = ["GEOCLAW", "HURDAT", "HURDAT2", "JMA", "IMD"]
 
     def __init__(self, path=None, **kwargs):
         r"""Storm Initiatlization Routine
@@ -131,48 +135,55 @@ class Storm(object):
         raise NotImplementedError("IMD format not fully implemented.")
 
 
-# =========================================================================
+# =============================================================================
 # Model field construction - Models supported are
-#  - Holland 1980 [1]
-#  - Holland 2010 [2]
-#  - Chavas, Lin, Emmanuel [3]
+#  - Holland 1980 ('HOLLAND_1980') [1]
+#  - Holland 2010 ('HOLLAND_2010') [2]
+#  - Chavas, Lin, Emmanuel ('CLE_2015') [3]
+# *TODO* - Add citations
 #
-def wind(self, x, t, model="holland_80"):
+def construct_fields(storm, x, t, model="holland_1980"):
     r""""""
-    pass
+
+    if model.lower() not in _supported_models:
+        raise ValueError("Model %s not available." % model)
+
+    return getattr(sys.modules[__name__], model.lower())(storm, x, t)
 
 
-def pressure(self, x, t, model="holland_80"):
+# Specific implementations
+def holland_1980(storm, x, t):
     r""""""
-    pass
+    raise NotImplementedError("Holland 1980 model has not been implemeted.")
+    return None, None
+
+
+def holland_2010(storm, x, t):
+    r""""""
+    raise NotImplementedError("Holland 2010 model has not been implemeted.")
+    return None, None
+
+
+def cle_2015(storm, x, t):
+    r""""""
+    raise NotImplementedError("CLE 2015 model has not been implemeted.")
+    return None, None
 
 
 # =============================================================================
-# Plotting functions
-#
-def plot_wind(storm, x, t, model='', axes=None):
-    r""""""
-
-    if axes is None:
-        fig = plt.figure()
-        axes = fig.add_subplot(1, 1, 1)
-
-    axes.plot(x, storm.wind(x, t))
-
-    return axes
+# Utility functions
+def available_formats():
+    r"""Construct a string suitable for listing available storm file formats.
+    """
+    return ""
 
 
-def plot_pressure(storm, x, t, model='', axes=None):
-    r""""""
-
-    if axes is None:
-        fig = plt.figure()
-        axes = fig.add_subplot(1, 1, 1)
-
-    axes.plot(x, storm.pressure(x, t))
-
-    return axes
+def available_models():
+    r"""Construct a string suitable for listing available storm models.
+    """
+    return ""
 
 
 if __name__ == '__main__':
-    pass
+    # TODO:  Add commandline ability to convert between formats
+    construct_fields(None, None, None)
