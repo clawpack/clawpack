@@ -3,8 +3,6 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import six
-from six.moves import range
 
 import tempfile
 import shutil
@@ -14,12 +12,13 @@ import numpy
 import clawpack.clawutil.test as test
 import clawpack.geoclaw.surge.storm as storm
 
-test_data_path = os.path.join(testdir, "data", "geoclaw.storm")
-
 
 @test.wip
 def test_storm_IO():
     r"""Test reading and writing of storm formats"""
+
+    # Location of test data
+    test_data_path = os.path.join(testdir, "data", "geoclaw.storm")
 
     # Create temp directory
     temp_path = tempfile.mkdtemp()
@@ -36,17 +35,9 @@ def test_storm_IO():
             # Read
             new_storm = storm.Storm(path=new_storm_path,
                                     file_format=file_format)
-            # Compare
-            assert(base_storm == new_storm,
-                   "File format %s failed to be read in." % file_format)
-
-        # for topo_type in range(1, 4):
-        #     path = os.path.join(temp_path, 'bowl.tt%s' % topo_type)
-        #     topo.write(path, topo_type=topo_type,Z_format="%22.15e")
-
-        #     topo_in = topotools.Topography(path)
-        #     assert numpy.allclose(topo.Z, topo_in.Z), \
-        #            "Differnece in written and read topography found."
+            # Compare - TODO: may need to do a set of assert_allclose here
+            assert base_storm == new_storm, \
+                   "File format %s failed to be read in." % file_format
 
     except AssertionError as e:
         # If the assertion failed then copy the contents of the directory
@@ -60,9 +51,25 @@ def test_storm_IO():
 @test.wip
 def test_storm_models():
     r"""Test storm model fields"""
-    raise NotImplementedError("Storm model tests not implemented.")
+
+    x = numpy.linspace(0.0, 1e5, 10)
+    t = 1.0
+    test_storm = storm.Storm(path=os.path.join(testdir, "data",
+                                               "geoclaw.storm"),
+                             file_format="geoclaw")
+    for model_type in storm._supported_models:
+        # Compute model fields
+        model_data = storm.construct_fields(test_storm, x, t, model=model_type)
+
+        # Load comparison data
+        test_data_path = os.path.join(testdir, "data", "%s.txt" % model_type)
+        test_data = numpy.loadtxt(test_data_path)
+
+        # Assert
+        numpy.testing.assert_allclose(model_data, test_data,
+                                      "Storm model %s failed." % model_type)
 
 
 if __name__ == '__main__':
     test_storm_IO()
-    # test_storm_models()
+    test_storm_models()
