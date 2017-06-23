@@ -92,7 +92,9 @@ class Storm(object):
 
             for line in data_file: 
                 line = line.split(',')
-                date.append(self.date2seconds(line[2].strip()))
+                temp_date = line[2].strip()
+                temp_date = self.date2seconds(temp_date)
+                date.append(temp_date)
                 if line[6].strip()[-1] == 'N':
                     lat = (float(line[6].strip()[0:-1])/10) 
                 else: 
@@ -117,20 +119,8 @@ class Storm(object):
  
     def write(self, path, file_format="geoclaw"):
         r""""""
-        with open('%s/hurdat.%s' %(path,file_format), 'w') as storm_file: 
-            for i in range(len(self.t)): 
-                storm_file.write("%s" %(str(self.t[i])))
-                storm_file.write("%s" %(" ".rjust(1)))
-                storm_file.write("%s %s" %(str(self.eye_location[i][0]).rjust(4), str(self.eye_location[i][1]).rjust(4)))
-                storm_file.write("%s" % (" ".rjust(1)))
-                storm_file.write("%s" % (str(self.max_wind_speed[i]).rjust(3)))
-                storm_file.write("%s" % (" ".rjust(1)))
-                storm_file.write("%s" % (str(self.central_pressure[i]).rjust(4)))
-                storm_file.write("%s" % (" ".rjust(1)))
-                storm_file.write("%s" % (str(self.storm_radius[i]).rjust(3)))
-                storm_file.write("%s" % (" ".rjust(1)))
-                storm_file.write("%s" % (str(self.max_wind_radius[i]).rjust(3)))
-                storm_file.write("\n")
+
+        pass
     
     def date2seconds(self,date): 
         r"""
@@ -188,6 +178,5 @@ def plot_pressure(storm, x, t, model='', axes=None):
 
 
 if __name__ == '__main__':
-    Test_Hurdat = Storm('test_files/hurdat.test')   
-    Test_Hurdat.read('test_files/hurdat.test') 
-    Test_Hurdat.write('test_files') 
+    Test_Hurdat = Storm() 
+    Test_Hurdat.read('/Users/hudaqureshi/clawpack/geoclaw/src/python/geoclaw/surge/test_files/hurdat.test')  
