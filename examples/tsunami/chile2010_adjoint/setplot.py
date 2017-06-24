@@ -71,9 +71,11 @@ def setplot(plotdata=None):
     # Figure for surface
     #-----------------------------------------
     plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
+    plotfigure.kwargs = {'figsize':(12,6)}
 
     # Set up for axes in this figure:
     plotaxes = plotfigure.new_plotaxes('pcolor')
+    plotaxes.axescmd = 'subplot(121)'
     plotaxes.title = 'Surface'
     plotaxes.scaled = True
 
@@ -90,8 +92,9 @@ def setplot(plotdata=None):
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
     plotitem.add_colorbar = True
+    plotitem.colorbar_shrink = 0.75
     plotitem.amr_celledges_show = [0,0,0]
-    plotitem.patchedges_show = 1
+    plotitem.patchedges_show = 0
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -100,8 +103,8 @@ def setplot(plotdata=None):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 100.0
     plotitem.add_colorbar = False
-    plotitem.amr_celledges_show = [1,1,0]
-    plotitem.patchedges_show = 1
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 0
     plotaxes.xlimits = [-120,-60]
     plotaxes.ylimits = [-60,0]
 
@@ -115,6 +118,56 @@ def setplot(plotdata=None):
     plotitem.amr_contour_show = [1,0,0]  
     plotitem.celledges_show = 0
     plotitem.patchedges_show = 0
+
+
+    #-----------------------------------------
+    # Figure for adjoint flagging
+    #-----------------------------------------
+
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes('adjoint')
+    plotaxes.axescmd = 'subplot(122)'
+    plotaxes.scaled = True
+    plotaxes.title = 'Adjoint flag'
+
+    def fixup(current_data):
+        addgauges(current_data)
+
+    plotaxes.afteraxes = fixup
+
+
+    def masked_inner_product(current_data):
+        from numpy import ma
+        q = current_data.q
+        tol = 1e-15
+        soln = ma.masked_where(q[4,:,:] < tol, q[4,:,:])
+        return soln
+
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    #plotitem.plot_var = 4
+    plotitem.plot_var = masked_inner_product
+    plotitem.pcolor_cmap = colormaps.white_red
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 0.001
+
+    plotitem.add_colorbar = True
+    plotitem.colorbar_shrink = 0.75
+    plotitem.amr_celledges_show = [0]
+    plotitem.amr_data_show = [1,1,1,0] # inner product not computed on finest level
+    plotitem.patchedges_show = 0
+
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    plotitem.plot_var = geoplot.land
+    plotitem.pcolor_cmap = geoplot.land_colors
+    plotitem.pcolor_cmin = 0.0
+    plotitem.pcolor_cmax = 100.0
+    plotitem.add_colorbar = False
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.patchedges_show = 0
+    plotaxes.xlimits = [-120,-60]
+    plotaxes.ylimits = [-60,0]
 
 
     #-----------------------------------------
