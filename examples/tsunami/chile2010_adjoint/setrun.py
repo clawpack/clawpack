@@ -133,8 +133,8 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 24
-        clawdata.tfinal = 6*3600.
+        clawdata.num_output_times = 28
+        clawdata.tfinal = 7*3600.
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -285,12 +285,12 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 3
+    amrdata.amr_levels_max = 4
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,6]
-    amrdata.refinement_ratios_y = [2,6]
-    amrdata.refinement_ratios_t = [2,6]
+    amrdata.refinement_ratios_x = [2,4,4]
+    amrdata.refinement_ratios_y = [2,4,4]
+    amrdata.refinement_ratios_t = [2,4,4]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
@@ -343,7 +343,8 @@ def setrun(claw_pkg='geoclaw'):
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
     # earthquake source region:
-    rundata.regiondata.regions.append([3, 3, 0., 1800., -85,-72,-38,-25])
+    rundata.regiondata.regions.append([1, 4, 0., 1e9, -220,0,-90,90])
+    rundata.regiondata.regions.append([4, 4, 0., 1800., -85,-72,-38,-25])
 
     # ---------------
     # Gauges:
@@ -451,12 +452,12 @@ def setadjoint(rundata):
     adjoint_output = 'adjoint/_output'  # switch to this??
 
     # Time period of interest:
-    t1 = 0.
-    t2 = 4.*3600.
+    t1 = 5.*3600.
+    t2 = 6.*3600.
 
     # tolerance for adjoint flagging:
     rundata.amrdata.flag2refine = True  # for adjoint flagging
-    rundata.amrdata.flag2refine_tol = 0.000001 
+    rundata.amrdata.flag2refine_tol = 0.0001
     
 
     # You don't need to modify the rest of this function...
