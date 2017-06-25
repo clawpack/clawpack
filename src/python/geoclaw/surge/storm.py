@@ -55,10 +55,18 @@ class Storm(object):
        closed iso-bar of pressure.  Default units are meters.
 
     :Initialization:
+     1. Read in existing file at *path*.
+     2. Construct an empty storm and supply the fields needed.  Note that these
+        fields must be converted to the appropriate units.
 
+    :Input:
+     - *path* (string) Path to file to be read in if requested.
+     - *file_format* (string) Format of file at path.  Default is "hurdata2"
+     - *kwargs* (dict) Other key-word arguments are passed to the appropriate
+       read routine.
     """
 
-    def __init__(self, path=None, **kwargs):
+    def __init__(self, path=None, file_format="hurdat2", **kwargs):
         r"""Storm Initiatlization Routine
 
         See :class:`Storm` for more info.
@@ -72,21 +80,38 @@ class Storm(object):
         self.storm_radius = None
 
         if path is None:
-            self.read(path, **kwargs)
+            self.read(path, file_format=file_format, **kwargs)
 
     # =========================================================================
     # Read Routines
-    def read(self, path, file_format="hurdat2"):
+    def read(self, path, file_format="hurdat2", **kwargs):
         r""""""
 
         if file_format.upper() not in _supported_formats:
             raise ValueError("File format %s not available." % file_format)
 
-        getattr(self, 'read_%s' % file_format.lower())(path)
+        getattr(self, 'read_%s' % file_format.lower())(path, **kwargs)
 
     def read_geoclaw(self, path):
-        r""""""
-        raise NotImplementedError("GeoClaw format not fully implemented.")
+        r"""Read in a GeoClaw formatted storm file
+
+        GeoClaw storm files are read in by the Fortran code and are not meant
+        to be human readable.
+
+        :Input:
+         - *path* (string) Path to the file to be read.
+        """
+
+        with open(path, 'r') as data_file:
+            data = numpy.loadtxt(path)
+
+        num_forecasts = data.shape[0]
+        self.t = data[:, 0]
+        self.eye_location = data[:, 1]
+        self.max_wind_speed = data[:, 2]
+        self.max_wind_radius = data[:, 3]
+        self.central_pressure = data[:, 4]
+        self.storm_radius = data[:, 5]
 
     def read_hurdat(self, path):
         r""""""
@@ -115,8 +140,25 @@ class Storm(object):
         getattr(self, 'write_%s' % file_format.lower())(path)
 
     def write_geoclaw(self, path):
-        r""""""
-        raise NotImplementedError("GeoClaw format not fully implemented.")
+        r"""Write out a GeoClaw formatted storm file
+
+        GeoClaw storm files are read in by the Fortran code and are not meant
+        to be human readable.
+
+        :Input:
+         - *path* (string) Path to the file to be written.
+        """
+
+        with open(path, 'w') as data_file:
+            for n in range(self.t.shape[0]):
+                data_file.write("%s %s %s %s %s %s %s" %
+                                                (self.t[n],
+                                                 self.eye_location[n, 0],
+                                                 self.eye_location[n, 1],
+                                                 self.max_wind_speed[n],
+                                                 self.max_wind_radius[n],
+                                                 self.central_pressure[n],
+                                                 self.storm_radius[n]))
 
     def write_hurdat(self, path):
         r""""""
@@ -142,7 +184,9 @@ class Storm(object):
 #  - Chavas, Lin, Emmanuel ('CLE_2015') [3]
 # *TODO* - Add citations
 #
-def construct_fields(storm, x, t, model="holland_1980"):
+# In the case where the field is not rotationally symmetric then the r value
+# defines the x and y axis extents.
+def construct_fields(storm, r, t, model="holland_1980"):
     r""""""
 
     if model.lower() not in _supported_models:
@@ -152,19 +196,19 @@ def construct_fields(storm, x, t, model="holland_1980"):
 
 
 # Specific implementations
-def holland_1980(storm, x, t):
+def holland_1980(storm, r, t):
     r""""""
     raise NotImplementedError("Holland 1980 model has not been implemeted.")
     return None, None
 
 
-def holland_2010(storm, x, t):
+def holland_2010(storm, r, t):
     r""""""
     raise NotImplementedError("Holland 2010 model has not been implemeted.")
     return None, None
 
 
-def cle_2015(storm, x, t):
+def cle_2015(storm, r, t):
     r""""""
     raise NotImplementedError("CLE 2015 model has not been implemeted.")
     return None, None
