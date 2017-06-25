@@ -103,6 +103,7 @@ class Storm(object):
         """
 
         with open(path, 'r') as data_file:
+            num_casts = int(data_file.readline())
             data = numpy.loadtxt(path)
 
         num_forecasts = data.shape[0]
@@ -150,6 +151,7 @@ class Storm(object):
         """
 
         with open(path, 'w') as data_file:
+            data_file.write("%s\n" % self.t.shape[0])
             for n in range(self.t.shape[0]):
                 data_file.write("%s %s %s %s %s %s %s" %
                                                 (self.t[n],

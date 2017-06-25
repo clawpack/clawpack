@@ -404,32 +404,20 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         elif isinstance(self.R_refine, type(None)):
             self.data_write('R_refine', value=False, description='(Refinement ratios)')
         else:
-            self.data_write('R_refine',description='(Refinement ratios)')
+            self.data_write('R_refine', description='(Refinement ratios)')
         self.data_write()
-        
-        self.data_write("storm_type",description='(Storm specification type)')
-        self.data_write('landfall',description="(Landfall time of storm)")
+
+        self.data_write("storm_type", description='(Storm specification type)')
+        self.data_write('storm_file', description="(Location of storm data)")
+        self.data_write()
+
+        self.data_write('landfall', description="(Landfall time of storm)")
         self.data_write("display_landfall_time", description='(Display time relative to landfall)')
 
-        self.data_write('storm_file',description="(Location of storm data)")
-
-        if self.storm_type == 0 or self.storm_type == 1:
-            pass 
-        elif self.storm_type == 2:
-            # Open another data file called stored in storm_file and write the 
-            # following parameters to it
-            self.open_data_file(self.storm_file)
-            self.data_write("ramp_up_t",description="(Ramp up time for wind field)")
-            self.data_write('velocity',description="(Speed of storm)")
-            self.data_write('R_eye_init',description="(Initial position of storm)")
-            self.data_write('A',description="(Hurricane model fit parameter)")
-            self.data_write('B')
-            self.data_write('Pc',description="(Pressure in the eye of the hurricane)")
-        elif self.storm_type == 3:
-            # Open another data file called stored in storm_file and write the 
-            # following parameters to it
-            self.open_data_file(self.storm_file)
-            self.data_write("stommel_wind",description="(Amplitude of Stommel wind)")
+        if self.storm_type == 0:
+            pass
+        elif self.storm_type == 1:
+            pass
         else:
             raise ValueError("Invalid storm type %s." % self.storm_type)
 
