@@ -5,10 +5,14 @@ Module defines a class and routines for managing parameterized storm input.
 
 :Formats Supported:
 
+:Models Supported:
+
 """
 
 from __future__ import print_function
 from __future__ import absolute_import
+
+import sys
 
 import numpy
 import datetime 
@@ -17,8 +21,12 @@ import datetime
                             
 #                           days   s/hour   hour/day                             
 days2seconds = lambda days: days * 60.0**2 * 24.0
-_supported_formats = ["HURDAT", "HURDAT2", "JMA", "IMD"]
-_supported_models = ["Holland_80", "Holland_10", "CLE"]
+
+import clawpack.geoclaw.units as units
+
+# Define supported formats and models
+_supported_formats = ["GEOCLAW", "HURDAT", "HURDAT2", "JMA", "IMD"]
+_supported_models = ["holland_1980", "holland_2010", "cle_2015"]
 
 # =============================================================================
 #  Basic storm class
@@ -52,14 +60,18 @@ class Storm(object):
        closed iso-bar of pressure.  Default units are meters.
 
     :Initialization:
+     1. Read in existing file at *path*.
+     2. Construct an empty storm and supply the fields needed.  Note that these
+        fields must be converted to the appropriate units.
 
+    :Input:
+     - *path* (string) Path to file to be read in if requested.
+     - *file_format* (string) Format of file at path.  Default is "hurdata2"
+     - *kwargs* (dict) Other key-word arguments are passed to the appropriate
+       read routine.
     """
 
-    # Define supported formats and models
-    _supported_formats = ["HURDAT", "HURDAT2", "JMA", "IMD"]
-    _supported_models = ["Holland_80", "Holland_10", "CLE"]
-
-    def __init__(self, path=None):
+    def __init__(self, path=None, file_format="hurdat2", **kwargs):
         r"""Storm Initiatlization Routine
 
         See :class:`Storm` for more info.
@@ -73,9 +85,11 @@ class Storm(object):
         self.storm_radius = None
 
         if path is None:
-            self.read(path)
+            self.read(path, file_format=file_format, **kwargs)
 
-    def read(self, path, file_format="hurdat"):
+    # =========================================================================
+    # Read Routines
+    def read(self, path, file_format="hurdat2", **kwargs):
         r""""""
         if file_format.upper() not in _supported_formats:
             raise ValueError("File type not one of supproted formats.")
@@ -146,48 +160,151 @@ class Storm(object):
         return d  
             
     def wind(self, x, t):
-        r""""""
-        pass
+            raise ValueError("File format %s not available." % file_format)
 
-    def pressure(self, t):
+        getattr(self, 'read_%s' % file_format.lower())(path, **kwargs)
+
+    def read_geoclaw(self, path):
+        r"""Read in a GeoClaw formatted storm file
+
+        GeoClaw storm files are read in by the Fortran code and are not meant
+        to be human readable.
+
+        :Input:
+         - *path* (string) Path to the file to be read.
+        """
+
+        with open(path, 'r') as data_file:
+            num_casts = int(data_file.readline())
+            data = numpy.loadtxt(path)
+
+        num_forecasts = data.shape[0]
+        self.t = data[:, 0]
+        self.eye_location = data[:, 1]
+        self.max_wind_speed = data[:, 2]
+        self.max_wind_radius = data[:, 3]
+        self.central_pressure = data[:, 4]
+        self.storm_radius = data[:, 5]
+
+    def read_hurdat(self, path):
         r""""""
-        pass
+        raise NotImplementedError("HURDAT format not fully implemented.")
+
+    def read_hurdat2(self, path):
+        r""""""
+        raise NotImplementedError("HURDAT2 format not fully implemented.")
+
+    def read_jma(self, path):
+        r""""""
+        raise NotImplementedError("JMA format not fully implemented.")
+
+    def read_imd(self, path):
+        r""""""
+        raise NotImplementedError("IMD format not fully implemented.")
+
+    # =========================================================================
+    # Write Routines
+    def write(self, path, file_format="geoclaw"):
+        r""""""
+
+        if file_format.upper() not in _supported_formats:
+            raise ValueError("File format %s not available." % file_format)
+
+        getattr(self, 'write_%s' % file_format.lower())(path)
+
+    def write_geoclaw(self, path):
+        r"""Write out a GeoClaw formatted storm file
+
+        GeoClaw storm files are read in by the Fortran code and are not meant
+        to be human readable.
+
+        :Input:
+         - *path* (string) Path to the file to be written.
+        """
+
+        with open(path, 'w') as data_file:
+            data_file.write("%s\n" % self.t.shape[0])
+            for n in range(self.t.shape[0]):
+                data_file.write("%s %s %s %s %s %s %s" %
+                                                (self.t[n],
+                                                 self.eye_location[n, 0],
+                                                 self.eye_location[n, 1],
+                                                 self.max_wind_speed[n],
+                                                 self.max_wind_radius[n],
+                                                 self.central_pressure[n],
+                                                 self.storm_radius[n]))
+
+    def write_hurdat(self, path):
+        r""""""
+        raise NotImplementedError("HURDAT format not fully implemented.")
+
+    def write_hurdat2(self, path):
+        r""""""
+        raise NotImplementedError("HURDAT2 format not fully implemented.")
+
+    def write_jma(self, path):
+        r""""""
+        raise NotImplementedError("JMA format not fully implemented.")
+
+    def write_imd(self, path):
+        r""""""
+        raise NotImplementedError("IMD format not fully implemented.")
+
 
 # =============================================================================
-# Plotting functions
+# Model field construction - Models supported are
+#  - Holland 1980 ('HOLLAND_1980') [1]
+#  - Holland 2010 ('HOLLAND_2010') [2]
+#  - Chavas, Lin, Emmanuel ('CLE_2015') [3]
+# *TODO* - Add citations
 #
-def holland_08_fields():
+# In the case where the field is not rotationally symmetric then the r value
+# defines the x and y axis extents.
+def construct_fields(storm, r, t, model="holland_1980"):
     r""""""
-    pass
+
+    if model.lower() not in _supported_models:
+        raise ValueError("Model %s not available." % model)
+
+    return getattr(sys.modules[__name__], model.lower())(storm, x, t)
+
+
+# Specific implementations
+def holland_1980(storm, r, t):
+    r""""""
+    raise NotImplementedError("Holland 1980 model has not been implemeted.")
+    return None, None
+
+
+def holland_2010(storm, r, t):
+    r""""""
+    raise NotImplementedError("Holland 2010 model has not been implemeted.")
+    return None, None
+
+
+def cle_2015(storm, r, t):
+    r""""""
+    raise NotImplementedError("CLE 2015 model has not been implemeted.")
+    return None, None
+
 
 # =============================================================================
-# Plotting functions
-#
-def plot_wind(storm, x, t, model='', axes=None):
-    r""""""
-
-    if axes is None:
-        fig = plt.figure()
-        axes = fig.add_subplot(1, 1, 1)
-
-    axes.plot(x, storm.wind(x, t))
-
-    return axes
+# Utility functions
+def available_formats():
+    r"""Construct a string suitable for listing available storm file formats.
+    """
+    return ""
 
 
-def plot_pressure(storm, x, t, model='', axes=None):
-    r""""""
-
-    if axes is None:
-        fig = plt.figure()
-        axes = fig.add_subplot(1, 1, 1)
-
-    axes.plot(x, storm.pressure(x, t))
-
-    return axes
+def available_models():
+    r"""Construct a string suitable for listing available storm models.
+    """
+    return ""
 
 
 if __name__ == '__main__':
     Test_Hurdat = Storm('test_files/hurdat.test')   
     Test_Hurdat.read('test_files/hurdat.test') 
     Test_Hurdat.write('test_files') 
+    # TODO:  Add commandline ability to convert between formats
+    construct_fields(None, None, None)
