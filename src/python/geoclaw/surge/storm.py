@@ -17,8 +17,6 @@ import sys
 import numpy
 import datetime 
 
-#import clawpack.geoclaw.units as units
-                            
 #                           days   s/hour   hour/day                             
 days2seconds = lambda days: days * 60.0**2 * 24.0
 
@@ -89,78 +87,9 @@ class Storm(object):
 
     # =========================================================================
     # Read Routines
-    def read(self, path, file_format="hurdat2", **kwargs):
-        r""""""
-        if file_format.upper() not in _supported_formats:
-            raise ValueError("File type not one of supproted formats.")
-        else:
-
-            data_file = open(path,'r')
  
-            date = []
-            eye_loc = [] 
-            mws = []
-            Pc = []
-            rrp = []
-            mwr = []
-
-            for line in data_file: 
-                line = line.split(',')
-                date.append(self.date2seconds(line[2].strip()))
-                if line[6].strip()[-1] == 'N':
-                    lat = (float(line[6].strip()[0:-1])/10) 
-                else: 
-                    lat = (-1*float(line[6].strip()[0:-1])/10)
-                if line[7].strip()[-1] == 'E': 
-                    lon = (float(line[7].strip()[0:-1])/10) 
-                else: 
-                    lon = (-1*float(line[7].strip()[0:-1])/10)
-                eye_loc.append([lat,lon]) 
-                mws.append(int(line[8].strip()))
-                Pc.append(int(line[9].strip()))
-                rrp.append(int(line[18].strip()))
-                mwr.append(int(line[19].strip()))
-
-            self.t = date 
-            self.eye_location = eye_loc
-            self.max_wind_speed = mws 
-            self.max_wind_radius = mwr 
-            self.central_pressure = Pc 
-            self.storm_radius = rrp 
-            data_file.close() 
- 
-    def write(self, path, file_format="geoclaw"):
-        r""""""
-        with open('%s/hurdat.%s' %(path,file_format), 'w') as storm_file: 
-            for i in range(len(self.t)): 
-                storm_file.write("%s" %(str(self.t[i])))
-                storm_file.write("%s" %(" ".rjust(1)))
-                storm_file.write("%s %s" %(str(self.eye_location[i][0]).rjust(4), str(self.eye_location[i][1]).rjust(4)))
-                storm_file.write("%s" % (" ".rjust(1)))
-                storm_file.write("%s" % (str(self.max_wind_speed[i]).rjust(3)))
-                storm_file.write("%s" % (" ".rjust(1)))
-                storm_file.write("%s" % (str(self.central_pressure[i]).rjust(4)))
-                storm_file.write("%s" % (" ".rjust(1)))
-                storm_file.write("%s" % (str(self.storm_radius[i]).rjust(3)))
-                storm_file.write("%s" % (" ".rjust(1)))
-                storm_file.write("%s" % (str(self.max_wind_radius[i]).rjust(3)))
-                storm_file.write("\n")
-    
-    def date2seconds(self,date): 
-        r"""
-        Parse date to convert to seconds. 
-        """
-        year = int(date[0:4])
-        month = int(date[4:6])
-        day = int(date[6:8]) 
-        hour = int(date[8:])
-        new_year_day = datetime.datetime(year,1,1,0)  
-        d = datetime.datetime(year, month,day,hour) - new_year_day 
-        d = days2seconds(d.days) + d.seconds
-        return d  
-            
     def wind(self, x, t):
-            raise ValueError("File format %s not available." % file_format)
+        raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'read_%s' % file_format.lower())(path, **kwargs)
 
@@ -186,21 +115,171 @@ class Storm(object):
         self.central_pressure = data[:, 4]
         self.storm_radius = data[:, 5]
 
-    def read_hurdat(self, path):
-        r""""""
-        raise NotImplementedError("HURDAT format not fully implemented.")
+    def read_hurdat(self, path, file_format):
+        r"""Read in a Hurdat formatted storm file and 
+        extract relevant storm fields. 
 
-    def read_hurdat2(self, path):
-        r""""""
-        raise NotImplementedError("HURDAT2 format not fully implemented.")
+        :Input:
+         - *path* (string) Path to the file to be read.
+         - file_format (string) File format to be used. 
+        
+        """
+        if file_format.upper() not in _supported_formats:
+            raise ValueError("File type not one of supproted formats.")
+        else:
+            with open(path,'r') as data_file:
+                # Collect data from columns of the same type 
+                data = numpy.genfromtxt(path,delimiter=',',dtype=None,usecols=(8,9,18,19))
+                self.max_wind_speed = data[:,0]                # Col 8 Hurdat 
+                self.central_pressure = data[:,1]              # Col 9 Hurdat 
+                self.storm_radius = data[:,2]                  # Col 18 Hurdat
+                self.max_wind_radius = data[:,3]               # Col 19 Hurdat 
 
-    def read_jma(self, path):
-        r""""""
-        raise NotImplementedError("JMA format not fully implemented.")
+                # Convert Col 2 Hurdat Date into seconds 
+                date = numpy.genfromtxt(path,delimiter=',',dtype=None,usecols=(2))  
+                for i in range(date.shape[0]):                 # Convert date into seconds 
+                    date[i] = self.date2seconds(str(date[i]))
+                self.t = date
+                
+                self.eye_location = numpy.genfromtxt(path,dtype=None,usecols=(6,7),delimiter=',')  
+                for n in range(self.eye_location.shape[0]): 
+                    lat = self.eye_location[n,0]
+                    lon = self.eye_location[n,1]
+                    if lat[-1] == 'N':
+                        lat = float(lat[0:-1])/10 
+                    else: 
+                        lat = -1*float(lat[0:-1])/10
+                    if lon == 'E': 
+                        lon = float(lon[0:-1])/10 
+                    else: 
+                        lon = -1*float(lon[0:-1])/10
+                    self.eye_location[n,0] = lat 
+                    self.eye_location[n,1] = lon
+            data_file.close() 
+                
+
+    def read_hurdat2(self, path, file_format):
+        r"""Extract relevant hurricane data from Hurdat2 file
+            and update storm fields with proper values. 
+        
+        :Input: 
+         - *path* (string) Path to the file to be read.
+
+        Return ValueError if format incorrect or if file not Hurdat2.
+        """
+        if file_format.upper() not in _supported_formats:
+            raise ValueError("File type not one of supproted formats.")
+        else:
+            with open(path,'r') as data_file:
+                # Collect data from columns of the same type 
+                data = numpy.genfromtxt(path,delimiter=',',dtype=None,usecols=(6,7,8,9))
+                self.max_wind_speed = data[:,0]                # Col 8 Hurdat 
+                self.central_pressure = data[:,1]              # Col 9 Hurdat 
+                self.max_wind_radius = data[:,2]               # Col 19 Hurdat 
+                self.storm_radius = data[:,3]                  # Col 18 Hurdat
+            with open(path,'r') as data_file:
+                date, eye_loc, mws, Pc, rrp, mwr = [], [], [], [], [], [] 
+                next(storm)
+                for s in storm:
+                    line = s.split(delimiter)
+                    temp_date = "%s%s" %(line[0].strip(),line[1].strip()[0:2]) # reformat date to send to date2seconds
+                    date.append(date2seconds(temp_date))
+                    if line[4][-1] == 'N': 
+                        lat = float(line[4].strip()[0:-1])
+                    else:
+                        lat = -1*float(line[4].strip()[0:-1])
+                    if line[5][-1] == 'E': 
+                        lon = float(line[5].strip()[0:-1])
+                    else:
+                        lon = -1*float(line[5].strip()[0:-1])
+                    eye_location = [lat,lon] 
+                    mws.append(int(line[6]))
+                    Pc.append(int(line[7]))
+                    rrp.append(int(line[9]))
+                    mwr.append(int(line[8]))
+            data_file.close() 
+           
+            self.t = numpy.array(date)  
+            self.eye_location = numpy.array(eye_loc)
+            self.max_wind_speed = numpy.array(mws)  
+            self.max_wind_radius = numpy.array(mwr)  
+            self.central_pressure = numpy.array(Pc)  
+            self.storm_radius = numpy.array(rrp)  
+        
+    def read_jma(self, path, file_format):
+        r"""Extract relevant hurricane data from JMA file
+            and update storm fields with proper values. 
+        
+        :Input: 
+         - *path* (string) Path to the file to be read.
+
+        Return ValueError if format incorrect or if file not JMA.
+        """
+        if file_format.upper() not in _supported_formats:
+            raise ValueError("File type not one of supproted formats.")
+        elif file_format.upper() != 'JMA': 
+            raise ValueError("File type not in JMA format.") 
+        else:
+            raise ValueError("File type not implemented yet.") 
 
     def read_imd(self, path):
-        r""""""
-        raise NotImplementedError("IMD format not fully implemented.")
+        r"""Extract relevant hurricane data from IMD file
+            and update storm fields with proper values. 
+        
+        :Input: 
+         - *path* (string) Path to the file to be read.
+
+        Return ValueError if format incorrect or if file not IMD.
+        """
+        if file_format.upper() not in _supported_formats:
+            raise ValueError("File type not one of supproted formats.")
+        elif file_format.upper() != 'IMD': 
+            raise ValueError("File type not in IMD format.") 
+        else:
+            raise ValueError("File type not implemented yet.") 
+ 
+    def read_tcvitals(self, path):
+        r"""Extract relevant hurricane data from TCVITALS file
+            and update storm fields with proper values. 
+        
+        :Input: 
+         - *path* (string) Path to the file to be read.
+
+        Return ValueError if format incorrect or if file not TCVITALS.
+        """
+        if file_format.upper() not in _supported_formats:
+            raise ValueError("File type not one of supproted formats.")
+        elif file_format.upper() != 'TCVITALS': 
+            raise ValueError("File type not in TCVITALS format.") 
+        else:
+            with open(path,'r') as data_file:
+                date, eye_loc, mws, Pc, rrp, mwr = [], [], [], [], [], [] 
+                for s in storm:
+                    line = s.split()
+                    temp_date = "%s%s" %(line[3].strip(),line[4].strip()[0:2]) # reformat date to send to date2seconds
+                    date.append(date2seconds(temp_date))
+                    if line[5][-1] == 'N': 
+                        lat = float(line[4].strip()[0:-1])
+                    else:
+                        lat = -1*float(line[4].strip()[0:-1])
+                    if line[6][-1] == 'E': 
+                        lon = float(line[5].strip()[0:-1])
+                    else:
+                        lon = -1*float(line[5].strip()[0:-1])
+                    eye_location = [lat,lon] 
+                    mws.append(int(line[8]))
+                    Pc.append(int(line[9]))
+                    rrp.append(int(line[11]))
+                    mwr.append(int(line[13]))
+            data_file.close() 
+            
+            self.t = numpy.array(date)  
+            self.eye_location = numpy.array(eye_loc)
+            self.max_wind_speed = numpy.array(mws)  
+            self.max_wind_radius = numpy.array(mwr)  
+            self.central_pressure = numpy.array(Pc)  
+            self.storm_radius = numpy.array(rrp)  
+
 
     # =========================================================================
     # Write Routines
@@ -225,14 +304,16 @@ class Storm(object):
         with open(path, 'w') as data_file:
             data_file.write("%s\n" % self.t.shape[0])
             for n in range(self.t.shape[0]):
-                data_file.write("%s %s %s %s %s %s %s" %
+                data_file.write("%s %s %s %s %s %s %s %s" %
                                                 (self.t[n],
                                                  self.eye_location[n, 0],
                                                  self.eye_location[n, 1],
                                                  self.max_wind_speed[n],
                                                  self.max_wind_radius[n],
                                                  self.central_pressure[n],
-                                                 self.storm_radius[n]))
+                                                 self.storm_radius[n], 
+                                                 "\n"))
+        data_file.close() 
 
     def write_hurdat(self, path):
         r""""""
@@ -250,6 +331,26 @@ class Storm(object):
         r""""""
         raise NotImplementedError("IMD format not fully implemented.")
 
+    # Useful functions
+    
+    def date2seconds(self,date): 
+        r"""Helper function to transform dates into seconds. 
+
+        Input: Date in format YYYYMMDDHH
+        
+        Output: Difference between date and beginning of the year 
+                returned in units of seconds. 
+        """
+        # Parse data to collect year, month, day, and hour as integers 
+        year = int(date[0:4])
+        month = int(date[4:6])
+        day = int(date[6:8]) 
+        hour = int(date[8:])
+
+        new_year_day = datetime.datetime(year,1,1,0) # Determine first day of year  
+        delta_date = datetime.datetime(year,month,day,hour) - new_year_day
+        date_in_seconds = days2seconds(delta_date.days) + delta_date.seconds
+        return date_in_seconds  
 
 # =============================================================================
 # Model field construction - Models supported are
@@ -304,7 +405,10 @@ def available_models():
 
 if __name__ == '__main__':
     Test_Hurdat = Storm('test_files/hurdat.test')   
-    Test_Hurdat.read('test_files/hurdat.test') 
-    Test_Hurdat.write('test_files') 
+    Test_Hurdat.read_hurdat('test_files/hurdat.test','hurdat')  
+    Test_Hurdat.write_geoclaw('test_files/hurdat.geoclaw')
+    Test_Hurdat.eye_location 
+
     # TODO:  Add commandline ability to convert between formats
-    construct_fields(None, None, None)
+
+#    construct_fields(None, None, None)
