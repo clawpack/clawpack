@@ -27,9 +27,11 @@ friction_field = 3
 wind_field = 4
 pressure_field = 6
 
-surface_cmap = colormaps.make_colormap({1.0: 'r', 0.5: 'w', 0.0: 'b'})
+surface_cmap = plt.get_cmap("bwr")
 speed_cmap = plt.get_cmap('PuBu')
 friction_cmap = plt.get_cmap('YlOrRd')
+velocity_cmap = plt.get_cmap('PiYG')
+vorticity_cmap = plt.get_cmap('PRGn')
 wind_cmap = plt.get_cmap('PuBu')
 pressure_cmap = plt.get_cmap('PuBu')
 land_cmap = geoplot.land_colors
