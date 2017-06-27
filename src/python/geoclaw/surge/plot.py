@@ -375,7 +375,7 @@ def add_pressure(plotaxes, bounds=None, plot_type='pcolor', shrink=1.0):
         pass
 
 
-def add_land(plotaxes, plot_type='pcolor', bounds=None):
+def add_land(plotaxes, plot_type='pcolor', bounds=[-10, 10]):
     """Add plotitem for land"""
 
     if plot_type == 'pcolor':
@@ -383,9 +383,8 @@ def add_land(plotaxes, plot_type='pcolor', bounds=None):
         plotitem.show = True
         plotitem.plot_var = geoplot.land
         plotitem.pcolor_cmap = land_cmap
-        if bounds is not None:
-            plotitem.pcolor_cmin = bounds[0]
-            plotitem.pcolor_cmax = bounds[1]
+        plotitem.pcolor_cmin = bounds[0]
+        plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = False
         plotitem.amr_celledges_show = [0] * 10
         plotitem.amr_patchedges_show = [1, 1, 1, 1, 1, 0, 0]
@@ -394,8 +393,8 @@ def add_land(plotaxes, plot_type='pcolor', bounds=None):
         plotitem = plotaxes.new_plotitem(name="land", plot_type='2d_contour')
         plotitem.plot_var = geoplot.land
         plotitem.contour_nlevels = 40
-        plotitem.contour_min = 0.0
-        plotitem.contour_max = 100.0
+        plotitem.contour_min = bounds[0]
+        plotitem.contour_max = bounds[1]
         plotitem.amr_contour_colors = ['g']  # color on each level
         plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
         plotitem.celledges_show = 0
