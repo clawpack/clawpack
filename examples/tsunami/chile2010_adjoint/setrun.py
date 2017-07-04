@@ -374,6 +374,8 @@ def setrun(claw_pkg='geoclaw'):
     #------------------------------------------------------------------
     # Adjoint specific data:
     #------------------------------------------------------------------
+    # Do this last since it resets some parameters such as num_aux
+    # as needed for adjoint flagging.
     rundata = setadjoint(rundata)
 
 
