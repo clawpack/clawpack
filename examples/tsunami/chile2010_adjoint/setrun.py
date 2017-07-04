@@ -15,6 +15,23 @@ from __future__ import print_function
 import os
 import numpy as np
 
+
+#-----------------------------------------------
+# Set these parameters for adjoint flagging....
+
+# location of output from computing adjoint:
+adjoint_output = os.path.abspath('adjoint/_output')
+print('Will flag using adjoint solution from  %s' % adjoint_output)
+
+# Time period of interest:
+t1 = 0.
+t2 = 4.*3600.
+
+# tolerance for adjoint flagging:
+adjoint_flag_tolerance = 0.000001 
+#-----------------------------------------------
+
+
 try:
     CLAW = os.environ['CLAW']
 except:
@@ -445,35 +462,25 @@ def setadjoint(rundata):
     
     import glob
 
-    # Set these parameters....
+    # Set these parameters at top of this file:
+    # adjoint_flag_tolerance, t1, t2, adjoint_output
+    # Then you don't need to modify this function...
 
-    # Path to adjoint solution:
-    adjointFolder = 'adjoint'
-    adjoint_output = 'adjoint/_output'  # switch to this??
-
-    # Time period of interest:
-    t1 = 5.*3600.
-    t2 = 6.*3600.
-
-    # tolerance for adjoint flagging:
     rundata.amrdata.flag2refine = True  # for adjoint flagging
-    rundata.amrdata.flag2refine_tol = 0.0001
-    
-
-    # You don't need to modify the rest of this function...
+    rundata.amrdata.flag2refine_tol = adjoint_flag_tolerance
 
     rundata.clawdata.num_aux = 4   # 4 required for adjoint flagging
     rundata.amrdata.aux_type = ['center','capacity','yleft','center']
 
-    probdata = rundata.new_UserData(name='probdata',fname='setprob.data')
-    probdata.add_param('adjointFolder',adjointFolder,'adjointFolder')
-    probdata.add_param('t1',t1,'t1, start time of interest')
-    probdata.add_param('t2',t2,'t2, final time of interest')
+    adjointdata = rundata.new_UserData(name='adjointdata',fname='adjoint.data')
+    adjointdata.add_param('adjoint_output',adjoint_output,'adjoint_output')
+    adjointdata.add_param('t1',t1,'t1, start time of interest')
+    adjointdata.add_param('t2',t2,'t2, final time of interest')
 
-    files = glob.glob(os.path.join(adjointFolder,"_output/fort.tck*"))
+    files = glob.glob(os.path.join(adjoint_output,"fort.tck*"))
+
     files.sort()
     
-    adjointdata = rundata.new_UserData(name='adjointdata',fname='adjoint.data')
     adjointdata.add_param('numadjoints', len(files), 
                        'Number of adjoint checkpoint files.')
     adjointdata.add_param('innerprod_index', 4, 
@@ -483,7 +490,7 @@ def setadjoint(rundata):
     for fname in files:
         f = open(fname)
         time = f.readline().split()[-1]
-        fname = '../' + fname.replace('tck','chk')
+        fname = fname.replace('tck','chk')
         adjointdata.add_param('file' + str(counter), fname, \
             'Checkpoint file' + str(counter))
         counter = counter + 1
