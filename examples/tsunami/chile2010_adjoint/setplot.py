@@ -151,7 +151,7 @@ def setplot(plotdata=None):
     plotitem.pcolor_cmin = 0.0
     plotitem.pcolor_cmax = 0.001
 
-    plotitem.add_colorbar = True
+    plotitem.add_colorbar = False   # doesn't work when adjoint all masked
     plotitem.colorbar_shrink = 0.75
     plotitem.amr_celledges_show = [0]
     plotitem.amr_data_show = [1,1,1,0] # inner product not computed on finest level
