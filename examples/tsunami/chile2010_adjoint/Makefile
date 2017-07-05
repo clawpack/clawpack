@@ -51,7 +51,6 @@ EXCLUDE_SOURCES = \
 MODULES = \
 
 SOURCES = \
-  setprob.f90 \
   $(CLAW)/riemann/src/rpn2_geoclaw.f \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \

@@ -15,6 +15,23 @@ from __future__ import print_function
 import os
 import numpy as np
 
+
+#-----------------------------------------------
+# Set these parameters for adjoint flagging....
+
+# location of output from computing adjoint:
+adjoint_output = os.path.abspath('adjoint/_output')
+print('Will flag using adjoint solution from  %s' % adjoint_output)
+
+# Time period of interest:
+t1 = 0.
+t2 = 4.*3600.
+
+# tolerance for adjoint flagging:
+adjoint_flag_tolerance = 0.000001 
+#-----------------------------------------------
+
+
 try:
     CLAW = os.environ['CLAW']
 except:
@@ -133,8 +150,8 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 24
-        clawdata.tfinal = 6*3600.
+        clawdata.num_output_times = 28
+        clawdata.tfinal = 7*3600.
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -285,12 +302,12 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 3
+    amrdata.amr_levels_max = 4
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,6]
-    amrdata.refinement_ratios_y = [2,6]
-    amrdata.refinement_ratios_t = [2,6]
+    amrdata.refinement_ratios_x = [2,4,4]
+    amrdata.refinement_ratios_y = [2,4,4]
+    amrdata.refinement_ratios_t = [2,4,4]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
@@ -342,8 +359,12 @@ def setrun(claw_pkg='geoclaw'):
     rundata.regiondata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    # earthquake source region:
-    rundata.regiondata.regions.append([3, 3, 0., 1800., -85,-72,-38,-25])
+
+    # all 4 levels anywhere, based on flagging:
+    rundata.regiondata.regions.append([1, 4, 0., 1e9, -220,0,-90,90])
+
+    # earthquake source region - force refinement initially:
+    rundata.regiondata.regions.append([4, 4, 0., 100., -85,-72,-38,-25])
 
     # ---------------
     # Gauges:
@@ -356,6 +377,8 @@ def setrun(claw_pkg='geoclaw'):
     #------------------------------------------------------------------
     # Adjoint specific data:
     #------------------------------------------------------------------
+    # Do this last since it resets some parameters such as num_aux
+    # as needed for adjoint flagging.
     rundata = setadjoint(rundata)
 
 
@@ -444,35 +467,25 @@ def setadjoint(rundata):
     
     import glob
 
-    # Set these parameters....
+    # Set these parameters at top of this file:
+    # adjoint_flag_tolerance, t1, t2, adjoint_output
+    # Then you don't need to modify this function...
 
-    # Path to adjoint solution:
-    adjointFolder = 'adjoint'
-    adjoint_output = 'adjoint/_output'  # switch to this??
-
-    # Time period of interest:
-    t1 = 0.
-    t2 = 4.*3600.
-
-    # tolerance for adjoint flagging:
     rundata.amrdata.flag2refine = True  # for adjoint flagging
-    rundata.amrdata.flag2refine_tol = 0.000001 
-    
-
-    # You don't need to modify the rest of this function...
+    rundata.amrdata.flag2refine_tol = adjoint_flag_tolerance
 
     rundata.clawdata.num_aux = 4   # 4 required for adjoint flagging
     rundata.amrdata.aux_type = ['center','capacity','yleft','center']
 
-    probdata = rundata.new_UserData(name='probdata',fname='setprob.data')
-    probdata.add_param('adjointFolder',adjointFolder,'adjointFolder')
-    probdata.add_param('t1',t1,'t1, start time of interest')
-    probdata.add_param('t2',t2,'t2, final time of interest')
+    adjointdata = rundata.new_UserData(name='adjointdata',fname='adjoint.data')
+    adjointdata.add_param('adjoint_output',adjoint_output,'adjoint_output')
+    adjointdata.add_param('t1',t1,'t1, start time of interest')
+    adjointdata.add_param('t2',t2,'t2, final time of interest')
 
-    files = glob.glob(os.path.join(adjointFolder,"_output/fort.tck*"))
+    files = glob.glob(os.path.join(adjoint_output,"fort.tck*"))
+
     files.sort()
     
-    adjointdata = rundata.new_UserData(name='adjointdata',fname='adjoint.data')
     adjointdata.add_param('numadjoints', len(files), 
                        'Number of adjoint checkpoint files.')
     adjointdata.add_param('innerprod_index', 4, 
@@ -482,7 +495,7 @@ def setadjoint(rundata):
     for fname in files:
         f = open(fname)
         time = f.readline().split()[-1]
-        fname = '../' + fname.replace('tck','chk')
+        fname = fname.replace('tck','chk')
         adjointdata.add_param('file' + str(counter), fname, \
             'Checkpoint file' + str(counter))
         counter = counter + 1
