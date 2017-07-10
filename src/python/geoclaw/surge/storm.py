@@ -159,7 +159,6 @@ class Storm(object):
                         lon = -1*float(lon[0:-1])/10
                     self.eye_location[n,0] = lat 
                     self.eye_location[n,1] = lon
-            data_file.close() 
 
     def read_hurdat2(self, path, file_format):
         r"""Extract relevant hurricane data from Hurdat2 file
@@ -203,7 +202,6 @@ class Storm(object):
                         lon = -1*float(lon[0:-1])
                     self.eye_location[n,0] = lat 
                     self.eye_location[n,1] = lon
-            data_file.close() 
                 
     def read_jma(self, path, file_format):
         r"""Extract relevant hurricane data from JMA file
@@ -247,7 +245,6 @@ class Storm(object):
                         lon = -1*float(lon[0:-1])
                     self.eye_location[n,0] = lat 
                     self.eye_location[n,1] = lon
-            data_file.close() 
  
     def read_imd(self, path):
         r"""Extract relevant hurricane data from IMD file
@@ -305,7 +302,6 @@ class Storm(object):
                         lon = -1*float(lon[0:-1])/10
                     self.eye_location[n,0] = lat 
                     self.eye_location[n,1] = lon
-            data_file.close() 
 
 
     # =========================================================================
@@ -340,7 +336,6 @@ class Storm(object):
                                                  self.central_pressure[n],
                                                  self.storm_radius[n], 
                                                  "\n"))
-        data_file.close() 
 
     def write_hurdat(self, path):
         r"""Rewrite the storm in the format 
@@ -357,7 +352,6 @@ class Storm(object):
                                                  self.storm_radius[n], 
                                                  self.max_wind_radius[n]
                                ))
-        data_file.close() 
     
 
 
