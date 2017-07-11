@@ -150,8 +150,8 @@ def setplot(plotdata=None):
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     # plotaxes.afteraxes = pcolor_afteraxes
-    ml_plot.add_surface_elevation(plotaxes,1,bounds=top_surface_limits)
     ml_plot.add_inundation(plotaxes, 1, bounds=depth_limits)
+    ml_plot.add_surface_elevation(plotaxes,1,bounds=top_surface_limits)
     # ml_plot.add_surface_elevation(plotaxes,1,bounds=[-0.06,0.06])
     # ml_plot.add_surface_elevation(plotaxes,1)
     ml_plot.add_land(plotaxes, 1)
@@ -165,8 +165,8 @@ def setplot(plotdata=None):
     plotaxes.ylimits = ylimits
     # plotaxes.afteraxes = pcolor_afteraxes
     # ml_plot.add_surface_elevation(plotaxes,2,bounds=[-300-0.5,-300+0.5])
-    ml_plot.add_surface_elevation(plotaxes,2,bounds=internal_surface_limits)
     ml_plot.add_inundation(plotaxes, 2, bounds=depth_limits)
+    ml_plot.add_surface_elevation(plotaxes,2,bounds=internal_surface_limits)
     ml_plot.add_colorbar = True
     # ml_plot.add_surface_elevation(plotaxes,2)
     ml_plot.add_land(plotaxes, 2)

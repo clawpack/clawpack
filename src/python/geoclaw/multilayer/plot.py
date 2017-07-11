@@ -214,7 +214,7 @@ def add_inundation(plotaxes,surface,bounds=None,plot_type='pcolor'):
         if bounds is not None:                
             plotitem.pcolor_cmin = bounds[0]
             plotitem.pcolor_cmax = bounds[1]
-        plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'b',0.0:'r'})
+        plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'c',0.0:'w'})
         plotitem.add_colorbar = True
         plotitem.amr_celledges_show = [0,0,0]
         plotitem.amr_patchedges_show = [0,0,0]
@@ -527,11 +527,11 @@ def add_cross_section(plotaxes, surface):
     r""" Add cross section view of surface"""
     if surface == 1: 
         plot_eta = eta1
-        clr = 'b'
+        clr = 'c'
         sty = 'x'
     if surface == 2: 
         plot_eta = eta2
-        clr = 'c'
+        clr = 'b'
         sty = '+'
 
     def xsec(current_data):
