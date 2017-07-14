@@ -108,11 +108,12 @@ class Storm(object):
 
         num_forecasts = data.shape[0]
         self.t = data[:, 0]
-        self.eye_location = data[:, 1]
-        self.max_wind_speed = data[:, 2]
-        self.max_wind_radius = data[:, 3]
-        self.central_pressure = data[:, 4]
-        self.storm_radius = data[:, 5]
+        self.eye_location[0, :] = data[:, 1]
+        self.eye_location[1, :] = data[:, 2]
+        self.max_wind_speed = data[:, 3]
+        self.max_wind_radius = data[:, 4]
+        self.central_pressure = data[:, 5]
+        self.storm_radius = data[:, 6]
 
     def read_hurdat(self, path):
         r""""""
@@ -129,6 +130,7 @@ class Storm(object):
     def read_imd(self, path):
         r""""""
         raise NotImplementedError("IMD format not fully implemented.")
+
 
     # =========================================================================
     # Write Routines
@@ -177,6 +179,115 @@ class Storm(object):
     def write_imd(self, path):
         r""""""
         raise NotImplementedError("IMD format not fully implemented.")
+
+    # =========================================================================
+    # Other Useful Routines
+    def plot(self, axes=None, intensity=False, limits=None, track_color='red',
+                   category_colors=None, categorization="NHC"):
+        r"""Plot the track and optionally the strength of the storm
+
+        """
+
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.basemap import Basemap
+
+        if axes is None:
+            fig = plt.figure()
+            axes = fig.add_subplot(1, 1, 1)
+
+        #limits = ((long), (lat))
+        if limits is None:
+            raise NotImplementedError("Need to do this...")
+
+        if category_color is None:
+            category_color = {5: 'red',
+                              4: 'yellow',
+                              3: 'orange',
+                              2: 'green',
+                              1: 'blue',
+                              0: 'gray'}
+
+        mapping = Basemap()
+        longitude, latitude = mapping(self.eye_location[:, 0],
+                                      self.eye_location[:, 1])
+        category = self.category(categorization=categorization)
+        for i in range(len(longitude)):
+            if intensity:
+                color = category_color[category[i]]
+            else:
+                color = track_color
+            mapping.plot(longitude[i:i + 2], latitude[i:i + 2], color=color)
+
+        mapping.drawcoastlines()
+        mapping.drawcountries()
+        mapping.fillcontinents()
+        # Not sure how to do this automatically yet
+        mapping.drawparallels(limits[])
+        # mapping.drawparallels((0.0, 20.0), labels=[1, 1])
+        # mapping.drawmeridians(numpy.arange(coord[0][0], coord[1][0], 20),
+        #                       labels=[0, 1, 1, 1])
+
+        return axes
+
+    def category(self, categorization="NHC"):
+        r"""Categorizes storm based on relevant storm data
+
+        :Category Mappings:
+         - "NHC":  -1 (Tropical Depression),
+                    0 (Tropical Storm),
+                    1 (Category 1 Hurricane),
+                    2 (Category 2 Hurricane),
+                    3 (Category 3 Hurricane),
+                    4 (Category 4 Hurricane),
+                    5 (Category 5 Hurricane)
+         - "JMA":
+         - "IMD":
+
+        :Input:
+         - *categorization* (string) Type of categorization to use.  Defaults to
+           the National Hurricane Center "NHC".
+         - *names* (bool) If True returns the category name rather than a
+           number.  Default to *False*.
+
+        :Output:
+         - (ndarray) Integer array of categories at each time point of the storm
+         - (list) Similar to the above but the name of the category as a 
+           *string*
+
+        """
+
+        if categorization.upper() == "NHC":
+            # TODO:  Check to see if these are in knots or mph.  Definitely not
+            #        in the correct format now
+            # TODO:  Add TD and TS designations
+            category = numpy.zeros(self.max_wind_speed) + \
+                       (self.max_wind_speed >= 64) * (self.max_wind_speed < 83) * 1 + \
+                       (self.max_wind_speed >= 83) * (self.max_wind_speed < 96) * 2 + \
+                       (self.max_wind_speed >= 96) * (self.max_wind_speed < 113) * 3 + \
+                       (self.max_wind_speed >= 113) * (self.max_wind_speed < 135) * 4 + \
+                       (self.max_wind_speed >= 135) * 5
+            cat_map = {-1: "Tropical Depression",
+                        0: "Tropical Storm",
+                        1: "Category 1 Hurricane",
+                        2: "Category 2 Hurricane",
+                        3: "Category 3 Hurricane",
+                        4: "Category 4 Hurricane",
+                        5: "Category 5 Hurricane"}
+
+        elif categorization.upper() == "JMA":
+            raise NotImplementedError("JMA categorization not implemented.")
+        elif categorization.upper() == "IMD":
+            raise NotImplementedError("IMD categorization not implemented.")
+        else:
+            raise ValueError("Categorization %s not available."
+                             % categorization)
+
+        if names:
+            category_name = []
+            for (i, cat) in enumerate(category):
+                category_name.append(cat_map[cat])
+
+        return category, category_name
 
 
 # =============================================================================
@@ -228,6 +339,81 @@ def available_models():
     r"""Construct a string suitable for listing available storm models.
     """
     return ""
+
+
+# =============================================================================
+# Ensmeble Storm Formats
+def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
+                               mask_category=None, categorization="NHC"):
+    r"""Load storms from a Matlab file containing storms
+
+    This format is based on the format Prof. Emmanuel uses to generate storms.
+
+    :Input:
+     - *path* (string) Path to the file to be read in
+     - *mask_distance* (float) Distance from *mask_coordinate* at which a storm
+       needs to in order to be returned in the list of storms.  If
+       *mask_distance* is *None* then no masking is used.  Default is to
+       use no *mask_distance*.
+     - *mask_coordinate* (tuple) Longitude and latitude coordinates to measure
+       the distance from.  Default is *(0.0, 0.0)*.
+     - *mask_category* (int) Category or highter a storm needs to be to be
+       included in the returned list of storms.  If *mask_category* is *None*
+       then no masking occurs.  The categorization used is controlled by
+       *categorization*.  Default is to use no *mask_category*.
+     - *categorization* (string) Categorization to be used for the
+       *mask_category* filter.  Default is "NHC".
+
+    :Output:
+     - (list) List of Storm objects that have been read in and were not filtered
+       out.
+    """
+
+    # Load the mat file and extract pertinent data
+    import scipy.io
+    mat = scipy.io.loadmat(path)
+
+    lon = mat['longstore']
+    lat = mat['latstore']
+    hour = mat['hourstore']
+    day = mat['daystore']
+    month = mat['monthstore']
+    year = mat['yearstore']
+    radius_max_winds = mat['rmstore']
+    max_winds = mat['vstore']
+    central_pressure = mat['pstore']
+
+    # Convert into storms and truncate zeros
+    storms = []
+    for n in xrange(lon.shape[0]):
+        m = len(lon[n].nonzero()[0])
+
+        storm = Storm()
+        storm.t = [datetime.datetime(year[0, n],
+                                     month[n, i],
+                                     day[n, i],
+                                     hour[n, i]) for i in xrange(m)]
+        storm.eye_location[:, 0] = lon[n, :m]
+        storm.eye_location[:, 1] = lat[n, :m]
+        storm.max_wind_speed = max_winds[n, :m]
+        storm.radius_max_winds = radius_max_winds[n, :m]
+        storm.central_pressure = central_pressure[n, :m]
+
+        include_storm = True
+        if mask_distance is not None:
+            distance = numpy.sqrt((storm.eye_location[:, 0] -
+                                   mask_coord[0])**2 +
+                                  (storm.eye_location[:, 1] -
+                                   mask_coord[1])**2)
+            inlcude_storm = numpy.any(distance < mask_distance)
+        if mask_category is not None:
+            include storm = include_storm and numpy.any(
+                  storm.category(categorization=categorization) > mask_category)
+
+        if include_storm:
+            storms.append(storm)
+
+    return storms
 
 
 if __name__ == '__main__':
