@@ -1486,7 +1486,6 @@ class SubFault(object):
 
         if self.coordinate_specification == 'triangular':
 
-            
             cos = numpy.cos
             atan = numpy.arctan
             atan2 = numpy.arctan2
@@ -1495,12 +1494,16 @@ class SubFault(object):
             cross = numpy.cross
             norm = numpy.linalg.norm
 
-            x = numpy.array(self.corners)
+            x0 = numpy.array(self.corners)
+            x = x0.copy()
 
-            x[:,2] = - numpy.abs(x[:,2])        # lazy
+            x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative(lazy)
+
+            x_ave = numpy.mean(x,axis=0)
             
-            x[:,0] = LAT2METER * cos( DEG2RAD*x[:,1] ) * x[:,0]
-            x[:,1] = LAT2METER * x[:,1]
+            # convert lat-long coordinate to Cartesian
+            x[:,0] *= LAT2METER * cos( DEG2RAD*x_ave[1] ) 
+            x[:,1] *= LAT2METER 
 
             # compute strike and dip direction
             # e3: vertical 
@@ -1529,9 +1532,9 @@ class SubFault(object):
 
             # find the center line
             xx = numpy.zeros((3,3))
-            xx[0,:] = (x[1,:] + x[2,:]) / 2. # midpt opposite a
-            xx[1,:] = (x[0,:] + x[2,:]) / 2. # midpt opposite b
-            xx[2,:] = (x[0,:] + x[1,:]) / 2. # midpt opposite c
+            xx[0,:] = (x0[1,:] + x0[2,:]) / 2. # midpt opposite a
+            xx[1,:] = (x0[0,:] + x0[2,:]) / 2. # midpt opposite b
+            xx[2,:] = (x0[0,:] + x0[1,:]) / 2. # midpt opposite c
 
             i = numpy.argmin(xx[2,:])
 
@@ -1541,7 +1544,7 @@ class SubFault(object):
             if x[2,i] <= xx[2,i]:
                 self._centers.reverse()
 
-            xcenter = numpy.mean(xx, axis=1)
+            xcenter = numpy.mean(xx, axis=0)
             self.longitude = xcenter[0]
             self.latitude = xcenter[1]
             self.depth = xcenter[2]
@@ -1748,17 +1751,17 @@ class SubFault(object):
                 w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 self._coord_transform(w11,w12,w13,w21,w22,w23,w31,w32,w33,alpha)
             
-                v11 = v11 + sgn*w11
-                v21 = v21 + sgn*w21
-                v31 = v31 + sgn*w31
+                v11 += sgn*w11
+                v21 += sgn*w21
+                v31 += sgn*w31
 
-                v12 = v12 + sgn*w12
-                v22 = v22 + sgn*w22
-                v32 = v32 + sgn*w32
+                v12 += sgn*w12
+                v22 += sgn*w22
+                v32 += sgn*w32
 
-                v13 = v13 + sgn*w13
-                v23 = v23 + sgn*w23
-                v33 = v33 + sgn*w33
+                v13 += sgn*w13
+                v23 += sgn*w23
+                v33 += sgn*w33
 
 
         
@@ -1767,16 +1770,20 @@ class SubFault(object):
             #dY = v12*burgersv[0] + v22*burgersv[1] - v32*burgersv[2]
             #dZ = v13*burgersv[0] + v23*burgersv[1] - v33*burgersv[2]
 
+            dX = v11*burgersv[0] + v21*burgersv[1] - v31*burgersv[2]
+            dY = v12*burgersv[0] + v22*burgersv[1] - v32*burgersv[2]
+            dZ = v13*burgersv[0] + v23*burgersv[1] - v33*burgersv[2]
+
             #dX = v11*burgersv[0] + v12*burgersv[1] + v13*burgersv[2]
             #dY = v21*burgersv[0] + v22*burgersv[1] + v23*burgersv[2]
             #dZ = v31*burgersv[0] + v32*burgersv[1] + v33*burgersv[2]
 
-            dX = v11*burgersv[0] + v12*burgersv[1] 
-            dY = v21*burgersv[0] + v22*burgersv[1] 
-            dZ = v31*burgersv[0] + v32*burgersv[1] 
+            #dX = v11*burgersv[0] + v12*burgersv[1] 
+            #dY = v21*burgersv[0] + v22*burgersv[1] 
+            #dZ = v31*burgersv[0] + v32*burgersv[1] 
 
             dtopo = DTopography()
-            dtopo.X = X1
+            dtopo.X = X1    # X1, X2 varname confusing?
             dtopo.Y = X2
             dtopo.dX = numpy.array(dX, ndmin=3)
             dtopo.dY = numpy.array(dY, ndmin=3)
@@ -1801,13 +1808,15 @@ class SubFault(object):
         """
 
 
-        # put in coordinate_specification == 'triangular' check here
+        # TODO: put in a coordinate_specification == 'triangular' check here
         x = numpy.array(self.corners)
+
         y = numpy.zeros(x.shape)
 
         # convert to meters
-        y[:,0] = LAT2METER*numpy.cos( DEG2RAD*x[:,1] )*x[:,0]
-        y[:,1] = LAT2METER*x[:,1]
+        y[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
+        y[:,0] = LAT2METER * numpy.cos( DEG2RAD*self.latitude )*x[:,0]
+        y[:,1] = LAT2METER * x[:,1]
         y[:,2] = - numpy.abs(x[:,2])    #lazy
 
         v_list = [y[1,:] - y[0,:], y[2,:] - y[1,:], y[0,:] - y[2,:]]
@@ -1838,13 +1847,18 @@ class SubFault(object):
 
             alpha = numpy.arctan2(vn[0],vn[1])
             alpha_list.append(alpha)
+
             #beta = numpy.arccos(numpy.dot(e3,vn))
-            beta = numpy.pi/2 - numpy.arctan(numpy.divide(abs(vn[2]),abs(numpy.sqrt(vn[0]**2 + vn[1]**2))))
+            beta = numpy.pi/2 \
+                 - numpy.arctan(\
+                     numpy.divide(abs(vn[2]),
+                     abs(numpy.sqrt(vn[0]**2 + vn[1]**2))))
             beta_list.append(beta)
 
             j = j+1
 
         return reverse_list,O1_list,O2_list,alpha_list,beta_list
+
         
     def _get_angular_dislocations(self,Y1,Y2,Y3,Z1,Z2,Z3,\
                                   Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth):
@@ -2112,7 +2126,6 @@ class SubFault(object):
 
     def _get_angular_dislocations_surface(self,Y1,Y2,Y3,beta,Odepth):
 
-        import pdb
 
         # shorthand for some elementary functions from numpy
         pi = numpy.pi
@@ -2189,8 +2202,6 @@ class SubFault(object):
         v33 = 1/C*(F + Y2*(R*cos(beta) + a)*sin(beta)/(R*(R - Z3)))
         
 
-        #pdb.set_trace()
-
         return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
 
@@ -2251,17 +2262,20 @@ class SubFault(object):
 
         dims = X1.shape
         Odepth = numpy.abs(Odepth)
-
         
         # convert lat/long to meters
-        X1 = LAT2METER * numpy.cos( DEG2RAD*X2 ) * X1 
-        X2 = LAT2METER * X2 
+        #X1 = LAT2METER * (numpy.cos( DEG2RAD*X2 ) * X1 \
+        #X1 = LAT2METER * (numpy.cos( DEG2RAD*self.latitude ) * X1 \
+                          #- numpy.cos( DEG2RAD*self.latitude) * Olong)
+        X1 = LAT2METER * numpy.cos( DEG2RAD*self.latitude ) * (X1 - Olong)
+        X2 = LAT2METER * (X2 - Olat)
 
-        Olong = LAT2METER * numpy.cos( DEG2RAD*Olat ) * Olong 
-        Olat = LAT2METER * Olat 
+        #Olong = LAT2METER * numpy.cos( DEG2RAD*self. ) * Olong 
+        #Olong = LAT2METER * numpy.cos( DEG2RAD*Olat ) * Olong 
+        #Olat = LAT2METER * Olat 
 
-        X1 = X1 - Olong
-        X2 = X2 - Olat
+        #X1 = X1 - Olong
+        #X2 = X2 - Olat
 
         Y1 = numpy.zeros(dims)       # yi-coordinates
         Y2 = numpy.zeros(dims)       # yi-coordinates
@@ -2282,7 +2296,7 @@ class SubFault(object):
         # rotate by -alpha in long/lat plane
         Y1 = numpy.sin(alpha)*X1 + numpy.cos(alpha)*X2
         Y2 = numpy.cos(alpha)*X1 - numpy.sin(alpha)*X2
-        Y3 = X3 - Odepth
+        Y3 = X3 - Odepth 
         
         Z1 = numpy.cos(beta)*Y1 - numpy.sin(beta)*Y3
         Z2 = Y2
@@ -2290,7 +2304,7 @@ class SubFault(object):
 
         Yb1 = Y1
         Yb2 = Y2
-        Yb3 = Y3 + 2*Odepth  
+        Yb3 = X3 + Odepth  
 
         Zb1 =  numpy.cos(beta)*Y1 + numpy.sin(beta)*Yb3
         Zb2 =  Y2
