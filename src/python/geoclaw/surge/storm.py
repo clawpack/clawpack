@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
 r"""
 Module defines a class and routines for managing parameterized storm input.
 
@@ -90,7 +88,7 @@ class Storm(object):
     # =========================================================================
     # Read Routines
  
-    def wind(self, x, t):
+    def read(self, x, t):
         raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'read_%s' % file_format.lower())(path, **kwargs)
@@ -255,10 +253,7 @@ class Storm(object):
 
         Return ValueError if format incorrect or if file not IMD.
         """
-        if file_format.upper() not in _supported_formats:
-            raise ValueError("File type not one of supported formats.")
-        else:
-            raise ValueError("File type not implemented yet.") 
+        raise ValueError("File type not implemented yet.") 
  
     def read_tcvitals(self, path):
         r"""Extract relevant hurricane data from TCVITALS file
