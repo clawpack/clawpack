@@ -1568,9 +1568,27 @@ class SubFault(object):
         else:
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
+
+    def set_corners(self,corners):
+        r"""
+            set three corners for a triangular fault.
+
+            Input `corners` should be a 3 x 3 array.
+        """
+
+        if len(corners) == 3:
+            self._corners =\
+                [corners[0],corners[1],corners[2]]
+            self.coordinate_specification = 'triangular'
+            self.calculate_geometry_triangles()
+        else:
+            raise ValueError("Input not understood")
+
+
     def _get_unit_slip_vector(self):
         """
         compute a unit vector in the slip-direction (rake-direction)
+        for a triangular fault
 
         """
 
