@@ -302,11 +302,14 @@ class Storm(object):
     # =========================================================================
     # Write Routines
     def write(self, path, file_format="geoclaw"):
-        r""""""
-
+        r"""Take in the file_format and employ the appropriate 
+		write function. 
+		"""
         if file_format.upper() not in _supported_formats:
             raise ValueError("File format %s not available." % file_format)
-
+		else: 
+			if file_format=="geoclaw": 
+				write_geoclaw(path) 
         getattr(self, 'write_%s' % file_format.lower())(path)
 
     def write_geoclaw(self, path):
@@ -476,33 +479,3 @@ def available_models():
     return ""
 
 
-if __name__ == '__main__':
-    
-    
-    TestH = Storm('test_files/hurdat.test')   
-    TestH.read_hurdat('test_files/hurdat.test','hurdat')  
-    TestH.write_geoclaw('test_files/hurdat.geoclaw')
-    TestH.write_hurdat('test_files/geoclaw.hurdat')
-
-    TestH2 = Storm('test_files/hurdat2.test')   
-    TestH2.read_hurdat2('test_files/hurdat2.test','hurdat2')  
-    TestH2.write_geoclaw('test_files/hurdat2.geoclaw')
-    
-    NewTestH = Storm('test_files/geoclaw.hurdat')
-    NewTestH.read_hurdat('test_files/geoclaw.hurdat','hurdat')
-    NewTestH.write_geoclaw('test_files/check_hurdat.geoclaw')
-    NewTestH.write_hurdat('test_files/check_geoclaw.hurdat')
-    
-    filecmp.cmp('test_files/check_hurdat.geoclaw','test_files/hurdat.geoclaw')
-    filecmp.cmp('test_files/check_geoclaw.hurdat', 'test_files/geoclaw.hurdat') 
-
-
-    #TestIMD
-    # TODO: Write tests that use the numpy array 
-    # TODO: Check JMA values and confirm correct columns
-    # TODO: Write documentation for data files 
-    # TODO:  
-
-    # TODO:  Add commandline ability to convert between formats
-
-#    construct_fields(None, None, None)
