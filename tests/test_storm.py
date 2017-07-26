@@ -6,14 +6,19 @@ from __future__ import print_function
 
 import tempfile
 import shutil
+import os 
 
 import numpy
 
 import clawpack.clawutil.test as test
 import clawpack.geoclaw.surge.storm as storm
 
+# Set local test directory to get local files 
+testdir = os.path.dirname(__file__) 
+if len(testdir) == 0: 
+    testdir = "./"
 
-@test.wip
+#@test.wip
 def test_storm_IO():
     r"""Test reading and writing of storm formats"""
 
@@ -25,19 +30,23 @@ def test_storm_IO():
     try:
         # Load original data
         base_storm = storm.Storm(path=test_data_path, file_format="geoclaw")
-
         # Run through formats, write out last in new format, read it back in,
         # and then compare to original
-        for file_format in enumerate(storm._supported_formats[1:]):
+        # for file_format in enumerate(storm._supported_formats[1:]):
+        for file_format in storm._supported_formats[1:]:
             new_storm_path = os.path.join(temp_path, "test.storm")
             # Write
+            print(base_storm.t)  
             base_storm.write(path=new_storm_path, file_format=file_format)
             # Read
             new_storm = storm.Storm(path=new_storm_path,
                                     file_format=file_format)
+            print('new_storm', new_storm) 
             # Compare - TODO: may need to do a set of assert_allclose here
-            assert base_storm == new_storm, \
-                   "File format %s failed to be read in." % file_format
+            print('Something is definitely happening here.') 
+            assert base_storm == new_storm, "Houston, we did it!"
+            #assert base_storm == new_storm, \
+            #       "File format %s failed to be read in." % file_format
 
     except AssertionError as e:
         # If the assertion failed then copy the contents of the directory
@@ -72,4 +81,4 @@ def test_storm_models():
 
 if __name__ == '__main__':
     test_storm_IO()
-    test_storm_models()
+#    test_storm_models()
