@@ -348,14 +348,26 @@ class Storm(object):
         """
         with open(path, 'w') as data_file:
             for n in range(self.t.shape[0]):
-                data_file.write("%s %s %s %s %s %s %s \n" %
-                                                 (str(self.seconds2date(self.t[n])).rjust(10),
-                                                 str(self.return_lat(float(self.eye_location[n, 0])*10)).rjust(5),
-                                                 str(self.return_lon(float(self.eye_location[n, 1])*10)).rjust(5),
-                                                 str(self.max_wind_speed[n]).rjust(3),
-                                                 str(self.central_pressure[n]).rjust(4),
-                                                 str(self.storm_radius[n]).rjust(3), 
-                                                 str(self.max_wind_radius[n]).rjust(3)
+                #data_file.write("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n" %
+                data_file.write("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n" %
+                                                 (" ".rjust(8),
+                                                str(self.seconds2date(self.t[n])).rjust(10),
+                                                " ".rjust(6), 
+                                                "BEST".rjust(4), 
+                                                " ".rjust(2), 
+                                                "000".rjust(3), 
+                                                " ".rjust(1), 
+                                                str(self.return_lat(float(self.eye_location[n, 0])*10)).rjust(5),
+                                                " ".rjust(2), 
+                                                str(self.return_lon(float(self.eye_location[n, 1])*10)).rjust(5),
+                                                " ".rjust(2), 
+                                                str(self.max_wind_speed[n]).rjust(3),
+                                                " ".rjust(2), 
+                                                str(self.central_pressure[n]).rjust(4),
+                                                " ".rjust(47), 
+                                                str(self.storm_radius[n]).rjust(3), 
+                                                " ".rjust(2), 
+                                                str(self.max_wind_radius[n]).rjust(3)
                                ))
 
     def write_hurdat2(self, path):
