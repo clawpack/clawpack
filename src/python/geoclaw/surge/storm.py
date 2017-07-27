@@ -85,13 +85,13 @@ class Storm(object):
         if path is None:
             self.read(path, file_format=file_format, **kwargs)
         else: 
-            self.read(path, file_format=file_format) 
+            self.read(path, file_format=file_format, **kwargs)  
 
     # =========================================================================
     # Read Routines
  
-    def read(self, x, t):
-        raise ValueError("File format %s not available." % file_format)
+    def read(self, path, file_format, **kwargs):
+#        raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'read_%s' % file_format.lower())(path, **kwargs)
 
@@ -228,7 +228,7 @@ class Storm(object):
                 self.new_year = int('20'+str(date[0])[0:2])  
                 for i in range(date.shape[0]): 
                     temp_date = "%s%s" %('20',date[i][0])
-                    temp_date = date2seconds(temp_date[0:-2])
+                    temp_date = self.date2seconds(temp_date[0:-2])
                     date[i][0] = temp_date 
                 self.t = date[:,0] 
                 self.eye_location = numpy.genfromtxt(path,skip_header=1,dtype=None,usecols=(4,5))  
@@ -260,39 +260,37 @@ class Storm(object):
 
         Return ValueError if format incorrect or if file not TCVITALS.
         """
-        if file_format.upper() not in _supported_formats:
-            raise ValueError("File type not one of supported formats.")
-        else:
-            with open(path,'r') as data_file:
-                # Collect data from columns of the same type 
-                data = numpy.genfromtxt(path,dtype=None,usecols=(8,9,11,13))
-                self.max_wind_speed = data[:,0]                # Col 8 TCVITALS
-                self.central_pressure = data[:,1]              # Col 9 TCVITALS
-                self.storm_radius = data[:,2]                  # Col 11 TCVITALS
-                self.max_wind_radius = data[:,3]               # Col 13 TCVITALS
+        with open(path,'r') as data_file:
+            # Collect data from columns of the same type 
+            data = numpy.genfromtxt(path,dtype=None,usecols=(8,9,11,13))
+            self.max_wind_speed = data[:,0]                # Col 8 TCVITALS
+            self.central_pressure = data[:,1]              # Col 9 TCVITALS
+            self.storm_radius = data[:,2]                  # Col 11 TCVITALS
+            self.max_wind_radius = data[:,3]               # Col 13 TCVITALS
 
-                date = numpy.genfromtxt(path,dtype=None,usecols=(0))
-                self.new_year = int(str(date[0])[0:4])  
-                for i in range(date.shape[0]): 
-                    temp_date = "%s%s" %(date[i][0],date[i][1])
-                    temp_date = date2seconds(temp_date[0:-2])
-                    date[i][0] = temp_date 
-                self.t = date[:,0] 
+            yymmdd_date = numpy.genfromtxt(path,dtype='string',usecols=(3))
+            hhmm_date = numpy.genfromtxt(path,dtype='string',usecols=(4))
+            self.new_year = int(str(yymmdd_date[0])[0:4]) 
+            for i in range(yymmdd_date.shape[0]): 
+                temp_date = "%s%s" %(yymmdd_date[i],hhmm_date[i])
+                temp_date = self.date2seconds(temp_date[0:-2])
+                yymmdd_date[i] = temp_date 
+            self.t = yymmdd_date 
 
-                self.eye_location = numpy.genfromtxt(path,dtype=None,usecols=(4,5))  
-                for n in range(self.eye_location.shape[0]): 
-                    lat = self.eye_location[n,0]
-                    lon = self.eye_location[n,1]
-                    if lat[-1] == 'N':
-                        lat = float(lat[0:-1])/10 
-                    else: 
-                        lat = -1*float(lat[0:-1])/10
-                    if lon == 'E': 
-                        lon = float(lon[0:-1])/10
-                    else: 
-                        lon = -1*float(lon[0:-1])/10
-                    self.eye_location[n,0] = lat 
-                    self.eye_location[n,1] = lon
+            self.eye_location = numpy.genfromtxt(path,dtype=None,usecols=(5,6))  
+            for n in range(self.eye_location.shape[0]): 
+                lat = self.eye_location[n,0]
+                lon = self.eye_location[n,1]
+                if lat[-1] == 'N':
+                    lat = float(lat[0:-1])/10 
+                else: 
+                    lat = -1*float(lat[0:-1])/10
+                if lon == 'E': 
+                    lon = float(lon[0:-1])/10
+                else: 
+                    lon = -1*float(lon[0:-1])/10
+                self.eye_location[n,0] = lat 
+                self.eye_location[n,1] = lon
 
 
 
@@ -331,19 +329,33 @@ class Storm(object):
                                                  "\n"))
 
     def write_hurdat(self, path):
+#        r"""Rewrite the storm in the format 
+#        used by Hurdat 
+#        """
+#        with open(path, 'w') as data_file:
+#            for n in range(self.t.shape[0]):
+#                data_file.write(", , %s, , , , %s, %s, %s, %s, , , , , , , , , %s, %s, , , , , , , , , , \n" %
+#                                                 (str(self.seconds2date(self.t[n])),
+#                                                 str(self.return_lat(float(self.eye_location[n, 0])*10)),
+#                                                 str(self.return_lon(float(self.eye_location[n, 1])*10)),
+#                                                 str(self.max_wind_speed[n]),
+#                                                 str(self.central_pressure[n]),
+#                                                 str(self.storm_radius[n]), 
+#                                                 str(self.max_wind_radius[n])
+#                               ))
         r"""Rewrite the storm in the format 
         used by Hurdat 
         """
         with open(path, 'w') as data_file:
             for n in range(self.t.shape[0]):
-                data_file.write(", , %s, , , , %s, %s, %s, %s, , , , , , , , , %s, %s, , , , , , , , , , \n" %
-                                                 (self.seconds2date(self.t[n]),
-                                                 self.return_lat(float(self.eye_location[n, 0])*10),
-                                                 self.return_lon(float(self.eye_location[n, 1])*10),
-                                                 self.max_wind_speed[n],
-                                                 self.central_pressure[n],
-                                                 self.storm_radius[n], 
-                                                 self.max_wind_radius[n]
+                data_file.write("%s %s %s %s %s %s %s \n" %
+                                                 (str(self.seconds2date(self.t[n])).rjust(10),
+                                                 str(self.return_lat(float(self.eye_location[n, 0])*10)).rjust(5),
+                                                 str(self.return_lon(float(self.eye_location[n, 1])*10)).rjust(5),
+                                                 str(self.max_wind_speed[n]).rjust(3),
+                                                 str(self.central_pressure[n]).rjust(4),
+                                                 str(self.storm_radius[n]).rjust(3), 
+                                                 str(self.max_wind_radius[n]).rjust(3)
                                ))
 
     def write_hurdat2(self, path):
@@ -397,8 +409,73 @@ class Storm(object):
     def write_imd(self, path):
         r""""""
         raise NotImplementedError("IMD format not fully implemented.")
+
+    # =========================================================================
+    # =========================================================================
+    # TO BE DELETED SOME TIME SOON  
     
+    def date2seconds(self,date): 
+        r"""Helper function to transform dates into seconds. 
+
+        Input: Date in format YYYYMMDDHH
+        
+        Output: Difference between date and beginning of the year 
+                returned in units of seconds. 
+        """
+        # Parse data to collect year, month, day, and hour as integers 
+        year = int(date[0:4])
+        month = int(date[4:6])
+        day = int(date[6:8]) 
+        hour = int(date[8:])
+
+        new_year_day = datetime.datetime(year,1,1,0) # Determine first day of year  
+        delta_date = datetime.datetime(year,month,day,hour) - new_year_day
+        date_in_seconds = days2seconds(delta_date.days) + delta_date.seconds
+        return date_in_seconds 
+    
+    def seconds2date(self,seconds): 
+        r"""Helper function to transform second into appropriate date.
+        
+        Input: Date in seconds 
+        
+        Output: Date as YYYYMMDDHH 
+        """
+        new_year_day = datetime.datetime(self.new_year,1,1,0)
+        seconds = int(seconds) 
+        days = seconds/86400
+        secs = seconds%86400
+        delta_date = datetime.timedelta(days,secs)
+        date=new_year_day+delta_date
+        year = str(date.year).rjust(4,'0') 
+        month = str(date.month).rjust(2,'0') 
+        day = str(date.day).rjust(2,'0') 
+        hour = str(date.hour).rjust(2,'0') 
+        date_to_string = "%s%s%s%s" %(year.rjust(4),month.rjust(2),day.rjust(2),hour.rjust(2))  
+        return date_to_string
+    
+    def return_lat(self, lat): 
+        r"""Helper function to transfrom latitude.
+        """
+        if lat > 0: 
+            lat=str(int(lat))+'N'
+        else:
+            lat = lat*-1 
+            lat=str(int(lat))+'S'
+        return lat
+  
+    def return_lon(self,lon): 
+        r"""Helper function to transform longitude.
+        """
+        if lon > 0: 
+            lon=str(int(lon))+'E'
+        else:
+            lon = lon*-1  
+            lon=str(int(lon))+'W'
+        return lon
      
+    # =========================================================================
+    # =========================================================================
+    
     # =========================================================================
     # Other Useful Routines
     def plot(self, axes=None, intensity=False, limits=None, track_color='red',
@@ -637,4 +714,6 @@ def available_models():
 
 if __name__ == '__main__':
     # TODO:  Add commandline ability to convert between formats
-    construct_fields(None, None, None)
+    #construct_fields(None, None, None)
+    base = Storm('al092012-tcvitals-arch.dat', 'tcvitals') 
+    base.write_hurdat('issac.storm')  
