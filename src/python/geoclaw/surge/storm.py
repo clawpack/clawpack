@@ -371,15 +371,34 @@ class Storm(object):
         """
         with open(path, 'w') as data_file:
             for n in range(self.t.shape[0]):
-                data_file.write(", , %s, , , , %s, %s, %s, %s, , , , , , , , , %s, %s, , , , , , , , , , \n" %
-                                                 (self.seconds2date(self.t[n]),
-                                                 self.return_lat(float(self.eye_location[n, 0])*10),
-                                                 self.return_lon(float(self.eye_location[n, 1])*10),
-                                                 self.max_wind_speed[n],
-                                                 self.central_pressure[n],
-                                                 self.storm_radius[n], 
-                                                 self.max_wind_radius[n]
-                               ))
+                data_file.write("".join((", " * 2,
+                                         "%s" % self.seconds2date(self.t[n]),
+                                         ", " * 4,
+                                         "%s" % (int(self.eye_location[n, 0] *
+                                                     10.0))
+                                         ", ",
+                                         "%s" % (int(self.eye_location[n, 1] *
+                                                     10.0))
+                                         ", ",
+                                         "%s" % self.max_wind_speed[n],
+                                         ", ",
+                                         "%s" % self.central_pressure[n],
+                                         ", ",
+                                         ", " * 8,
+                                         "%s" % self.storm_radius[n],
+                                         ", ",
+                                         "%s" % self.max_wind_radius[n],
+                                         ", " * 10,
+                                         "\n")))
+                # data_file.write(", , %s, , , , %s, %s, %s, %s, , , , , , , , , %s, %s, , , , , , , , , , \n" %
+                #                                  (self.seconds2date(self.t[n]),
+                #                                  self.return_lat(float(self.eye_location[n, 0])*10),
+                #                                  self.return_lon(float(self.eye_location[n, 1])*10),
+                #                                  self.max_wind_speed[n],
+                #                                  self.central_pressure[n],
+                #                                  self.storm_radius[n],
+                #                                  self.max_wind_radius[n]
+                               # ))
 
     def write_hurdat2(self, path):
         r"""Write out a HURDAT 2 formatted storm file
