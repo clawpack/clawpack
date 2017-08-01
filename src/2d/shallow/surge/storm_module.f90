@@ -79,7 +79,7 @@ contains
         
         ! Locals
         integer, parameter :: unit = 13
-        integer :: i, drag_law
+        integer :: i, drag_law, model_type
         character(len=200) :: storm_file_path, line
         
         if (.not.module_setup) then
@@ -133,8 +133,6 @@ contains
             read(unit,*)
             
             ! Storm Setup
-            ! :TODO: Need to figure out a way to specify both a data based 
-            !        storm or a storm based on a model paramaterization 
             read(unit, "(i1)") storm_type
             read(unit, "(i1)") model_type
             read(unit, *) storm_file_path
@@ -161,12 +159,13 @@ contains
             if (storm_type == 0) then
                 ! No storm will be used
             else if (storm_type == 1) then
-                ! Track file with Holland reconstruction
-                call set_model_storm(storm_file_path, model_storm, storm_type, 
+                ! Storm fields will be based on a parameterized wind and 
+                ! pressure fields.
+                call set_model_storm(storm_file_path, model_storm, model_type, 
                                      log_unit)
             else if (storm_type == 2) then
-                ! constant track and holland reconstruction
-                call set_data_storm(storm_file_path, data_storm, storm_type, 
+                ! Storm will be set based on a gridded set of data
+                call set_data_storm(storm_file_path, data_storm, model_type, 
                                     log_unit)
             else
                 print *,"Invalid storm type ",storm_type," provided."

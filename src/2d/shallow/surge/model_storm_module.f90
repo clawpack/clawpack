@@ -18,9 +18,6 @@ module model_storm_module
 
     ! Model storm type definition
     type model_storm_type
-        ! Model type to be used
-        integer :: type
-
         ! Fore/hindcast size and current position
         integer :: num_casts
 
@@ -66,8 +63,8 @@ module model_storm_module
 
     ! TODO: define function pointer for each model
     abstract interface
-        subroutine set_fields(maux, mbc, mx, my, xlower, ylower,    &
-                              dx, dy, t, aux, wind_index,           &
+        subroutine set_fields_routine(maux, mbc, mx, my, xlower, ylower,    &
+                              dx, dy, t, aux, wind_index,                   &
                               pressure_index, storm)
             implicit none
             integer, intent(in) :: maux,mbc,mx,my
@@ -75,15 +72,15 @@ module model_storm_module
             type(model_storm_type), intent(in out) :: storm
             integer, intent(in) :: wind_index, pressure_index
             real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-        end subroutine set_fields
+        end subroutine set_fields_routine
     end interface
 
-    procedure(set_fields), pointer :: set_fields
+    procedure(set_fields_routine), pointer :: set_fields
 
 contains
 
     ! Setup routine for model storms
-    subroutine set_storm(storm_data_path, storm, log_unit)
+    subroutine set_model_storm(storm_data_path, storm, model_type, log_unit)
 
         use geoclaw_module, only: deg2rad, spherical_distance, coordinate_system
         use amr_module, only: t0, rinfinity
@@ -93,7 +90,7 @@ contains
         ! Subroutine I/O
         character(len=*), optional :: storm_data_path
         type(model_storm_type), intent(in out) :: storm
-        integer, intent(in) :: log_unit
+        integer, intent(in) :: storm_format, log_unit
 
         ! Local storage
         integer, parameter :: data_file = 701
@@ -108,7 +105,7 @@ contains
 
             ! Open data file
             print *,'Reading storm date file ', storm_data_path
-            open(unit=data_file, file=storm_data_path,status='old',        &
+            open(unit=data_file, file=storm_data_path, status='old',        &
                  action='read', iostat=io_status)
             if (io_status /= 0) then
                 print *, "Error opening storm data file. status = ", io_status
@@ -116,7 +113,7 @@ contains
             endif
 
             ! Set model types
-            select case(storm%type)
+            select case(model_type)
                 case(1) ! Holland 1980 model
                     set_fields => set_holland_1980_fields
                 case(2) ! Holland 2010 model
@@ -124,7 +121,7 @@ contains
                 case(3) ! Chavas, Lin, Emmanuel model
                     set_fields => set_CLE_fields
                 else
-                    print *, "Model type ", storm%type, "not available."
+                    print *, "Model type ", model_type, "not available."
                     stop
             end select
 
@@ -177,7 +174,8 @@ contains
             end do
 
             ! Use last approximation for velocity point going forward
-            storm%velocity(:, storm%num_casts) = storm%velocity(:, storm%num_casts - 1)
+            storm%velocity(:, storm%num_casts) = storm%velocity(:,  &
+                                                            storm%num_casts - 1)
 
             if (t0 < storm%track(1, 1)) then
                 print *,t0,storm%track(1, 1)
@@ -215,45 +213,45 @@ contains
     !    Convert time from year, month, day, hour, min, sec to seconds since the
     !    beginning of the year.
     ! ==========================================================================
-    pure real(kind=8) function date_to_seconds(year,months,days,hours,minutes, &
-                                               seconds) result(time)
+    ! pure real(kind=8) function date_to_seconds(year,months,days,hours,minutes, &
+    !                                            seconds) result(time)
       
-        implicit none
+    !     implicit none
 
-        ! Input
-        integer, intent(in) :: year, months, days, hours, minutes
-        real(kind=8), intent(in) :: seconds
+    !     ! Input
+    !     integer, intent(in) :: year, months, days, hours, minutes
+    !     real(kind=8), intent(in) :: seconds
 
-        ! Local storage
-        integer :: total_days
+    !     ! Local storage
+    !     integer :: total_days
 
-        ! Count number of days
-        total_days = days
+    !     ! Count number of days
+    !     total_days = days
 
-        ! Add days for months that have already passed
-        if (months > 1) total_days = total_days + 31
-        if (months > 2) then
-            if (int(year / 4) * 4 == year) then
-                total_days = total_days + 29
-            else
-                total_days = total_days + 28
-            endif
-        endif
-        if (months > 3)  total_days = total_days + 31
-        if (months > 4)  total_days = total_days + 30
-        if (months > 5)  total_days = total_days + 31
-        if (months > 6)  total_days = total_days + 30
-        if (months > 7)  total_days = total_days + 31
-        if (months > 8)  total_days = total_days + 31
-        if (months > 9)  total_days = total_days + 30
-        if (months > 10) total_days = total_days + 31
-        if (months > 11) total_days = total_days + 30
+    !     ! Add days for months that have already passed
+    !     if (months > 1) total_days = total_days + 31
+    !     if (months > 2) then
+    !         if (int(year / 4) * 4 == year) then
+    !             total_days = total_days + 29
+    !         else
+    !             total_days = total_days + 28
+    !         endif
+    !     endif
+    !     if (months > 3)  total_days = total_days + 31
+    !     if (months > 4)  total_days = total_days + 30
+    !     if (months > 5)  total_days = total_days + 31
+    !     if (months > 6)  total_days = total_days + 30
+    !     if (months > 7)  total_days = total_days + 31
+    !     if (months > 8)  total_days = total_days + 31
+    !     if (months > 9)  total_days = total_days + 30
+    !     if (months > 10) total_days = total_days + 31
+    !     if (months > 11) total_days = total_days + 30
 
-        ! Convert everything to seconds since the beginning of the year
-        time = real((total_days - 1) * 86400 + hours * 3600 + minutes * 60,kind=8)
-        time = time + seconds
+    !     ! Convert everything to seconds since the beginning of the year
+    !     time = real((total_days - 1) * 86400 + hours * 3600 + minutes * 60,kind=8)
+    !     time = time + seconds
 
-    end function date_to_seconds
+    ! end function date_to_seconds
 
 
     ! ==========================================================================
@@ -274,7 +272,8 @@ contains
         ! Junk storage
         real(kind=8) :: junk(2)
 
-        call get_storm_data(t,storm,location, junk, junk(1), junk(1), junk(1), junk(1))
+        call get_storm_data(t,storm,location, junk, junk(1), junk(1), junk(1), &
+                                                    junk(1))
 
     end function storm_location
 
@@ -294,7 +293,8 @@ contains
         real(kind=8) :: junk(2), velocity(2)
 
         ! Fetch velocity of storm which has direction encoded in it
-        call get_storm_data(t, storm, junk, velocity, junk(1), junk(1), junk(1), junk(1))
+        call get_storm_data(t, storm, junk, velocity, junk(1), junk(1),        &
+                                                      junk(1), junk(1))
 
         ! Unit directional vector
         theta = atan2(velocity(2),velocity(1))
