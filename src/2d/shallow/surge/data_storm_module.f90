@@ -18,39 +18,56 @@ module model_storm_module
 
     ! Model storm type definition
     type data_storm_type
-        ! Type of input data
-        integer :: type
+
+        ! Dummy variable
+        integer :: mine
 
     end type data_storm_type
 
+    logical, private :: module_setup = .false.
+
     abstract interface
-        subroutine set_fields(maux, mbc, mx, my, xlower, ylower,    &
-                              dx, dy, t, aux, wind_index,           &
-                              pressure_index, storm)
+        subroutine set_fields_routine(maux, mbc, mx, my, xlower, ylower,    &
+                                      dx, dy, t, aux, wind_index,           &
+                                      pressure_index, storm)
             implicit none
-            integer, intent(in) :: maux,mbc,mx,my
-            real(kind=8), intent(in) :: xlower,ylower,dx,dy,t
+            integer, intent(in) :: maux, mbc, mx, my
+            real(kind=8), intent(in) :: xlower, ylower, dx, dy, t
             type(data_storm_type), intent(in out) :: storm
             integer, intent(in) :: wind_index, pressure_index
             real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-        end subroutine set_fields
+        end subroutine set_fields_routine
     end interface
 
-    procedure(set_fields), pointer :: set_fields
+    procedure(set_fields_routine), pointer :: set_fields
 
 contains
 
     ! Setup routine for model storms
-    subroutine set_storm(storm_data_path, storm, log_unit)
+    subroutine set_storm(storm_data_path, storm, model_type, log_unit)
 
         implicit none
 
         ! Subroutine I/O
         character(len=*), optional :: storm_data_path
         type(data_storm_type), intent(in out) :: storm
-        integer, intent(in) :: log_unit
+        integer, intent(in) :: model_type, log_unit
 
         stop "Data-derived storm are not yet implemented!"
+
+        if (.not. module_setup) then
+
+            ! Set model types
+            select case(model_type)
+                case(1) ! HWRF Data
+                    set_fields => set_HWRF_fields
+                case default
+                    print *, "Model type ", model_type, "not available."
+                    stop
+            end select
+
+            module_setup = .true.
+        end if
 
     end subroutine set_storm
 
