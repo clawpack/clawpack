@@ -1711,6 +1711,7 @@ class SubFault(object):
 
             cos = numpy.cos
             sin = numpy.sin
+            floor = numpy.floor
 
             X1,X2 = numpy.meshgrid(x, y)   # uppercase
             X3 = numpy.zeros(X1.shape)  # depth zero
@@ -1743,19 +1744,19 @@ class SubFault(object):
                 alpha = alpha_list[k]
                 beta = beta_list[k]
 
-                if ((j/3) == 0):
+                if (floor(j/3) == 0):
                     Olong = O1_list[k][0]
                     Olat = O1_list[k][1]
                     Odepth = abs(O1_list[k][2])
-                elif ((j/3) == 1):
+                elif (floor(j/3) == 1):
                     Olong = O2_list[k][0]
                     Olat = O2_list[k][1]
                     Odepth = abs(O2_list[k][2])
 
                 if reverse_list[k]:
-                    sgn = (-1.)**(j/3+1)
+                    sgn = (-1.)**(floor(j/3)+1)
                 else:
-                    sgn = (-1.)**(j/3)
+                    sgn = (-1.)**floor(j/3)
 
                 Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3 = \
                 self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
