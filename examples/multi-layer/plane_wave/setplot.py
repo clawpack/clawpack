@@ -124,11 +124,11 @@ def setplot(plotdata=None,  bathy_location=0.15,  bathy_angle=0.0,
     # Axis limits
     #xlimits = [amrdata.xlower,amrdata.xupper]
     # xlimits = [-0.5,0.5]    # plotting the domain
-    xlimits = [-1.0, 2.0]         # ploting extra space to see edges more clearly
+    xlimits = [-2.0, 4.0]         # ploting extra space to see edges more clearly
 
     #ylimits = [amrdata.ylower,amrdata.yupper]
     # ylimits = [-0.5,0.5]    # plotting the domain
-    ylimits = [-1.0, 2.0]        # ploting extra space to see edges more clearly
+    ylimits = [-2.0, 4.0]        # ploting extra space to see edges more clearly
     
     eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
     top_surface_limits = [eta[0]-.05,eta[0]+.05]

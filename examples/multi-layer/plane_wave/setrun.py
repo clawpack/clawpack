@@ -113,17 +113,17 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
 
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = -1      # west longitude
-    clawdata.upper[0] = 2.0       # east longitude
+    clawdata.lower[0] = -2      # west longitude
+    clawdata.upper[0] = 4.0       # east longitude
 
-    clawdata.lower[1] = -1.0       # south latitude
-    clawdata.upper[1] = 2.0         # north latitude
+    clawdata.lower[1] = -2.0       # south latitude
+    clawdata.upper[1] = 4.0         # north latitude
 
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 80
-    clawdata.num_cells[1] = 80
+    clawdata.num_cells[0] = 80*4
+    clawdata.num_cells[1] = 80*4
 
     # ---------------
     # Size of system:
@@ -163,7 +163,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 3
+    clawdata.output_style = 1
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -327,9 +327,9 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.amr_levels_max = 1
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,4]
-    amrdata.refinement_ratios_y = [2,4]
-    amrdata.refinement_ratios_t = [2,4]
+    amrdata.refinement_ratios_x = [2,2]
+    amrdata.refinement_ratios_y = [2,2]
+    amrdata.refinement_ratios_t = [2,2]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
