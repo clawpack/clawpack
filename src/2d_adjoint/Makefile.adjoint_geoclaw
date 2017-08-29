@@ -28,7 +28,6 @@ COMMON_MODULES += \
 
 #list of common sources needed for adjoint amr code
 COMMON_MODULES += \
-  $(ADJLIB)/amr_reload_module.f90 \
   $(ADJLIB)/adjoint_module.f90 
 
 #list of common sources needed for adjoint geoclaw code
@@ -118,7 +117,6 @@ COMMON_SOURCES += \
 
 # list of source files from GEOCLAW library. 
 COMMON_SOURCES += \
-  $(ADJLIB)/setprob.f90 \
   $(GEOLIB)/qinit.f90 \
   $(GEOLIB)/topo_update.f90 \
   $(GEOLIB)/cellgridintegrate2.f \
@@ -159,8 +157,7 @@ COMMON_SOURCES += \
 
 # list of source files from ADJLIB library. 
 COMMON_SOURCES += \
-  $(ADJLIB)/amr2_reload.f90 \
-  $(ADJLIB)/reload.f \
+  $(ADJLIB)/setprob.f90 \
 
 # list of source files from ADJGEOLIB library. 
 COMMON_SOURCES += \
@@ -169,4 +166,5 @@ COMMON_SOURCES += \
   $(ADJGEOLIB)/interp_adjoint.f \
   $(ADJGEOLIB)/valout.f \
   $(ADJGEOLIB)/setaux.f90 \
+  $(ADJGEOLIB)/reload.f \
 
