@@ -57,7 +57,7 @@ contains
         real(kind=8) :: x_c,y_c,eta,q2,q3
         real(kind=8) :: aux_interp, aux1
 
-        allocate(q_interp(nvar+1))
+        allocate(q_interp(adjoints(r)%meqn + 1))
 
         ! If q is on land, don't computer the inner product
         if(aux1 > 0.d0) then
@@ -65,8 +65,8 @@ contains
             return
         endif
 
-        call interp_adjoint(1, adjoints(r)%lfine, nvar, &
-            naux, x_c,y_c,q_interp, r)
+        call interp_adjoint(adjoints(r)%meqn, &
+            adjoints(r)%naux, x_c,y_c,q_interp, r)
         aux_interp = q_interp(4) - q_interp(1)
 
         ! If q_adjoint is on land, don't computer the inner product
