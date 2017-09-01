@@ -143,7 +143,7 @@ def setrun(claw_pkg='geoclaw'):
         clawdata.output_t0 = True
         
 
-    clawdata.output_format = 'ascii'      # 'ascii' or 'netcdf' 
+    clawdata.output_format = 'binary'      # 'ascii', 'binary', 'netcdf'
 
     clawdata.output_q_components = 'all'   # need all
     clawdata.output_aux_components = 'none'  # eta=h+B is in q
@@ -254,7 +254,7 @@ def setrun(claw_pkg='geoclaw'):
     # Specify when checkpoint files should be created that can be
     # used to restart a computation.
 
-    clawdata.checkpt_style = 3
+    clawdata.checkpt_style = 0
 
     if clawdata.checkpt_style == 0:
         # Do not checkpoint at all
