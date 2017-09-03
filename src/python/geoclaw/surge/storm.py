@@ -16,12 +16,52 @@ import numpy
 import datetime
 
 import clawpack.geoclaw.units as units
+import clawpack.clawutil.data
 
 seconds_per_day = 60.0**2 * 24.0
 
-# Define supported formats and models
-_supported_formats = ["GEOCLAW", "HURDAT", "HURDAT2", "JMA", "IMD", "TCVITALS"]
-_supported_models = ["holland_1980", "holland_2010", "cle_2015"]
+# =============================================================================
+#  Common acronyms across formats
+
+# ATCF basins with their expanded names
+# see https://www.nrlmry.navy.mil/atcf_web/docs/database/new/abrdeck.html
+ATCF_basins = {"AL": "Atlantic",
+               "CP": "Central Pacific",
+               "EP": "East Pacific",
+               "IO": "North Indian Ocean",
+               "SH": "Southern Hemisphere",
+               "SL": "",
+               "WP": "North West Pacific"}
+
+# Tropical Cyclone Designations 
+# see https://www.nrlmry.navy.mil/atcf_web/docs/database/new/abrdeck.html
+TC_designations = {"DB": "disturbance", 
+                   "TD": "tropical depression",
+                   "TS": "tropical storm",
+                   "TY": "typhoon",
+                   "ST": "super typhoon",
+                   "TC": "tropical cyclone",
+                   "HU": "hurricane", 
+                   "SD": "subtropical depression",
+                   "SS": "subtropical storm",
+                   "EX": "extratropical systems", 
+                   "IN": "inland", 
+                   "DS": "dissipating", 
+                   "LO": "low", 
+                   "WV": "tropical wave", 
+                   "ET": "extrapolated",
+                   "XX": "unknown"}
+
+# HURDAT 2 special designations
+# see http://www.aoml.noaa.gov/hrd/data_sub/newHURDAT.html
+hurdat_special_entries = {"L": "landfall",
+                          "W": "max wind",
+                          "P": "min pressure",
+                          "I": "max intensity",
+                          "C": "closest approach",
+                          "S": "status change",
+                          "G": "genesis",
+                          "T": "additional track"}
 
 
 # =============================================================================
@@ -70,12 +110,18 @@ class Storm(object):
        read routine.
     """
 
+    # Define supported formats and models
+    _supported_formats = ["geoclaw", "hurdat", "hurdat2", "jma", "imd", 
+                          "tcvitals"]
+    _supported_models = ["holland_1980", "holland_2010", "cle_2015"]
+
     def __init__(self, path=None, file_format="hurdat2", **kwargs):
         r"""Storm Initiatlization Routine
 
         See :class:`Storm` for more info.
         """
 
+        # Basic storm information
         self.t = None
         self.eye_location = None
         self.max_wind_speed = None
@@ -84,7 +130,14 @@ class Storm(object):
         self.storm_radius = None
         self.time_offset = None
 
-        if path is None:
+        # Storm descriptions - not all formats provide these
+        self.name = None
+        self.basin = None                   # Basin containing storm
+        self.ATCF_code = None               # Triplet containing basin, number, and year
+        self.classification = None          # Classification of storm (e.g. HU)
+        self.event = None                   # Event (e.g. landfall) - HURDAT2
+
+        if path is not None:
             self.read(path, file_format=file_format, **kwargs)
 
     # =========================================================================
@@ -105,7 +158,7 @@ class Storm(object):
            available supported formats a *ValueError* is raised.
         """
 
-        if file_format.upper() not in _supported_formats:
+        if file_format.lower() not in self._supported_formats:
             raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'read_%s' % file_format.lower())(path, **kwargs)
@@ -180,51 +233,131 @@ class Storm(object):
             self.eye_location[n, 0] = lat
             self.eye_location[n, 1] = lon
 
-    def read_hurdat2(self, path):
+    def read_hurdat2(self, path, single_storm=False, name=None, year=None):
         r"""Read in HURDAT 2 formatted storm file
 
         This is the current version of HURDAT data available.  For the old
-        version use *file_format = 'hurdat'*.
+        version use *file_format = 'hurdat'*.  Note that if the file contains
+        multiple storms only the first will be read in unless name and/or year
+        is provided.  
 
         :Input:
          - *path* (string) Path to the file to be read.
+         - *single_storm* (bool) If *True* then this file contains one storm.
+           Default is *single_storm = False*.
+         - *name* (string) If the file contains multiple storms use *name* to
+           search for the correct storm.  If there are multiple storms with the
+           same name then the first one encountered is read in.
+         - *year* (int) Additional filtering criteria.  If there are multiple 
+           storms with the same name use the year of the storm to pick out the
+           right one.
+
+        :Raises:
+         - *ValueError* If the method cannot find the name/year matching the
+           storm or they are not provided when *single_storm == False* then a
+           value error is risen.
         """
 
-        # TODO:  Maybe add ability to filter by storm name?  This might not be
-        #        possible for this format
+        # If no name and/or year are provided then we read until the end of the
+        # file or until we reach another header line
+        if not single_storm:
+            if name is None:
+                err_msg = "".join(("Input indicated that there was more than ",
+                                   "one storm in the file being read.  If ",
+                                   "this is the case then a name must be ",
+                                   "provided to pick out the storm to be read ",
+                                   "in."))
+                raise ValueError(err_msg)
 
-        # Collect data from columns of the same type
-        data = numpy.genfromtxt(path, delimiter=',', skip_header=1, dtype=float,
-                                usecols=(6, 7, 8, 9))
-        self.max_wind_speed = data[:, 0]                # Col 6 Hurdat
-        self.central_pressure = data[:, 1]              # Col 7 Hurdat
-        self.max_wind_radius = data[:, 2]               # Col 8 Hurdat
-        self.storm_radius = data[:, 3]                  # Col 9 Hurdat
+            with open(path, 'r') as hurdat_file:
+                success = False
+                for (n, line) in enumerate(hurdat_file):
+                    if line[:2] in ATCF_basins.keys():
+                        # This is a header line
+                        storm_year = int(line.split(",")[0].strip()[4:])
+                        storm_name = line.split(',')[1].strip()
+                        num_lines = int(line.split(",")[2].strip())
 
-        date = numpy.genfromtxt(path, delimiter=',', skip_header=1, dtype=str,
-                                usecols=(0, 1))
-        self.time_offset = int(str(date[0][0])[0:4])
-        for i in range(date.shape[0]):
-            temp_date = "%s%s" % (date[i][0], date[i][1][0:2])
-            temp_date = self.date2seconds(temp_date)
-            date[i][0] = temp_date
-        self.t = date[:, 0]
+                        if name == storm_name.lower():
+                            if year is not None:
+                                if year == storm_year:
+                                    # Take this storm
+                                    success = True
+                                    break
+                            else:
+                                # Take this storm
+                                success = True
+                                break
 
-        self.eye_location = numpy.genfromtxt(path, delimiter=',', skip_header=1,
-                                             dtype=None, usecols=(4, 5))
-        for n in range(self.eye_location.shape[0]):
-            lat = self.eye_location[n, 0]
-            lon = self.eye_location[n, 1]
-            if lat[-1] == 'N':
-                lat = float(lat[0:-1])
+                # Extract data chunk
+                if success:
+                    self.name = storm_name
+                    self.ATCF_code = line.split(",")[0].strip()
+                    self.basin = self.ATCF_code[:2]
+
+                    data_block = ""
+                    for n in range(num_lines):
+                        line = hurdat_file.readline()
+                        data_block = "".join((data_block, line))
+
+                else:
+                    # Return error based on failure of criteria
+                    err_msg = "".join(("Name %s or year %s " % (name, year), 
+                                       "did not match available ",
+                                       "values.  Please check to make sure",
+                                       "the name and year are present in the",
+                                       "file you provided."))
+                    raise ValueError(err_msg)
+
+        else:
+            # No header, just assume storm data
+            with open(path, 'r') as hurdat_file:
+                data_block = hurdat_file.readlines()
+
+        # Parse data block
+        self.t = []
+        self.event = numpy.empty(len(data_block), dtype=str)
+        self.classification = numpy.empty(len(data_block), dtype=str)
+        self.eye_location = numpy.empty((len(data_block), 2))
+        self.max_wind_speed = numpy.empty(len(data_block))
+        self.central_pressure = numpy.empty(len(data_block))
+        self.max_wind_radius = numpy.empty(len(data_block))
+        self.storm_radius = numpy.empty(len(data_block))
+        for (i, line) in enumerate(data_block.split('\n')):
+            if len(line) == 0:
+                break
+            data = [value.strip() for value in line.split(",")]
+
+            # Create time
+            self.t.append(datetime.datetime(int(data[0][:4]), int(data[0][4:6]), 
+                                            int(data[0][6:8]), int(data[1][:2]),
+                                            int(data[1][2:])))
+
+            # If an event is occuring record it.  If landfall then use as an
+            # offset
+            if len(data[2].strip()) > 0:
+                self.event[i] = data[2].strip()
+                if self.event[i] == "L":
+                    self.time_offset = self.t[i]
+
+            # Classification, note that this is not the category of the storm
+            self.classification[i] = data[3]
+
+            # Parse eye location
+            if data[4][-1] == "N":
+                self.eye_location[i, 0] = float(data[4][0:-1])
             else:
-                lat = -float(lat[0:-1])
-            if lon == 'E':
-                lon = float(lon[0:-1])
+                self.eye_location[i, 0] = -float(data[4][0:-1])
+            if data[5][-1] == "E":
+                self.eye_location[i, 1] = float(data[5][0:-1])
             else:
-                lon = -float(lon[0:-1])
-            self.eye_location[n, 0] = lat
-            self.eye_location[n, 1] = lon
+                self.eye_location[i, 1] = -float(data[5][0:-1])
+
+            # Intensity information
+            self.max_wind_speed[i] = float(data[6])
+            self.central_pressure[i] = float(data[7])
+            self.max_wind_radius[i] = float(data[8])
+            self.storm_radius[i] = float(data[9])
 
     def read_jma(self, path):
         r"""Read in JMA formatted storm file
@@ -335,7 +468,7 @@ class Storm(object):
            available supported formats a *ValueError* is raised.
         """
 
-        if file_format.upper() not in _supported_formats:
+        if file_format.lower() not in self._supported_formats:
             raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'write_%s' % file_format.lower())(path)
@@ -375,10 +508,10 @@ class Storm(object):
                                          "%s" % self.seconds2date(self.t[n]),
                                          ", " * 4,
                                          "%s" % (int(self.eye_location[n, 0] *
-                                                     10.0))
+                                                     10.0)),
                                          ", ",
                                          "%s" % (int(self.eye_location[n, 1] *
-                                                     10.0))
+                                                     10.0)),
                                          ", ",
                                          "%s" % self.max_wind_speed[n],
                                          ", ",
@@ -390,15 +523,6 @@ class Storm(object):
                                          "%s" % self.max_wind_radius[n],
                                          ", " * 10,
                                          "\n")))
-                # data_file.write(", , %s, , , , %s, %s, %s, %s, , , , , , , , , %s, %s, , , , , , , , , , \n" %
-                #                                  (self.seconds2date(self.t[n]),
-                #                                  self.return_lat(float(self.eye_location[n, 0])*10),
-                #                                  self.return_lon(float(self.eye_location[n, 1])*10),
-                #                                  self.max_wind_speed[n],
-                #                                  self.central_pressure[n],
-                #                                  self.storm_radius[n],
-                #                                  self.max_wind_radius[n]
-                               # ))
 
     def write_hurdat2(self, path):
         r"""Write out a HURDAT 2 formatted storm file
@@ -466,7 +590,7 @@ class Storm(object):
         mapping.drawcountries()
         mapping.fillcontinents()
         # Not sure how to do this automatically yet
-        mapping.drawparallels(limits[])
+        # mapping.drawparallels(limits[])
         # mapping.drawparallels((0.0, 20.0), labels=[1, 1])
         # mapping.drawmeridians(numpy.arange(coord[0][0], coord[1][0], 20),
         #                       labels=[0, 1, 1, 1])
@@ -585,6 +709,68 @@ def available_models():
     return ""
 
 
+def hurdat2_storm_list(path=None):
+    r"""Extract the list of storms from a HURDAT2 file
+
+    Returns a list of storms with """
+
+    return None
+
+def get_storm(name, year=None, path=None, force=False, verbose=False):
+    r"""Extract storm data from the HURDAT2 data file
+
+
+    """
+
+    # Check to see if the HURDAT2 data is local and if not attempt to grab it
+    # TODO:  Somehow make the below URL always fetch what's linked rather than
+    #        make it dated
+    # TODO:  Need to fix get_remote_file to better handle non-archived files
+    url = "http://www.aoml.noaa.gov/hrd/hurdat/hurdat2-1851-2016-apr2017.txt"
+    path = clawpack.clawutil.data.get_remote_file(url, force=force, 
+                                                       verbose=verbose)
+
+    # Find the storm name in the file.  If there are duplicates and year is not
+    # specified report valid years
+    with open(path, 'r') as hurdat_file:
+        storm_list = []
+        for (n, line) in enumerate(hurdat_file):
+            if "AL" in line:
+                # This is a line containing a storm name, now extract year
+                storm_name = line.split(',')[1].strip()
+                print(storm_name)
+                if storm_name.lower() == name.lower():
+                    storm_list.append((int(line.split(',')[0][4:]), n + 1))
+
+    print(storm_list)
+
+    # Deterimine which storm to pick
+    years = numpy.array([item[0] for item in storm_list])
+    if year is not None:
+        try:
+            storm_index = numpy.nonzero(year == years)[0][0]
+        except IndexError:
+            err_msg = "".join("Could not find specified year %s.  Available ",
+                              "years are ", years)
+            raise ValueError(err_msg)
+    else:
+        if len(years) == 0:
+            err_msg = "".join("No storms were found with name %s." % name)
+            raise ValueError()
+        elif len(years) > 1:
+            err_msg = "".join(("Multiple storms with the name %s " % name, 
+                               "were found, please specify a year.  ",
+                               "Availalable years include %s." % years))
+            raise ValueError(err_msg)
+        else:
+            storm_index = 0
+
+    # Load the storm data
+    print(storm_name, storm_list[storm_index][0], storm_index)
+
+    return None
+
+
 # =============================================================================
 # Ensmeble Storm Formats
 def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
@@ -651,8 +837,9 @@ def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
                                    mask_coord[1])**2)
             inlcude_storm = numpy.any(distance < mask_distance)
         if mask_category is not None:
-            include storm = include_storm and numpy.any(
-                  storm.category(categorization=categorization) > mask_category)
+            pass
+            # include storm = include_storm and numpy.any(
+            #       storm.category(categorization=categorization) > mask_category)
 
         if include_storm:
             storms.append(storm)
@@ -662,4 +849,4 @@ def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
 
 if __name__ == '__main__':
     # TODO:  Add commandline ability to convert between formats
-    construct_fields(None, None, None)
+    get_storm("IRENE", 1971)
