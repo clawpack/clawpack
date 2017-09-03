@@ -16,6 +16,9 @@ module model_storm_module
     implicit none
     save
 
+    logical, private :: module_setup = .false.
+    logical, private :: DEBUG = .false.
+
     ! Model storm type definition
     type model_storm_type
         ! Fore/hindcast size and current position
@@ -43,13 +46,8 @@ module model_storm_module
 
     end type model_storm_type
 
-    logical, private :: module_setup = .false.
-
     ! Interal tracking variables for storm
-    ! real(kind=8), private :: A,B
     integer, private :: last_storm_index
-
-    logical, private :: DEBUG = .false. 
 
     ! Atmospheric boundary layer, input variable in ADCIRC but always is
     ! set to the following value
@@ -59,25 +57,11 @@ module model_storm_module
     real(kind=8), parameter :: sampling_time = 0.88d0 
 
     ! ! Storm field ramping width - Represents crudely the ramping radial area
-    ! real(kind=8), parameter :: RAMP_WIDTH = 100.0d3
+    real(kind=8), parameter :: RAMP_WIDTH = 100.0d3
 
-    ! TODO: define function pointer for each model
-    abstract interface
-        subroutine set_fields_routine(maux, mbc, mx, my, xlower, ylower,    &
-                              dx, dy, t, aux, wind_index,                   &
-                              pressure_index, storm)
-            implicit none
-            integer, intent(in) :: maux,mbc,mx,my
-            real(kind=8), intent(in) :: xlower,ylower,dx,dy,t
-            type(model_storm_type), intent(in out) :: storm
-            integer, intent(in) :: wind_index, pressure_index
-            real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-        end subroutine set_fields_routine
-    end interface
-
-    procedure(set_fields_routine), pointer :: set_fields
 
 contains
+
 
     ! Setup routine for model storms
     subroutine set_model_storm(storm_data_path, storm, model_type, log_unit)
@@ -89,13 +73,13 @@ contains
 
         ! Subroutine I/O
         character(len=*), optional :: storm_data_path
-        type(model_storm_type), intent(in out) :: storm
-        integer, intent(in) :: storm_format, log_unit
+        type(model_storm_type), intent(inout) :: storm
+        integer, intent(in) :: model_type, log_unit
 
         ! Local storage
         integer, parameter :: data_file = 701
         integer :: i, k, io_status, num_casts
-        real(kind=8) :: forecast_time, last_time, x(2), y(2), ds, dt, dx, dy, 
+        real(kind=8) :: forecast_time, last_time, x(2), y(2), ds, dt, dx, dy
         real(kind=8) :: theta
 
         ! Storm line reading format
@@ -111,19 +95,6 @@ contains
                 print *, "Error opening storm data file. status = ", io_status
                 stop 
             endif
-
-            ! Set model types
-            select case(model_type)
-                case(1) ! Holland 1980 model
-                    set_fields => set_holland_1980_fields
-                case(2) ! Holland 2010 model
-                    set_fields => set_holland_2010_fields
-                case(3) ! Chavas, Lin, Emmanuel model
-                    set_fields => set_CLE_fields
-                else
-                    print *, "Model type ", model_type, "not available."
-                    stop
-            end select
 
             read(data_file, "(i4)") num_casts
             read(data_file, *)
@@ -205,7 +176,7 @@ contains
             module_setup = .true.
         end if
 
-    end subroutine set_storm
+    end subroutine set_model_storm
 
 
     ! ==========================================================================
@@ -412,7 +383,7 @@ contains
             fn = [xy2latlon(x,storm%track(2:3,i)), &
                   storm%velocity(:,i), storm%max_wind_radius(i), &
                   storm%max_wind_speed(i), storm%central_pressure(i), &
-                  storm%rrp(i)]
+                  storm%radius(i)]
         else
             ! Inbetween two forecast time points (the function storm_index
             ! ensures that we are not before the first data point, i.e. i > 1)
@@ -421,10 +392,10 @@ contains
             weight = (t - tnm) / (tn - tnm)
             fn = [storm%track(2:3,i),storm%velocity(:,i), &
                   storm%max_wind_radius(i),storm%max_wind_speed(i), &
-                  storm%central_pressure(i), storm%rrp(i)]
+                  storm%central_pressure(i), storm%radius(i)]
             fnm = [storm%track(2:3,i - 1),storm%velocity(:,i - 1), &
                    storm%max_wind_radius(i - 1),storm%max_wind_speed(i - 1), &
-                  storm%central_pressure(i - 1), storm%rrp(i - 1)]
+                  storm%central_pressure(i - 1), storm%radius(i - 1)]
             fn = weight * (fn - fnm) + fnm
         endif
 
@@ -460,20 +431,20 @@ contains
 
         ! Storm description, need in out here since we may update the storm
         ! if at next time point
-        type(model_storm_type), intent(in out) :: storm
+        type(model_storm_type), intent(inout) :: storm
 
         ! Array storing wind and presure field
         integer, intent(in) :: wind_index, pressure_index
         real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
         ! Local storage
-        real(kind=8) :: x, y, r, theta, sloc(2)
-        real(kind=8) :: f, mwr, mws, Pc, Pa, dp, wind, tv(2), rrp
+        real(kind=8) :: x, y, r, theta, sloc(2), B
+        real(kind=8) :: f, mwr, mws, Pc, Pa, dp, wind, tv(2), radius
         real(kind=8) :: mod_mws, trans_speed, ramp
         integer :: i,j
 
         ! Get interpolated storm data
-        call get_storm_data(t, storm, sloc, tv, mwr, mws, Pc, rrp)
+        call get_storm_data(t, storm, sloc, tv, mwr, mws, Pc, radius)
         
         ! Other quantities of interest
         Pa = ambient_pressure
@@ -544,7 +515,7 @@ contains
                                                     + (abs(wind) / mws) * tv(2)
 
                 ! Apply distance ramp down(up) to fields to limit scope
-                ramp = 0.5d0 * (1.d0 - tanh((r - rrp) / RAMP_WIDTH))
+                ramp = 0.5d0 * (1.d0 - tanh((r - radius) / RAMP_WIDTH))
                 aux(pressure_index,i,j) = Pa + (aux(pressure_index,i,j) - Pa) &
                                         * ramp
                 aux(wind_index:wind_index+1,i,j) =                        &
@@ -571,7 +542,7 @@ contains
 
         ! Storm description, need in out here since we may update the storm
         ! if at next time point
-        type(model_storm_type), intent(in out) :: storm
+        type(model_storm_type), intent(inout) :: storm
 
         ! Array storing wind and presure field
         integer, intent(in) :: wind_index, pressure_index
@@ -598,7 +569,7 @@ contains
 
         ! Storm description, need in out here since we may update the storm
         ! if at next time point
-        type(model_storm_type), intent(in out) :: storm
+        type(model_storm_type), intent(inout) :: storm
 
         ! Array storing wind and presure field
         integer, intent(in) :: wind_index, pressure_index
