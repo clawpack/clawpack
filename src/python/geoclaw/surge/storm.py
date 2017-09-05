@@ -30,7 +30,8 @@ ATCF_basins = {"AL": "Atlantic",
                "EP": "East Pacific",
                "IO": "North Indian Ocean",
                "SH": "Southern Hemisphere",
-               "SL": "",
+               "SL": "Southern Atlantic",
+               "LS": "Southern Atlantic",
                "WP": "North West Pacific"}
 
 # Tropical Cyclone Designations 
@@ -61,7 +62,7 @@ hurdat_special_entries = {"L": "landfall",
                           "C": "closest approach",
                           "S": "status change",
                           "G": "genesis",
-                          "T": "additional track"}
+                          "T": "additional track point"}
 
 
 # =============================================================================
@@ -239,7 +240,11 @@ class Storm(object):
         This is the current version of HURDAT data available.  For the old
         version use *file_format = 'hurdat'*.  Note that if the file contains
         multiple storms only the first will be read in unless name and/or year
-        is provided.  
+        is provided.
+
+        For more details on the HURDAT 2 format and getting data see
+
+        http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html
 
         :Input:
          - *path* (string) Path to the file to be read.
@@ -299,6 +304,8 @@ class Storm(object):
                     for n in range(num_lines):
                         line = hurdat_file.readline()
                         data_block = "".join((data_block, line))
+                    data_block = data_block[:-1].split('\n')
+                    assert len(data_block) == num_lines
 
                 else:
                     # Return error based on failure of criteria
@@ -311,19 +318,20 @@ class Storm(object):
 
         else:
             # No header, just assume storm data
+            data_block = []
             with open(path, 'r') as hurdat_file:
-                data_block = hurdat_file.readlines()
+                data_block.append(hurdat_file.readlines())
 
         # Parse data block
         self.t = []
-        self.event = numpy.empty(len(data_block), dtype=str)
-        self.classification = numpy.empty(len(data_block), dtype=str)
-        self.eye_location = numpy.empty((len(data_block), 2))
-        self.max_wind_speed = numpy.empty(len(data_block))
-        self.central_pressure = numpy.empty(len(data_block))
-        self.max_wind_radius = numpy.empty(len(data_block))
-        self.storm_radius = numpy.empty(len(data_block))
-        for (i, line) in enumerate(data_block.split('\n')):
+        self.event = numpy.empty(num_lines, dtype=str)
+        self.classification = numpy.empty(num_lines, dtype=str)
+        self.eye_location = numpy.empty((num_lines, 2))
+        self.max_wind_speed = numpy.empty(num_lines)
+        self.central_pressure = numpy.empty(num_lines)
+        self.max_wind_radius = numpy.empty(num_lines)
+        self.storm_radius = numpy.empty(num_lines)
+        for (i, line) in enumerate(data_block):
             if len(line) == 0:
                 break
             data = [value.strip() for value in line.split(",")]
@@ -334,10 +342,11 @@ class Storm(object):
                                             int(data[1][2:])))
 
             # If an event is occuring record it.  If landfall then use as an
-            # offset
+            # offset.   Note that if there are multiple landfalls the last one
+            # is used as the offset
             if len(data[2].strip()) > 0:
                 self.event[i] = data[2].strip()
-                if self.event[i] == "L":
+                if self.event[i].upper() == "L":
                     self.time_offset = self.t[i]
 
             # Classification, note that this is not the category of the storm
@@ -713,60 +722,6 @@ def hurdat2_storm_list(path=None):
     r"""Extract the list of storms from a HURDAT2 file
 
     Returns a list of storms with """
-
-    return None
-
-def get_storm(name, year=None, path=None, force=False, verbose=False):
-    r"""Extract storm data from the HURDAT2 data file
-
-
-    """
-
-    # Check to see if the HURDAT2 data is local and if not attempt to grab it
-    # TODO:  Somehow make the below URL always fetch what's linked rather than
-    #        make it dated
-    # TODO:  Need to fix get_remote_file to better handle non-archived files
-    url = "http://www.aoml.noaa.gov/hrd/hurdat/hurdat2-1851-2016-apr2017.txt"
-    path = clawpack.clawutil.data.get_remote_file(url, force=force, 
-                                                       verbose=verbose)
-
-    # Find the storm name in the file.  If there are duplicates and year is not
-    # specified report valid years
-    with open(path, 'r') as hurdat_file:
-        storm_list = []
-        for (n, line) in enumerate(hurdat_file):
-            if "AL" in line:
-                # This is a line containing a storm name, now extract year
-                storm_name = line.split(',')[1].strip()
-                print(storm_name)
-                if storm_name.lower() == name.lower():
-                    storm_list.append((int(line.split(',')[0][4:]), n + 1))
-
-    print(storm_list)
-
-    # Deterimine which storm to pick
-    years = numpy.array([item[0] for item in storm_list])
-    if year is not None:
-        try:
-            storm_index = numpy.nonzero(year == years)[0][0]
-        except IndexError:
-            err_msg = "".join("Could not find specified year %s.  Available ",
-                              "years are ", years)
-            raise ValueError(err_msg)
-    else:
-        if len(years) == 0:
-            err_msg = "".join("No storms were found with name %s." % name)
-            raise ValueError()
-        elif len(years) > 1:
-            err_msg = "".join(("Multiple storms with the name %s " % name, 
-                               "were found, please specify a year.  ",
-                               "Availalable years include %s." % years))
-            raise ValueError(err_msg)
-        else:
-            storm_index = 0
-
-    # Load the storm data
-    print(storm_name, storm_list[storm_index][0], storm_index)
 
     return None
 
