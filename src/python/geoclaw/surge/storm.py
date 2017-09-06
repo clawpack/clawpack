@@ -609,17 +609,6 @@ class Storm(object):
     def category(self, categorization="NHC"):
         r"""Categorizes storm based on relevant storm data
 
-        :Category Mappings:
-         - "NHC":  -1 (Tropical Depression),
-                    0 (Tropical Storm),
-                    1 (Category 1 Hurricane),
-                    2 (Category 2 Hurricane),
-                    3 (Category 3 Hurricane),
-                    4 (Category 4 Hurricane),
-                    5 (Category 5 Hurricane)
-         - "JMA":
-         - "IMD":
-
         :Input:
          - *categorization* (string) Type of categorization to use.  Defaults to
            the National Hurricane Center "NHC".
@@ -633,16 +622,53 @@ class Storm(object):
 
         """
 
-        if categorization.upper() == "NHC":
-            # TODO:  Check to see if these are in knots or mph.  Definitely not
+        # TODO:  Need to standardize on 1-minute (almost never available) or 
+        # 10-minute (widely available) - see 
+        # https://en.wikipedia.org/wiki/Tropical_cyclone#Major_basins_and_related_warning_centers
+
+
+        if categorization.upper() == "BEAUFORT":
+            # Beaufort scale below uses knots
+            speeds = units.convert(self.max_wind_speed, "m/s", "knots")
+            category = numpy.zeros(speeds) + \
+                       (speeds >= 1) * (speeds < 4) * 1 + \
+                       (speeds >= 4) * (speeds < 7) * 2 + \
+                       (speeds >= 7) * (speeds < 11) * 3 + \
+                       (speeds >= 11) * (speeds < 17) * 4 + \
+                       (speeds >= 17) * (speeds < 22) * 5 + \
+                       (speeds >= 22) * (speeds < 28) * 6 + \
+                       (speeds >= 28) * (speeds < 34) * 7 + \
+                       (speeds >= 34) * (speeds < 41) * 8 + \
+                       (speeds >= 41) * (speeds < 48) * 9 + \
+                       (speeds >= 48) * (speeds < 56) * 10 + \
+                       (speeds >= 56) * (speeds < 64) * 11 + \
+                       (speeds >= 64) * 12
+            cat_map = { 0: "Calm",
+                        1: "Light air",
+                        2: "Light breeze",
+                        3: "Gentle breeze",
+                        4: "Moderate breeze",
+                        5: "Fresh breeze",
+                        6: "Strong breeze",
+                        7: "High wind",
+                        8: "Gale",
+                        9: "Strong gale",
+                       10: "Whole gale",
+                       11: "Violent storm",
+                       12: "Hurricane"}
+
+        elif categorization.upper() == "NHC":
+            # TODO:  Change these to m/s (knots are how these are defined).  Definitely not
             #        in the correct format now
             # TODO:  Add TD and TS designations
-            category = numpy.zeros(self.max_wind_speed) + \
-                       (self.max_wind_speed >= 64) * (self.max_wind_speed < 83) * 1 + \
-                       (self.max_wind_speed >= 83) * (self.max_wind_speed < 96) * 2 + \
-                       (self.max_wind_speed >= 96) * (self.max_wind_speed < 113) * 3 + \
-                       (self.max_wind_speed >= 113) * (self.max_wind_speed < 135) * 4 + \
-                       (self.max_wind_speed >= 135) * 5
+            speeds = units.convert(self.max_wind_speed, "m/s", "knots")
+            category = numpy.zeros(speeds) + \
+                       (speeds < 30) * -1 + \
+                       (speeds >= 64) * (speeds < 83) * 1 + \
+                       (speeds >= 83) * (speeds < 96) * 2 + \
+                       (speeds >= 96) * (speeds < 113) * 3 + \
+                       (speeds >= 113) * (speeds < 135) * 4 + \
+                       (speeds >= 135) * 5
             cat_map = {-1: "Tropical Depression",
                         0: "Tropical Storm",
                         1: "Category 1 Hurricane",
@@ -651,10 +677,16 @@ class Storm(object):
                         4: "Category 4 Hurricane",
                         5: "Category 5 Hurricane"}
 
+        elif categorization.upper() == "JTWC":
+            raise NotImplementedError("JTWC categorization not implemented.")
         elif categorization.upper() == "JMA":
             raise NotImplementedError("JMA categorization not implemented.")
         elif categorization.upper() == "IMD":
             raise NotImplementedError("IMD categorization not implemented.")
+        elif categorization.upper() == "MF":
+            raise NotImplementedError("MF categorization not implemented.")
+        elif categorization.upper() == "BOM":
+            raise NotImplementedError("BOM categorization not implemented.")
         else:
             raise ValueError("Categorization %s not available."
                              % categorization)
