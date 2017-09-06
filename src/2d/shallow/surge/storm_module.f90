@@ -50,6 +50,36 @@ module storm_module
     type(model_storm_type), save :: model_storm
     type(data_storm_type), save :: data_storm
 
+    ! Interface to each of the parameterized models
+    abstract interface
+        subroutine set_model_field_def(maux, mbc, mx, my, xlower, ylower, &
+                                      dx, dy, t, aux, wind_index,              &
+                                      pressure_index, storm)
+            implicit none
+            integer, intent(in) :: maux,mbc,mx,my
+            real(kind=8), intent(in) :: xlower,ylower,dx,dy,t
+            type(model_storm_type), intent(inout) :: storm
+            integer, intent(in) :: wind_index, pressure_index
+            real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
+        end subroutine set_model_field_def
+    end interface
+
+    abstract interface
+        subroutine set_data_field_def(maux, mbc, mx, my, xlower, ylower,    &
+                                      dx, dy, t, aux, wind_index,           &
+                                      pressure_index, storm)
+            implicit none
+            integer, intent(in) :: maux, mbc, mx, my
+            real(kind=8), intent(in) :: xlower, ylower, dx, dy, t
+            type(data_storm_type), intent(in out) :: storm
+            integer, intent(in) :: wind_index, pressure_index
+            real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
+        end subroutine set_data_fields
+    end interface
+
+    procedure(set_model_field_def), pointer :: set_model_fields
+    procedure(set_data_field_def), pointer :: set_data_fields
+
     ! Wind drag maximum limit
     real(kind=8), parameter :: WIND_DRAG_LIMIT = 2.d-3
 
@@ -161,10 +191,31 @@ contains
             else if (storm_type == 1) then
                 ! Storm fields will be based on a parameterized wind and 
                 ! pressure fields.
+                ! Set model types
+                select case(model_type)
+                    case(1) ! Holland 1980 model
+                        set_model_fields => set_holland_1980_fields
+                    case(2) ! Holland 2010 model
+                        set_model_fields => set_holland_2010_fields
+                    case(3) ! Chavas, Lin, Emmanuel model
+                        set_model_fields => set_CLE_fields
+                    case default
+                        print *, "Model type ", model_type, "not available."
+                        stop
+                end select
+
                 call set_model_storm(storm_file_path, model_storm, model_type, 
                                      log_unit)
+
             else if (storm_type == 2) then
                 ! Storm will be set based on a gridded set of data
+                select case(model_type)
+                    case(1) ! HWRF Data
+                        set_data_fields => set_HWRF_fields
+                    case default
+                        print *, "Model type ", model_type, "not available."
+                        stop
+                end select
                 call set_data_storm(storm_file_path, data_storm, model_type, 
                                     log_unit)
             else
@@ -358,9 +409,6 @@ contains
 
     subroutine set_storm_fields(maux, mbc, mx, my, xlower, ylower, dx, dy,&
                                 t, aux)
-
-        use model_storm_module, only: set_model_fields => set_fields
-        use data_storm_module, only: set_data_fields => set_fields
 
         implicit none
 
