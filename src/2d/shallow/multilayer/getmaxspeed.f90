@@ -1,8 +1,8 @@
 ! TODO: Need to calculate this for shallow water speeds of each layer
 real(kind=8) pure function get_max_speed(val,mitot,mjtot,nvar,aux,naux,nghost,hx,hy)
     
-    use geoclaw_module, only: grav,earth_radius,DEG2RAD,coordinate_system
-    use multilayer_module, only: dry_tolerance, rho, num_layers
+    use geoclaw_module, only: grav,earth_radius,DEG2RAD,coordinate_system,rho
+    use multilayer_module, only: dry_tolerance, num_layers
       
     implicit none
     

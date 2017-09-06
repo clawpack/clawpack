@@ -292,10 +292,11 @@ contains
             end do 
         end do
 
-
         do i = 1, num_gauges
-          if (mbestsrc(i) .eq. 0) &
-              print *, "ERROR in setting grid src for gauge data", i
+            if (mbestsrc(i) .eq. 0) then
+                print *, "ERROR in setting grid src for gauge data",      &
+                         gauges(i)%gauge_num
+            end if
         end do
 
         ! Sort the source arrays for easy testing during integration
@@ -365,7 +366,9 @@ contains
         use amr_module, only: nestlevel, nghost, timemult, rnode, node, maxvar
         use amr_module, only: hxposs, hyposs
 
-        use multilayer_module, only: num_layers, dry_tolerance, rho, eta_init
+        use geoclaw_module, only: rho
+
+        use multilayer_module, only: num_layers, dry_tolerance, eta_init
 
         implicit none
 

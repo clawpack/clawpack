@@ -4,7 +4,8 @@ c
       subroutine valout (lst, lend, time, nvar, naux)
 c
       use amr_module
-      use multilayer_module, only: num_layers, rho
+      use geoclaw_module, only: rho
+      use multilayer_module, only: num_layers
       implicit double precision (a-h,o-z)
       character(len=10) :: fname1, fname2, fname3, fname4
 
@@ -152,12 +153,13 @@ c                 # output in 1d format if ny=1:
                     endif
                   enddo
 
-                  write(matunit1,109) (h(k),hu(k),hv(k),k=1,num_layers),
-     &                                (eta(k),k=1,num_layers)
+                  write(matunit1,109) 
+     &                         (h(k), hu(k), hv(k), k = 1, num_layers),
+     &                         (eta(k), k=1, num_layers)
                 enddo
                 write(matunit1,*) ' '
              enddo
-  109        format(4e26.16)
+  109        format(50e26.16)
          endif
 
          if (output_format == 3) then

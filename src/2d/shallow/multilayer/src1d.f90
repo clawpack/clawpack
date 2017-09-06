@@ -27,6 +27,10 @@ subroutine src1d(meqn,mbc,mx1d,q1d,maux,aux1d,t,dt)
     ! friction source term
     real(kind=8), parameter :: depth_tolerance = 1.0d-30
     
+    ! Pressure forcing
+    ! Handled in Riemann solver
+    
+
     ! Friction forcing
     if (friction_forcing) then
 

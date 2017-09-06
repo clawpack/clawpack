@@ -449,6 +449,8 @@ program amr2
         open(outunit, file=outfile, status='unknown', position='append', &
                       form='formatted')
 
+        ! moved upt before restrt or won't properly initialize 
+        call set_fgmax()   
         call restrt(nsteps,time,nvar,naux)
         nstart  = nsteps
         tstart_thisrun = time
@@ -471,7 +473,6 @@ program amr2
         call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar, naux) ! Set gauge output
-        call set_fgmax()
 
     else
 

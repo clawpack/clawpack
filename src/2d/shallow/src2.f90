@@ -6,9 +6,9 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use geoclaw_module, only: manning_break, num_manning
     use geoclaw_module, only: spherical_distance, coordinate_system
     use geoclaw_module, only: RAD2DEG, pi, dry_tolerance
+    use geoclaw_module, only: rho_air
       
-    use storm_module, only: wind_forcing, pressure_forcing
-    use storm_module, only: rho_air, wind_drag, ambient_pressure
+    use storm_module, only: wind_forcing, pressure_forcing, wind_drag
     use storm_module, only: wind_index, pressure_index
     use storm_module, only: storm_direction, storm_location
 
@@ -124,41 +124,42 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     ! ----------------------------------------------------------------
 
     ! Atmosphere Pressure --------------------------------------------
-    if (pressure_forcing) then
-        do j=1,my  
-            ym = ylower + (j - 1.d0) * dy
-            yc = ylower + (j - 0.5d0) * dy
-            yp = ylower + j * dy
-            do i=1,mx  
-                xm = xlower + (i - 1.d0) * dx
-                xc = xlower + (i - 0.5d0) * dx
-                xp = xlower + i * dx
+    ! Handled in Riemann solver
+    ! if (pressure_forcing) then
+    !     do j=1,my  
+    !         ym = ylower + (j - 1.d0) * dy
+    !         yc = ylower + (j - 0.5d0) * dy
+    !         yp = ylower + j * dy
+    !         do i=1,mx  
+    !             xm = xlower + (i - 1.d0) * dx
+    !             xc = xlower + (i - 0.5d0) * dx
+    !             xp = xlower + i * dx
                 
-                if (coordinate_system == 2) then
-                    ! Convert distance in lat-long to meters
-                    dx_meters = spherical_distance(xp,yc,xm,yc)
-                    dy_meters = spherical_distance(xc,yp,xc,ym)
-                else
-                    dx_meters = dx
-                    dy_meters = dy
-                endif
+    !             if (coordinate_system == 2) then
+    !                 ! Convert distance in lat-long to meters
+    !                 dx_meters = spherical_distance(xp,yc,xm,yc)
+    !                 dy_meters = spherical_distance(xc,yp,xc,ym)
+    !             else
+    !                 dx_meters = dx
+    !                 dy_meters = dy
+    !             endif
 
-                ! Extract depths
-                h = q(1,i,j)
+    !             ! Extract depths
+    !             h = q(1,i,j)
 
-                ! Calculate gradient of Pressure
-                P_gradient(1) = (aux(pressure_index,i+1,j) &
-                               - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
-                P_gradient(2) = (aux(pressure_index,i,j+1) &
-                               - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
+    !             ! Calculate gradient of Pressure
+    !             P_gradient(1) = (aux(pressure_index,i+1,j) &
+    !                            - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
+    !             P_gradient(2) = (aux(pressure_index,i,j+1) &
+    !                            - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
 
-                    ! Modify momentum in each layer
-                if (h > dry_tolerance) then
-                    q(2, i, j) = q(2, i, j) - dt * h * P_gradient(1) / rho
-                    q(3, i, j) = q(3, i, j) - dt * h * P_gradient(2) / rho
-                end if
-            enddo
-        enddo
-    endif
+    !                 ! Modify momentum in each layer
+    !             if (h > dry_tolerance) then
+    !                 q(2, i, j) = q(2, i, j) - dt * h * P_gradient(1) / rho
+    !                 q(3, i, j) = q(3, i, j) - dt * h * P_gradient(2) / rho
+    !             end if
+    !         enddo
+    !     enddo
+    ! endif
 
 end subroutine src2
