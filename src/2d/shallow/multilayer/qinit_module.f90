@@ -80,7 +80,8 @@ contains
 
     subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use multilayer_module, only: num_layers, eta_init, rho
+        use multilayer_module, only: num_layers, eta_init
+        use geoclaw_module, only: rho
     
         implicit none
     

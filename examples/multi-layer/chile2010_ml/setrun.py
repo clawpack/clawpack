@@ -388,6 +388,8 @@ def setgeo(rundata):
     geo_data.friction_forcing = True
     geo_data.manning_coefficient =.025
     geo_data.friction_depth = 1e6
+    geo_data.rho = [0.98, 1.0]
+
 
     # Refinement settings
     refinement_data = rundata.refinement_data
@@ -439,7 +441,6 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [0.98, 1.0]
     data.eta = [0.0,-250.0]
     data.wave_tolerance = [1.e-3, 1.e-2]  # not the right values
     
