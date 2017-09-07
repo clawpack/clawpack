@@ -24,41 +24,50 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                        tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
 
     use amr_module, only: mxnest, t0
-    use geoclaw_module, only:dry_tolerance,rho,eta_init,num_layers
-    
+    use geoclaw_module, only: sea_level, rho
+    use geoclaw_module, only: spherical_distance, coordinate_system
+
     use topo_module, only: tlowtopo,thitopo,xlowtopo,xhitopo,ylowtopo,yhitopo
     use topo_module, only: minleveltopo,mtopofiles
-    
-    use dtopo_module, only: tfdtopo,xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
-    use dtopo_module, only: minleveldtopo,num_dtopo
-    
+
+    use topo_module, only: tfdtopo,xlowdtopo,xhidtopo,ylowdtopo,yhidtopo
+    use topo_module, only: minleveldtopo,num_dtopo
+
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
     use qinit_module, only: min_level_qinit,qinit_type
-    
+
+    use storm_module, only: storm_type, wind_refine, R_refine, storm_location
+    use storm_module, only: wind_forcing, wind_index, wind_refine
+
     use regions_module, only: num_regions, regions
-    use refinement_module
- 
+    use refinement_module, only: speed_tolerance, deep_depth, max_level_deep
+
+    use multilayer_module, only: num_layers, eta_init, dry_tolerance, wave_tolerance
+
     implicit none
-    
+
     ! Subroutine arguments
     integer, intent(in) :: mx,my,mbc,meqn,maux,level,mbuff
     real(kind=8), intent(in) :: xlower,ylower,dx,dy,t,tolsp
-    
+
     real(kind=8), intent(in) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
     real(kind=8), intent(in) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-    
+
     ! Flagging
     real(kind=8), intent(in out) :: amrflags(1-mbuff:mx+mbuff,1-mbuff:my+mbuff)
     real(kind=8), intent(in) :: DONTFLAG
     real(kind=8), intent(in) :: DOFLAG
-    
+
     logical :: allowflag
     external allowflag
-    
+
     ! Generic locals
-    integer :: i,j,m,k,layer_index
+    integer :: i, j, m, layer
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
-    real(kind=8) :: h(num_layers), total_depth, speed, eta, eta_below, ds
+    real(kind=8) :: speed, eta, ds, b
+
+    ! Storm specific variables
+    real(kind=8) :: R_eye(2), wind_speed
 
     ! Initialize flags
     amrflags = DONTFLAG
@@ -69,7 +78,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
         y_low = ylower + (j - 1) * dy
         y_c = ylower + (j - 0.5d0) * dy
         y_hi = ylower + j * dy
-        
+
         x_loop: do i = 1,mx
             x_low = xlower + (i - 1) * dx
             x_c = xlower + (i - 0.5d0) * dx
@@ -78,12 +87,43 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! The following conditions are only checked in the horizontal and
             ! override the allowflag routine
 
+            ! ************* Storm Based Refinement ****************
+            ! Check to see if we are some specified distance from the eye of
+            ! the storm and refine if we are
+            if (storm_type > 0) then
+                R_eye = storm_location(t)
+                do m=1,size(R_refine,1)
+                    if (coordinate_system == 2) then
+                        ds = spherical_distance(x_c, y_c, R_eye(1), R_eye(2))
+                    else
+                        ds = sqrt((x_c - R_eye(1))**2 + (y_c - R_eye(2))**2)
+                    end if
+                    
+                    if ( ds < R_refine(m) .and. level <= m ) then
+                        amrflags(i,j) = DOFLAG
+                        cycle x_loop
+                    endif
+                enddo
+                
+                ! Refine based on wind speed
+                if (wind_forcing) then
+                    wind_speed = sqrt(aux(wind_index,i,j)**2 + aux(wind_index+1,i,j)**2)
+                    do m=1,size(wind_refine,1)
+                        if ((wind_speed > wind_refine(m)) .and. (level <= m)) then
+                            amrflags(i,j) = DOFLAG
+                            cycle x_loop
+                        endif
+                    enddo
+                endif
+            endif
+            ! *****************************************************
+
             ! Check to see if refinement is forced in any topography file region:
             do m=1,mtopofiles
                 if (level < minleveltopo(m) .and. t >= tlowtopo(m) .and. t <= thitopo(m)) then
                     if (  x_hi > xlowtopo(m) .and. x_low < xhitopo(m) .and. &
                           y_hi > ylowtopo(m) .and. y_low < yhitopo(m) ) then
-                        
+
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
                     endif
@@ -96,7 +136,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                     t >= regions(m)%t_low .and. t <= regions(m)%t_hi) then
                     if (x_hi > regions(m)%x_low .and. x_low < regions(m)%x_hi .and. &
                         y_hi > regions(m)%y_low .and. y_low < regions(m)%y_hi ) then
-                    
+
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
                     endif
@@ -110,8 +150,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                     t <= tfdtopo(m) .and. & !t.ge.t0dtopo(m).and.
                     x_hi > xlowdtopo(m) .and. x_low < xhidtopo(m).and. &
                     y_hi > ylowdtopo(m) .and. y_low < yhidtopo(m)) then
-                    
-                    amrflags(i,j) = DOFLAG    
+
+                    amrflags(i,j) = DOFLAG
                     cycle x_loop
                 endif
             enddo
@@ -120,11 +160,11 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! specified and need to force refinement:
             ! This assumes that t0 = 0.d0, should really be t0 but we do
             ! not have access to that parameter in this routine
-            if (qinit_type > t0 .and. t == 0.d0) then 
-                if (level < min_level_qinit .and. & 
+            if (qinit_type > 0 .and. t == t0) then
+                if (level < min_level_qinit .and. &
                     x_hi > x_low_qinit .and. x_low < x_hi_qinit .and. &
                     y_hi > y_low_qinit .and. y_low < y_hi_qinit) then
-                    
+
                     amrflags(i,j) = DOFLAG
                     cycle x_loop
                 endif
@@ -134,54 +174,44 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! Refinement not forced, so check if it is allowed and if so,
             ! check if there is a reason to flag this point:
             if (allowflag(x_c,y_c,t,level)) then
-                ! These refinement criteria are checked per layer going backwards
-                ! The bottom layer is checked first and eta_below is set to the 
-                ! bathymetry
-                eta_below = aux(1,i,j)
-                
-                forall(k=1:num_layers)
-                    h(k) = q(3 * (k - 1) + 1,i,j) / rho(k)
-                end forall
-                total_depth = sum(h)
+                b = aux(1,i,j)
+                do layer = num_layers, 1, -1
+                    if (q(3*layer-2,i,j) / rho(layer) > dry_tolerance(layer)) then
 
-                do k=num_layers,1,-1
-                    layer_index = 3 * (k - 1)
-                    
-                    ! Extract state
-                    if (h(k) > dry_tolerance(k)) then
-                        eta = h(k) + eta_below
-                    
+                        eta = q(3*layer-2,i,j) / rho(layer) + b
+
                         ! Check wave criteria
-                        if (abs(eta - eta_init(k)) > wave_tolerance(k)) then
+                        if (abs(eta - eta_init(layer)) > wave_tolerance(layer)) then
                             ! Check to see if we are near shore
-                            if (total_depth < deep_depth) then
+                            if (q(3*layer-2,i,j) / rho(layer) < deep_depth) then
+!                                 print *, "1"
                                 amrflags(i,j) = DOFLAG
                                 cycle x_loop
                             ! Check if we are allowed to flag in deep water
                             ! anyway
                             else if (level < max_level_deep) then
+!                                 print *, "2"
                                 amrflags(i,j) = DOFLAG
                                 cycle x_loop
                             endif
                         endif
-                        eta_below = eta
-                    
-                        ! Check speed criteria, note that it might be useful to 
-                        ! also have a per layer criteria since this is not 
+
+                        ! Check speed criteria, note that it might be useful to
+                        ! also have a per layer criteria since this is not
                         ! gradient based
-                        speed = sqrt(q(layer_index+2,i,j)**2 &
-                                   + q(layer_index+3,i,j)**2) &
-                                   / q(layer_index+1,i,j)
+                        speed = sqrt(q(3*layer-1,i,j)**2 + q(3*layer,i,j)**2) / q(3*layer-2,i,j)
                         do m=1,min(size(speed_tolerance),mxnest)
                             if (speed > speed_tolerance(m) .and. level <= m) then
                                 amrflags(i,j) = DOFLAG
                                 cycle x_loop
                             endif
                         enddo
+                        b = b + q(3*layer-2,i,j) / rho(layer)
+
                     endif
                 enddo
             endif
-            
+
         enddo x_loop
     enddo y_loop
 end subroutine flag2refine2
