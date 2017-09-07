@@ -147,7 +147,7 @@ def b(current_data):
     h1 = current_data.q[layer_index[0], :, :]
     h2 = current_data.q[layer_index[1], :, :]
 
-    return eta1(cd) - h1 - h2
+    return eta1(current_data) - h1 - h2
 
 
 def extract_velocity(h, hu, DRY_TOL=10**-8):
