@@ -612,13 +612,13 @@ class Storm(object):
         :Input:
          - *categorization* (string) Type of categorization to use.  Defaults to
            the National Hurricane Center "NHC".
-         - *names* (bool) If True returns the category name rather than a
+         - *cat_names* (bool) If True returns the category name rather than a
            number.  Default to *False*.
 
         :Output:
          - (ndarray) Integer array of categories at each time point of the storm
          - (list) Similar to the above but the name of the category as a 
-           *string*
+           *string*.  This is only returned if *car_names = True*.
 
         """
 
