@@ -606,7 +606,7 @@ class Storm(object):
 
         return axes
 
-    def category(self, categorization="NHC"):
+    def category(self, categorization="NHC", cat_names=False):
         r"""Categorizes storm based on relevant storm data
 
         :Input:
@@ -630,7 +630,7 @@ class Storm(object):
         if categorization.upper() == "BEAUFORT":
             # Beaufort scale below uses knots
             speeds = units.convert(self.max_wind_speed, "m/s", "knots")
-            category = numpy.zeros(speeds) + \
+            category = numpy.zeros(speeds.shape) + \
                        (speeds >= 1) * (speeds < 4) * 1 + \
                        (speeds >= 4) * (speeds < 7) * 2 + \
                        (speeds >= 7) * (speeds < 11) * 3 + \
@@ -662,7 +662,7 @@ class Storm(object):
             #        in the correct format now
             # TODO:  Add TD and TS designations
             speeds = units.convert(self.max_wind_speed, "m/s", "knots")
-            category = numpy.zeros(speeds) + \
+            category = numpy.zeros(speeds.shape) + \
                        (speeds < 30) * -1 + \
                        (speeds >= 64) * (speeds < 83) * 1 + \
                        (speeds >= 83) * (speeds < 96) * 2 + \
@@ -691,12 +691,14 @@ class Storm(object):
             raise ValueError("Categorization %s not available."
                              % categorization)
 
-        if names:
+        if cat_names:
             category_name = []
             for (i, cat) in enumerate(category):
                 category_name.append(cat_map[cat])
 
-        return category, category_name
+            return category, category_name
+        else:
+            return category
 
 
 # =============================================================================
