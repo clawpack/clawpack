@@ -87,6 +87,7 @@ SOURCES = \
   $(GEOLIB)/multilayer/src2.f90 \
   $(GEOLIB)/multilayer/stepgrid.f \
   $(GEOLIB)/multilayer/valout.f \
+  $(GEOLIB)/multilayer/update2.f90 \
   $(RIEMANN)/rpn2_layered_shallow_water.f90 \
   $(RIEMANN)/rpt2_layered_shallow_water.f90 \
   $(RIEMANN)/geoclaw_riemann_utils.f

@@ -377,6 +377,10 @@ def setgeo(rundata):
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025 # Overridden below
     geo_data.friction_depth = 1e6
+    geo_data.rho = [1025.0, 1025.0/ .98]
+    geo_data.rho_air = 1.15             # Density of air (rho is not implemented above)
+    geo_data.ambient_pressure = 101.5e3 # Nominal atmos pressure
+
 
     # == Algorithm and Initial Conditions ==
     geo_data.sea_level = [0.0, -25000000.0]  # Due to seasonal swelling of gulf
@@ -424,8 +428,6 @@ def setgeo(rundata):
     data = rundata.surge_data
 
    # Physics parameters
-    data.rho_air = 1.15             # Density of air (rho is not implemented above)
-    data.ambient_pressure = 101.5e3 # Nominal atmos pressure
 
     # Source term controls
     data.wind_forcing = True
@@ -478,7 +480,6 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [1025.0, 1025.0/ .98]
     data.eta = [0.0, -20000050.0]
     
     # Algorithm parameters

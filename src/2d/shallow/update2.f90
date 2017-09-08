@@ -12,10 +12,10 @@
 
 subroutine update (level, nvar, naux)
 
-    use geoclaw_module, only: sea_level
+    use geoclaw_module, only: sea_level, rho
     use amr_module
 
-    use multilayer_module, only: num_layers, rho, dry_tolerance, eta_init
+    use multilayer_module, only: num_layers, dry_tolerance, eta_init
 
     implicit none
     ! modified for shallow water on topography to use surface level eta
