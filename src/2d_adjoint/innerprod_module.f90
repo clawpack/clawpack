@@ -57,7 +57,7 @@ contains
         real(kind=8) :: x_c,y_c,eta,q2,q3
         real(kind=8) :: aux_interp, aux1
 
-        allocate(q_interp(adjoints(r)%meqn + 1))
+        allocate(q_interp(adjoints(r)%meqn))
 
         ! If q is on land, don't computer the inner product
         if(aux1 > 0.d0) then

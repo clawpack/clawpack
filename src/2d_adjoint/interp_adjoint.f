@@ -15,16 +15,16 @@
      .           ivar,iaux,i,j, iadd, iaddaux, iaddqeta
       real(kind=8) :: xlow, ylow, xhi, yhi, dx, dy,xm,ym,
      .                x_side, x_main, y_main, y_side
-      real(kind=8) :: q(nvar+1), aux_a, aux_c,q_temp1(nvar+1),
-     .                q_temp2(nvar+1), denom, aux_interp
+      real(kind=8) :: q(nvar), aux_a, aux_c,q_temp1(nvar),
+     .                q_temp2(nvar), denom, aux_interp
       logical :: y_interp, yc_interp, ya_interp
 
-      ! Needs to be nvar + 1 because alloc has eta values
-      iadd(ivar,i,j)  = loc + ivar - 1 + (nvar+1)*((j-1)*mitot+i-1)
+      iadd(ivar,i,j)  = loc + ivar - 1 +
+     .                     nvar*((j-1)*mitot+i-1)
       getaux(i,j) = adjoints(k)%alloc(iadd(4,i,j))
-     .                        - adjoints(k)%alloc(iadd(1,i,j))
+     .                     - adjoints(k)%alloc(iadd(1,i,j))
 
-      do ivar=1,nvar+1
+      do ivar=1,nvar
           q(ivar) = 0.0
       enddo
 
@@ -67,16 +67,20 @@
              jj_a = int(((y-ym)/dy) + 0.5d0)
              ii_a = int(((x-xm)/dx) + 0.5d0)
 
-             if (jj_c == jj_a .and. jj_a /= 0) then
+             ! NOTE: here the ghost cells must be excluded
+             ! This shouldn't be the case, but results are 
+             ! incorrect otherwise (ghost cells are not 
+             ! excluded in amrclaw interp_adjoint.f)
+             if (jj_c == jj_a .and. jj_a > adjoints(k)%nghost + 1) then
                  jj_a = jj_a - 1
              endif
-             if (ii_c == ii_a .and. ii_a /= 0) then
+             if (ii_c == ii_a .and. ii_a > adjoints(k)%nghost + 1) then
                  ii_a = ii_a - 1
              endif
-             if (jj_a >= ny) then
+             if (jj_a >= ny - adjoints(k)%nghost) then
                  jj_a = jj_a - 1
              endif
-             if (ii_a >= nx) then
+             if (ii_a >= nx - adjoints(k)%nghost) then
                  ii_a = ii_a - 1
              endif
 
@@ -85,22 +89,17 @@
 
               ! Verify that we should interpolate along center y line
               aux_c = getaux(ii_c,jj_c)
-              aux_a = getaux(ii_c,jj_a)
+              aux_a = getaux(ii_a,jj_c)
 
               if(sign(aux_c, aux_a) .ne. sign(aux_c, aux_c))then
                   yc_interp = .false.
               endif
 
               ! Verify that we should interpolate along adjacent y edge
+              aux_c = getaux(ii_c,jj_a)
               aux_a = getaux(ii_a,jj_a)
               if(sign(aux_c, aux_a) .ne. sign(aux_c, aux_c))then
                   ya_interp = .false.
-              endif
-
-              ! Verify that we should interpolate along x
-              aux_a = getaux(ii_a,jj_c)
-              if(sign(aux_c, aux_a) .ne. sign(aux_c, aux_c)) then
-                  ii_a = ii_c
               endif
 
               ! Interpolating in y
@@ -111,28 +110,28 @@
                   denom = y_side - y_main
 
                   if (yc_interp) then
-                    do ivar=1,nvar+1
+                    do ivar=1,nvar
                       q_temp1(ivar) = ((y_side - y)/denom)
      &                     *adjoints(k)%alloc(iadd(ivar,ii_c,jj_c))
      &                     + ((y - y_main)/denom)
      &                     *adjoints(k)%alloc(iadd(ivar,ii_c,jj_a))
                     enddo
                   else
-                      do ivar=1,nvar+1
+                      do ivar=1,nvar
                           q_temp1(ivar) =
      &                      adjoints(k)%alloc(iadd(ivar,ii_c,jj_c))
                       enddo
                   endif
 
                   if (ya_interp) then
-                    do ivar=1,nvar+1
+                    do ivar=1,nvar
                         q_temp2(ivar) = ((y_side - y)/denom)
      &                     *adjoints(k)%alloc(iadd(ivar,ii_a,jj_c))
      &                     + ((y - y_main)/denom)
      &                     *adjoints(k)%alloc(iadd(ivar,ii_a,jj_a))
                     enddo
                   else
-                    do ivar=1,nvar+1
+                    do ivar=1,nvar
                         q_temp2(ivar) =
      &                     adjoints(k)%alloc(iadd(ivar,ii_a,jj_c))
                     enddo
@@ -141,6 +140,17 @@
                   y_interp = .false.
               endif
 
+              ! Verify that we should interpolate along x
+              if (y_interp) then
+                  aux_c = q_temp1(4) - q_temp1(1)
+                  aux_a = q_temp2(4) - q_temp2(1)
+              else
+                  aux_c = getaux(ii_c,jj_c)
+                  aux_a = getaux(ii_c,jj_a)
+              endif
+              if(sign(aux_c, aux_a) .ne. sign(aux_c, aux_c)) then
+                  ii_a = ii_c
+              endif
 
               ! Interpolating in x
               x_main = xm + (ii_c + 0.5d0)*dx
@@ -152,7 +162,7 @@
                       q = ((x_side - x)/denom)*q_temp1
      &                    + ((x - x_main)/denom)*q_temp2
                   else
-                      do ivar=1,nvar+1
+                      do ivar=1,nvar
                           q(ivar) = ((x_side - x)/denom)
      &                      *adjoints(k)%alloc(iadd(ivar,ii_c,jj_c))
      &                      + ((x - x_main)/denom)
@@ -163,7 +173,7 @@
                   if (y_interp) then
                       q = q_temp1
                   else
-                      do ivar=1,nvar+1
+                      do ivar=1,nvar
                           q(ivar) =
      &                      adjoints(k)%alloc(iadd(ivar,ii_c,jj_c))
                       enddo

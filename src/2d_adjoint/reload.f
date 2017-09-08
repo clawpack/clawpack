@@ -22,9 +22,8 @@ c
 
       real(kind=8), allocatable, target, dimension(:) :: new_storage
 
-c     Needs to have meqn+1 since we are reading in eta
       iadd(ivar,i,j)  = adjoints(k)%loc(mptr)
-     .        + ivar - 1 + (adjoints(k)%meqn+1)*((j-1)*mitot+i-1)
+     .        + ivar - 1 + (adjoints(k)%meqn)*((j-1)*mitot+i-1)
 
 c     Initializing all levels to zero
       adjoints(k)%gridlevel(:) = 0
@@ -101,9 +100,7 @@ c     ! Reading from fort.q* file and fort.b* files
         mjtot = adjoints(k)%ncellsy(mptr) + 2*adjoints(k)%nghost
 
         adjoints(k)%loc(mptr) = loc
-
-c       Needs to have meqn+1 since we are reading in eta
-        loc = loc + mitot*mjtot*(adjoints(k)%meqn+1)
+        loc = loc + mitot*mjtot*(adjoints(k)%meqn)
 
 c       Checking to see if the alloc array is large enough
 c       to hold the new grid
@@ -118,9 +115,6 @@ c       If not, making the alloc array larger
         endif
 
 c       ! This is the bulk of the reading
-c       ! We need to read in one more that the number of equations
-c       ! Because we are reading in eta
-
         do j=1,mjtot
             do i=1,mitot
                 read(20) adjoints(k)%alloc(iadd(1,i,j)),
