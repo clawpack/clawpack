@@ -24,6 +24,9 @@ module model_storm_module
         ! Fore/hindcast size and current position
         integer :: num_casts
 
+        ! Landfall - This is not used explicitly (t0 = landfall ideally)
+        character(len=10) :: landfall
+
         ! These parameters are located at time points but are interpolated in
         ! time and space when the relevant fields are requested.
 
@@ -97,6 +100,7 @@ contains
             endif
 
             read(data_file, "(i4)") num_casts
+            read(data_file, "(a)") landfall
             read(data_file, *)
 
             write(log_unit, "('Data length = ',i3)") storm%num_casts

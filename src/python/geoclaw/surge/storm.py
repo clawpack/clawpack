@@ -141,7 +141,17 @@ class Storm(object):
         if path is not None:
             self.read(path, file_format=file_format, **kwargs)
 
-    # =========================================================================
+    # ==========================================================================
+    #  Basic object support
+    def __str__(self):
+        r""""""
+        output = "Name: %s" % self.name
+        output = "\n".join((output, "Dates: %s - %s" % (self.t[0].isoformat(),
+                                                        self.t[-1].isoformat())
+                            ))
+        return output
+
+    # ==========================================================================
     # Read Routines
     def read(self, path, file_format="hurdat2", **kwargs):
         r"""Read in storm data from *path* with format *file_format*
@@ -176,10 +186,12 @@ class Storm(object):
 
         with open(path, 'r') as data_file:
             num_casts = int(data_file.readline())
-            self.time_offset = None  # TODO:  What should this be set to?
+            self.time_offset = datetime.datetime.strptime(data_file.readline(),
+                                                          "%Y-%n-%dT%H:%M:%S")
 
-        data = numpy.loadtxt(path)
+        data = numpy.loadtxt(path, skiprows=3)
         num_forecasts = data.shape[0]
+        assert(num_casts == num_forecasts)
         self.t = data[:, 0]
         self.eye_location[0, :] = data[:, 1]
         self.eye_location[1, :] = data[:, 2]
@@ -494,16 +506,17 @@ class Storm(object):
 
         with open(path, 'w') as data_file:
             data_file.write("%s\n" % self.t.shape[0])
+            data_file.write("%s\n\n" % self.time_offset.isoformat())
             for n in range(self.t.shape[0]):
                 data_file.write("%s %s %s %s %s %s %s %s" %
-                                                (self.t[n],
-                                                 self.eye_location[n, 0],
-                                                 self.eye_location[n, 1],
-                                                 self.max_wind_speed[n],
-                                                 self.max_wind_radius[n],
-                                                 self.central_pressure[n],
-                                                 self.storm_radius[n],
-                                                 "\n"))
+                                ((self.t[n] - self.time_offset).total_seconds(),
+                                 self.eye_location[n, 0],
+                                 self.eye_location[n, 1],
+                                 self.max_wind_speed[n],
+                                 self.max_wind_radius[n],
+                                 self.central_pressure[n],
+                                 self.storm_radius[n],
+                                 "\n"))
 
     def write_hurdat(self, path):
         r"""Write out a HURDAT formatted storm file
