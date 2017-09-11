@@ -56,7 +56,7 @@ module model_storm_module
     ! Sampling adjustment from 1 min to 10 min winds
     real(kind=8), parameter :: sampling_time = 0.88d0 
 
-    ! ! Storm field ramping width - Represents crudely the ramping radial area
+    ! Storm field ramping width - Represents crudely the ramping radial area
     real(kind=8), parameter :: RAMP_WIDTH = 100.0d3
 
 
@@ -64,7 +64,7 @@ contains
 
 
     ! Setup routine for model storms
-    subroutine set_model_storm(storm_data_path, storm, model_type, log_unit)
+    subroutine set_storm(storm_data_path, storm, model_type, log_unit)
 
         use geoclaw_module, only: deg2rad, spherical_distance, coordinate_system
         use amr_module, only: t0, rinfinity
@@ -176,7 +176,7 @@ contains
             module_setup = .true.
         end if
 
-    end subroutine set_model_storm
+    end subroutine set_storm
 
 
     ! ==========================================================================

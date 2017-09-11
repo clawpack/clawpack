@@ -11,7 +11,7 @@
 !  license
 !                     http://www.opensource.org/licenses/
 ! ==============================================================================
-module model_storm_module
+module data_storm_module
 
     implicit none
     save
@@ -111,7 +111,7 @@ contains
 
     end subroutine set_HWRF_fields
 
-end module model_storm_module
+end module data_storm_module
 
 
 
