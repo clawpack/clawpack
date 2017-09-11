@@ -134,7 +134,7 @@ class Storm(object):
         # Storm descriptions - not all formats provide these
         self.name = None
         self.basin = None                   # Basin containing storm
-        self.ATCF_code = None               # Triplet containing basin, number, and year
+        self.ID = None                      # ID code - depends on format
         self.classification = None          # Classification of storm (e.g. HU)
         self.event = None                   # Event (e.g. landfall) - HURDAT2
 
@@ -309,8 +309,8 @@ class Storm(object):
                 # Extract data chunk
                 if success:
                     self.name = storm_name
-                    self.ATCF_code = line.split(",")[0].strip()
-                    self.basin = self.ATCF_code[:2]
+                    self.ID = line.split(",")[0].strip()
+                    self.basin = self.ID[:2]
 
                     data_block = ""
                     for n in range(num_lines):
@@ -380,12 +380,68 @@ class Storm(object):
             self.max_wind_radius[i] = float(data[8])
             self.storm_radius[i] = float(data[9])
 
-    def read_jma(self, path):
+    def read_jma(self, path, single_storm=False, name=None, year=None):
         r"""Read in JMA formatted storm file
+
+        Note that if the file contains multiple storms only the first will be
+        read in unless name and/or year is provided.
+
+        For more details on the JMA format and getting data see
+
+        http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html
 
         :Input:
          - *path* (string) Path to the file to be read.
+         - *single_storm* (bool) If *True* then this file contains one storm.
+           Default is *single_storm = False*.
+         - *name* (string) If the file contains multiple storms use *name* to
+           search for the correct storm.  If there are multiple storms with the
+           same name then the first one encountered is read in.
+         - *year* (int) Additional filtering criteria.  If there are multiple 
+           storms with the same name use the year of the storm to pick out the
+           right one.
         """
+
+        if not single_storm:
+            if name is None:
+                err_msg = "".join(("Input indicated that there was more than ",
+                                   "one storm in the file being read.  If ",
+                                   "this is the case then a name must be ",
+                                   "provided to pick out the storm to be read ",
+                                   "in."))
+                raise ValueError(err_msg)
+
+            with open(path, 'r') as JMA_file:
+                success = False
+                for (n, line) in enumerate(JMA_file):
+# AAAAA BBBB  CCC DDDD EEEE F G HHHHHHHHHHHHHHHHHHHH              IIIIIIII
+                    if line[:5] == "66666":
+                        # This is a header line
+                        storm_year = int(line[7:9])
+                        # ID = int(line[9:11])
+                        num_lines = int(line[14:17])
+                        ID = int(line[18:22])
+                        flag = bool(line[27])
+                        storm_name = line[31:51]
+
+                    if line[:2] in ATCF_basins.keys():
+                        # This is a header line
+                        storm_year = int(line.split(",")[0].strip()[4:])
+                        storm_name = line.split(',')[1].strip()
+                        num_lines = int(line.split(",")[2].strip())
+
+                        if name == storm_name.lower():
+                            if year is not None:
+                                if year == storm_year:
+                                    # Take this storm
+                                    success = True
+                                    break
+                            else:
+                                # Take this storm
+                                success = True
+                                break
+
+
 
         # Collect data from columns of the same type
         data = numpy.genfromtxt(path, delimiter=',', skip_header=1, dtype=float,
