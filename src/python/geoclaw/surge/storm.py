@@ -445,11 +445,15 @@ class Storm(object):
                 for (n, line) in enumerate(JMA_file):
                     if line[:5] == "66666":
                         # This is a header line
-                        storm_year = int(line[7:9])
-                        num_lines = int(line[14:17])
-                        ID = int(line[18:22])
-                        flag = bool(line[27])
-                        storm_name = line[31:51]
+                        storm_year = int(line[6:8])
+                        if storm_year > 50:
+                            storm_year += 1900
+                        else:
+                            storm_year += 2000
+                        ID = int(line[8:10])
+                        num_lines = int(line[13:15])
+                        flag = bool(int(line[26]))
+                        storm_name = line[30:51].strip()
 
                         if name.lower() == storm_name.lower():
                             if year is not None:
@@ -498,7 +502,6 @@ class Storm(object):
         self.central_pressure = numpy.empty(num_lines)
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
-        import pdb; pdb.set_trace()
         for (i, line) in enumerate(data_block):
             if len(line) == 0:
                 break
