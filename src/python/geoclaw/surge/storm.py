@@ -83,8 +83,9 @@ class Storm(object):
     *TODO:*  Add description of unit handling
 
     :Attributes:
-     - *t* (ndarray(:)) Contains the time at which each entry of the other
-       arrays are at.  Default units are seconds.
+     - *t* (list(datetime.datetiem)) Contains the time at which each entry of
+       the other arrays are at.  These are expected to be *datetime* objects.
+       Note that when written some formats require a *time_offset* to be set.
      - *eye_location* (ndarray(:, :)) location of the eye of the storm.
        Default units are in signed decimcal longitude and latitude.
      - *max_wind_speed (ndarray(:)) Maximum wind speed.  Default units are
@@ -168,6 +169,30 @@ class Storm(object):
          - *ValueError* If the *file_format* requested does not match any of the
            available supported formats a *ValueError* is raised.
         """
+
+        # Allow the use of the HURDAT2 database to extract storms automatically
+        if path is None:
+            if file_format.lower == "hurdat2":
+                # Download the HURDAT2 database to scratch
+                # Construct URL to current available database
+                raise NotImplementedError("Fetching from the HURDAT2 database ",
+                                          "is currently not implemented.  ",
+                                          "Please provide a path to the file ",
+                                          "you would like to use for the storm",
+                                          " input.")
+            elif file_format.lower == "jma":
+                # Download the JMA database to scratch
+                # Construct URL to current available database
+                raise NotImplementedError("Fetching from the JMA database ",
+                                          "is currently not implemented.  ",
+                                          "Please provide a path to the file ",
+                                          "you would like to use for the storm",
+                                          " input.")
+
+
+            # Download file - assume the user has placed appropriate flags in
+            # kwargs if needed
+            clawpack.clawutil.data.get_remote_file(**kwargs)
 
         if file_format.lower() not in self._supported_formats:
             raise ValueError("File format %s not available." % file_format)
