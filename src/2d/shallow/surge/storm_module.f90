@@ -52,33 +52,39 @@ module storm_module
 
     ! Interface to each of the parameterized models
     abstract interface
-        subroutine set_model_field_def(maux, mbc, mx, my, xlower, ylower, &
+        subroutine set_model_fields_def(maux, mbc, mx, my, xlower, ylower, &
                                       dx, dy, t, aux, wind_index,              &
                                       pressure_index, storm)
+
+            use model_storm_module, only: model_storm_type
+
             implicit none
             integer, intent(in) :: maux,mbc,mx,my
             real(kind=8), intent(in) :: xlower,ylower,dx,dy,t
             type(model_storm_type), intent(inout) :: storm
             integer, intent(in) :: wind_index, pressure_index
             real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-        end subroutine set_model_field_def
+        end subroutine set_model_fields_def
     end interface
 
     abstract interface
-        subroutine set_data_field_def(maux, mbc, mx, my, xlower, ylower,    &
+        subroutine set_data_fields_def(maux, mbc, mx, my, xlower, ylower,    &
                                       dx, dy, t, aux, wind_index,           &
                                       pressure_index, storm)
+
+            use data_storm_module, only: data_storm_type
+
             implicit none
             integer, intent(in) :: maux, mbc, mx, my
             real(kind=8), intent(in) :: xlower, ylower, dx, dy, t
             type(data_storm_type), intent(in out) :: storm
             integer, intent(in) :: wind_index, pressure_index
             real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
-        end subroutine set_data_fields
+        end subroutine set_data_fields_def
     end interface
 
-    procedure(set_model_field_def), pointer :: set_model_fields
-    procedure(set_data_field_def), pointer :: set_data_fields
+    procedure(set_model_fields_def), pointer :: set_model_fields
+    procedure(set_data_fields_def), pointer :: set_data_fields
 
     ! Wind drag maximum limit
     real(kind=8), parameter :: WIND_DRAG_LIMIT = 2.d-3
@@ -99,7 +105,12 @@ contains
     subroutine set_storm(data_file)
 
         use model_storm_module, only: set_model_storm => set_storm
+        use model_storm_module, only: set_holland_1980_fields
+        use model_storm_module, only: set_holland_2010_fields, set_CLE_fields
+
         use data_storm_module, only: set_data_storm => set_storm
+        use data_storm_module, only: set_HWRF_fields
+
         use utility_module, only: get_value_count
 
         implicit none
@@ -181,8 +192,8 @@ contains
             write(log_unit, *) "R Nesting = ", (R_refine(i),i=1,size(R_refine,1))
             write(log_unit, *) ""
 
-            write(log_unit, *) "Input Type = ", input_type
             write(log_unit, *) "Storm Type = ", storm_type
+            write(log_unit, *) "Model/Data Type = ", model_type
             write(log_unit, *) "  file = ", storm_file_path
 
             ! Read in hurricane track data from file
@@ -204,7 +215,7 @@ contains
                         stop
                 end select
 
-                call set_model_storm(storm_file_path, model_storm, model_type, 
+                call set_model_storm(storm_file_path, model_storm, model_type, & 
                                      log_unit)
 
             else if (storm_type == 2) then
@@ -216,7 +227,7 @@ contains
                         print *, "Model type ", model_type, "not available."
                         stop
                 end select
-                call set_data_storm(storm_file_path, data_storm, model_type, 
+                call set_data_storm(storm_file_path, data_storm, model_type,   &
                                     log_unit)
             else
                 print *,"Invalid storm type ",storm_type," provided."
@@ -363,7 +374,7 @@ contains
         use amr_module, only: rinfinity
 
         use model_storm_module, only: model_location => storm_location
-        use constant_storm_module, only: data_location => storm_location
+        use data_storm_module, only: data_location => storm_location
 
         implicit none
 
@@ -388,7 +399,7 @@ contains
         
         use amr_module, only: rinfinity
         use model_storm_module, only: model_direction => storm_direction 
-        use constant_storm_module, only: data_direction => storm_direction
+        use data_storm_module, only: data_direction => storm_direction
 
         implicit none
 

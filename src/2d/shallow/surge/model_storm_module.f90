@@ -24,6 +24,9 @@ module model_storm_module
         ! Fore/hindcast size and current position
         integer :: num_casts
 
+        ! Landfall - This is not used explicitly (t0 = landfall ideally)
+        character(len=10) :: landfall
+
         ! These parameters are located at time points but are interpolated in
         ! time and space when the relevant fields are requested.
 
@@ -56,7 +59,7 @@ module model_storm_module
     ! Sampling adjustment from 1 min to 10 min winds
     real(kind=8), parameter :: sampling_time = 0.88d0 
 
-    ! ! Storm field ramping width - Represents crudely the ramping radial area
+    ! Storm field ramping width - Represents crudely the ramping radial area
     real(kind=8), parameter :: RAMP_WIDTH = 100.0d3
 
 
@@ -64,7 +67,7 @@ contains
 
 
     ! Setup routine for model storms
-    subroutine set_model_storm(storm_data_path, storm, model_type, log_unit)
+    subroutine set_storm(storm_data_path, storm, model_type, log_unit)
 
         use geoclaw_module, only: deg2rad, spherical_distance, coordinate_system
         use amr_module, only: t0, rinfinity
@@ -97,6 +100,7 @@ contains
             endif
 
             read(data_file, "(i4)") num_casts
+            read(data_file, "(a)") landfall
             read(data_file, *)
 
             write(log_unit, "('Data length = ',i3)") storm%num_casts
@@ -176,7 +180,7 @@ contains
             module_setup = .true.
         end if
 
-    end subroutine set_model_storm
+    end subroutine set_storm
 
 
     ! ==========================================================================
