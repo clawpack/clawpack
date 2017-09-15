@@ -120,7 +120,8 @@ class Storm(object):
                           "tcvitals"]
     _supported_models = ["holland_1980", "holland_2010", "cle_2015"]
 
-    def __init__(self, path=None, empty_storm=False, file_format="hurdat2",
+
+    def __init__(self, path=None, empty_storm=False, file_format="hurdat2", 
                        **kwargs):
         r"""Storm Initiatlization Routine
 
@@ -143,8 +144,6 @@ class Storm(object):
         self.event = None                   # Event (e.g. landfall) - HURDAT2
 
         if not empty_storm:
-            self.read(path, file_format=file_format, **kwargs)
-        else:
             self.read(path, file_format=file_format, **kwargs)
 
     # ==========================================================================
@@ -193,6 +192,7 @@ class Storm(object):
                 unpack = True
                 url = "".join(("http://www.jma.go.jp/jma/jma-eng/jma-center/",
                                "rsmc-hp-pub-eg/Besttracks/bst_all.zip"))
+
             else:
                 raise ValueError("Format %s does not have an available",
                                  "database of best-tracks." % file_format)
@@ -454,7 +454,7 @@ class Storm(object):
          - *name* (string) If the file contains multiple storms use *name* to
            search for the correct storm.  If there are multiple storms with the
            same name then the first one encountered is read in.
-         - *year* (int) Additional filtering criteria.  If there are multiple
+         - *year* (int) Additional filtering criteria.  If there are multiple 
            storms with the same name use the year of the storm to pick out the
            right one.
         """
@@ -566,6 +566,39 @@ class Storm(object):
             self.central_pressure[i] = float(data[7])
             self.max_wind_radius[i] = float(data[8])
             self.storm_radius[i] = float(data[9])
+
+        # # Collect data from columns of the same type
+        # data = numpy.genfromtxt(path, delimiter=',', skip_header=1, dtype=float,
+        #                         usecols=(5, 6, 7, 8))
+        # self.central_pressure = data[:, 0]                # Col 6
+        # self.max_wind_speed = data[:, 1]                  # Col 7
+        # self.max_wind_radius = data[:, 2]                 # Col 8
+        # self.storm_radius = data[:, 3]                    # Col 9
+
+        # date = numpy.genfromtxt(path, delimiter=',', skip_header=1, dtype=None,
+        #                         usecols=(0, 1))
+        # self.time_offset = int(str(date[0])[0:4])
+        # for i in range(date.shape[0]):
+        #     temp_date = "%s%s" % (date[i][0], date[i][1])
+        #     temp_date = date2seconds(temp_date[0:-2])
+        #     date[i][0] = temp_date
+        # self.t = date[:, 0]
+
+        # self.eye_location = numpy.genfromtxt(path, delimiter=',', skip_header=1,
+        #                                      dtype=None, usecols=(4, 5))
+        # for n in range(self.eye_location.shape[0]):
+        #     lat = self.eye_location[n, 0]
+        #     lon = self.eye_location[n, 1]
+        #     if lat[-1] == 'N':
+        #         lat = float(lat[0:-1])
+        #     else:
+        #         lat = -float(lat[0:-1])
+        #     if lon == 'E':
+        #         lon = float(lon[0:-1])
+        #     else:
+        #         lon = -float(lon[0:-1])
+        #     self.eye_location[n, 0] = lat
+        #     self.eye_location[n, 1] = lon
 
     def read_imd(self, path):
         r"""Extract relevant hurricane data from IMD file
