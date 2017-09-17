@@ -12,7 +12,6 @@ from __future__ import absolute_import
 
 import sys
 import os
-import urllib2
 import requests
 from bs4 import BeautifulSoup
 
@@ -22,7 +21,7 @@ import datetime
 import clawpack.geoclaw.units as units
 import clawpack.clawutil.data
 
-seconds_per_day = 60.0**2 * 24.0
+# seconds_per_day = 60.0**2 * 24.0
 
 # =============================================================================
 #  Common acronyms across formats
@@ -57,7 +56,7 @@ TC_designations = {"DB": "disturbance",
                    "ET": "extrapolated",
                    "XX": "unknown"}
 
-# HURDAT 2 special designations
+# HURDAT special designations
 # see http://www.aoml.noaa.gov/hrd/data_sub/newHURDAT.html
 hurdat_special_entries = {"L": "landfall",
                           "W": "max wind",
@@ -111,18 +110,18 @@ class Storm(object):
 
     :Input:
      - *path* (string) Path to file to be read in if requested.
-     - *file_format* (string) Format of file at path.  Default is "hurdata2"
+     - *file_format* (string) Format of file at path.  Default is "hurdat"
      - *kwargs* (dict) Other key-word arguments are passed to the appropriate
        read routine.
     """
 
     # Define supported formats and models
-    _supported_formats = ["geoclaw", "atcf", "hurdat2", "jma", "imd",
+    _supported_formats = ["geoclaw", "atcf", "hurdat", "jma", "imd",
                           "tcvitals"]
     _supported_models = ["holland_1980", "holland_2010", "cle_2015"]
 
 
-    def __init__(self, path=None, empty_storm=False, file_format="hurdat2", 
+    def __init__(self, path=None, empty_storm=False, file_format="hurdat", 
                        **kwargs):
         r"""Storm Initiatlization Routine
 
@@ -142,7 +141,7 @@ class Storm(object):
         self.basin = None                   # Basin containing storm
         self.ID = None                      # ID code - depends on format
         self.classification = None          # Classification of storm (e.g. HU)
-        self.event = None                   # Event (e.g. landfall) - HURDAT2
+        self.event = None                   # Event (e.g. landfall) - HURDAT
 
         if not empty_storm:
             self.read(path, file_format=file_format, **kwargs)
@@ -159,13 +158,13 @@ class Storm(object):
 
     # ==========================================================================
     # Read Routines
-    def read(self, path=None, file_format="hurdat2", **kwargs):
+    def read(self, path=None, file_format="hurdat", **kwargs):
         r"""Read in storm data from *path* with format *file_format*
 
         :Input:
          - *path* (string) Path to data file.
          - *file_format (string) Format of the data file.  See list of supported
-           formats for a list of valid strings.  Defaults to "hurdat2".
+           formats for a list of valid strings.  Defaults to "hurdat".
          - *kwargs* (dict) Keyword dictionary for additional arguments that can
            be passed down to the appropriate read functions.  Please refer to
            the specific routine for a list of valid options.
@@ -175,27 +174,27 @@ class Storm(object):
            available supported formats a *ValueError* is raised.
         """
 
-        # Allow the use of the HURDAT2 database to extract storms automatically
+        # Allow the use of the HURDAT database to extract storms automatically
         if path is None:
-            if file_format.lower() == "hurdat2":
+            if file_format.lower() == "hurdat":
                 # Manually check to see if there's a file in scratch that 
-                # contains the "hurdat2" in the file name and only print out the
+                # contains the "hurdat" in the file name and only print out the
                 # following if this fails.
                 scratch = os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')
                 success = False
                 for file_name in os.listdir(scratch):
-                    if "hurdat2" in file_name:
+                    if "hurdat" in file_name:
                         success = True
                         path = os.path.join(scratch, file_name)
                         break
 
                 if not success:
-                    # Download the HURDAT2 database to scratch
+                    # Download the HURDAT database to scratch
                     # Construct URL to current available database
                     url = "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"
-                    print("Currently you must manually download the HURDAT2 ",
+                    print("Currently you must manually download the HURDAT ",
                           "database.  Please visit the page %s" % url,
-                          " and download the HURDAT2 file linked towards the ",
+                          " and download the HURDAT file linked towards the ",
                           "top.")
             elif file_format.lower() == "jma":
                 # Download the JMA database to scratch
@@ -246,10 +245,7 @@ class Storm(object):
         self.storm_radius = data[:, 6]
 
     def read_atcf(self, path, single_storm=False, name=None, year=None):
-        r"""Read in a HURDAT formatted storm file
-
-        Note that this is the old HURDAT format, if you want to read in the new
-        version use *file_format = 'hurdat2'.
+        r"""Read in a ATCF formatted storm file
 
         ATCF format currently only useful for single file not list of storms.
 
@@ -316,15 +312,14 @@ class Storm(object):
             self.max_wind_radius[i] = float(data[18])
             self.storm_radius[i] = float(data[19])
 
-    def read_hurdat2(self, path, single_storm=False, name=None, year=None):
-        r"""Read in HURDAT 2 formatted storm file
+    def read_hurdat(self, path, single_storm=False, name=None, year=None):
+        r"""Read in HURDAT formatted storm file
 
-        This is the current version of HURDAT data available.  For the old
-        version use *file_format = 'hurdat'*.  Note that if the file contains
-        multiple storms only the first will be read in unless name and/or year
-        is provided.
+        This is the current version of HURDAT data available (HURDAT 2).  Note 
+        that if the file contains multiple storms only the first will be read in
+        unless name and/or year is provided.
 
-        For more details on the HURDAT 2 format and getting data see
+        For more details on the HURDAT format and getting data see
 
         http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html
 
@@ -780,8 +775,8 @@ class Storm(object):
                                  self.storm_radius[n],
                                  "\n"))
 
-    def write_hurdat(self, path):
-        r"""Write out a HURDAT formatted storm file
+    def write_atcf(self, path):
+        r"""Write out a ATCF formatted storm file
 
         :Input:
          - *path* (string) Path to the file to be written
@@ -808,8 +803,8 @@ class Storm(object):
                                          ", " * 10,
                                          "\n")))
 
-    def write_hurdat2(self, path):
-        r"""Write out a HURDAT 2 formatted storm file
+    def write_hurdat(self, path):
+        r"""Write out a HURDATformatted storm file
 
         :Input:
          - *path* (string) Path to the file to be written
@@ -821,13 +816,13 @@ class Storm(object):
                 latitude = float(self.eye_location[n,0])
                 longitude = float(self.eye_location[n,1])
 
-                # Convert latitude to proper Hurdat 2 format e.g 12.0N
+                # Convert latitude to proper Hurdat format e.g 12.0N
                 if latitude > 0:
                     latitude = str(numpy.abs(latitude)) + 'N'
                 else:
                     latitude = str(numpy.abs(latitude)) + 'S'
 
-                # Convert longitude to proper Hurdat 2 format e.g 12.0W
+                # Convert longitude to proper Hurdat format e.g 12.0W
                 if longitude > 0:
                     longitude = str(numpy.abs(longitude)) + 'E'
                 else:
@@ -1131,14 +1126,6 @@ def available_models():
     r"""Construct a string suitable for listing available storm models.
     """
     return ""
-
-
-def hurdat2_storm_list(path=None):
-    r"""Extract the list of storms from a HURDAT2 file
-
-    Returns a list of storms with """
-
-    return None
 
 
 # =============================================================================
