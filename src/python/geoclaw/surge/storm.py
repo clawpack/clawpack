@@ -21,8 +21,6 @@ import datetime
 import clawpack.geoclaw.units as units
 import clawpack.clawutil.data
 
-# seconds_per_day = 60.0**2 * 24.0
-
 # =============================================================================
 #  Common acronyms across formats
 
@@ -115,10 +113,14 @@ class Storm(object):
        read routine.
     """
 
-    # Define supported formats and models
-    _supported_formats = ["geoclaw", "atcf", "hurdat", "jma", "imd",
-                          "tcvitals"]
-    _supported_models = ["holland_1980", "holland_2010", "cle_2015"]
+    # Define supported formats and models - keys are function name related and
+    # values are the proper name and a citation or URL documenting the format
+    _supported_formats = {"geoclaw": ["GeoClaw", None], 
+                          "atcf": ["ATCF", None],
+                          "hurdat": ["HURDAT", None],
+                          "jma": ["JMA", None],
+                          "imd": ["IMD", None],
+                          "tcvitals": ["TC-Vitals", None]}
 
 
     def __init__(self, path=None, empty_storm=False, file_format="hurdat", 
@@ -213,7 +215,7 @@ class Storm(object):
                 raise ValueError("Format %s does not have an available",
                                  "database of best-tracks." % file_format)
 
-        if file_format.lower() not in self._supported_formats:
+        if file_format.lower() not in self._supported_formats.keys():
             raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'read_%s' % file_format.lower())(path, **kwargs)
@@ -746,7 +748,7 @@ class Storm(object):
            available supported formats a *ValueError* is raised.
         """
 
-        if file_format.lower() not in self._supported_formats:
+        if file_format.lower() not in self._supported_formats.keys():
             raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'write_%s' % file_format.lower())(path)
@@ -1083,13 +1085,19 @@ class Storm(object):
 #  - Holland 2010 ('HOLLAND_2010') [2]
 #  - Chavas, Lin, Emmanuel ('CLE_2015') [3]
 # *TODO* - Add citations
-#
+
+# Dictionary of models.  Keys are function names, values are the proper name
+# and a citation to the model
+_supported_models = {"holland_1980": ["Holland 1980", ""], 
+                     "holland_2010": ["Holland 2010", ""],
+                     "cle_2015": ["Chavas, Lin, Emmanuel 2015", ""]}
+
 # In the case where the field is not rotationally symmetric then the r value
 # defines the x and y axis extents.
 def construct_fields(storm, r, t, model="holland_1980"):
     r""""""
 
-    if model.lower() not in _supported_models:
+    if model.lower() not in _supported_models.keys():
         raise ValueError("Model %s not available." % model)
 
     return getattr(sys.modules[__name__], model.lower())(storm, x, t)
@@ -1119,88 +1127,48 @@ def cle_2015(storm, r, t):
 def available_formats():
     r"""Construct a string suitable for listing available storm file formats.
     """
-    return ""
+    output = "Available Formats: (Function, Name, Citation)\n"
+    for (model, values) in Storm._supported_formats.items():
+        output = "".join((output, "%s: %s %s\n" % (values[0], model, values[1])))
+    return output
 
 
 def available_models():
     r"""Construct a string suitable for listing available storm models.
     """
-    return ""
+    output = "Function, Name, Citation\n"
+    for (model, values) in _supported_models.items():
+        output = "".join((output, "%s: %s %s\n" % (values[0], model, values[1])))
+    return output
 
 
 # =============================================================================
 # Ensmeble Storm Formats
-#def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
-#                               mask_category=None, categorization="NHC"):
-#    r"""Load storms from a Matlab file containing storms
-#
-#    This format is based on the format Prof. Emmanuel uses to generate storms.
-#
-#    :Input:
-#     - *path* (string) Path to the file to be read in
-#     - *mask_distance* (float) Distance from *mask_coordinate* at which a storm
-#       needs to in order to be returned in the list of storms.  If
-#       *mask_distance* is *None* then no masking is used.  Default is to
-#       use no *mask_distance*.
-#     - *mask_coordinate* (tuple) Longitude and latitude coordinates to measure
-#       the distance from.  Default is *(0.0, 0.0)*.
-#     - *mask_category* (int) Category or highter a storm needs to be to be
-#       included in the returned list of storms.  If *mask_category* is *None*
-#       then no masking occurs.  The categorization used is controlled by
-#       *categorization*.  Default is to use no *mask_category*.
-#     - *categorization* (string) Categorization to be used for the
-#       *mask_category* filter.  Default is "NHC".
-#
-#    :Output:
-#     - (list) List of Storm objects that have been read in and were not filtered
-#       out.
-#    """
-#
-#    # Load the mat file and extract pertinent data
-#    import scipy.io
-#    mat = scipy.io.loadmat(path)
-#
-#    lon = mat['longstore']
-#    lat = mat['latstore']
-#    hour = mat['hourstore']
-#    day = mat['daystore']
-#    month = mat['monthstore']
-#    year = mat['yearstore']
-#    radius_max_winds = mat['rmstore']
-#    max_winds = mat['vstore']
-#    central_pressure = mat['pstore']
-#
-#    # Convert into storms and truncate zeros
-#    storms = []
-#    for n in xrange(lon.shape[0]):
-#        m = len(lon[n].nonzero()[0])
-#
-#        storm = Storm()
-#        storm.t = [datetime.datetime(year[0, n],
-#                                     month[n, i],
-#                                     day[n, i],
-#                                     hour[n, i]) for i in xrange(m)]
-#        storm.eye_location[:, 0] = lon[n, :m]
-#        storm.eye_location[:, 1] = lat[n, :m]
-#        storm.max_wind_speed = max_winds[n, :m]
-#        storm.radius_max_winds = radius_max_winds[n, :m]
-#        storm.central_pressure = central_pressure[n, :m]
-#
-#        include_storm = True
-#        if mask_distance is not None:
-#            distance = numpy.sqrt((storm.eye_location[:, 0] -
-#                                   mask_coord[0])**2 +
-#                                  (storm.eye_location[:, 1] -
-#                                   mask_coord[1])**2)
-#            inlcude_storm = numpy.any(distance < mask_distance)
-#        if mask_category is not None:
-#            include storm = include_storm and numpy.any(
-#                  storm.category(categorization=categorization) > mask_category)
-#
-#        if include_storm:
-#            storms.append(storm)
-#
-#    return storms
+def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
+                              mask_category=None, categorization="NHC"):
+    r"""Load storms from a Matlab file containing storms
+ 
+    This format is based on the format Prof. Emmanuel uses to generate storms.
+ 
+    :Input:
+     - *path* (string) Path to the file to be read in
+     - *mask_distance* (float) Distance from *mask_coordinate* at which a storm
+       needs to in order to be returned in the list of storms.  If
+       *mask_distance* is *None* then no masking is used.  Default is to
+       use no *mask_distance*.
+     - *mask_coordinate* (tuple) Longitude and latitude coordinates to measure
+       the distance from.  Default is *(0.0, 0.0)*.
+     - *mask_category* (int) Category or highter a storm needs to be to be
+       included in the returned list of storms.  If *mask_category* is *None*
+       then no masking occurs.  The categorization used is controlled by
+       *categorization*.  Default is to use no *mask_category*.
+     - *categorization* (string) Categorization to be used for the
+       *mask_category* filter.  Default is "NHC".
+ 
+    :Output:
+     - (list) List of Storm objects that have been read in and were not filtered
+       out.
+    """
 
     # Load the mat file and extract pertinent data
     import scipy.io
