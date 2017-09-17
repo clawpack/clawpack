@@ -11,6 +11,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import sys
+import os
 
 import numpy
 import datetime
@@ -174,15 +175,25 @@ class Storm(object):
         # Allow the use of the HURDAT2 database to extract storms automatically
         if path is None:
             if file_format.lower() == "hurdat2":
-                # Download the HURDAT2 database to scratch
-                # Construct URL to current available database
-                url = ""
-                unpack = False
-                raise NotImplementedError("Fetching from the HURDAT2 database ",
-                                          "is currently not implemented.  ",
-                                          "Please provide a path to the file ",
-                                          "you would like to use for the storm",
-                                          " input.")
+                # Manually check to see if there's a file in scratch that 
+                # contains the "hurdat2" in the file name and only print out the
+                # following if this fails.
+                scratch = os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')
+                success = False
+                for file_name in os.listdir(scratch):
+                    if "hurdat2" in file_name:
+                        success = True
+                        path = os.path.join(scratch, file_name)
+                        break
+
+                if not success:
+                    # Download the HURDAT2 database to scratch
+                    # Construct URL to current available database
+                    url = "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"
+                    print("Currently you must manually download the HURDAT2 ",
+                          "database.  Please visit the page %s" % url,
+                          " and download the HURDAT2 file linked towards the ",
+                          "top.")
             elif file_format.lower() == "jma":
                 # Download the JMA database to scratch
                 # Construct URL to current available database
@@ -190,13 +201,15 @@ class Storm(object):
                 url = "".join(("http://www.jma.go.jp/jma/jma-eng/jma-center/",
                                "rsmc-hp-pub-eg/Besttracks/bst_all.zip"))
 
+
+                # Download file - temporarily here as HURDAT does not need this
+                path = clawpack.clawutil.data.get_remote_file(url, 
+                                                              unpack=unpack)
+                kwargs['single_storm'] = False
+
             else:
                 raise ValueError("Format %s does not have an available",
                                  "database of best-tracks." % file_format)
-
-            # Download file
-            path = clawpack.clawutil.data.get_remote_file(url, unpack=unpack)
-            kwargs['single_storm'] = False
 
         if file_format.lower() not in self._supported_formats:
             raise ValueError("File format %s not available." % file_format)
