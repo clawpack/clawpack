@@ -495,7 +495,7 @@ class MultilayerData(clawpack.clawutil.data.ClawData):
         super(MultilayerData, self).__init__()
 
         # Physics parameters
-        self.add_attribute('num_layers',2)
+        self.add_attribute('num_layers',1)
         self.add_attribute('rho',[1025.0,1028.0])
         self.add_attribute('eta',[0.0,-200.0])
         self.add_attribute('wave_tolerance',[1.e-1,1.e-1])
