@@ -18,6 +18,31 @@ testdir = os.path.dirname(__file__)
 if len(testdir) == 0: 
     testdir = "./"
 
+@test.wip
+def test_hurdat():
+    r"""Test the hurdat reading and writing"""
+
+
+    # Write back out data in the hurdat format
+    try:
+        temp_path = tempfile.mkdtemp()
+
+        # Read in hurdat test data and pick out
+        lili = storm.Storm(path=os.path.join(testdir, "hurdat_data.txt"), 
+                           name="Lili")
+
+        # Write out storm to hurdat format
+        storm.write(path=os.path.join(temp_path, "lili.txt"))
+
+        # Read back in the hurdat test data and compare to original
+        new_storm = storm.Storm(path=temp_path, single_storm=True)
+
+        assert lili == new_storm
+
+    finally:
+        shutil.rmtree(temp_path)
+
+
 #@test.wip
 def test_storm_IO():
     r"""Test reading and writing of storm formats"""
