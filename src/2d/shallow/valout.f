@@ -160,6 +160,11 @@ c                 # output in 1d format if ny=1:
 c            # binary output          
 c            i1 = iadd(1,1,1)
 c            i2 = iadd(nvar,mitot,mjtot)
+
+c            # Updating ghost cell data
+             call bound(time,nvar,nghost,alloc(loc),mitot,
+     1               mjtot,mptr,alloc(locaux),naux)
+
 c            # Need to augment q with eta:
              allocate(qeta(4*mitot*mjtot))
              do j=1,mjtot
