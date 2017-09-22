@@ -67,20 +67,16 @@
              jj_a = int(((y-ym)/dy) + 0.5d0)
              ii_a = int(((x-xm)/dx) + 0.5d0)
 
-             ! NOTE: here the ghost cells must be excluded
-             ! This shouldn't be the case, but results are 
-             ! incorrect otherwise (ghost cells are not 
-             ! excluded in amrclaw interp_adjoint.f)
-             if (jj_c == jj_a .and. jj_a > adjoints(k)%nghost + 1) then
+             if (jj_c == jj_a .and. jj_a /= 0) then
                  jj_a = jj_a - 1
              endif
-             if (ii_c == ii_a .and. ii_a > adjoints(k)%nghost + 1) then
+             if (ii_c == ii_a .and. ii_a /= 0) then
                  ii_a = ii_a - 1
              endif
-             if (jj_a >= ny - adjoints(k)%nghost) then
+             if (jj_a >= ny) then
                  jj_a = jj_a - 1
              endif
-             if (ii_a >= nx - adjoints(k)%nghost) then
+             if (ii_a >= nx) then
                  ii_a = ii_a - 1
              endif
 
