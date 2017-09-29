@@ -23,15 +23,14 @@ subroutine update (level, nvar, naux)
     ! eta - q(i,j,1) + aux(i,j,1)
 
     ! inputs
-    integer, intent(in) :: nvar, naux
-    real(kind=8), intent(in) :: level
+    integer, intent(in) :: nvar, naux, level
 
     integer :: ng, levSt, mptr, loc, locaux, nx, ny, mitot, mjtot
     integer :: ilo, jlo, ihi, jhi, mkid, iclo, jclo, ichi, jchi
     integer :: mi, mj, locf, locfaux, iplo, jplo, iphi, jphi
     integer :: iff, jff, nwet(num_layers), ico, jco, i, j, ivar, loccaux
-    integer :: listgrids(numgrids(level)), layer, i_layer
-    real(kind=8) :: lget, dt, totrat, bc, etasum(num_layers), hsum(num_layers)
+    integer :: listgrids(numgrids(level)), layer, i_layer, lget
+    real(kind=8) :: dt, totrat, bc, etasum(num_layers), hsum(num_layers)
     real(kind=8) :: husum(num_layers), hvsum(num_layers)
     real(kind=8) :: hf, bf, huf, hvf, etaf, hav(num_layers), hc(num_layers)
     real(kind=8) :: huc(num_layers), hvc(num_layers), capa, etaav(num_layers)
