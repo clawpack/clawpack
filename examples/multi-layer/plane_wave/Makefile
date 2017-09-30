@@ -91,7 +91,7 @@ SOURCES = \
   $(GEOLIB)/multilayer/step2.f90 \
   $(GEOLIB)/multilayer/topointegral.f \
   $(GEOLIB)/multilayer/upbnd.f \
-  $(GEOLIB)/multilayer/update2.f90 \
+  $(GEOLIB)/multilayer/update.f90 \
   $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/rpt2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f
