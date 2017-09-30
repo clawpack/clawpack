@@ -5,9 +5,10 @@ Tsunami arising offshore Maule, Chile, Feb. 27, 2010
 =====================================================
 
 This uses a very simple source model with a single fault plane and constant
-slip, from an early inversion by the USGS.  The input parameters are
-specified in `usgs100227.cfg` and converted into the dtopo file
-`usgs100227.txt` by the script `maketopo.py`.  This can be run via::
+slip, from an early inversion by the USGS.  This copy is a two layer 
+version. The input parameters are specified in `usgs100227.cfg` and 
+converted into the dtopo file `usgs100227.txt` by the script `maketopo.py`.
+This can be run via::
 
     make topo
 
