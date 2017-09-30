@@ -28,8 +28,8 @@ subroutine update (level, nvar, naux)
     integer :: ng, levSt, mptr, loc, locaux, nx, ny, mitot, mjtot
     integer :: ilo, jlo, ihi, jhi, mkid, iclo, jclo, ichi, jchi
     integer :: mi, mj, locf, locfaux, iplo, jplo, iphi, jphi
-    integer :: iff, jff, nwet(num_layers), ico, jco, i, j, ivar, loccaux
-    integer :: listgrids(numgrids(level)), layer, i_layer, lget
+    integer :: iff, jff, nwet(num_layers), ico, jco, i, j, ivar, loccaux, lget
+    integer :: listgrids(numgrids(level)), layer, i_layer
     real(kind=8) :: dt, totrat, bc, etasum(num_layers), hsum(num_layers)
     real(kind=8) :: husum(num_layers), hvsum(num_layers)
     real(kind=8) :: hf, bf, huf, hvf, etaf, hav(num_layers), hc(num_layers)
@@ -129,11 +129,10 @@ subroutine update (level, nvar, naux)
                         hvsum = 0.d0
 
                         nwet = 0
- 
-!                         do layer = 1, num_layers
+
                         do jco = 1, intraty(lget)
                             do ico = 1, intratx(lget)
-                                
+                                    
                                 if (mcapa == 0) then
                                     capa = 1.0d0
                                 else
@@ -144,22 +143,15 @@ subroutine update (level, nvar, naux)
                                 
                                 do layer = num_layers, 1, -1
 
-
-                                    hf = alloc(iaddf(3*layer-2,iff+ico-1,jff+jco-1))*capa
-!                                     bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
+                                    hf = alloc(iaddf(3*layer-2,iff+ico-1,jff+jco-1))*capa / rho(layer)
                                     huf= alloc(iaddf(3*layer-1,iff+ico-1,jff+jco-1))*capa 
                                     hvf= alloc(iaddf(3*layer,iff+ico-1,jff+jco-1))*capa 
-
-!                                     do i_layer = layer+1, num_layers
-!                                         bf = bf + alloc(iaddf(3*i_layer-2,iff+ico-1,jff+jco-1))*capa / rho(layer)
-!                                     enddo
 
                                     if (hf > dry_tolerance(layer)) then
                                         etaf = hf + bf
                                         nwet(layer) = nwet(layer) + 1
                                     else
-!                                         etaf = eta_init(layer)
-                                        etaf = 0.d0
+                                        etaf = eta_init(layer)
                                         huf=0.d0
                                         hvf=0.d0
                                     endif
@@ -187,7 +179,7 @@ subroutine update (level, nvar, naux)
                                 hvc(layer) = 0.0d0
                             endif
 
-                            alloc(iadd(3*layer-2,i,j)) = hc(layer) / capac
+                            alloc(iadd(3*layer-2,i,j)) = hc(layer) / capac * rho(layer)
                             alloc(iadd(3*layer-1,i,j)) = huc(layer) / capac 
                             alloc(iadd(3*layer,i,j)) = hvc(layer) / capac 
                         enddo

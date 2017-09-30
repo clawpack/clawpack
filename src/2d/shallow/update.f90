@@ -12,11 +12,8 @@
 
 subroutine update (level, nvar, naux)
 
-    use geoclaw_module, only: sea_level, rho
+    use geoclaw_module, only: dry_tolerance
     use amr_module
-
-    use multilayer_module, only: num_layers, dry_tolerance, eta_init
-
     implicit none
     ! modified for shallow water on topography to use surface level eta
     ! rather than depth h = q(i,j,1) 
@@ -24,16 +21,15 @@ subroutine update (level, nvar, naux)
 
     ! inputs
     integer, intent(in) :: nvar, naux, level
+!     real(kind=8), intent(in) :: level
 
     integer :: ng, levSt, mptr, loc, locaux, nx, ny, mitot, mjtot
     integer :: ilo, jlo, ihi, jhi, mkid, iclo, jclo, ichi, jchi
     integer :: mi, mj, locf, locfaux, iplo, jplo, iphi, jphi
-    integer :: iff, jff, nwet(num_layers), ico, jco, i, j, ivar, loccaux
-    integer :: listgrids(numgrids(level)), layer, i_layer, lget
-    real(kind=8) :: dt, totrat, bc, etasum(num_layers), hsum(num_layers)
-    real(kind=8) :: husum(num_layers), hvsum(num_layers)
-    real(kind=8) :: hf, bf, huf, hvf, etaf, hav(num_layers), hc(num_layers)
-    real(kind=8) :: huc(num_layers), hvc(num_layers), capa, etaav(num_layers)
+    integer :: iff, jff, nwet, ico, jco, i, j, ivar, loccaux
+    integer :: listgrids(numgrids(level)), lget
+    real(kind=8) :: dt, totrat, bc, etasum, hsum, husum, hvsum
+    real(kind=8) :: hf, bf, huf, hvf, etaf, hav, hc, huc, hvc, capa, etaav
     real(kind=8) :: capac
     character(len=80) :: String
 
@@ -47,18 +43,17 @@ subroutine update (level, nvar, naux)
 
     dt = possk(lget)
 
-!$OMP PARALLEL DO PRIVATE(ng,mptr,loc,loccaux,nx,ny,mitot,mjtot, &
-!$OMP                    ilo,jlo,ihi,jhi,mkid,iclo,ichi, &
-!$OMP                    jclo,jchi,mi,mj,locf,locfaux,iplo,iphi, &
-!$OMP                    jplo,jphi,iff,jff,totrat,i,j,ivar,capac, &
-!$OMP                    capa,bc,etasum,hsum,husum,hvsum, &
-!$OMP                    levSt,ico,jco,hf,bf,huf,hvf, &
-!$OMP                    etaf,etaav,hav,nwet,hc,huc,hvc, String), &
-!$OMP             SHARED(numgrids,listOfGrids,level,intratx,intraty, &
-!$OMP                   nghost,uprint,nvar,naux,mcapa,node,listsp, &
-!$OMP                   alloc,lstart,dry_tolerance,listStart,lget, &
-!$OMP                   num_layers, rho, eta_init), &
-!$OMP            DEFAULT(none)
+!$OMP PARALLEL DO PRIVATE(ng,mptr,loc,loccaux,nx,ny,mitot,mjtot,
+!$OMP&                    ilo,jlo,ihi,jhi,locuse,mkid,iclo,ichi,
+!$OMP&                    jclo,jchi,mi,mj,locf,locfaux,iplo,iphi,
+!$OMP&                    jplo,jphi,iff,jff,totrat,i,j,ivar,capac,
+!$OMP&                    capa,bc,etasum,hsum,husum,hvsum,drytol,
+!$OMP&                    newt,levSt,ico,jco,hf,bf,huf,hvf,
+!$OMP&                    etaf,etaav,hav,nwet,hc,huc,hvc),
+!$OMP&             SHARED(numgrids,listOfGrids,level,intratx,intraty,
+!$OMP&                   nghost,uprint,nvar,naux,mcapa,node,listsp,
+!$OMP&                   alloc,lstart,dry_tolerance,listStart,lget),
+!$OMP&            DEFAULT(none)
 
     ! need to set up data structure for parallel distribution of grids
     ! call prepgrids(listgrids, numgrids(level), level)
@@ -129,68 +124,51 @@ subroutine update (level, nvar, naux)
                         hvsum = 0.d0
 
                         nwet = 0
- 
-!                         do layer = 1, num_layers
+
                         do jco = 1, intraty(lget)
                             do ico = 1, intratx(lget)
-                                
                                 if (mcapa == 0) then
                                     capa = 1.0d0
                                 else
                                     capa = alloc(iaddfaux(iff+ico-1,jff+jco-1))
                                 endif
-                                
+
+                                hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa 
                                 bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
-                                
-                                do layer = num_layers, 1, -1
+                                huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa 
+                                hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa 
 
+                                if (hf > dry_tolerance) then
+                                    etaf = hf + bf
+                                    nwet = nwet + 1
+                                else
+                                    etaf = 0.d0
+                                    huf=0.d0
+                                    hvf=0.d0
+                                endif
 
-                                    hf = alloc(iaddf(3*layer-2,iff+ico-1,jff+jco-1))*capa
-!                                     bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
-                                    huf= alloc(iaddf(3*layer-1,iff+ico-1,jff+jco-1))*capa 
-                                    hvf= alloc(iaddf(3*layer,iff+ico-1,jff+jco-1))*capa 
-
-!                                     do i_layer = layer+1, num_layers
-!                                         bf = bf + alloc(iaddf(3*i_layer-2,iff+ico-1,jff+jco-1))*capa / rho(layer)
-!                                     enddo
-
-                                    if (hf > dry_tolerance(layer)) then
-                                        etaf = hf + bf
-                                        nwet(layer) = nwet(layer) + 1
-                                    else
-!                                         etaf = eta_init(layer)
-                                        etaf = 0.d0
-                                        huf=0.d0
-                                        hvf=0.d0
-                                    endif
-
-                                    hsum(layer)   = hsum(layer) + hf
-                                    husum(layer)  = husum(layer) + huf
-                                    hvsum(layer)  = hvsum(layer) + hvf
-                                    etasum(layer) = etasum(layer) + etaf  
-
-                                    bf = bf + hf   
-                                enddo
+                                hsum   = hsum + hf
+                                husum  = husum + huf
+                                hvsum  = hvsum + hvf
+                                etasum = etasum + etaf     
                             enddo
                         enddo
 
-                        do layer = num_layers, 1, -1
-                            if (nwet(layer) > 0) then
-                                etaav(layer) = etasum(layer)/dble(nwet(layer))
-                                hav(layer) = hsum(layer)/dble(nwet(layer))
-                                hc(layer) = min(hav(layer), (max(etaav(layer)-bc*capac, 0.0d0)))
-                                huc(layer) = (min(hav(layer), hc(layer)) / hsum(layer) * husum(layer))
-                                hvc(layer) = (min(hav(layer), hc(layer)) / hsum(layer) * hvsum(layer))
-                            else
-                                hc(layer) = 0.0d0
-                                huc(layer) = 0.0d0
-                                hvc(layer) = 0.0d0
-                            endif
+                        if (nwet > 0) then
+                            etaav = etasum/dble(nwet)
+                            hav = hsum/dble(nwet)
+                            hc = min(hav, (max(etaav-bc*capac, 0.0d0)))
+                            huc = (min(hav, hc) / hsum) * husum
+                            hvc = (min(hav, hc) / hsum) * hvsum
+                        else
+                            hc = 0.0d0
+                            huc = 0.0d0
+                            hvc = 0.0d0
+                        endif
 
-                            alloc(iadd(3*layer-2,i,j)) = hc(layer) / capac
-                            alloc(iadd(3*layer-1,i,j)) = huc(layer) / capac 
-                            alloc(iadd(3*layer,i,j)) = hvc(layer) / capac 
-                        enddo
+                        alloc(iadd(1,i,j)) = hc / capac 
+                        alloc(iadd(2,i,j)) = huc / capac 
+                        alloc(iadd(3,i,j)) = hvc / capac 
 
                         if (uprint) then
                             String = "(' new vals: ',4e25.15)"
@@ -209,6 +187,7 @@ subroutine update (level, nvar, naux)
             mkid = node(levelptr, mkid)
 
         enddo
+        continue
     enddo
     return
 
@@ -220,7 +199,7 @@ contains
         iadd = loc + ivar-1 + nvar*((j-1)*mitot+i-1)
     end function iadd
 
-    integer pure function iaddf(ivar,i,j)
+    integer pure function iaddf(ivar,i,j) 
         integer, intent(in) :: i, j, ivar
         iaddf = locf   + ivar-1 + nvar*((j-1)*mi+i-1)
     end function iaddf
@@ -237,12 +216,12 @@ contains
 
     integer pure function iaddftopo(i,j)
         integer, intent(in) :: i, j
-        iaddftopo = locfaux + naux*((j-1)*mi + (i-1))
+        iaddftopo = locfaux +  naux*((j-1)*mi + (i-1))
     end function iaddftopo
 
     integer pure function iaddctopo(i,j)
         integer, intent(in) :: i, j
-        iaddctopo = loccaux + naux*((j-1)*mitot+(i-1))
+        iaddctopo = loccaux +  naux*((j-1)*mitot+(i-1))
     end function iaddctopo
 
 end subroutine
