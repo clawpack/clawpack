@@ -13,10 +13,10 @@ def maketopo():
     """
     nxpoints = 201
     nypoints = 201
-    xlower = -100.e0
-    xupper = 100.e0
-    yupper = 100.e0
-    ylower = -100.e0
+    xlower = -1000.e0
+    xupper = 1000.e0
+    yupper = 1000.e0
+    ylower = -1000.e0
     outfile= "bowl.topotype2"     
 
     topography = Topography(topo_func=topo)
@@ -47,7 +47,7 @@ def topo(x,y):
     """
     # value of z at origin:  Try zmin = 80 for shoreline or 250 for no shore
     zmin = 80.
-    z = 1.e-2*(x**2 + y**2) - zmin
+    z = 2.e-2*(x**2 + y**2) - zmin
 
     # r = x**2 + y**2
     # z = where(r<80**2, -zmin, zmin)

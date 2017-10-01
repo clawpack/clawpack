@@ -94,45 +94,27 @@ def setplot(plotdata=None):
     def profile_afteraxes(current_data):
         pass
         
-    # def bathy_ref_lines(current_data):
-    #     plt.hold(True)
-    #     for ref_line in ref_lines:
-    #         x1 = ref_line[0][0]
-    #         y1 = ref_line[0][1]
-    #         x2 = ref_line[1][0]
-    #         y2 =  ref_line[1][1]
-    #         plt.plot([x1,x2],[y1,y2],'y--',linewidth=1)
-    #     plt.hold(False)
-        
     def gauge_locations(current_data,gaugenos='all'):
         plt.hold(True)
         gaugetools.plot_gauge_locations(current_data.plotdata, \
              gaugenos=gaugenos, format_string='kx', add_labels=True)
         plt.hold(False)
     
-     # ========================================================================
+    # ========================================================================
     # Axis limits
     # xlimits = [amrdata.xlower,amrdata.xupper]
     xlimits = [-100.0, 100.0]
-    # xlimits = [-80.0, -70.0]
 
     # ylimits = [amrdata.ylower,amrdata.yupper]
     ylimits = [-100.0, 100.0]
-    # ylimits = [-40.0, -30.0]
     
     eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
 
     top_surface_limits = [eta[0]-10,eta[0]+10]
     internal_surface_limits = [eta[1]-5,eta[1]+5]
     depth_limits = [0.0, 0.4]
-    # top_surface_limits = [eta[0]-0.3,eta[0]+0.3]
-    # internal_surface_limits = [eta[1]-0.15,eta[1]+0.15]
     top_speed_limits = [0.0,0.1]
     internal_speed_limits = [0.0,0.03]
-    
-    # Single layer test limits
-    # top_surface_limits = [eta[0]-2.5,eta[0]+2.5]
-    # top_speed_limits = [0.0,6.0]
     
 
     # ========================================================================
@@ -149,11 +131,8 @@ def setplot(plotdata=None):
     plotaxes.scaled = True
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
-    # plotaxes.afteraxes = pcolor_afteraxes
     ml_plot.add_inundation(plotaxes, 1, bounds=depth_limits)
     ml_plot.add_surface_elevation(plotaxes,1,bounds=top_surface_limits)
-    # ml_plot.add_surface_elevation(plotaxes,1,bounds=[-0.06,0.06])
-    # ml_plot.add_surface_elevation(plotaxes,1)
     ml_plot.add_land(plotaxes, 1)
     
     # Bottom surface
@@ -163,18 +142,15 @@ def setplot(plotdata=None):
     plotaxes.scaled = True
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
-    # plotaxes.afteraxes = pcolor_afteraxes
-    # ml_plot.add_surface_elevation(plotaxes,2,bounds=[-300-0.5,-300+0.5])
     ml_plot.add_inundation(plotaxes, 2, bounds=depth_limits)
     ml_plot.add_surface_elevation(plotaxes,2,bounds=internal_surface_limits)
     ml_plot.add_colorbar = True
-    # ml_plot.add_surface_elevation(plotaxes,2)
     ml_plot.add_land(plotaxes, 2)
+
 
     # ========================================================================
     # Figure for cross section
     # ========================================================================
-    
     plotfigure = plotdata.new_plotfigure(name='cross-section', figno=4)
     plotfigure.show = True
     # Set up for axes in this figure:
@@ -185,7 +161,6 @@ def setplot(plotdata=None):
     ml_plot.add_cross_section(plotaxes, 1)
     ml_plot.add_cross_section(plotaxes, 2)
     ml_plot.add_land_cross_section(plotaxes)
-
 
 
     # ========================================================================
@@ -202,10 +177,7 @@ def setplot(plotdata=None):
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.axescmd = 'subplot(1,2,1)'
-    # plotaxes.afteraxes = pcolor_afteraxes
-    # add_speed(plotaxes,1,bounds=[0.00,0.2])
     ml_plot.add_speed(plotaxes,1,bounds=top_speed_limits)
-    # add_speed(plotaxes,1)
     ml_plot.add_land(plotaxes, 1)
     
     # Bottom layer speed
@@ -215,10 +187,7 @@ def setplot(plotdata=None):
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.axescmd = 'subplot(1,2,2)'
-    # plotaxes.afteraxes = pcolor_afteraxes
-    # add_speed(plotaxes,2,bounds=[0.0,1e-10])
     ml_plot.add_speed(plotaxes,2,bounds=internal_speed_limits)
-    # add_speed(plotaxes,2)
     ml_plot.add_land(plotaxes, 2)
     
     # Individual components
@@ -233,8 +202,6 @@ def setplot(plotdata=None):
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.axescmd = 'subplot(2,2,1)'
-    # plotaxes.afteraxes = pcolor_afteraxes
-    # add_x_velocity(plotaxes,1,bounds=[-1e-10,1e-10])
     ml_plot.add_x_velocity(plotaxes,1)
     ml_plot.add_land(plotaxes, 1)
     
@@ -244,8 +211,6 @@ def setplot(plotdata=None):
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.axescmd = 'subplot(2,2,2)'
-    # plotaxes.afteraxes = pcolor_afteraxes
-    # add_y_velocity(plotaxes,1,bounds=[-0.000125,0.000125])
     ml_plot.add_y_velocity(plotaxes,1)
     ml_plot.add_land(plotaxes, 1)
     
@@ -256,8 +221,6 @@ def setplot(plotdata=None):
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.axescmd = 'subplot(2,2,3)'
-    # plotaxes.afteraxes = pcolor_afteraxes
-    # add_x_velocity(plotaxes,2,bounds=[-1e-10,1e-10])
     ml_plot.add_x_velocity(plotaxes,2)
     ml_plot.add_land(plotaxes, 2)
     
@@ -267,65 +230,8 @@ def setplot(plotdata=None):
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.axescmd = 'subplot(2,2,4)'
-    # plotaxes.afteraxes = pcolor_afteraxes
-    # add_y_velocity(plotaxes,2,bounds=[-0.8e-6,.8e-6])
     ml_plot.add_y_velocity(plotaxes,2)
     ml_plot.add_land(plotaxes, 2)
-
-   
-    # #-----------------------------------------
-    # # Figure for surface
-    # #-----------------------------------------
-    # plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
-
-    # # Set up for axes in this figure:
-    # plotaxes = plotfigure.new_plotaxes('pcolor')
-    # plotaxes.title = 'Surface'
-    # plotaxes.scaled = True
-
-    # def fixup(current_data):
-    #     import pylab
-    #     addgauges(current_data)
-    #     t = current_data.t
-    #     t = t / 3600.  # hours
-    #     pylab.title('Surface at %4.2f hours' % t, fontsize=20)
-    #     pylab.xticks(fontsize=15)
-    #     pylab.yticks(fontsize=15)
-    # plotaxes.afteraxes = fixup
-
-    # # Water
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # #plotitem.plot_var = geoplot.surface
-    # plotitem.plot_var = geoplot.surface_or_depth
-    # plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    # plotitem.pcolor_cmin = -0.2
-    # plotitem.pcolor_cmax = 0.2
-    # plotitem.add_colorbar = True
-    # plotitem.amr_celledges_show = [0,0,0]
-    # plotitem.patchedges_show = 1
-
-    # # Land
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # plotitem.plot_var = geoplot.land
-    # plotitem.pcolor_cmap = geoplot.land_colors
-    # plotitem.pcolor_cmin = 0.0
-    # plotitem.pcolor_cmax = 100.0
-    # plotitem.add_colorbar = False
-    # plotitem.amr_celledges_show = [1,1,0]
-    # plotitem.patchedges_show = 1
-    # plotaxes.xlimits = [-120,-60]
-    # plotaxes.ylimits = [-60,0]
-
-    # # add contour lines of bathy if desired:
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    # plotitem.show = False
-    # plotitem.plot_var = geoplot.topo
-    # plotitem.contour_levels = linspace(-3000,-3000,1)
-    # plotitem.amr_contour_colors = ['y']  # color on each level
-    # plotitem.kwargs = {'linestyles':'solid','linewidths':2}
-    # plotitem.amr_contour_show = [1,0,0]  
-    # plotitem.celledges_show = 0
-    # plotitem.patchedges_show = 0
 
 
     #-----------------------------------------
@@ -376,9 +282,6 @@ def setplot(plotdata=None):
         n = int(floor(t.max()/3600.) + 2)
         xticks([3600*i for i in range(n)], ['%i' % i for i in range(n)])
         xlabel('time (hours)')
-
-    # plotaxes.afteraxes = add_zeroline
-
 
 
     #-----------------------------------------

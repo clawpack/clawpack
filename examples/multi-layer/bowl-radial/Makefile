@@ -11,7 +11,7 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 # Adjust these variables if desired:
 # ----------------------------------
 
-CLAW_PKG = geoclaw                  # Clawpack package to use
+CLAW_PKG = geoclaw             # Clawpack package to use
 EXE = xgeoclaw                 # Executable to create
 SETRUN_FILE = setrun.py        # File containing function to make data
 OUTDIR = _output               # Directory for output
@@ -21,7 +21,7 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?= -O2 -fopenmp
+FFLAGS ?= 
 
 # Include flags for LAPACK linking
 UNAME = $(shell uname)
@@ -39,9 +39,9 @@ else ifeq ($(UNAME), Linux)
 		# for other installation types
 		FFLAGS += -I$(MKLROOT)/include
 		ifndef LFLAGS                                                                                                                                    
-		    LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+			LFLAGS =  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
 		else
-		    LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
+			LFLAGS +=  -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm $(FFLAGS)
 		endif
 	else ifeq ($(FC), gfortran)
 		ifndef LFLAGS
@@ -85,6 +85,12 @@ SOURCES = \
   $(GEOLIB)/multilayer/stepgrid.f \
   $(GEOLIB)/multilayer/valout.f \
   $(GEOLIB)/multilayer/src2.f90 \
+  $(GEOLIB)/multilayer/filpatch.f90 \
+  $(GEOLIB)/multilayer/filval.f90 \
+  $(GEOLIB)/multilayer/flag2refine2.f90 \
+  $(GEOLIB)/multilayer/step2.f90 \
+  $(GEOLIB)/multilayer/topointegral.f \
+  $(GEOLIB)/multilayer/upbnd.f \
   $(GEOLIB)/multilayer/update.f90 \
   $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/rpt2_layered_shallow_water.f90 \
