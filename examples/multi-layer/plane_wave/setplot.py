@@ -253,6 +253,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     plotaxes.afteraxes = pcolor_afteraxes
     # add_y_velocity(plotaxes,2,bounds=[-0.8e-6,.8e-6])
     ml_plot.add_y_velocity(plotaxes,2)
+
     ml_plot.add_land(plotaxes, 2)
     # ========================================================================
     #  Profile Plots
