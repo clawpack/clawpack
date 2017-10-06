@@ -100,7 +100,7 @@ contains
             endif
 
             read(data_file, "(i4)") num_casts
-            read(data_file, "(a)") landfall
+            read(data_file, "(a)") storm%landfall
             read(data_file, *)
 
             write(log_unit, "('Data length = ',i3)") storm%num_casts
