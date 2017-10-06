@@ -11,17 +11,15 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import sys
-import urllib2
+import os
 import requests
-from bs4 import BeautifulSoup 
+from bs4 import BeautifulSoup
 
 import os 
 import numpy
 import datetime
 import clawpack.geoclaw.units as units
 import clawpack.clawutil.data
-
-seconds_per_day = 60.0**2 * 24.0
 
 # =============================================================================
 #  Common acronyms across formats
@@ -56,7 +54,7 @@ TC_designations = {"DB": "disturbance",
                    "ET": "extrapolated",
                    "XX": "unknown"}
 
-# HURDAT 2 special designations
+# HURDAT special designations
 # see http://www.aoml.noaa.gov/hrd/data_sub/newHURDAT.html
 hurdat_special_entries = {"L": "landfall",
                           "W": "max wind",
@@ -110,18 +108,22 @@ class Storm(object):
 
     :Input:
      - *path* (string) Path to file to be read in if requested.
-     - *file_format* (string) Format of file at path.  Default is "hurdata2"
+     - *file_format* (string) Format of file at path.  Default is "hurdat"
      - *kwargs* (dict) Other key-word arguments are passed to the appropriate
        read routine.
     """
 
-    # Define supported formats and models
-    _supported_formats = ["geoclaw", "atcf", "hurdat2", "jma", "imd",
-                          "tcvitals"]
-    _supported_models = ["holland_1980", "holland_2010", "cle_2015"]
+    # Define supported formats and models - keys are function name related and
+    # values are the proper name and a citation or URL documenting the format
+    _supported_formats = {"geoclaw": ["GeoClaw", None], 
+                          "atcf": ["ATCF", None],
+                          "hurdat": ["HURDAT", None],
+                          "jma": ["JMA", None],
+                          "imd": ["IMD", None],
+                          "tcvitals": ["TC-Vitals", None]}
 
 
-    def __init__(self, path=None, empty_storm=False, file_format="hurdat2", 
+    def __init__(self, path=None, empty_storm=False, file_format="hurdat", 
                        **kwargs):
         r"""Storm Initiatlization Routine
 
@@ -141,7 +143,7 @@ class Storm(object):
         self.basin = None                   # Basin containing storm
         self.ID = None                      # ID code - depends on format
         self.classification = None          # Classification of storm (e.g. HU)
-        self.event = None                   # Event (e.g. landfall) - HURDAT2
+        self.event = None                   # Event (e.g. landfall) - HURDAT
 
         if not empty_storm:
             self.read(path, file_format=file_format, **kwargs)
@@ -158,13 +160,13 @@ class Storm(object):
 
     # ==========================================================================
     # Read Routines
-    def read(self, path=None, file_format="hurdat2", **kwargs):
+    def read(self, path=None, file_format="hurdat", **kwargs):
         r"""Read in storm data from *path* with format *file_format*
 
         :Input:
          - *path* (string) Path to data file.
          - *file_format (string) Format of the data file.  See list of supported
-           formats for a list of valid strings.  Defaults to "hurdat2".
+           formats for a list of valid strings.  Defaults to "hurdat".
          - *kwargs* (dict) Keyword dictionary for additional arguments that can
            be passed down to the appropriate read functions.  Please refer to
            the specific routine for a list of valid options.
@@ -174,18 +176,28 @@ class Storm(object):
            available supported formats a *ValueError* is raised.
         """
 
-        # Allow the use of the HURDAT2 database to extract storms automatically
+        # Allow the use of the HURDAT database to extract storms automatically
         if path is None:
-            if file_format.lower() == "hurdat2":
-                # Download the HURDAT2 database to scratch
-                # Construct URL to current available database
-                url = ""
-                unpack = False
-                raise NotImplementedError("Fetching from the HURDAT2 database ",
-                                          "is currently not implemented.  ",
-                                          "Please provide a path to the file ",
-                                          "you would like to use for the storm",
-                                          " input.")
+            if file_format.lower() == "hurdat":
+                # Manually check to see if there's a file in scratch that 
+                # contains the "hurdat" in the file name and only print out the
+                # following if this fails.
+                scratch = os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')
+                success = False
+                for file_name in os.listdir(scratch):
+                    if "hurdat" in file_name:
+                        success = True
+                        path = os.path.join(scratch, file_name)
+                        break
+
+                if not success:
+                    # Download the HURDAT database to scratch
+                    # Construct URL to current available database
+                    url = "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"
+                    print("Currently you must manually download the HURDAT ",
+                          "database.  Please visit the page %s" % url,
+                          " and download the HURDAT file linked towards the ",
+                          "top.")
             elif file_format.lower() == "jma":
                 # Download the JMA database to scratch
                 # Construct URL to current available database
@@ -193,15 +205,17 @@ class Storm(object):
                 url = "".join(("http://www.jma.go.jp/jma/jma-eng/jma-center/",
                                "rsmc-hp-pub-eg/Besttracks/bst_all.zip"))
 
+
+                # Download file - temporarily here as HURDAT does not need this
+                path = clawpack.clawutil.data.get_remote_file(url, 
+                                                              unpack=unpack)
+                kwargs['single_storm'] = False
+
             else:
                 raise ValueError("Format %s does not have an available",
                                  "database of best-tracks." % file_format)
 
-            # Download file
-            path = clawpack.clawutil.data.get_remote_file(url, unpack=unpack)
-            kwargs['single_storm'] = False
-
-        if file_format.lower() not in self._supported_formats:
+        if file_format.lower() not in self._supported_formats.keys():
             raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'read_%s' % file_format.lower())(path, **kwargs)
@@ -233,10 +247,7 @@ class Storm(object):
         self.storm_radius = data[:, 6]
 
     def read_atcf(self, path, single_storm=False, name=None, year=None):
-        r"""Read in a HURDAT formatted storm file
-
-        Note that this is the old HURDAT format, if you want to read in the new
-        version use *file_format = 'hurdat2'.
+        r"""Read in a ATCF formatted storm file
 
         ATCF format currently only useful for single file not list of storms.
 
@@ -303,15 +314,14 @@ class Storm(object):
             self.max_wind_radius[i] = float(data[18])
             self.storm_radius[i] = float(data[19])
 
-    def read_hurdat2(self, path, single_storm=False, name=None, year=None):
-        r"""Read in HURDAT 2 formatted storm file
+    def read_hurdat(self, path, single_storm=False, name=None, year=None):
+        r"""Read in HURDAT formatted storm file
 
-        This is the current version of HURDAT data available.  For the old
-        version use *file_format = 'hurdat'*.  Note that if the file contains
-        multiple storms only the first will be read in unless name and/or year
-        is provided.
+        This is the current version of HURDAT data available (HURDAT 2).  Note 
+        that if the file contains multiple storms only the first will be read in
+        unless name and/or year is provided.
 
-        For more details on the HURDAT 2 format and getting data see
+        For more details on the HURDAT format and getting data see
 
         http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html
 
@@ -738,7 +748,7 @@ class Storm(object):
            available supported formats a *ValueError* is raised.
         """
 
-        if file_format.lower() not in self._supported_formats:
+        if file_format.lower() not in self._supported_formats.keys():
             raise ValueError("File format %s not available." % file_format)
 
         getattr(self, 'write_%s' % file_format.lower())(path)
@@ -767,8 +777,8 @@ class Storm(object):
                                  self.storm_radius[n],
                                  "\n"))
 
-    def write_hurdat(self, path):
-        r"""Write out a HURDAT formatted storm file
+    def write_atcf(self, path):
+        r"""Write out a ATCF formatted storm file
 
         :Input:
          - *path* (string) Path to the file to be written
@@ -795,8 +805,8 @@ class Storm(object):
                                          ", " * 10,
                                          "\n")))
 
-    def write_hurdat2(self, path):
-        r"""Write out a HURDAT 2 formatted storm file
+    def write_hurdat(self, path):
+        r"""Write out a HURDATformatted storm file
 
         :Input:
          - *path* (string) Path to the file to be written
@@ -808,13 +818,13 @@ class Storm(object):
                 latitude = float(self.eye_location[n,0])
                 longitude = float(self.eye_location[n,1])
 
-                # Convert latitude to proper Hurdat 2 format e.g 12.0N
+                # Convert latitude to proper Hurdat format e.g 12.0N
                 if latitude > 0:
                     latitude = str(numpy.abs(latitude)) + 'N'
                 else:
                     latitude = str(numpy.abs(latitude)) + 'S'
 
-                # Convert longitude to proper Hurdat 2 format e.g 12.0W
+                # Convert longitude to proper Hurdat format e.g 12.0W
                 if longitude > 0:
                     longitude = str(numpy.abs(longitude)) + 'E'
                 else:
@@ -1075,13 +1085,19 @@ class Storm(object):
 #  - Holland 2010 ('HOLLAND_2010') [2]
 #  - Chavas, Lin, Emmanuel ('CLE_2015') [3]
 # *TODO* - Add citations
-#
+
+# Dictionary of models.  Keys are function names, values are the proper name
+# and a citation to the model
+_supported_models = {"holland_1980": ["Holland 1980", ""], 
+                     "holland_2010": ["Holland 2010", ""],
+                     "cle_2015": ["Chavas, Lin, Emmanuel 2015", ""]}
+
 # In the case where the field is not rotationally symmetric then the r value
 # defines the x and y axis extents.
 def construct_fields(storm, r, t, model="holland_1980"):
     r""""""
 
-    if model.lower() not in _supported_models:
+    if model.lower() not in _supported_models.keys():
         raise ValueError("Model %s not available." % model)
 
     return getattr(sys.modules[__name__], model.lower())(storm, x, t)
@@ -1111,96 +1127,48 @@ def cle_2015(storm, r, t):
 def available_formats():
     r"""Construct a string suitable for listing available storm file formats.
     """
-    return ""
+    output = "Available Formats: (Function, Name, Citation)\n"
+    for (model, values) in Storm._supported_formats.items():
+        output = "".join((output, "%s: %s %s\n" % (values[0], model, values[1])))
+    return output
 
 
 def available_models():
     r"""Construct a string suitable for listing available storm models.
     """
-    return ""
-
-
-def hurdat2_storm_list(path=None):
-    r"""Extract the list of storms from a HURDAT2 file
-
-    Returns a list of storms with """
-
-    return None
+    output = "Function, Name, Citation\n"
+    for (model, values) in _supported_models.items():
+        output = "".join((output, "%s: %s %s\n" % (values[0], model, values[1])))
+    return output
 
 
 # =============================================================================
 # Ensmeble Storm Formats
-#def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
-#                               mask_category=None, categorization="NHC"):
-#    r"""Load storms from a Matlab file containing storms
-#
-#    This format is based on the format Prof. Emmanuel uses to generate storms.
-#
-#    :Input:
-#     - *path* (string) Path to the file to be read in
-#     - *mask_distance* (float) Distance from *mask_coordinate* at which a storm
-#       needs to in order to be returned in the list of storms.  If
-#       *mask_distance* is *None* then no masking is used.  Default is to
-#       use no *mask_distance*.
-#     - *mask_coordinate* (tuple) Longitude and latitude coordinates to measure
-#       the distance from.  Default is *(0.0, 0.0)*.
-#     - *mask_category* (int) Category or highter a storm needs to be to be
-#       included in the returned list of storms.  If *mask_category* is *None*
-#       then no masking occurs.  The categorization used is controlled by
-#       *categorization*.  Default is to use no *mask_category*.
-#     - *categorization* (string) Categorization to be used for the
-#       *mask_category* filter.  Default is "NHC".
-#
-#    :Output:
-#     - (list) List of Storm objects that have been read in and were not filtered
-#       out.
-#    """
-#
-#    # Load the mat file and extract pertinent data
-#    import scipy.io
-#    mat = scipy.io.loadmat(path)
-#
-#    lon = mat['longstore']
-#    lat = mat['latstore']
-#    hour = mat['hourstore']
-#    day = mat['daystore']
-#    month = mat['monthstore']
-#    year = mat['yearstore']
-#    radius_max_winds = mat['rmstore']
-#    max_winds = mat['vstore']
-#    central_pressure = mat['pstore']
-#
-#    # Convert into storms and truncate zeros
-#    storms = []
-#    for n in xrange(lon.shape[0]):
-#        m = len(lon[n].nonzero()[0])
-#
-#        storm = Storm()
-#        storm.t = [datetime.datetime(year[0, n],
-#                                     month[n, i],
-#                                     day[n, i],
-#                                     hour[n, i]) for i in xrange(m)]
-#        storm.eye_location[:, 0] = lon[n, :m]
-#        storm.eye_location[:, 1] = lat[n, :m]
-#        storm.max_wind_speed = max_winds[n, :m]
-#        storm.radius_max_winds = radius_max_winds[n, :m]
-#        storm.central_pressure = central_pressure[n, :m]
-#
-#        include_storm = True
-#        if mask_distance is not None:
-#            distance = numpy.sqrt((storm.eye_location[:, 0] -
-#                                   mask_coord[0])**2 +
-#                                  (storm.eye_location[:, 1] -
-#                                   mask_coord[1])**2)
-#            inlcude_storm = numpy.any(distance < mask_distance)
-#        if mask_category is not None:
-#            include storm = include_storm and numpy.any(
-#                  storm.category(categorization=categorization) > mask_category)
-#
-#        if include_storm:
-#            storms.append(storm)
-#
-#    return storms
+def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
+                              mask_category=None, categorization="NHC"):
+    r"""Load storms from a Matlab file containing storms
+ 
+    This format is based on the format Prof. Emmanuel uses to generate storms.
+ 
+    :Input:
+     - *path* (string) Path to the file to be read in
+     - *mask_distance* (float) Distance from *mask_coordinate* at which a storm
+       needs to in order to be returned in the list of storms.  If
+       *mask_distance* is *None* then no masking is used.  Default is to
+       use no *mask_distance*.
+     - *mask_coordinate* (tuple) Longitude and latitude coordinates to measure
+       the distance from.  Default is *(0.0, 0.0)*.
+     - *mask_category* (int) Category or highter a storm needs to be to be
+       included in the returned list of storms.  If *mask_category* is *None*
+       then no masking occurs.  The categorization used is controlled by
+       *categorization*.  Default is to use no *mask_category*.
+     - *categorization* (string) Categorization to be used for the
+       *mask_category* filter.  Default is "NHC".
+ 
+    :Output:
+     - (list) List of Storm objects that have been read in and were not filtered
+       out.
+    """
 
     # Load the mat file and extract pertinent data
     import scipy.io
