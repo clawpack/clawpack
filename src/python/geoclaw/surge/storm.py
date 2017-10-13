@@ -767,7 +767,7 @@ class Storm(object):
             data_file.write("%s\n" % self.t.shape[0])
             data_file.write("%s\n\n" % self.time_offset.isoformat())
             for n in range(self.t.shape[0]):
-                data_file.write("%s %s %s %s %s %s %s %s" %
+                data_file.write("%s, %s, %s, %s, %s, %s, %s, %s" %
                                 ((self.t[n] - self.time_offset).total_seconds(),
                                  self.eye_location[n, 0],
                                  self.eye_location[n, 1],
