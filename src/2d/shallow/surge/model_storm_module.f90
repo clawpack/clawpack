@@ -82,11 +82,10 @@ contains
         ! Local storage
         integer, parameter :: data_file = 701
         integer :: i, k, io_status
-        real(kind=8) :: forecast_time, last_time, x(2), y(2), ds, dt, dx, dy
-        real(kind=8) :: theta
+        real(kind=8) :: x(2), y(2), ds, dt
 
         ! Storm line reading format
-        character(len=*), parameter :: storm_format = "(8e18.8)"
+        character(len=*), parameter :: storm_format = "(7e18.8)"
 
         if (.not. module_setup) then
 
