@@ -81,7 +81,7 @@ contains
 
         ! Local storage
         integer, parameter :: data_file = 701
-        integer :: i, k, io_status, num_casts
+        integer :: i, k, io_status
         real(kind=8) :: forecast_time, last_time, x(2), y(2), ds, dt, dx, dy
         real(kind=8) :: theta
 
@@ -99,7 +99,7 @@ contains
                 stop 
             endif
 
-            read(data_file, "(i4)") num_casts
+            read(data_file, "(i4)") storm%num_casts
             read(data_file, "(a)") storm%landfall
             read(data_file, *)
 
