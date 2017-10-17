@@ -44,11 +44,11 @@ subroutine update (level, nvar, naux)
     dt = possk(lget)
 
 !$OMP PARALLEL DO PRIVATE(ng,mptr,loc,loccaux,nx,ny,mitot,mjtot,
-!$OMP&                    ilo,jlo,ihi,jhi,locuse,mkid,iclo,ichi,
+!$OMP&                    ilo,jlo,ihi,jhi,mkid,iclo,ichi,
 !$OMP&                    jclo,jchi,mi,mj,locf,locfaux,iplo,iphi,
 !$OMP&                    jplo,jphi,iff,jff,totrat,i,j,ivar,capac,
-!$OMP&                    capa,bc,etasum,hsum,husum,hvsum,drytol,
-!$OMP&                    newt,levSt,ico,jco,hf,bf,huf,hvf,
+!$OMP&                    capa,bc,etasum,hsum,husum,hvsum,
+!$OMP&                    levSt,ico,jco,hf,bf,huf,hvf,
 !$OMP&                    etaf,etaav,hav,nwet,hc,huc,hvc),
 !$OMP&             SHARED(numgrids,listOfGrids,level,intratx,intraty,
 !$OMP&                   nghost,uprint,nvar,naux,mcapa,node,listsp,
