@@ -151,7 +151,8 @@ subroutine update (level, nvar, naux)
                                         etaf = hf + bf
                                         nwet(layer) = nwet(layer) + 1
                                     else
-                                        etaf = eta_init(layer)
+                                        ! Set to zero for correct averages below.
+                                        etaf = 0.d0
                                         huf=0.d0
                                         hvf=0.d0
                                     endif
@@ -171,6 +172,7 @@ subroutine update (level, nvar, naux)
                                 etaav(layer) = etasum(layer)/dble(nwet(layer))
                                 hav(layer) = hsum(layer)/dble(nwet(layer))
                                 hc(layer) = min(hav(layer), (max(etaav(layer)-bc*capac, 0.0d0)))
+!                                 hc(layer) = hav(layer)
                                 huc(layer) = (min(hav(layer), hc(layer)) / hsum(layer) * husum(layer))
                                 hvc(layer) = (min(hav(layer), hc(layer)) / hsum(layer) * hvsum(layer))
                             else
