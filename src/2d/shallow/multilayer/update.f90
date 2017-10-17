@@ -47,6 +47,10 @@ subroutine update (level, nvar, naux)
 
     dt = possk(lget)
 
+    ! need to set up data structure for parallel distribution of grids
+!     call prepgrids(listgrids, numgrids(level), level)
+
+
 !$OMP PARALLEL DO PRIVATE(ng,mptr,loc,loccaux,nx,ny,mitot,mjtot, &
 !$OMP                    ilo,jlo,ihi,jhi,mkid,iclo,ichi, &
 !$OMP                    jclo,jchi,mi,mj,locf,locfaux,iplo,iphi, &
@@ -60,8 +64,6 @@ subroutine update (level, nvar, naux)
 !$OMP                   num_layers, rho, eta_init), &
 !$OMP            DEFAULT(none)
 
-    ! need to set up data structure for parallel distribution of grids
-    ! call prepgrids(listgrids, numgrids(level), level)
 
     do ng = 1, numgrids(lget)
         levSt   = listStart(lget)
@@ -172,7 +174,6 @@ subroutine update (level, nvar, naux)
                                 etaav(layer) = etasum(layer)/dble(nwet(layer))
                                 hav(layer) = hsum(layer)/dble(nwet(layer))
                                 hc(layer) = min(hav(layer), (max(etaav(layer)-bc*capac, 0.0d0)))
-!                                 hc(layer) = hav(layer)
                                 huc(layer) = (min(hav(layer), hc(layer)) / hsum(layer) * husum(layer))
                                 hvc(layer) = (min(hav(layer), hc(layer)) / hsum(layer) * hvsum(layer))
                             else
@@ -184,6 +185,8 @@ subroutine update (level, nvar, naux)
                             alloc(iadd(3*layer-2,i,j)) = hc(layer) / capac * rho(layer)
                             alloc(iadd(3*layer-1,i,j)) = huc(layer) / capac 
                             alloc(iadd(3*layer,i,j)) = hvc(layer) / capac 
+
+                            bc = bc + hc(layer)
                         enddo
 
                         if (uprint) then
