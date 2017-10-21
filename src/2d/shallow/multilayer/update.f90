@@ -114,16 +114,16 @@ subroutine update (level, nvar, naux)
                             write(outunit,String) i,j,mptr,iff,jff,mkid                
                             
                             String = "(' old vals: ',4e25.15)"
-                            write(outunit,String)(alloc(iadd(ivar,i,j)),ivar=1,nvar)
+                            write(outunit,String)(alloc(iadd(ivar,i,j,loc,mitot)),ivar=1,nvar)
                         endif
                         
                         if (mcapa == 0) then
                             capac = 1.0d0
                         else
-                            capac = alloc(iaddcaux(i,j))
+                            capac = alloc(iaddcaux(i,j,loccaux,mcapa,mitot))
                         endif
 
-                        bc = alloc(iaddctopo(i,j))
+                        bc = alloc(iaddctopo(i,j,loccaux,mitot))
 
                         etasum = 0.d0
                         hsum = 0.d0
@@ -138,16 +138,16 @@ subroutine update (level, nvar, naux)
                                 if (mcapa == 0) then
                                     capa = 1.0d0
                                 else
-                                    capa = alloc(iaddfaux(iff+ico-1,jff+jco-1))
+                                    capa = alloc(iaddfaux(iff+ico-1,jff+jco-1,locfaux,mcapa,mi))
                                 endif
                                 
-                                bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
+                                bf = alloc(iaddftopo(iff+ico-1,jff+jco-1,locfaux,mi))*capa
                                 
                                 do layer = num_layers, 1, -1
 
-                                    hf = alloc(iaddf(3*layer-2,iff+ico-1,jff+jco-1))*capa / rho(layer)
-                                    huf= alloc(iaddf(3*layer-1,iff+ico-1,jff+jco-1))*capa 
-                                    hvf= alloc(iaddf(3*layer,iff+ico-1,jff+jco-1))*capa 
+                                    hf = alloc(iaddf(3*layer-2,iff+ico-1,jff+jco-1,locf,mi))*capa / rho(layer)
+                                    huf= alloc(iaddf(3*layer-1,iff+ico-1,jff+jco-1,locf,mi))*capa 
+                                    hvf= alloc(iaddf(3*layer,iff+ico-1,jff+jco-1,locf,mi))*capa 
 
                                     if (hf > dry_tolerance(layer)) then
                                         etaf = hf + bf
@@ -182,16 +182,16 @@ subroutine update (level, nvar, naux)
                                 hvc(layer) = 0.0d0
                             endif
 
-                            alloc(iadd(3*layer-2,i,j)) = hc(layer) / capac * rho(layer)
-                            alloc(iadd(3*layer-1,i,j)) = huc(layer) / capac 
-                            alloc(iadd(3*layer,i,j)) = hvc(layer) / capac 
+                            alloc(iadd(3*layer-2,i,j,loc,mitot)) = hc(layer) / capac * rho(layer)
+                            alloc(iadd(3*layer-1,i,j,loc,mitot)) = huc(layer) / capac 
+                            alloc(iadd(3*layer,i,j,loc,mitot)) = hvc(layer) / capac 
 
                             bc = bc + hc(layer)
                         enddo
 
                         if (uprint) then
                             String = "(' new vals: ',4e25.15)"
-                            write(outunit, String)(alloc(iadd(ivar, i, j)), ivar=1, nvar)
+                            write(outunit, String)(alloc(iadd(ivar, i, j,loc,mitot)), ivar=1, nvar)
                         endif
 
                         jff = jff + intraty(lget)
@@ -207,38 +207,39 @@ subroutine update (level, nvar, naux)
 
         enddo
     enddo
+!$OMP END PARALLEL DO
     return
 
 
 contains
 
-    integer pure function iadd(ivar,i,j)
-        integer, intent(in) :: i, j, ivar
+    integer pure function iadd(ivar,i,j,loc,mitot)
+        integer, intent(in) :: i, j, ivar, loc, mitot
         iadd = loc + ivar-1 + nvar*((j-1)*mitot+i-1)
     end function iadd
 
-    integer pure function iaddf(ivar,i,j)
-        integer, intent(in) :: i, j, ivar
+    integer pure function iaddf(ivar,i,j,locf,mi)
+        integer, intent(in) :: i, j, ivar, locf, mi
         iaddf = locf   + ivar-1 + nvar*((j-1)*mi+i-1)
     end function iaddf
 
-    integer pure function iaddfaux(i,j)
-        integer, intent(in) :: i, j
+    integer pure function iaddfaux(i,j,locfaux,mcapa,mi)
+        integer, intent(in) :: i, j, locfaux, mcapa, mi
         iaddfaux = locfaux + mcapa-1 + naux*((j-1)*mi + (i-1))
     end function iaddfaux
 
-    integer pure function iaddcaux(i,j)
-        integer, intent(in) :: i, j
+    integer pure function iaddcaux(i,j,loccaux,mcapa,mitot)
+        integer, intent(in) :: i, j, loccaux, mcapa, mitot
         iaddcaux = loccaux + mcapa-1 + naux*((j-1)*mitot+(i-1))
     end function iaddcaux
 
-    integer pure function iaddftopo(i,j)
-        integer, intent(in) :: i, j
+    integer pure function iaddftopo(i,j,locfaux,mi)
+        integer, intent(in) :: i, j, locfaux, mi
         iaddftopo = locfaux + naux*((j-1)*mi + (i-1))
     end function iaddftopo
 
-    integer pure function iaddctopo(i,j)
-        integer, intent(in) :: i, j
+    integer pure function iaddctopo(i,j,loccaux, mitot)
+        integer, intent(in) :: i, j, loccaux, mitot
         iaddctopo = loccaux + naux*((j-1)*mitot+(i-1))
     end function iaddctopo
 

@@ -107,16 +107,16 @@ subroutine update (level, nvar, naux)
                             write(outunit,String) i,j,mptr,iff,jff,mkid                
                             
                             String = "(' old vals: ',4e25.15)"
-                            write(outunit,String)(alloc(iadd(ivar,i,j)),ivar=1,nvar)
+                            write(outunit,String)(alloc(iadd(ivar,i,j,loc,mitot)),ivar=1,nvar)
                         endif
                         
                         if (mcapa == 0) then
                             capac = 1.0d0
                         else
-                            capac = alloc(iaddcaux(i,j))
+                            capac = alloc(iaddcaux(i,j,loccaux,mcapa,mitot))
                         endif
 
-                        bc = alloc(iaddctopo(i,j))
+                        bc = alloc(iaddctopo(i,j,loccaux,mitot))
 
                         etasum = 0.d0
                         hsum = 0.d0
@@ -130,13 +130,13 @@ subroutine update (level, nvar, naux)
                                 if (mcapa == 0) then
                                     capa = 1.0d0
                                 else
-                                    capa = alloc(iaddfaux(iff+ico-1,jff+jco-1))
+                                    capa = alloc(iaddfaux(iff+ico-1,jff+jco-1,locfaux,mcapa,mi))
                                 endif
 
-                                hf = alloc(iaddf(1,iff+ico-1,jff+jco-1))*capa 
-                                bf = alloc(iaddftopo(iff+ico-1,jff+jco-1))*capa
-                                huf= alloc(iaddf(2,iff+ico-1,jff+jco-1))*capa 
-                                hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1))*capa 
+                                hf = alloc(iaddf(1,iff+ico-1,jff+jco-1,locf,mi))*capa 
+                                bf = alloc(iaddftopo(iff+ico-1,jff+jco-1,locfaux,mi))*capa
+                                huf= alloc(iaddf(2,iff+ico-1,jff+jco-1,locf,mi))*capa 
+                                hvf= alloc(iaddf(3,iff+ico-1,jff+jco-1,locf,mi))*capa 
 
                                 if (hf > dry_tolerance) then
                                     etaf = hf + bf
@@ -166,13 +166,13 @@ subroutine update (level, nvar, naux)
                             hvc = 0.0d0
                         endif
 
-                        alloc(iadd(1,i,j)) = hc / capac 
-                        alloc(iadd(2,i,j)) = huc / capac 
-                        alloc(iadd(3,i,j)) = hvc / capac 
+                        alloc(iadd(1,i,j,loc,mitot)) = hc / capac 
+                        alloc(iadd(2,i,j,loc,mitot)) = huc / capac 
+                        alloc(iadd(3,i,j,loc,mitot)) = hvc / capac 
 
                         if (uprint) then
                             String = "(' new vals: ',4e25.15)"
-                            write(outunit, String)(alloc(iadd(ivar, i, j)), ivar=1, nvar)
+                            write(outunit, String)(alloc(iadd(ivar, i, j, loc, mitot)), ivar=1, nvar)
                         endif
 
                         jff = jff + intraty(lget)
@@ -196,34 +196,35 @@ subroutine update (level, nvar, naux)
 
 contains
 
-    integer pure function iadd(ivar,i,j)
-        integer, intent(in) :: i, j, ivar
+    integer pure function iadd(ivar,i,j,loc,mitot)
+        integer, intent(in) :: i, j, ivar, loc, mitot
         iadd = loc + ivar-1 + nvar*((j-1)*mitot+i-1)
     end function iadd
 
-    integer pure function iaddf(ivar,i,j) 
-        integer, intent(in) :: i, j, ivar
+    integer pure function iaddf(ivar,i,j,locf,mi)
+        integer, intent(in) :: i, j, ivar, locf, mi
         iaddf = locf   + ivar-1 + nvar*((j-1)*mi+i-1)
     end function iaddf
 
-    integer pure function iaddfaux(i,j)
-        integer, intent(in) :: i, j
+    integer pure function iaddfaux(i,j,locfaux,mcapa,mi)
+        integer, intent(in) :: i, j, locfaux, mcapa, mi
         iaddfaux = locfaux + mcapa-1 + naux*((j-1)*mi + (i-1))
     end function iaddfaux
 
-    integer pure function iaddcaux(i,j)
-        integer, intent(in) :: i, j
+    integer pure function iaddcaux(i,j,loccaux,mcapa,mitot)
+        integer, intent(in) :: i, j, loccaux, mcapa, mitot
         iaddcaux = loccaux + mcapa-1 + naux*((j-1)*mitot+(i-1))
     end function iaddcaux
 
-    integer pure function iaddftopo(i,j)
-        integer, intent(in) :: i, j
-        iaddftopo = locfaux +  naux*((j-1)*mi + (i-1))
+    integer pure function iaddftopo(i,j,locfaux,mi)
+        integer, intent(in) :: i, j, locfaux, mi
+        iaddftopo = locfaux + naux*((j-1)*mi + (i-1))
     end function iaddftopo
 
-    integer pure function iaddctopo(i,j)
-        integer, intent(in) :: i, j
-        iaddctopo = loccaux +  naux*((j-1)*mitot+(i-1))
+    integer pure function iaddctopo(i,j,loccaux, mitot)
+        integer, intent(in) :: i, j, loccaux, mitot
+        iaddctopo = loccaux + naux*((j-1)*mitot+(i-1))
     end function iaddctopo
+
 
 end subroutine
