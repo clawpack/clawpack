@@ -1714,7 +1714,7 @@ class SubFault(object):
             floor = numpy.floor
 
             X1,X2 = numpy.meshgrid(x, y)   # uppercase
-            X3 = numpy.zeros(X1.shape)  # depth zero
+            X3 = numpy.zeros(X1.shape)   # depth zero
 
     
             # compute burgers vector
@@ -1762,11 +1762,11 @@ class SubFault(object):
                 self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
                 w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 self._get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
-                                Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
+                               Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
 
                 #w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 #self._get_angular_dislocations_surface(Y1,Y2,Y3,beta,Odepth)
-
+                
                 w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 self._coord_transform(w11,w12,w13,w21,w22,w23,w31,w32,w33,alpha)
             
@@ -1784,29 +1784,17 @@ class SubFault(object):
 
 
         
-            # burgersv[2] has opposite sign in yi-coordinates
-            #dX = v11*burgersv[0] + v21*burgersv[1] - v31*burgersv[2]
-            #dY = v12*burgersv[0] + v22*burgersv[1] - v32*burgersv[2]
-            #dZ = v13*burgersv[0] + v23*burgersv[1] - v33*burgersv[2]
-
-            dX = v11*burgersv[0] + v21*burgersv[1] - v31*burgersv[2]
-            dY = v12*burgersv[0] + v22*burgersv[1] - v32*burgersv[2]
-            dZ = v13*burgersv[0] + v23*burgersv[1] - v33*burgersv[2]
-
-            #dX = v11*burgersv[0] + v12*burgersv[1] + v13*burgersv[2]
-            #dY = v21*burgersv[0] + v22*burgersv[1] + v23*burgersv[2]
-            #dZ = v31*burgersv[0] + v32*burgersv[1] + v33*burgersv[2]
-
-            #dX = v11*burgersv[0] + v12*burgersv[1] 
-            #dY = v21*burgersv[0] + v22*burgersv[1] 
-            #dZ = v31*burgersv[0] + v32*burgersv[1] 
+            # linear combination for each component of Burgers vectors
+            dX = -v11*burgersv[0] - v12*burgersv[1] + v13*burgersv[2]
+            dY = -v21*burgersv[0] - v22*burgersv[1] + v23*burgersv[2]
+            dZ = -v31*burgersv[0] - v32*burgersv[1] + v33*burgersv[2]
 
             dtopo = DTopography()
             dtopo.X = X1    # X1, X2 varname confusing?
             dtopo.Y = X2
             dtopo.dX = numpy.array(dX, ndmin=3)
             dtopo.dY = numpy.array(dY, ndmin=3)
-            dtopo.dZ = numpy.array(-dZ, ndmin=3)
+            dtopo.dZ = numpy.array(dZ, ndmin=3)
             dtopo.times = [0.]
             self.dtopo = dtopo
 
@@ -1829,11 +1817,9 @@ class SubFault(object):
 
         # TODO: put in a coordinate_specification == 'triangular' check here
         x = numpy.array(self.corners)
-
         y = numpy.zeros(x.shape)
 
         # convert to meters
-        y[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
         y[:,0] = LAT2METER * numpy.cos( DEG2RAD*self.latitude )*x[:,0]
         y[:,1] = LAT2METER * x[:,1]
         y[:,2] = - numpy.abs(x[:,2])    #lazy
@@ -2229,7 +2215,7 @@ class SubFault(object):
 
         cos = numpy.cos
         sin = numpy.sin
-        
+
         w11 = sin(alpha)*v11 + cos(alpha)*v12
         w12 = cos(alpha)*v11 - sin(alpha)*v12
         w13 = v13
@@ -2283,18 +2269,8 @@ class SubFault(object):
         Odepth = numpy.abs(Odepth)
         
         # convert lat/long to meters
-        #X1 = LAT2METER * (numpy.cos( DEG2RAD*X2 ) * X1 \
-        #X1 = LAT2METER * (numpy.cos( DEG2RAD*self.latitude ) * X1 \
-                          #- numpy.cos( DEG2RAD*self.latitude) * Olong)
         X1 = LAT2METER * numpy.cos( DEG2RAD*self.latitude ) * (X1 - Olong)
         X2 = LAT2METER * (X2 - Olat)
-
-        #Olong = LAT2METER * numpy.cos( DEG2RAD*self. ) * Olong 
-        #Olong = LAT2METER * numpy.cos( DEG2RAD*Olat ) * Olong 
-        #Olat = LAT2METER * Olat 
-
-        #X1 = X1 - Olong
-        #X2 = X2 - Olat
 
         Y1 = numpy.zeros(dims)       # yi-coordinates
         Y2 = numpy.zeros(dims)       # yi-coordinates
@@ -2315,7 +2291,7 @@ class SubFault(object):
         # rotate by -alpha in long/lat plane
         Y1 = numpy.sin(alpha)*X1 + numpy.cos(alpha)*X2
         Y2 = numpy.cos(alpha)*X1 - numpy.sin(alpha)*X2
-        Y3 = X3 - Odepth 
+        Y3 = X3 - numpy.abs(Odepth)
         
         Z1 = numpy.cos(beta)*Y1 - numpy.sin(beta)*Y3
         Z2 = Y2
@@ -2323,7 +2299,7 @@ class SubFault(object):
 
         Yb1 = Y1
         Yb2 = Y2
-        Yb3 = X3 + Odepth  
+        Yb3 = X3 + numpy.abs(Odepth)
 
         Zb1 =  numpy.cos(beta)*Y1 + numpy.sin(beta)*Yb3
         Zb2 =  Y2
@@ -2390,7 +2366,7 @@ class SubFault(object):
         r = numpy.sqrt(y1**2 + y2**2 + q**2)
         xx = numpy.sqrt(y1**2 + q**2)
         a4 = 2.0*poisson/cs*(numpy.log(r+d_bar) - sn*numpy.log(r+y2))
-        f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*3.14159)
+        f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*numpy.pi)
     
         return f
     
@@ -2407,7 +2383,7 @@ class SubFault(object):
         r = numpy.sqrt(y1**2 + y2**2 + q**2)
         xx = numpy.sqrt(y1**2 + q**2)
         a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
-        f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
+        f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*numpy.pi)
     
         return f
 
