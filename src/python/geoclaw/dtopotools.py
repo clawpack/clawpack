@@ -1760,12 +1760,12 @@ class SubFault(object):
 
                 Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3 = \
                 self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
-                w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
-                self._get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
-                               Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
-
                 #w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
-                #self._get_angular_dislocations_surface(Y1,Y2,Y3,beta,Odepth)
+                #self._get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
+                               #Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
+
+                w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
+                self._get_angular_dislocations_surface(Y1,Y2,Y3,beta,Odepth)
                 
                 w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 self._coord_transform(w11,w12,w13,w21,w22,w23,w31,w32,w33,alpha)
