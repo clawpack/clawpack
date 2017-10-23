@@ -15,7 +15,6 @@ import numpy as numpy
 import clawpack.geoclaw.data
 import clawpack.geoclaw.topotools as tt
 
-
 # Rotation transformations
 def transform_c2p(x,y,x0,y0,theta):
     return ((x+x0)*numpy.cos(theta) - (y+y0)*numpy.sin(theta),
@@ -100,7 +99,8 @@ def setrun(claw_pkg='geoclaw'):
     # GeoClaw specific parameters:
     #------------------------------------------------------------------
     rundata = setgeo(rundata)
-    rundata = set_multilayer(rundata)
+
+    set_multilayer(rundata)
 
     #------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
@@ -121,17 +121,17 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
 
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = -0.2    # west longitude
-    clawdata.upper[0] = 0.4   # east longitude
+    clawdata.lower[0] = -1      # west longitude
+    clawdata.upper[0] = 2.0       # east longitude
 
-    clawdata.lower[1] = -0.2      # south latitude
-    clawdata.upper[1] = 0.4      # north latitude
+    clawdata.lower[1] = -1.0       # south latitude
+    clawdata.upper[1] = 2.0         # north latitude
 
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 30
-    clawdata.num_cells[1] = 30
+    clawdata.num_cells[0] = 75
+    clawdata.num_cells[1] = 75
 
     # ---------------
     # Size of system:
@@ -177,8 +177,8 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 10
-        clawdata.tfinal = 0.3
+        clawdata.num_output_times = 1
+        clawdata.tfinal = 1.0
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -187,8 +187,8 @@ def setrun(claw_pkg='geoclaw'):
 
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
-        clawdata.output_step_interval = 1
-        clawdata.total_steps = 4
+        clawdata.output_step_interval = 10
+        clawdata.total_steps = 100
         clawdata.output_t0 = True
         
 
@@ -228,10 +228,10 @@ def setrun(claw_pkg='geoclaw'):
 
     # Desired Courant number if variable dt used, and max to allow without
     # retaking step with a smaller dt:
-    # clawdata.cfl_desired = 0.75
-    # clawdata.cfl_max = 1.0
-    clawdata.cfl_desired = 0.45
-    clawdata.cfl_max = 0.5
+    clawdata.cfl_desired = 0.75
+    clawdata.cfl_max = 1.0
+    # clawdata.cfl_desired = 0.45
+    # clawdata.cfl_max = 0.5
 
     # Maximum number of time steps to allow between output times:
     clawdata.steps_max = 5000
@@ -250,7 +250,7 @@ def setrun(claw_pkg='geoclaw'):
     #  0 or 'unsplit' or none'  ==> Unsplit
     #  1 or 'increment'         ==> corner transport of waves
     #  2 or 'all'               ==> corner transport of 2nd order corrections too
-    clawdata.dimensional_split = "unsplit"
+    clawdata.dimensional_split = 0
     
     # For unsplit method, transverse_waves can be 
     #  0 or 'none'      ==> donor cell (only normal solver used)
@@ -334,12 +334,12 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 2
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [4,2]
-    amrdata.refinement_ratios_y = [4,2]
-    amrdata.refinement_ratios_t = [4,2]
+    amrdata.refinement_ratios_x = [2,6]
+    amrdata.refinement_ratios_y = [2,6]
+    amrdata.refinement_ratios_t = [2,6]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
@@ -388,8 +388,6 @@ def setrun(claw_pkg='geoclaw'):
     rundata.regiondata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    # rundata.regiondata.regions.append([3, 3, 0.0000002, 1.0, -0.1, 0.2, -0.1, 0.2])
-
 
     # ---------------
     # Gauges:
@@ -434,13 +432,13 @@ def setgeo(rundata):
     geo_data.gravity = 9.81
     geo_data.coordinate_system = 1
     geo_data.earth_radius = 6367.5e3
-    geo_data.rho = [922.5, 1025.0]
+    geo_data.rho = [0.9, 1.0]
 
     # == Forcing Options
     geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = [0.0, -.6]
+    geo_data.sea_level = 0.0
     geo_data.dry_tolerance = 1.e-3
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025
@@ -457,12 +455,17 @@ def setgeo(rundata):
     topo_data = rundata.topo_data
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
-    topo_data.topofiles.append([2, 1, 5, 0.0, 1e10, 'topo.tt2'])
-
+    topo_data.topofiles.append([2, 1, 5, 0.0, 1e10, 'jump_topo.topotype2'])
+    
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
-    # for moving topography, append lines of the form : (<= 1 allowed for now!)
+    # for moving topography, append lines of the form :   (<= 1 allowed for now!)
     #   [topotype, minlevel,maxlevel,fname]
+
+    # == setqinit.data values ==
+    qinit_data = rundata.qinit_data
+
+
 
     return rundata
     # end of function setgeo
@@ -475,26 +478,24 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.eta = [0.0, -0.6]
-    data.rho = [922.5, 1025.0]
-
+    data.eta = [0.0,-0.6]
+    
     # Algorithm parameters
     data.eigen_method = 2
     data.inundation_method = 2
     data.richardson_tolerance = 0.95
-    data.wave_tolerance = [1e-3,1e-2]
+    # data.wave_tolerance = [0.1,0.1]
     # data.dry_limit = True
 
-    ## Set special initial conditions for qinit
+    # Set special initial conditions for qinit
     rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6
     rundata.qinit_data.epsilon = 0.02
     rundata.qinit_data.angle = numpy.pi / 4.0
     rundata.qinit_data.sigma = 0.02
     rundata.qinit_data.wave_family = 4
-    rundata.qinit_data.init_location = [-0.1, 0.0]
+    rundata.qinit_data.init_location = [-0.1,0.0]
 
-    return rundata
 
 
 def bathy_step(x, y, location=0.15, angle=0.0, left=-1.0, right=-0.2):
@@ -529,4 +530,4 @@ if __name__ == '__main__':
 
     rundata.write()
 
-    write_topo_file(rundata, 'topo.tt2')
+    write_topo_file(rundata, 'jump_topo.topotype2')
