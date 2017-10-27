@@ -16,10 +16,6 @@ from clawpack.geoclaw import topotools
 from six.moves import range
 import os
 
-try:
-    TG32412 = np.loadtxt('32412_notide.txt')
-except:
-    print("*** Could not load DART data file")
 
 #--------------------------
 def setplot(plotdata=None):

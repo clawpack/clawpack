@@ -1,5 +1,5 @@
 
-.. _geoclaw_examples_tsunami_bowl-radial:
+.. _geoclaw_examples_multi-layer_bowl-radial:
 
 Tsunami in a parabolic bowl shaped ocean
 ========================================

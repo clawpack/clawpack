@@ -393,7 +393,6 @@ def setgeo(rundata):
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
     topo_data.topofiles.append([2, 1, 3, 0., 1.e10, 'bowl.topotype2'])
-    # topo_data.topofiles.append([2, 1, 5, 0.0, 1e10, 'topo.tt2'])
 
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
@@ -431,57 +430,12 @@ def set_multilayer(rundata):
     data.inundation_method = 2
     data.richardson_tolerance = np.infty
     data.wave_tolerance = [1e-3,1e-2]
-    # data.dry_limit = True
 
-    # rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 4
-    # rundata.qinit_data.epsilon = 0.02
-    # rundata.qinit_data.angle = 0.0
-    # rundata.qinit_data.sigma = 0.02
-    # rundata.qinit_data.wave_family = 4
-    # rundata.qinit_data.init_location = [-0.1,0.0]
+
 
     return rundata
 
-# Rotation transformations
-def transform_c2p(x,y,x0,y0,theta):
-    return ((x+x0)*np.cos(theta) - (y+y0)*np.sin(theta),
-            (x+x0)*np.sin(theta) + (y+y0)*np.cos(theta))
-
-def transform_p2c(x,y,x0,y0,theta):
-    return ( x*np.cos(theta) + y*np.sin(theta) - x0,
-            -x*np.sin(theta) + y*np.cos(theta) - y0)
-    
-def bathy_step(x, y, location=0.15, angle=0.0, left=-80.0, right=-10.0):
-    x_c,y_c = transform_p2c(x, y, location, 0.0, angle)
-    return ((x_c <= 0.0) * left 
-          + (x_c >  0.0) * right)
-
-
-def write_topo_file(run_data, out_file, **kwargs):
-
-    # Make topography
-    topo_func = lambda x, y: bathy_step(x, y, **kwargs)
-    topo = tt.Topography(topo_func=topo_func)
-    topo.x = np.linspace(run_data.clawdata.lower[0], 
-                            run_data.clawdata.upper[0], 
-                            run_data.clawdata.num_cells[0] + 8)
-    topo.y = np.linspace(run_data.clawdata.lower[1], 
-                            run_data.clawdata.upper[1], 
-                            run_data.clawdata.num_cells[1] + 8)
-    topo.write(out_file)
-
-    # Write out simple bathy geometry file for communication to the plotting
-    with open("./bathy_geometry.data", 'w') as bathy_geometry_file:
-        if "location" in kwargs:
-            location = kwargs['location']
-        else:
-            location = 0.15
-        if "angle" in kwargs:
-            angle = kwargs['angle']
-        else:
-            angle = 0.0
-        bathy_geometry_file.write("%s\n%s" % (location, angle) )
 
 
 if __name__ == '__main__':
@@ -490,4 +444,3 @@ if __name__ == '__main__':
     rundata = setrun(*sys.argv[1:])
     rundata.write()
 
-    write_topo_file(rundata, 'topo.tt2')
