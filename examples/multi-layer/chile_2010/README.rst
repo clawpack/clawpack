@@ -1,5 +1,5 @@
 
-.. _geoclaw_examples_tsunami_chile2010:
+.. _geoclaw_examples_multi-layer_chile2010:
 
 Tsunami arising offshore Maule, Chile, Feb. 27, 2010 
 =====================================================

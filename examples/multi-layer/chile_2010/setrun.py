@@ -405,16 +405,16 @@ def setgeo(rundata):
     topo_path = os.path.join(scratch_dir, 'etopo10min120W60W60S0S.asc')
     topo_data.topofiles.append([2, 1, 3, 0., 1.e10, topo_path])
 
-    topo_path = os.path.join(scratch_dir, 'etopo1.asc')
-    topo_data.topofiles.append([3, 1, 3, 0., 1.e10, topo_path])
+    # topo_path = os.path.join(scratch_dir, 'etopo1.asc')
+    # topo_data.topofiles.append([3, 1, 3, 0., 1.e10, topo_path])
 
     #== setdtopo.data values ==
-    dtopo_data = rundata.dtopo_data
-    # # for moving topography, append lines of the form :   (<= 1 allowed for now!)
-    #   # [topotype, minlevel,maxlevel,fname]
-    dtopo_path = os.path.join(scratch_dir, 'dtopo_usgs100227.tt3')
-    dtopo_data.dtopofiles.append([3,3,3,dtopo_path])
-    dtopo_data.dt_max_dtopo = 0.2
+    # dtopo_data = rundata.dtopo_data
+    # # # for moving topography, append lines of the form :   (<= 1 allowed for now!)
+    # #   # [topotype, minlevel,maxlevel,fname]
+    # dtopo_path = os.path.join(scratch_dir, 'dtopo_usgs100227.tt3')
+    # dtopo_data.dtopofiles.append([3,3,3,dtopo_path])
+    # dtopo_data.dt_max_dtopo = 0.2
 
 
     # == setqinit.data values ==
@@ -448,16 +448,10 @@ def set_multilayer(rundata):
     data.eigen_method = 2
     data.inundation_method = 2
     data.richardson_tolerance = 0.95
-    # data.wave_tolerance = [0.1,0.1]
-    # data.dry_limit = True
 
-    # rundata.replace_data('qinit_data', QinitMultilayerData())
+
     rundata.qinit_data.qinit_type = 0
-    # rundata.qinit_data.epsilon = 0.02
-    # rundata.qinit_data.angle = np.pi
-    # rundata.qinit_data.sigma = 0.02
-    # rundata.qinit_data.wave_family = 4
-    # rundata.qinit_data.init_location = [-100.0,0.0]
+
 
     return rundata
 

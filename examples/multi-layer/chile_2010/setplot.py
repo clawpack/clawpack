@@ -77,9 +77,7 @@ def setplot(plotdata=None):
     # ========================================================================
     #  Generic helper functions
     # ========================================================================
-    # def pcolor_afteraxes(current_data):
-    #     bathy_ref_lines(current_data)
-    #     gauge_locations(current_data)
+
         
     def contour_afteraxes(current_data):
         # gauge_locations(current_data)
@@ -94,16 +92,6 @@ def setplot(plotdata=None):
     def profile_afteraxes(current_data):
         pass
         
-    # def bathy_ref_lines(current_data):
-    #     plt.hold(True)
-    #     for ref_line in ref_lines:
-    #         x1 = ref_line[0][0]
-    #         y1 = ref_line[0][1]
-    #         x2 = ref_line[1][0]
-    #         y2 =  ref_line[1][1]
-    #         plt.plot([x1,x2],[y1,y2],'y--',linewidth=1)
-    #     plt.hold(False)
-        
     def gauge_locations(current_data,gaugenos='all'):
         plt.hold(True)
         gaugetools.plot_gauge_locations(current_data.plotdata, \
@@ -114,24 +102,16 @@ def setplot(plotdata=None):
     # Axis limits
     # xlimits = [amrdata.xlower,amrdata.xupper]
     xlimits = [-120.0, -60.0]
-    # xlimits = [-80.0, -70.0]
 
     # ylimits = [amrdata.ylower,amrdata.yupper]
     ylimits = [-60.0, 0.0]
-    # ylimits = [-40.0, -30.0]
     
     eta = [multilayer_data.eta[0],multilayer_data.eta[1]]
     top_surface_limits = [eta[0]-2,eta[0]+2]
     internal_surface_limits = [eta[1]-2,eta[1]+2]
-    # top_surface_limits = [eta[0]-0.3,eta[0]+0.3]
-    # internal_surface_limits = [eta[1]-0.15,eta[1]+0.15]
     top_speed_limits = [0.0,0.1]
     internal_speed_limits = [0.0,0.03]
-    
-    # Single layer test limits
-    # top_surface_limits = [eta[0]-2.5,eta[0]+2.5]
-    # top_speed_limits = [0.0,6.0]
-    
+
 
     # ========================================================================
     #  Surface Elevations
@@ -147,10 +127,7 @@ def setplot(plotdata=None):
     plotaxes.scaled = True
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
-    # plotaxes.afteraxes = pcolor_afteraxes
     ml_plot.add_surface_elevation(plotaxes,1,bounds=top_surface_limits)
-    # ml_plot.add_surface_elevation(plotaxes,1,bounds=[-0.06,0.06])
-    # ml_plot.add_surface_elevation(plotaxes,1)
     ml_plot.add_land(plotaxes, 1)
     
     # Bottom surface
@@ -160,65 +137,9 @@ def setplot(plotdata=None):
     plotaxes.scaled = True
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
-    # plotaxes.afteraxes = pcolor_afteraxes
-    # ml_plot.add_surface_elevation(plotaxes,2,bounds=[-300-0.5,-300+0.5])
     ml_plot.add_surface_elevation(plotaxes,2,bounds=internal_surface_limits)
-    # ml_plot.add_surface_elevation(plotaxes,2)
     ml_plot.add_land(plotaxes, 2)
 
-    # #-----------------------------------------
-    # # Figure for surface
-    # #-----------------------------------------
-    # plotfigure = plotdata.new_plotfigure(name='Surface', figno=0)
-
-    # # Set up for axes in this figure:
-    # plotaxes = plotfigure.new_plotaxes('pcolor')
-    # plotaxes.title = 'Surface'
-    # plotaxes.scaled = True
-
-    # def fixup(current_data):
-    #     import pylab
-    #     addgauges(current_data)
-    #     t = current_data.t
-    #     t = t / 3600.  # hours
-    #     pylab.title('Surface at %4.2f hours' % t, fontsize=20)
-    #     pylab.xticks(fontsize=15)
-    #     pylab.yticks(fontsize=15)
-    # plotaxes.afteraxes = fixup
-
-    # # Water
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # #plotitem.plot_var = geoplot.surface
-    # plotitem.plot_var = geoplot.surface_or_depth
-    # plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    # plotitem.pcolor_cmin = -0.2
-    # plotitem.pcolor_cmax = 0.2
-    # plotitem.add_colorbar = True
-    # plotitem.amr_celledges_show = [0,0,0]
-    # plotitem.patchedges_show = 1
-
-    # # Land
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    # plotitem.plot_var = geoplot.land
-    # plotitem.pcolor_cmap = geoplot.land_colors
-    # plotitem.pcolor_cmin = 0.0
-    # plotitem.pcolor_cmax = 100.0
-    # plotitem.add_colorbar = False
-    # plotitem.amr_celledges_show = [1,1,0]
-    # plotitem.patchedges_show = 1
-    # plotaxes.xlimits = [-120,-60]
-    # plotaxes.ylimits = [-60,0]
-
-    # # add contour lines of bathy if desired:
-    # plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-    # plotitem.show = False
-    # plotitem.plot_var = geoplot.topo
-    # plotitem.contour_levels = linspace(-3000,-3000,1)
-    # plotitem.amr_contour_colors = ['y']  # color on each level
-    # plotitem.kwargs = {'linestyles':'solid','linewidths':2}
-    # plotitem.amr_contour_show = [1,0,0]  
-    # plotitem.celledges_show = 0
-    # plotitem.patchedges_show = 0
 
 
     #-----------------------------------------
