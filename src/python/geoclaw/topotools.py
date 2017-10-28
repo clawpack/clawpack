@@ -1026,8 +1026,6 @@ class Topography(object):
 
         region_extent = self.extent
 
-        mean_lat = 0.5 * (region_extent[3] + region_extent[2])
-        axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
 
         if limits is None:
             if self.unstructured:
@@ -1093,6 +1091,9 @@ class Topography(object):
                 # assume plot_box is a valid color:
                 color = plot_box
             plt.plot([x1,x2,x2,x1,x1], [y1,y1,y2,y2,y1], color=color)
+
+        mean_lat = 0.5 * (region_extent[3] + region_extent[2])
+        axes.set_aspect(1.0 / numpy.cos(numpy.pi / 180.0 * mean_lat))
 
         return axes
 
