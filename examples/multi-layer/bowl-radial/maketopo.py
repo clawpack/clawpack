@@ -47,7 +47,7 @@ def topo(x,y):
     """
     # value of z at origin:  Try zmin = 80 for shoreline or 250 for no shore
     zmin = 80.
-    z = 2.e-2*(x**2 + y**2) - zmin
+    z = 1.e-2*(x**2 + y**2) - zmin
 
     # r = x**2 + y**2
     # z = where(r<80**2, -zmin, zmin)
@@ -60,7 +60,7 @@ def qinit(x,y):
     """
     from numpy import where
     ze = -((x+0e0)**2 + (y+0e0)**2)/100
-    z = where(ze>-10, 10.0*exp(ze), 0.)
+    z = where(ze>-10, 4.0*exp(ze), 0.)
     return z
 
 if __name__=='__main__':

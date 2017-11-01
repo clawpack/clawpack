@@ -70,8 +70,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 41
-    clawdata.num_cells[1] = 41
+    clawdata.num_cells[0] = 40
+    clawdata.num_cells[1] = 40
 
 
     # ---------------
@@ -126,8 +126,8 @@ def setrun(claw_pkg='geoclaw'):
 
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
-        clawdata.output_step_interval = 10
-        clawdata.total_steps = 50
+        clawdata.output_step_interval = 1
+        clawdata.total_steps = 500
         clawdata.output_t0 = True
         
 
@@ -374,7 +374,6 @@ def setgeo(rundata):
     geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = [0.0, -20]
     geo_data.dry_tolerance = 1.e-1
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025
