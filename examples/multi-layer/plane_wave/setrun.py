@@ -428,7 +428,6 @@ def setgeo(rundata):
     geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = [0.0, -.6]
     geo_data.dry_tolerance = 1.e-3
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025
