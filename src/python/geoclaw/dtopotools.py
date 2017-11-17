@@ -1471,7 +1471,7 @@ class SubFault(object):
                                             self._centers[0][1] 
                                                                  - up_strike[1])
 
-    def calculate_geometry_triangles(self):
+    def calculate_geometry_triangles(self,rake=90.):
         r"""
         Calculate geometry for triangular subfaults
 
@@ -1496,14 +1496,15 @@ class SubFault(object):
 
             x0 = numpy.array(self.corners)
             x = x0.copy()
-
+            
             x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative(lazy)
 
             x_ave = numpy.mean(x,axis=0)
             
             # convert lat-long coordinate to Cartesian
-            x[:,0] *= LAT2METER * cos( DEG2RAD*x_ave[1] ) 
-            x[:,1] *= LAT2METER 
+            #x[:,0] *= LAT2METER * cos( DEG2RAD*x_ave[1] ) 
+            #x[:,1] *= LAT2METER 
+
 
             # compute strike and dip direction
             # e3: vertical 
@@ -1511,24 +1512,29 @@ class SubFault(object):
             e3 = numpy.array([0.,0.,1.])
             v1 = x[1,:] - x[0,:]
             v2 = x[2,:] - x[0,:]
+
+            v1[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
+            v2[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
+            v1[1] *= LAT2METER 
+            v2[1] *= LAT2METER 
             
             normal = cross(v1,v2)
-            if (normal[2] < 0):
-                normal = -normal
-            normal = normal/norm(normal)
 
-            strikev = cross(e3,normal)   # vector in strike direction
+            strikev = cross(normal,e3)   # vector in strike direction
             if norm(strikev) < 1e-12:
                 strikev = numpy.array([0.,1.,0.])
             dipv = cross(strikev,normal) # vector in dip direction
             
             strike_rad = atan2(strikev[0],strikev[1])
+            #strike_rad = numpy.arctan(-normal[1]/normal[0])
+            if strike_rad < 0.:
+                strike_rad = 2*numpy.pi + strike_rad
             dip_rad =atan(divide(abs(dipv[2]),sqrt(dipv[0]**2+dipv[1]**2)))
             
             # convert to degrees
             self.strike = numpy.rad2deg(strike_rad)
             self.dip = numpy.rad2deg(dip_rad)
-            self.rake = 90.     # set default rake to 90 degrees
+            self.rake = rake     # set default rake to 90 degrees
 
             # find the center line
             xx = numpy.zeros((3,3))
@@ -1569,20 +1575,19 @@ class SubFault(object):
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
 
-    def set_corners(self,corners):
+    def set_corners(self,corners,rake=90.):
         r"""
             set three corners for a triangular fault.
-
-            Input `corners` should be a 3 x 3 array.
+            Input *corners* should be iterable of length 3.
         """
 
         if len(corners) == 3:
             self._corners =\
                 [corners[0],corners[1],corners[2]]
             self.coordinate_specification = 'triangular'
-            self.calculate_geometry_triangles()
+            self.calculate_geometry_triangles(rake=rake)
         else:
-            raise ValueError("Input not understood")
+            raise ValueError("Expected input of length 3")
 
 
     def _get_unit_slip_vector(self):
