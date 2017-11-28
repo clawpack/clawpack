@@ -343,38 +343,23 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         self.add_attribute('wind_forcing',False)
         self.add_attribute('drag_law',1)
         self.add_attribute('pressure_forcing',False)
-        
-        # Source term algorithm parameters
-        # self.add_attribute('wind_tolerance',1e-6)
-        # self.add_attribute('pressure_tolerance',1e-4) # Pressure source term tolerance
+
+        # Algorithm parameters
+        self.add_attribute("wind_index", 5)
+        self.add_attribute("pressure_index", 7)
+        self.add_attribute("display_landfall_time", False)
 
         # AMR parameters
         self.add_attribute('wind_refine',[20.0,40.0,60.0])
         self.add_attribute('R_refine',[60.0e3,40e3,20e3])
         
         # Storm parameters
-        self.add_attribute("storm_type",0) # Type of storm
-        self.add_attribute("landfall",0.0)
-        self.add_attribute("display_landfall_time", False)
+        self.add_attribute("storm_type", 0) # Type of storm
+        self.add_attribute("model_type", 1) # Default to parameterized model
+        self.add_attribute("storm_file",'./storm.data') # Data file
 
-        # Storm type 1 - Read in file track
-        self.add_attribute("storm_file",'./storm.data')
 
-        # Storm type 2 - Idealized Hurricane, these match hurricane Tracy
-        self.add_attribute("ramp_up_t",12*60.0**2) # Ramp up time for hurricane
-        self.add_attribute('velocity',(5.0,0.0))  # Speed of hurricane
-        self.add_attribute('R_eye_init',(0.0,0.0))     # Initial position
-        self.add_attribute('A',23.0)        # Hurricane model fit parameter
-        self.add_attribute('B',1.5)
-        self.add_attribute('Pc',950.0)      # Pressure in the eye of the hurricane 
-
-        # Storm type 3 - Stommel wind field
-        self.add_attribute('stommel_wind',1.0)
-
-        # Algorithm parameters
-        self.add_attribute("wind_index", 5)
-        self.add_attribute("pressure_index", 7)
-
+        self.add_attribute('landfall', None) # DEPRECATED!
         
     def write(self,out_file='./surge.data',data_source="setrun.py"):
         """Write out the data file to the path given"""
@@ -389,6 +374,7 @@ class SurgeData(clawpack.clawutil.data.ClawData):
 
         self.data_write("wind_index", description="(Index into aux array for wind (size 2))")
         self.data_write("pressure_index", description="(Index into aux array for pressure (size 1))")
+        self.data_write("display_landfall_time", description='(Display time relative to landfall)')
         self.data_write()
 
         if isinstance(self.wind_refine, bool):
@@ -408,11 +394,8 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         self.data_write()
 
         self.data_write("storm_type", description='(Storm specification type)')
+        self.data_write("model_type", description="(Parameterization or input type)")
         self.data_write('storm_file', description="(Location of storm data)")
-        self.data_write()
-
-        self.data_write('landfall', description="(Landfall time of storm)")
-        self.data_write("display_landfall_time", description='(Display time relative to landfall)')
 
         if self.storm_type == 0:
             pass

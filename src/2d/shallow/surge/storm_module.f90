@@ -152,6 +152,7 @@ contains
             ! Set some parameters
             read(unit, '(i2)') wind_index
             read(unit, '(i2)') pressure_index
+            read(unit, *) display_landfall_time
             read(unit, *)
             
             ! AMR parameters
@@ -177,11 +178,6 @@ contains
             read(unit, "(i1)") storm_type
             read(unit, "(i1)") model_type
             read(unit, *) storm_file_path
-            read(unit, *)
-
-            ! Time output formatting
-            read(unit, "(d16.8)") landfall
-            read(unit, *) display_landfall_time
             
             close(unit)
 

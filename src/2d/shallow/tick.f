@@ -269,7 +269,8 @@ c Output time info
           time_format = "(' AMRCLAW: level ',i2,'  CFL = ',e8.3," //
      &                  "'  dt = ',e10.4,  '  final t = ',e12.6)"
           if (display_landfall_time) then
-            timenew = (timenew - landfall) / (3.6d3 * 24d0)
+c           Convert time to days            
+            timenew = timenew / (3.6d3 * 24d0)
             time_format = "(' AMRCLAW: level ',i2,'  CFL = ',e8.3," //
      &                  "'  dt = ',e10.4,  '  final t = ', f5.2)"
           end if

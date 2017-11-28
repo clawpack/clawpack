@@ -81,12 +81,11 @@ contains
 
         ! Local storage
         integer, parameter :: data_file = 701
-        integer :: i, k, io_status, num_casts
-        real(kind=8) :: forecast_time, last_time, x(2), y(2), ds, dt, dx, dy
-        real(kind=8) :: theta
+        integer :: i, k, io_status
+        real(kind=8) :: x(2), y(2), ds, dt
 
         ! Storm line reading format
-        character(len=*), parameter :: storm_format = "(8e18.8)"
+        character(len=*), parameter :: storm_format = "(7e18.8)"
 
         if (.not. module_setup) then
 
@@ -99,8 +98,8 @@ contains
                 stop 
             endif
 
-            read(data_file, "(i4)") num_casts
-            read(data_file, "(a)") landfall
+            read(data_file, "(i4)") storm%num_casts
+            read(data_file, "(a)") storm%landfall
             read(data_file, *)
 
             write(log_unit, "('Data length = ',i3)") storm%num_casts
