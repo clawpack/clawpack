@@ -1253,6 +1253,7 @@ class SubFault(object):
         r"""Longitude of the subfault based on *coordinate_specification*."""
         self.coordinate_specification = None
         r"""Specifies where the latitude, longitude and depth are measured from."""
+        self._projection_zone = None
 
         # default value for rigidity = shear modulus
         # Note that standard units for mu is now Pascals.
@@ -1487,53 +1488,76 @@ class SubFault(object):
         if self.coordinate_specification == 'triangular':
 
             cos = numpy.cos
+            sin = numpy.sin
             atan = numpy.arctan
             atan2 = numpy.arctan2
             divide = numpy.divide
             sqrt = numpy.sqrt
             cross = numpy.cross
             norm = numpy.linalg.norm
+            rad2deg = numpy.rad2deg
+            deg2rad = numpy.deg2rad
 
             x0 = numpy.array(self.corners)
             x = x0.copy()
+            x = numpy.array(x0)
             
             x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative(lazy)
 
-            x_ave = numpy.mean(x,axis=0)
-            
             # convert lat-long coordinate to Cartesian
             #x[:,0] *= LAT2METER * cos( DEG2RAD*x_ave[1] ) 
             #x[:,1] *= LAT2METER 
 
+            if 0:
+                # old coordinate transform
 
-            # compute strike and dip direction
-            # e3: vertical 
-            # v1,v2: tangents from x0
-            e3 = numpy.array([0.,0.,1.])
+                # compute strike and dip direction
+                # e3: vertical 
+                # v1,v2: tangents from x0
+                e3 = numpy.array([0.,0.,1.])
+                v1 = x[1,:] - x[0,:]
+                v2 = x[2,:] - x[0,:]
+
+                v1[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
+                v2[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
+                v1[1] *= LAT2METER 
+                v2[1] *= LAT2METER 
+
+            x[:,0],x[:,1] = self._llz2utm(x[:,0],x[:,1],\
+                    projection_zone=self._projection_zone)
+
             v1 = x[1,:] - x[0,:]
             v2 = x[2,:] - x[0,:]
 
-            v1[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
-            v2[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
-            v1[1] *= LAT2METER 
-            v2[1] *= LAT2METER 
-            
+            e3 = numpy.array([0.,0.,1.])
             normal = cross(v1,v2)
-
             strikev = cross(normal,e3)   # vector in strike direction
-            if norm(strikev) < 1e-12:
-                strikev = numpy.array([0.,1.,0.])
-            dipv = cross(strikev,normal) # vector in dip direction
-            
-            strike_rad = atan2(strikev[0],strikev[1])
-            #strike_rad = numpy.arctan(-normal[1]/normal[0])
-            if strike_rad < 0.:
-                strike_rad = 2*numpy.pi + strike_rad
-            dip_rad =atan(divide(abs(dipv[2]),sqrt(dipv[0]**2+dipv[1]**2)))
+
+            ##if norm(strikev) < 1e-12:
+            #    #strikev = numpy.array([0.,1.,0.])
+            #dipv = cross(strikev,normal) # vector in dip direction
+            #
+            #strike_rad = numpy.arctan( -normal[1] / normal[0] )
+            #dip_rad =atan(divide(abs(dipv[2]),sqrt(dipv[0]**2+dipv[1]**2)))
+
+            a = normal[0]
+            b = normal[1]
+            c = normal[2]
+            #Compute strike
+            strike_deg = rad2deg(numpy.arctan(-b/a))
+            #Compute dip
+            #beta=strike_rad + numpy.pi/2.
+            beta = deg2rad(strike_deg + 90)
+            m = numpy.array([sin(beta),cos(beta),0]) #Points in dip direction
+            n = numpy.array([a,b,c]) #Normal to the plane
+            dip_deg = abs(rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n)))))
             
             # convert to degrees
-            self.strike = numpy.rad2deg(strike_rad)
-            self.dip = numpy.rad2deg(dip_rad)
+            #strike_deg = numpy.rad2deg(strike_rad)
+            if strike_deg < 0.:
+                strike_deg = 360 + strike_deg
+            self.strike = strike_deg
+            self.dip = dip_deg
             self.rake = rake     # set default rake to 90 degrees
 
             # find the center line
@@ -1559,13 +1583,12 @@ class SubFault(object):
             # this is set temporarily so that Fault.Mw() can be computed
 
             # first convert distances from lat/long to meters
-            v1[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v1[0])   
-            v1[1] = LAT2METER * (v1[1])
+            #v1[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v1[0])   
+            #v1[1] = LAT2METER * (v1[1])
 
-            v2[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v2[0])
-            v2[1] = LAT2METER * (v2[1])
+            #v2[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v2[0])
+            #v2[1] = LAT2METER * (v2[1])
 
-            normal = cross(v1,v2)
             area = norm(normal) / 2.
             self.length = sqrt(area)
             self.width = sqrt(area)
@@ -1575,7 +1598,7 @@ class SubFault(object):
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
 
-    def set_corners(self,corners,rake=90.):
+    def set_corners(self,corners,rake=90.,projection_zone=None):
         r"""
             set three corners for a triangular fault.
             Input *corners* should be iterable of length 3.
@@ -1584,6 +1607,7 @@ class SubFault(object):
         if len(corners) == 3:
             self._corners =\
                 [corners[0],corners[1],corners[2]]
+            self._projection_zone = projection_zone
             self.coordinate_specification = 'triangular'
             self.calculate_geometry_triangles(rake=rake)
         else:
@@ -1616,6 +1640,46 @@ class SubFault(object):
 
         return z
 
+
+    def _llz2utm(self,lon,lat,projection_zone=None):
+        '''
+        Convert lat,lon to UTM
+
+        originally written by Diego Melgar (Univ of Oregon)
+
+        '''
+        from numpy import zeros,where,chararray
+        import utm
+        from pyproj import Proj
+        from scipy.stats import mode
+
+        array_dims = lon.shape
+    
+        lon = lon.flatten()
+        lat = lat.flatten()
+        
+        x=zeros(lon.shape)
+        y=zeros(lon.shape)
+        zone=zeros(lon.shape)
+        b=chararray(lon.shape)
+        if projection_zone == None:
+            #Determine most suitable UTM zone
+            for k in range(len(lon)):
+                #x,y,zone[k],b[k]=utm.from_latlon(lat[k],360-lon[k])
+                x,y,zone[k],b[k]=utm.from_latlon(lat[k],lon[k])
+            zone_mode=mode(zone)
+            i=where(zone==zone_mode)[0]
+            letter=b[i[0]]
+            z=str(int(zone[0]))+letter
+        else:
+            z=projection_zone
+        #p0 = Proj(proj='utm',zone=z,ellps='WGS84')
+        p0 = Proj(proj='utm',zone=z,ellps='WGS84')
+        x,y=p0(lon,lat)
+        
+        x = x.reshape(array_dims)
+        y = y.reshape(array_dims)
+        return x,y
 
     
     def okada(self, x, y):
