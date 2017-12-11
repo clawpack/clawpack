@@ -267,18 +267,20 @@ def rise_fraction(t, t0, t_rise, t_rise_ending=None):
     t1 = t0+t_rise
     t2 = t1+t_rise_ending
 
-    rf = numpy.where(t<=t0, 0., 1.)
+    rf = numpy.where(t<=t1, 0., 1.)
     if t2 != t0:
 
         t20 = float(t2-t0)
         t10 = float(t1-t0)
         t21 = float(t2-t1)
 
-        c1 = t21 / (t20*t10*t21) 
-        c2 = t10 / (t20*t10*t21) 
+        #c1 = t21 / (t20*t10*t21) 
+        #c2 = t10 / (t20*t10*t21) 
+        c = 1. / t21
 
-        rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
-        rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
+        rf = numpy.where((t>t1) & (t<=t2), c*(t-t1), rf)
+        #rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
+        #rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
 
     if scalar:
         rf = float(rf)   # return a scalar if input t is scalar
@@ -531,7 +533,7 @@ class DTopography(object):
         elif t >= self.times[-1]:
             return self.dZ[-1,:,:]
         else:
-            n = max(find(self.times <= t))
+            n = max(find(numpy.array(self.times) <= t))
             t1 = self.times[n]
             t2 = self.times[n+1]
             dz = (t2-t)/(t2-t1) * self.dZ[n,:,:] + \
@@ -839,10 +841,14 @@ class Fault(object):
             dZ = None
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
-                    t0 = getattr(subfault,'rupture_time',0)
-                    t1 = getattr(subfault,'rise_time',0.5)
-                    t2 = getattr(subfault,'rise_time_ending',None)
+                    t0 = 0.
+                    t1 = getattr(subfault,'rupture_time',0.)
+                    t2 = getattr(subfault,'rise_time',1.)
+                    #t0 = getattr(subfault,'rupture_time',0)
+                    #t1 = getattr(subfault,'rise_time',0.5)
+                    #t2 = getattr(subfault,'rise_time_ending',None)
                     rf = rise_fraction([t_prev,t],t0,t1,t2)
+                    #rf = rise_fraction(t,t0,t1,t2)
                     dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
                         dzt = dzt + dfrac * subfault.dtopo.dZ[0,:,:]
