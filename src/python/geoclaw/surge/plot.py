@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
 import clawpack.visclaw.colormaps as colormaps
-
+import clawpack.visclaw.gaugetools as gaugetools
 import clawpack.geoclaw.geoplot as geoplot
 
 # TODO:  Assign these absed on data files
@@ -334,7 +334,7 @@ def add_wind(plotaxes, bounds=None, plot_type='pcolor', shrink=1.0):
     """Add plotitem for the wind speed."""
 
     if plot_type == 'pcolor' or plot_type == 'imshow':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+        plotitem = plotaxes.new_plotitem(name='wind', plot_type='2d_pcolor')
         plotitem.plot_var = wind_speed
         plotitem.pcolor_cmap = wind_cmap
         if bounds is not None:
@@ -347,7 +347,7 @@ def add_wind(plotaxes, bounds=None, plot_type='pcolor', shrink=1.0):
         plotitem.amr_patchedges_show = [1, 1, 1, 1, 1, 0, 0]
 
     elif plot_type == 'contour':
-        plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+        plotitem = plotaxes.new_plotitem(name='wind', plot_type='2d_contour')
         plotitem.plot_var = wind_speed
         plotitem.contour_nlevels = len(surge_data.wind_refine)
         plotitem.countour_min = surge_data.wind_refine[0]
