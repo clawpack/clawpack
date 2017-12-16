@@ -59,21 +59,11 @@ def setplot(plotdata=None):
                                   kwargs={"markersize": 4})
 
     # Color limits
-    surface_limits = [physics.sea_level - 5.0, physics.sea_level + 5.0]
-    surface_ticks = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
-    surface_labels = [str(value) for value in surface_ticks]
+    surface_limits = [-5.0, 5.0]
     speed_limits = [0.0, 3.0]
-    speed_ticks = [0, 1, 2, 3]
-    speed_labels = [str(value) for value in speed_ticks]
     wind_limits = [0, 64]
     pressure_limits = [935, 1013]
     friction_bounds = [0.01, 0.04]
-
-    def add_custom_colorbar_ticks_to_axes(axes, item_name, ticks,
-                                          tick_labels=None):
-        """Adjust colorbar ticks and labels"""
-        axes.plotitem_dict[item_name].colorbar_ticks = ticks
-        axes.plotitem_dict[item_name].colorbar_tick_labels = tick_labels
 
     def gulf_after_axes(cd):
         # plt.subplots_adjust(left=0.08, bottom=0.04, right=0.97, top=0.96)
@@ -113,8 +103,6 @@ def setplot(plotdata=None):
         surgeplot.add_land(plotaxes)
         plotaxes.plotitem_dict['surface'].amr_patchedges_show = [0] * 10
         plotaxes.plotitem_dict['land'].amr_patchedges_show = [0] * 10
-        add_custom_colorbar_ticks_to_axes(plotaxes, 'surface', surface_ticks,
-                                          surface_labels)
 
         # Speed Figure
         plotfigure = plotdata.new_plotfigure(name="Currents - %s" % name)
@@ -129,9 +117,6 @@ def setplot(plotdata=None):
         surgeplot.add_land(plotaxes)
         plotaxes.plotitem_dict['speed'].amr_patchedges_show = [0] * 10
         plotaxes.plotitem_dict['land'].amr_patchedges_show = [0] * 10
-        add_custom_colorbar_ticks_to_axes(plotaxes, 'speed', speed_ticks,
-                                          speed_labels)
-
     #
     # Friction field
     #
@@ -235,8 +220,6 @@ def setplot(plotdata=None):
     plotaxes.ylimits = [29.0, 30.0]
     plotaxes.afteraxes = gauge_location_afteraxes
     surgeplot.add_surface_elevation(plotaxes, bounds=surface_limits)
-    add_custom_colorbar_ticks_to_axes(plotaxes, 'surface', surface_ticks,
-                                      surface_labels)
     surgeplot.add_land(plotaxes)
     plotaxes.plotitem_dict['surface'].amr_patchedges_show = [0] * 10
     plotaxes.plotitem_dict['land'].amr_patchedges_show = [0] * 10
