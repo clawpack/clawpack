@@ -318,34 +318,38 @@ def add_y_velocity(plotaxes, layer, plot_type='pcolor', bounds=None):
 
 
 # Land
-def add_land(plotaxes, surface, plot_type='pcolor'):
+def add_land(plotaxes, plot_type='pcolor', bounds=[-10, 10]):
     r"""Add plot item for land"""
-    if surface == 1 or surface == 2:
-        if plot_type == 'pcolor':
-            plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
-            plotitem.show = True
-            plotitem.plot_var = layered_land(surface)
-            plotitem.imshow_cmap = geoplot.land_colors
-            plotitem.imshow_cmin = 0.0
-            plotitem.imshow_cmax = 80.0
-            plotitem.add_colorbar = False
-            plotitem.amr_celledges_show = [0,0,0]
-            plotitem.amr_patchedges_show = [1,1,1]
-        elif plot_type == 'contour':            
-            plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
-            plotitem.plot_var = geoplot.land
-            plotitem.contour_nlevels = 40
-            plotitem.contour_min = 0.0
-            plotitem.contour_max = 100.0
-            plotitem.amr_contour_colors = ['g']  # color on each level
-            plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-            plotitem.celledges_show = 0
-            plotitem.patchedges_show = 0
-            plotitem.show = True
-        else:
-            raise NotImplementedError("Plot type %s not implemented" % plot_type)
-        
-def add_combined_profile_plot(plot_data,slice_value,direction='x',figno=120):
+
+    if plot_type == 'pcolor':
+        plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+        plotitem.show = True
+        plotitem.plot_var = geoplot.land
+        plotitem.imshow_cmap = land_cmap
+        plotitem.imshow_cmin = bounds[0]
+        plotitem.imshow_cmax = bounds[1]
+        plotitem.add_colorbar = False
+        plotitem.amr_celledges_show = [0] * 10
+        plotitem.amr_patchedges_show = [1] * 10
+
+    elif plot_type == 'contour':
+        plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+        plotitem.plot_var = geoplot.land
+        plotitem.contour_nlevels = 40
+        plotitem.contour_min = bounds[0]
+        plotitem.contour_max = bounds[1]
+        plotitem.amr_contour_colors = ['g']  # color on each level
+        plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+        plotitem.celledges_show = 0
+        plotitem.patchedges_show = 0
+        plotitem.show = True
+
+    else:
+        raise NotImplementedError("Plot type %s not implemented" % plot_type)
+
+
+def add_combined_profile_plot(plot_data, slice_value, direction='x',
+                              figno=120):
     def slice_index(cd):
         if direction == 'x':
             if cd.grid.y.lower < slice_value < cd.grid.y.upper:
