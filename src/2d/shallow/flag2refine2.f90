@@ -36,8 +36,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     use qinit_module, only: x_low_qinit,x_hi_qinit,y_low_qinit,y_hi_qinit
     use qinit_module, only: min_level_qinit,qinit_type
 
-    use storm_module, only: storm_type, wind_refine, R_refine, storm_location
-    use storm_module, only: wind_forcing, wind_index, wind_refine
+    use storm_module, only: storm_specification_type, wind_refine, R_refine
+    use storm_module, only: storm_location, wind_forcing, wind_index, wind_refine
 
     use regions_module, only: num_regions, regions
     use refinement_module
@@ -88,7 +88,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! ************* Storm Based Refinement ****************
             ! Check to see if we are some specified distance from the eye of
             ! the storm and refine if we are
-            if (storm_type > 0) then
+            if (storm_specification_type /= 0) then
                 R_eye = storm_location(t)
                 do m=1,size(R_refine,1)
                     if (coordinate_system == 2) then

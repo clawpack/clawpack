@@ -14,10 +14,7 @@ import datetime
 
 import numpy as np
 
-# Calculate landfall time
-# Landfall for Ike in Houston was September 13th, at ~ 7:00:00 UTC
-landfall = datetime.datetime(2008, 9, 13, 7) - \
-           datetime.datetime(2008, 1, 1, 0)
+from clawpack.geoclaw.surge.storm import Storm
 
 # Time Conversions
 def days2seconds(days):
@@ -99,7 +96,7 @@ def setrun(claw_pkg='geoclaw'):
     # -------------
     # Initial time:
     # -------------
-    clawdata.t0 = days2seconds(landfall.days - 3) + landfall.seconds
+    clawdata.t0 = -days2seconds(3)
     # clawdata.t0 = days2seconds(landfall.days - 1) + landfall.seconds
 
     # Restart from checkpoint file of a previous run?
@@ -123,8 +120,7 @@ def setrun(claw_pkg='geoclaw'):
     if clawdata.output_style == 1:
         # Output nout frames at equally spaced times up to tfinal:
         # clawdata.tfinal = days2seconds(date2days('2008091400'))
-        clawdata.tfinal = days2seconds(landfall.days + 1.0) + \
-                                       landfall.seconds
+        clawdata.tfinal = days2seconds(1.0)
         recurrence = 4
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) *
                                         recurrence / (60**2 * 24))
@@ -407,18 +403,25 @@ def setgeo(rundata):
     data.drag_law = 1
     data.pressure_forcing = True
 
+    data.display_landfall_time = True
+
     # AMR parameters, m/s and m respectively
     data.wind_refine = [20.0, 40.0, 60.0]
     data.R_refine = [60.0e3, 40e3, 20e3]
 
     # Storm parameters - Parameterized storm (Holland 1980)
-    data.storm_type = 1
-    data.landfall = days2seconds(landfall.days) + landfall.seconds
-    data.display_landfall_time = True
-
-    # Storm type 2 - Idealized storm track
+    data.storm_specification_type = 'holland80' # (type 1)
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),
-                                         'ike.storm'))
+                                         'ike_new.storm'))
+
+    # Check to make sure storm file exists
+    # if not os.path.exists(data.storm_file):
+    ike = Storm(path='./ike.storm', file_format="ATCF", single_storm=True)
+
+    # Calculate landfall time - Need to specify as the file above does not
+    # include this info (9/13/2008 ~ 7 UTC)
+    ike.time_offset = datetime.datetime(2008, 9, 13, 7)
+    ike.write(data.storm_file, file_format='geoclaw')
 
     # =======================
     #  Set Variable Friction

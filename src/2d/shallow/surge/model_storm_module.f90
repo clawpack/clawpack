@@ -2,9 +2,8 @@
 ! model_storm_module 
 !
 ! Module contains routines for constructing a wind and pressure field based on
-! the a model of the wind and pressure fields.  
+! the a parameterized model of the wind and pressure fields.  
 ! 
-! Many of these routines are based loosely on PADCIRC version 45.12 03/17/2006
 ! ==============================================================================
 !                   Copyright (C) Clawpack Developers 2017
 !  Distributed under the terms of the Berkeley Software Distribution (BSD) 
@@ -85,7 +84,9 @@ contains
         real(kind=8) :: x(2), y(2), ds, dt
 
         ! Storm line reading format
-        character(len=*), parameter :: storm_format = "(7e18.8)"
+        character(len=*), parameter :: storm_format = "(7d18.8)"
+
+        character(len=256) :: line
 
         if (.not. module_setup) then
 
@@ -111,14 +112,18 @@ contains
             allocate(storm%central_pressure(storm%num_casts))
             allocate(storm%radius(storm%num_casts))
 
-            ! Now read in the storm data
-            i = 0
+            ! Now read in the storm data - note that the units are expected to 
+            ! be consistent with:
+            ! max_wind_speed = m/s
+            ! max_wind_radius = m
+            ! central_pressure = Pa
+            ! radius = m
             do i=1, storm%num_casts
-                read(data_file, storm_format) storm%track(:, i), &
-                                              storm%max_wind_speed(i), &
-                                              storm%max_wind_radius(i), &
-                                              storm%central_pressure(i), &
-                                              storm%radius(i)
+                read(data_file, *) storm%track(:, i), &
+                                   storm%max_wind_speed(i), &
+                                   storm%max_wind_radius(i), &
+                                   storm%central_pressure(i), &
+                                   storm%radius(i)
             enddo
 
             ! Calculate storm speed 
@@ -136,7 +141,6 @@ contains
                     ds = spherical_distance(x(1), 0.5d0 * (x(2) + y(2)), &
                                             y(1), 0.5d0 * (x(2) + y(2)))
                     storm%velocity(1,i) = sign(ds / dt, y(1) - x(1))
-
                 
                     ds = spherical_distance(0.5d0 * (x(1) + y(1)), x(2), &
                                             0.5d0 * (x(1) + y(1)), y(2))
@@ -180,53 +184,6 @@ contains
         end if
 
     end subroutine set_storm
-
-
-    ! ==========================================================================
-    !  real(kind=8) pure date_to_seconds(year,months,days,hours,minutes,seconds)
-    !    Convert time from year, month, day, hour, min, sec to seconds since the
-    !    beginning of the year.
-    ! ==========================================================================
-    ! pure real(kind=8) function date_to_seconds(year,months,days,hours,minutes, &
-    !                                            seconds) result(time)
-      
-    !     implicit none
-
-    !     ! Input
-    !     integer, intent(in) :: year, months, days, hours, minutes
-    !     real(kind=8), intent(in) :: seconds
-
-    !     ! Local storage
-    !     integer :: total_days
-
-    !     ! Count number of days
-    !     total_days = days
-
-    !     ! Add days for months that have already passed
-    !     if (months > 1) total_days = total_days + 31
-    !     if (months > 2) then
-    !         if (int(year / 4) * 4 == year) then
-    !             total_days = total_days + 29
-    !         else
-    !             total_days = total_days + 28
-    !         endif
-    !     endif
-    !     if (months > 3)  total_days = total_days + 31
-    !     if (months > 4)  total_days = total_days + 30
-    !     if (months > 5)  total_days = total_days + 31
-    !     if (months > 6)  total_days = total_days + 30
-    !     if (months > 7)  total_days = total_days + 31
-    !     if (months > 8)  total_days = total_days + 31
-    !     if (months > 9)  total_days = total_days + 30
-    !     if (months > 10) total_days = total_days + 31
-    !     if (months > 11) total_days = total_days + 30
-
-    !     ! Convert everything to seconds since the beginning of the year
-    !     time = real((total_days - 1) * 86400 + hours * 3600 + minutes * 60,kind=8)
-    !     time = time + seconds
-
-    ! end function date_to_seconds
-
 
     ! ==========================================================================
     !  storm_location(t,storm)
@@ -409,6 +366,9 @@ contains
         max_wind_speed = fn(6)
         central_pressure = fn(7)
         radius = fn(8)
+
+        print *, fn
+        stop
 
     end subroutine get_storm_data
 

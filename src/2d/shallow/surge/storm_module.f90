@@ -45,7 +45,7 @@ module storm_module
     real(kind=8), allocatable :: R_refine(:), wind_refine(:)
 
     ! Storm object
-    integer :: storm_type
+    integer :: storm_specification_type
     real(kind=8) :: landfall = 0.d0
     type(model_storm_type), save :: model_storm
     type(data_storm_type), save :: data_storm
@@ -106,9 +106,10 @@ contains
 
         use model_storm_module, only: set_model_storm => set_storm
         use model_storm_module, only: set_holland_1980_fields
-        use model_storm_module, only: set_holland_2010_fields, set_CLE_fields
+        use model_storm_module, only: set_holland_2010_fields
+        use model_storm_module, only: set_CLE_fields
 
-        use data_storm_module, only: set_data_storm => set_storm
+        ! use data_storm_module, only: set_data_storm => set_storm
         use data_storm_module, only: set_HWRF_fields
 
         use utility_module, only: get_value_count
@@ -120,7 +121,7 @@ contains
         
         ! Locals
         integer, parameter :: unit = 13
-        integer :: i, drag_law, model_type
+        integer :: i, drag_law
         character(len=200) :: storm_file_path, line
         
         if (.not.module_setup) then
@@ -175,8 +176,7 @@ contains
             read(unit,*)
             
             ! Storm Setup
-            read(unit, "(i1)") storm_type
-            read(unit, "(i1)") model_type
+            read(unit, "(i1)") storm_specification_type
             read(unit, *) storm_file_path
             
             close(unit)
@@ -188,47 +188,40 @@ contains
             write(log_unit, *) "R Nesting = ", (R_refine(i),i=1,size(R_refine,1))
             write(log_unit, *) ""
 
-            write(log_unit, *) "Storm Type = ", storm_type
-            write(log_unit, *) "Model/Data Type = ", model_type
+            write(log_unit, *) "Storm specification = ", storm_specification_type
             write(log_unit, *) "  file = ", storm_file_path
 
-            ! Read in hurricane track data from file
-            if (storm_type == 0) then
-                ! No storm will be used
-            else if (storm_type == 1) then
-                ! Storm fields will be based on a parameterized wind and 
-                ! pressure fields.
-                ! Set model types
-                select case(model_type)
+            ! Use parameterized storm model
+            if (0 < storm_specification_type .and.              &
+                    storm_specification_type <=3) then
+                select case(storm_specification_type)
                     case(1) ! Holland 1980 model
                         set_model_fields => set_holland_1980_fields
                     case(2) ! Holland 2010 model
                         set_model_fields => set_holland_2010_fields
                     case(3) ! Chavas, Lin, Emmanuel model
                         set_model_fields => set_CLE_fields
-                    case default
-                        print *, "Model type ", model_type, "not available."
-                        stop
                 end select
+                call set_model_storm(storm_file_path, model_storm,          &
+                                     storm_specification_type, log_unit)
+            else if (storm_specification_type > 0) then
+                print *, "Storm specification model type ",                &
+                            storm_specification_type, "not available."
+                stop
+            end if
 
-                call set_model_storm(storm_file_path, model_storm, model_type, & 
-                                     log_unit)
-
-            else if (storm_type == 2) then
-                ! Storm will be set based on a gridded set of data
-                select case(model_type)
+            ! Storm will be set based on a gridded set of data
+            if (-1 <= storm_specification_type .and.                    &
+                      storm_specification_type < 0) then
+                select case(storm_specification_type)
                     case(1) ! HWRF Data
                         set_data_fields => set_HWRF_fields
-                    case default
-                        print *, "Model type ", model_type, "not available."
-                        stop
                 end select
-                call set_data_storm(storm_file_path, data_storm, model_type,   &
-                                    log_unit)
-            else
-                print *,"Invalid storm type ",storm_type," provided."
+            else if (storm_specification_type < 0) then
+                print *, "Storm specification data type ",               &
+                            storm_specification_type, "not available."
                 stop
-            endif
+            end if
 
             close(log_unit)
 
@@ -380,14 +373,15 @@ contains
         ! Output
         real(kind=8) :: location(2)
 
-        select case(storm_type)
-            case(0)
-                location = [rinfinity,rinfinity]
-            case(1)
-                location = model_location(t, model_storm)
-            case(2)
-                location = data_location(t, data_storm)
-        end select
+        if (storm_specification_type == 0) then
+            location = [rinfinity,rinfinity]
+        else if (storm_specification_type > 0) then
+            location = model_location(t, model_storm)
+        else if (storm_specification_type < 0) then
+            location = data_location(t, data_storm)
+        else
+            stop "Something may be wrong."
+        end if
 
     end function storm_location
 
@@ -402,14 +396,13 @@ contains
         ! Input
         real(kind=8), intent(in) :: t
 
-        select case(storm_type)
-            case(0)
-                theta = rinfinity
-            case(1)
-                theta = model_direction(t, model_storm)
-            case(2)
-                theta = data_direction(t, data_storm)
-        end select
+        if (storm_specification_type > 0) then
+            theta = model_direction(t, model_storm)
+        else if (storm_specification_type < 0) then
+            theta = data_direction(t, data_storm)
+        else
+            theta = rinfinity
+        end if
 
     end function storm_direction
 
@@ -424,18 +417,16 @@ contains
         real(kind=8), intent(in) :: xlower, ylower, dx, dy, t
         real(kind=8), intent(in out) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
-        select case(storm_type)
-            case(0)
-                continue
-            case(1)
-                call set_model_fields(maux,mbc,mx,my, &
-                                      xlower,ylower,dx,dy,t,aux, wind_index, &
-                                      pressure_index, model_storm)
-            case(2)
-                call set_data_fields(maux,mbc,mx,my, &
-                                     xlower,ylower,dx,dy,t,aux, wind_index, &
-                                     pressure_index, data_storm)
-        end select
+        if (storm_specification_type > 0) then
+            call set_model_fields(maux,mbc,mx,my, &
+                                  xlower,ylower,dx,dy,t,aux, wind_index, &
+                                  pressure_index, model_storm)
+        end if
+        if (storm_specification_type < 0) then
+            call set_data_fields(maux,mbc,mx,my, &
+                                 xlower,ylower,dx,dy,t,aux, wind_index, &
+                                 pressure_index, data_storm)
+        end if
 
     end subroutine set_storm_fields
 

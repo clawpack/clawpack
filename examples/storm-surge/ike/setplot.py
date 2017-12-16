@@ -49,13 +49,13 @@ def setplot(plotdata=None):
 
     # Calculate landfall time
     # Landfall for Ike in Houston was September 13th, at 7 UTC
-    landfall_dt = datetime.datetime(2008, 9, 13, 7) - \
-                  datetime.datetime(2008, 1, 1,  0)
-    landfall = landfall_dt.days * 24.0 * 60**2 + landfall_dt.seconds
+    # landfall_dt = datetime.datetime(2008, 9, 13, 7) - \
+    #               datetime.datetime(2008, 1, 1,  0)
+    # landfall = landfall_dt.days * 24.0 * 60**2 + landfall_dt.seconds
 
     # Set afteraxes function
     def surge_afteraxes(cd):
-        surgeplot.surge_afteraxes(cd, track, landfall, plot_direction=False,
+        surgeplot.surge_afteraxes(cd, track, plot_direction=False,
                                   kwargs={"markersize": 4})
 
     # Color limits
@@ -182,7 +182,7 @@ def setplot(plotdata=None):
     def gauge_afteraxes(cd):
 
         axes = plt.gca()
-        surgeplot.plot_landfall_gauge(cd.gaugesoln, axes, landfall=landfall)
+        surgeplot.plot_landfall_gauge(cd.gaugesoln, axes)
 
         # Fix up plot - in particular fix time labels
         axes.set_title('Station %s' % cd.gaugeno)

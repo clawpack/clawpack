@@ -52,7 +52,7 @@ contains
 
         use geoclaw_module, only: GEO_PARM_UNIT, rho
         use geoclaw_module, only: geo_dry_tolerance => dry_tolerance
-        use storm_module, only: storm_type
+        use storm_module, only: storm_specification_type
 
         implicit none
         character(len=*), optional, intent(in) :: data_file
@@ -108,7 +108,7 @@ contains
             close(IOUNIT) 
 
             ! Set layer index - depends on whether a storm surge is being modeled
-            if (storm_type == 0) then
+            if (storm_specification_type /= 0) then
                 aux_layer_index = 5
             else
                 aux_layer_index = 8

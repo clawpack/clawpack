@@ -336,6 +336,13 @@ class QinitData(clawpack.clawutil.data.ClawData):
 class SurgeData(clawpack.clawutil.data.ClawData):
     r"""Data object describing storm surge related parameters"""
 
+    # Provide some mapping between model names and integers
+    storm_spec_dict_mapping = {"HWRF":-1,
+                               None: 0,
+                               'holland80': 1,
+                               'holland10': 2,
+                               'CLE': 3}
+
     def __init__(self):
         super(SurgeData,self).__init__()
 
@@ -354,12 +361,10 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         self.add_attribute('R_refine',[60.0e3,40e3,20e3])
         
         # Storm parameters
-        self.add_attribute("storm_type", 0) # Type of storm
-        self.add_attribute("model_type", 1) # Default to parameterized model
-        self.add_attribute("storm_file",'./storm.data') # Data file
+        self.add_attribute('storm_type', None)  # Backwards compatibility
+        self.add_attribute('storm_specification_type', 0) # Type of parameterized storm
+        self.add_attribute("storm_file", None) # File(s) containing data
 
-
-        self.add_attribute('landfall', None) # DEPRECATED!
         
     def write(self,out_file='./surge.data',data_source="setrun.py"):
         """Write out the data file to the path given"""
@@ -393,16 +398,21 @@ class SurgeData(clawpack.clawutil.data.ClawData):
             self.data_write('R_refine', description='(Refinement ratios)')
         self.data_write()
 
-        self.data_write("storm_type", description='(Storm specification type)')
-        self.data_write("model_type", description="(Parameterization or input type)")
-        self.data_write('storm_file', description="(Location of storm data)")
+        # Storm specification
+        if self.storm_type is not None:
+            self.storm_specification_type = self.storm_type
+        if type(self.storm_specification_type) is not int:
+            if self.storm_specification_type in         \
+                    self.storm_spec_dict_mapping.keys():
+                self.data_write("storm_specification_type",
+                                self.storm_spec_dict_mapping[
+                                        self.storm_specification_type],
+                                description="(Storm specification)")
+            else:
+                raise ValueError("Unknown storm specification type %s" 
+                                    % self.storm_specification_type)
+        self.data_write("storm_file", description='(Path to storm data)')
 
-        if self.storm_type == 0:
-            pass
-        elif self.storm_type == 1:
-            pass
-        else:
-            raise ValueError("Invalid storm type %s." % self.storm_type)
 
         self.close_data_file()
 

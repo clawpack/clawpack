@@ -13,7 +13,6 @@ from __future__ import absolute_import
 import sys
 import os
 import requests
-from bs4 import BeautifulSoup
 
 import os 
 import numpy
@@ -211,6 +210,11 @@ class Storm(object):
                                                               unpack=unpack)
                 kwargs['single_storm'] = False
 
+            elif file_format.lower() == "atcf":
+                unpack = True
+                url = "".join(())
+                raise NotImplementedError("ATCF storms cannot now be automatically fetched yet.")
+
             else:
                 raise ValueError("Format %s does not have an available",
                                  "database of best-tracks." % file_format)
@@ -269,7 +273,12 @@ class Storm(object):
                     data_block.append(line)  
             num_lines = len(data_block)
 
-        # Parse data block
+        # Parse data block - convert to correct units    
+        # Conversions:
+        #  max_wind_speed - Convert knots to m/s - 0.51444444
+        #  max_wind_radius  - convert from nm to m - 1.8520000031807990 * 1000.0
+        #  central_pressure - convert from mbar to Pa - 100.0
+        #  Radius of last isobar contour - convert from nm to m - 1.852000003180799d0 * 1000.0
         self.t = []
         self.event = numpy.empty(num_lines, dtype=str)
         self.classification = numpy.empty(num_lines, dtype=str)
@@ -283,9 +292,11 @@ class Storm(object):
             if len(line) == 0:
                 break
             data = line
+
             # Create time
             self.t.append(datetime.datetime(int(data[2][:4]), int(data[2][4:6]),
-                                           int(data[2][6:8]), int(data[2][:2])))
+                                            int(data[2][6:8]), int(data[2][-2:])
+                                            ))
 
             # If an event is occuring record it.  If landfall then use as an
             # offset.   Note that if there are multiple landfalls the last one
@@ -300,19 +311,19 @@ class Storm(object):
 
             # Parse eye location
             if data[6][-1] == "N":
-                self.eye_location[i, 0] = float(data[6][0:-1])/10.0
+                self.eye_location[i, 0] = float(data[6][0:-1]) / 10.0
             else:
-                self.eye_location[i, 0] = -float(data[6][0:-1])/10.0
+                self.eye_location[i, 0] = -float(data[6][0:-1]) / 10.0
             if data[7][-1] == "E":
-                self.eye_location[i, 1] = float(data[7][0:-1])/10.0
+                self.eye_location[i, 1] = float(data[7][0:-1]) / 10.0
             else:
-                self.eye_location[i, 1] = -float(data[7][0:-1])/10.0
+                self.eye_location[i, 1] = -float(data[7][0:-1]) / 10.0
 
             # Intensity information
-            self.max_wind_speed[i] = float(data[8])
-            self.central_pressure[i] = float(data[9])
-            self.max_wind_radius[i] = float(data[18])
-            self.storm_radius[i] = float(data[19])
+            self.max_wind_speed[i] = float(data[8]) * 0.51444444
+            self.central_pressure[i] = float(data[9]) * 100.0
+            self.max_wind_radius[i] = float(data[18]) * 1.852000003180799 * 1000.0
+            self.storm_radius[i] = float(data[19]) * 1.852000003180799 * 1000.0
 
     def read_hurdat(self, path, single_storm=False, name=None, year=None):
         r"""Read in HURDAT formatted storm file
@@ -629,6 +640,13 @@ class Storm(object):
          - *path* (string) Path to the file to be read.
 
         """
+        
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError as e:
+            print("BeautfulSoup is required for reading in TCVitals data.")
+            raise e
+
         if not single_storm:
             return "Multiple storms not implemented for this format yet."
         else:
@@ -763,19 +781,36 @@ class Storm(object):
          - *path* (string) Path to the file to be written.
         """
 
-        with open(path, 'w') as data_file:
-            data_file.write("%s\n" % self.t.shape[0])
-            data_file.write("%s\n\n" % self.time_offset.isoformat())
-            for n in range(self.t.shape[0]):
-                data_file.write("%s %s %s %s %s %s %s %s" %
-                                ((self.t[n] - self.time_offset).total_seconds(),
-                                 self.eye_location[n, 0],
-                                 self.eye_location[n, 1],
-                                 self.max_wind_speed[n],
-                                 self.max_wind_radius[n],
-                                 self.central_pressure[n],
-                                 self.storm_radius[n],
-                                 "\n"))
+        # Remove duplicate times
+        num_casts = len(self.t)
+        for n in range(1, len(self.t)):
+            if self.t[n] == self.t[n - 1]:
+                num_casts -= 1
+
+        try:
+            with open(path, 'w') as data_file:
+                data_file.write("%s\n" % num_casts)
+                data_file.write("%s\n\n" % self.time_offset.isoformat())
+                for n in range(len(self.t)):
+                    if n > 0:
+                        if self.t[n] == self.t[n - 1]:
+                            continue
+
+                    format_string = ("{:19,.8e} " * 7)[:-1] + "\n"
+                    data = ((self.t[n] - self.time_offset).total_seconds(),
+                                  self.eye_location[n, 0],
+                                  self.eye_location[n, 1],
+                                  self.max_wind_speed[n],
+                                  self.max_wind_radius[n],
+                                  self.central_pressure[n],
+                                  self.storm_radius[n])
+                    data_file.write(format_string.format(*data))
+
+        except Exception as e:
+            # Remove possibly partially generated file if not successful
+            os.remove(path)
+            raise e
+
 
     def write_atcf(self, path):
         r"""Write out a ATCF formatted storm file
@@ -1145,7 +1180,7 @@ def available_models():
 # =============================================================================
 # Ensmeble Storm Formats
 def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
-                              mask_category=None, categorization="NHC"):
+                               mask_category=None, categorization="NHC"):
     r"""Load storms from a Matlab file containing storms
  
     This format is based on the format Prof. Emmanuel uses to generate storms.
@@ -1224,6 +1259,8 @@ if __name__ == '__main__':
     #                empty_storm=False, file_format="tcvitals", name='IRENE', year='2011')
     #print('Storm Name:', storm.name)
     #print('Storm Year:', storm.t)
+
+    raise NotImplementedError("Command line functionality is not available yet.")
 
     ike_storm = Storm(path='./ike.storm',empty_storm=False,file_format='atcf',
                         single_storm = True,name='IKE',year='2008') 

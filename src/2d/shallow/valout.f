@@ -4,7 +4,8 @@ c
       subroutine valout (lst, lend, time, nvar, naux)
 c
       use amr_module
-      use storm_module, only: storm_type, output_storm_location
+      use storm_module, only: storm_specification_type
+      use storm_module, only: output_storm_location
 
       implicit double precision (a-h,o-z)
       character*10  fname1, fname2, fname3, fname4, fname5
@@ -49,7 +50,7 @@ c     # Currently outputs all aux components if any are requested!
 c     open(unit=77,file='fort.b',status='unknown',access='stream')
 
 c     Output storm track if needed
-      if (storm_type > 0) then
+      if (storm_specification /= 0) then
         call output_storm_location(time)
       end if
 

@@ -1,10 +1,9 @@
 ! ==============================================================================
 ! model_storm_module 
 !
-! Module contains routines for constructing a wind and pressure field based on
-! the a model of the wind and pressure fields.  
-! 
-! Many of these routines are based loosely on PADCIRC version 45.12 03/17/2006
+! Module contains routines for constructing a wind and pressure field based on a
+! provided set of data files.
+!
 ! ==============================================================================
 !                   Copyright (C) Clawpack Developers 2017
 !  Distributed under the terms of the Berkeley Software Distribution (BSD) 
