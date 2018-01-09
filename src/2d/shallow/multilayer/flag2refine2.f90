@@ -184,13 +184,11 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                         if (abs(eta - eta_init(layer)) > wave_tolerance(layer)) then
                             ! Check to see if we are near shore
                             if (q(3*layer-2,i,j) / rho(layer) < deep_depth) then
-!                                 print *, "1"
                                 amrflags(i,j) = DOFLAG
                                 cycle x_loop
                             ! Check if we are allowed to flag in deep water
                             ! anyway
                             else if (level < max_level_deep) then
-!                                 print *, "2"
                                 amrflags(i,j) = DOFLAG
                                 cycle x_loop
                             endif

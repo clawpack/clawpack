@@ -321,7 +321,6 @@ class QinitData(clawpack.clawutil.data.ClawData):
         # Perturbation requested
         if self.qinit_type == 0:
             pass
-        # elif 0 < self.qinit_type < 5:
         else:
             # Check to see if each qinit file is present and then write the data
             for tfile in self.qinitfiles:
