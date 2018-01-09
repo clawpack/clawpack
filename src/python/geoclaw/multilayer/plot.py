@@ -318,13 +318,13 @@ def add_y_velocity(plotaxes, layer, plot_type='pcolor', bounds=None):
 
 
 # Land
-def add_land(plotaxes, plot_type='pcolor', bounds=[-10, 10]):
+def add_land(plotaxes, surface, plot_type='pcolor', bounds=[-10, 10]):
     r"""Add plot item for land"""
 
     if plot_type == 'pcolor':
         plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
         plotitem.show = True
-        plotitem.plot_var = geoplot.land
+        plotitem.plot_var = layered_land(surface)
         plotitem.imshow_cmap = land_cmap
         plotitem.imshow_cmin = bounds[0]
         plotitem.imshow_cmax = bounds[1]
