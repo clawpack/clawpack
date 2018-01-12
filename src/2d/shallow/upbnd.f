@@ -36,7 +36,7 @@ c
  
       do 10 j=1,mjtot
       do 10 i=1,mitot
-         iused(i,j) = 0.
+         iused(i,j) = 0
  10   continue
  
       locaux = node(storeaux,mptr)
@@ -55,17 +55,25 @@ c
 c        continue to use iside1/norm for debugging, but should soon delete         
 c        this if/then/else block needed due to new categories corresponding
 c        to mapped bcs. should still only have one update per side of coarse cell though
-         if (iside .lt. 5) then   
+         if (iside .lt. 5 .and. iside .gt. 0) then   
            iside1 = iside
          elseif (iside .eq. 5) then
            iside1 = 2
-         else  ! iside is 6
+         else if (iside .eq. 6) then
            iside1 = 4
+         else
+           write(*,*) "unknown side ",iside," in upbnd"
+           write(outunit,*) "unknown side ",iside," in upbnd"
+           stop
          endif
          norm = 2**(iside1-1)
          iflag =iused(icrse,jcrse)/norm
          if (mod(iflag,2).eq.1) then
             write(6,*)" ***  double flux update CAN happen in upbnd ***"
+            write(outunit,*)
+     .      " ***  double flux update CAN happen in upbnd ***"
+            write(outunit,900) iused(icrse,jcrse),iside,norm,iflag
+ 900        format(" iused ",i5," iside ",i1, " norm ",i3," iflag ",i1)
             go to 40
          endif
          mkid = listbc(4,ispot)
