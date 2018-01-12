@@ -105,8 +105,8 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     # ========================================================================
     # Axis limits
 
-    xlimits = [-0.5, 0.5]
-    ylimits = [-0.5, 0.5]
+    xlimits = [-0.2, 0.4]
+    ylimits = [-0.2, 0.4]
     eta = [multilayer_data.eta[0], multilayer_data.eta[1]]
     top_surface_limits = [eta[0] - 0.03, eta[0] + 0.03]
     internal_surface_limits = [eta[1] - 0.015, eta[1] + 0.015]
@@ -444,7 +444,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     # Set up for item on these axes:
     plotitem = plotaxes.new_plotitem(plot_type='2d_patch')
     plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
-    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_celledges_show = [1,1,1]
     plotitem.amr_patchedges_show = [1,1,1]
     
     # ========================================================================

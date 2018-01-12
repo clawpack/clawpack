@@ -1,0 +1,96 @@
+Clawpack Git Status 
+Diffs can be found in /Users/avischwarzschild/amr/clawpack/geoclaw/tests/multilayer_new/regression_data/claw_git_diffs.txt
+
+Sun, 22 Oct 2017 16:59:18 PDT
+$CLAW = /Users/avischwarzschild/amr/clawpack
+$FC = gfortran
+
+
+===========
+classic
+===========
+/Users/avischwarzschild/amr/clawpack/classic
+
+--- last commit ---
+606424b Merge pull request #80 from rjleveque/wcblast
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+amrclaw
+===========
+/Users/avischwarzschild/amr/clawpack/amrclaw
+
+--- last commit ---
+90d404f Merge pull request #205 from rjleveque/regions_data_format
+
+--- branch and status ---
+## master...origin/master
+M  src/2d/prefilp.f90
+
+
+===========
+clawutil
+===========
+/Users/avischwarzschild/amr/clawpack/clawutil
+
+--- last commit ---
+5c6bd99 Merge pull request #122 from rjleveque/convert_readme_string
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+pyclaw
+===========
+/Users/avischwarzschild/amr/clawpack/pyclaw
+
+--- last commit ---
+696f3c73 Merge pull request #584 from rjleveque/catch_wrong_format_errors
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+visclaw
+===========
+/Users/avischwarzschild/amr/clawpack/visclaw
+
+--- last commit ---
+95b9545 merged from visclaw
+
+--- branch and status ---
+## master...origin/master [ahead 2]
+
+
+===========
+riemann
+===========
+/Users/avischwarzschild/amr/clawpack/riemann
+
+--- last commit ---
+3e44723 Revert "Removing hard coded size for aux arrays in variable acoustics solver." (#130)
+
+--- branch and status ---
+## master...origin/master
+
+
+===========
+geoclaw
+===========
+/Users/avischwarzschild/amr/clawpack/geoclaw
+
+--- last commit ---
+0742057 update routines (both single and multi layer) are running well in parallel now. This is only a workaround, there might exist a better solution.
+
+--- branch and status ---
+## conflict-resolution
+ M examples/multi-layer/plane_wave/Makefile
+ M examples/tsunami/bowl-slosh/Makefile
+ M examples/tsunami/chile2010/Makefile
+ M tests/multilayer_amr/Makefile
+ M tests/multilayer_amr/regression_tests.py
