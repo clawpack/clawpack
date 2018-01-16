@@ -14,7 +14,7 @@ import sys
 import os
 import requests
 
-import os 
+import os
 import numpy
 import datetime
 import clawpack.geoclaw.units as units
@@ -114,15 +114,14 @@ class Storm(object):
 
     # Define supported formats and models - keys are function name related and
     # values are the proper name and a citation or URL documenting the format
-    _supported_formats = {"geoclaw": ["GeoClaw", None], 
+    _supported_formats = {"geoclaw": ["GeoClaw", None],
                           "atcf": ["ATCF", None],
                           "hurdat": ["HURDAT", None],
                           "jma": ["JMA", None],
                           "imd": ["IMD", None],
                           "tcvitals": ["TC-Vitals", None]}
 
-
-    def __init__(self, path=None, empty_storm=False, file_format="hurdat", 
+    def __init__(self, path=None, empty_storm=False, file_format="hurdat",
                        **kwargs):
         r"""Storm Initiatlization Routine
 
@@ -178,7 +177,7 @@ class Storm(object):
         # Allow the use of the HURDAT database to extract storms automatically
         if path is None:
             if file_format.lower() == "hurdat":
-                # Manually check to see if there's a file in scratch that 
+                # Manually check to see if there's a file in scratch that
                 # contains the "hurdat" in the file name and only print out the
                 # following if this fails.
                 scratch = os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')
@@ -206,7 +205,7 @@ class Storm(object):
 
 
                 # Download file - temporarily here as HURDAT does not need this
-                path = clawpack.clawutil.data.get_remote_file(url, 
+                path = clawpack.clawutil.data.get_remote_file(url,
                                                               unpack=unpack)
                 kwargs['single_storm'] = False
 
@@ -289,9 +288,13 @@ class Storm(object):
         self.storm_radius = numpy.empty(num_lines)
 
         for (i, line) in enumerate(data_block):
+            # Skip empty linies
             if len(line) == 0:
                 break
             data = line
+
+            # Mark if this is a shortened line
+            short_data = len(data) < 19
 
             # Create time
             self.t.append(datetime.datetime(int(data[2][:4]), int(data[2][4:6]),
@@ -301,29 +304,32 @@ class Storm(object):
             # If an event is occuring record it.  If landfall then use as an
             # offset.   Note that if there are multiple landfalls the last one
             # is used as the offset
-            if len(data[22].strip()) > 0:
-                self.event[i] = data[22].strip()
-                if self.event[i].upper() == "L":
-                    self.time_offset = self.t[i]
+            if not short_data:
+                if len(data[22].strip()) > 0:
+                    self.event[i] = data[22].strip()
+                    if self.event[i].upper() == "L":
+                        self.time_offset = self.t[i]
 
             # Classification, note that this is not the category of the storm
             self.classification[i] = data[10]
 
-            # Parse eye location
+            # Parse eye location - longitude/latitude order
             if data[6][-1] == "N":
-                self.eye_location[i, 0] = float(data[6][0:-1]) / 10.0
+                self.eye_location[i, 1] = float(data[6][0:-1]) / 10.0
             else:
-                self.eye_location[i, 0] = -float(data[6][0:-1]) / 10.0
+                self.eye_location[i, 1] = -float(data[6][0:-1]) / 10.0
             if data[7][-1] == "E":
-                self.eye_location[i, 1] = float(data[7][0:-1]) / 10.0
+                self.eye_location[i, 0] = float(data[7][0:-1]) / 10.0
             else:
-                self.eye_location[i, 1] = -float(data[7][0:-1]) / 10.0
+                self.eye_location[i, 0] = -float(data[7][0:-1]) / 10.0
 
             # Intensity information
             self.max_wind_speed[i] = float(data[8]) * 0.51444444
             self.central_pressure[i] = float(data[9]) * 100.0
-            self.max_wind_radius[i] = float(data[18]) * 1.852000003180799 * 1000.0
-            self.storm_radius[i] = float(data[19]) * 1.852000003180799 * 1000.0
+            if not short_data:
+                self.storm_radius[i] = float(data[18]) * 1.852000003180799 * 1000.0
+                self.max_wind_radius[i] = float(data[19]) * 1.852000003180799 * 1000.0
+
 
     def read_hurdat(self, path, single_storm=False, name=None, year=None):
         r"""Read in HURDAT formatted storm file
@@ -798,19 +804,19 @@ class Storm(object):
 
                     format_string = ("{:19,.8e} " * 7)[:-1] + "\n"
                     data = ((self.t[n] - self.time_offset).total_seconds(),
-                                  self.eye_location[n, 0],
-                                  self.eye_location[n, 1],
-                                  self.max_wind_speed[n],
-                                  self.max_wind_radius[n],
-                                  self.central_pressure[n],
-                                  self.storm_radius[n])
+                            self.eye_location[n, 0],
+                            self.eye_location[n, 1],
+                            self.max_wind_speed[n],
+                            self.max_wind_radius[n],
+                            self.central_pressure[n],
+                            self.storm_radius[n])
                     data_file.write(format_string.format(*data))
 
         except Exception as e:
             # Remove possibly partially generated file if not successful
-            os.remove(path)
+            if os.path.exists(path):
+                os.remove(path)
             raise e
-
 
     def write_atcf(self, path):
         r"""Write out a ATCF formatted storm file
