@@ -202,7 +202,7 @@ contains
                     case(3) ! Chavas, Lin, Emmanuel model
                         set_model_fields => set_CLE_fields
                 end select
-                call set_model_storm(storm_file_path, model_storm,          &
+                call set_model_storm(storm_file_path, model_storm,         &
                                      storm_specification_type, log_unit)
             else if (storm_specification_type > 0) then
                 print *, "Storm specification model type ",                &
