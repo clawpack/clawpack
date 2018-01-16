@@ -50,7 +50,7 @@ c     # Currently outputs all aux components if any are requested!
 c     open(unit=77,file='fort.b',status='unknown',access='stream')
 
 c     Output storm track if needed
-      if (storm_specification /= 0) then
+      if (storm_specification_type /= 0) then
         call output_storm_location(time)
       end if
 
