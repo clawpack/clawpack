@@ -9,19 +9,22 @@ that will be read in by the Fortran code.
 
 from __future__ import absolute_import
 from __future__ import print_function
+
 import os
 import datetime
+import shutil
+import gzip
 
 import numpy as np
 
 from clawpack.geoclaw.surge.storm import Storm
+import clawpack.clawutil as clawutil
+
 
 # Time Conversions
 def days2seconds(days):
     return days * 60.0**2 * 24.0
 
-def seconds2days(seconds):
-    return seconds / (60.0**2 * 24.0)
 
 # Scratch directory for storing topo and dtopo files:
 scratch_dir = os.path.join(os.environ["CLAW"], 'geoclaw', 'scratch')
@@ -72,11 +75,11 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.upper[1] = 32.0      # north latitude
 
     # Number of grid cells:
-    degree_factor = 4 # (0.25º,0.25º) ~ (25237.5 m, 27693.2 m) resolution
-    clawdata.num_cells[0] = int(clawdata.upper[0] - clawdata.lower[0]) *      \
-                                degree_factor
-    clawdata.num_cells[1] = int(clawdata.upper[1] - clawdata.lower[1]) *      \
-                                degree_factor
+    degree_factor = 4  # (0.25º,0.25º) ~ (25237.5 m, 27693.2 m) resolution
+    clawdata.num_cells[0] = int(clawdata.upper[0] - clawdata.lower[0]) \
+        * degree_factor
+    clawdata.num_cells[1] = int(clawdata.upper[1] - clawdata.lower[1]) \
+        * degree_factor
 
     # ---------------
     # Size of system:
@@ -343,11 +346,7 @@ def setgeo(rundata):
     For documentation see ....
     """
 
-    try:
-        geo_data = rundata.geo_data
-    except:
-        print("*** Error, this rundata has no geo_data attribute")
-        raise AttributeError("Missing geo_data attribute")
+    geo_data = rundata.geo_data
 
     # == Physics ==
     geo_data.gravity = 9.81
@@ -382,6 +381,8 @@ def setgeo(rundata):
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     # See regions for control over these regions, need better bathy data for
     # the smaller domains
+    clawutil.data.get_remote_file(
+           "http://www.columbia.edu/~ktm2132/bathy/gulf_caribbean.tt3.tar.bz2")
     topo_path = os.path.join(scratch_dir, 'gulf_caribbean.tt3')
     topo_data.topofiles.append([3, 1, 5, rundata.clawdata.t0,
                                 rundata.clawdata.tfinal,
@@ -410,17 +411,26 @@ def setgeo(rundata):
     data.R_refine = [60.0e3, 40e3, 20e3]
 
     # Storm parameters - Parameterized storm (Holland 1980)
-    data.storm_specification_type = 'holland80' # (type 1)
+    data.storm_specification_type = 'holland80'  # (type 1)
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),
-                                         'ike_new.storm'))
+                                         'ike.storm'))
 
-    # Check to make sure storm file exists
-    # if not os.path.exists(data.storm_file):
-    ike = Storm(path='./ike.storm', file_format="ATCF", single_storm=True)
+    # Convert ATCF data to GeoClaw format
+    clawutil.data.get_remote_file(
+                   "http://ftp.nhc.noaa.gov/atcf/archive/2008/bal092008.dat.gz")
+    atcf_path = os.path.join(scratch_dir, "bal092008.dat")
+    # Note that the get_remote_file function does not support gzip files which
+    # are not also tar files.  The following code handles this
+    with gzip.open(".".join((atcf_path, 'gz')), 'rb') as atcf_file,    \
+            open(atcf_path, 'w') as atcf_unzipped_file:
+        atcf_unzipped_file.write(atcf_file.read().decode('ascii'))
+
+    ike = Storm(path=atcf_path, file_format="ATCF", single_storm=True)
 
     # Calculate landfall time - Need to specify as the file above does not
     # include this info (9/13/2008 ~ 7 UTC)
     ike.time_offset = datetime.datetime(2008, 9, 13, 7)
+
     ike.write(data.storm_file, file_format='geoclaw')
 
     # =======================
