@@ -1,7 +1,5 @@
 module qinit_module
 
-    use amr_module, only: rinfinity
-
     implicit none
     save
 
@@ -9,24 +7,31 @@ module qinit_module
     
     ! Type of q initialization
     integer, public :: qinit_type
+
+    integer, public :: min_level_qinit
+    integer, public :: max_level_qinit
+
+    ! Geometry
+    real(kind=8), public :: x_low_qinit
+    real(kind=8), public :: y_low_qinit
+    real(kind=8), public :: t_low_qinit
+    real(kind=8), public :: x_hi_qinit
+    real(kind=8), public :: y_hi_qinit
+    real(kind=8), public :: t_hi_qinit
+    real(kind=8), public :: dx_qinit
+    real(kind=8), public :: dy_qinit
     
     ! Work array
     real(kind=8), private, allocatable :: qinit(:)
 
-    ! Geometry
-    real(kind=8) :: x_low_qinit
-    real(kind=8) :: y_low_qinit
-    real(kind=8) :: t_low_qinit
-    real(kind=8) :: x_hi_qinit
-    real(kind=8) :: y_hi_qinit
-    real(kind=8) :: t_hi_qinit
-    real(kind=8) :: dx_qinit
-    real(kind=8) :: dy_qinit
-    
     integer, private :: mx_qinit
     integer, private :: my_qinit
-    integer :: min_level_qinit
-    integer :: max_level_qinit
+
+    ! Specifc types of intialization    
+    ! Type of perturbation to add
+    integer, private :: wave_family
+    real(kind=8), private :: init_location(2), epsilon
+    real(kind=8), private :: angle, sigma
 
 contains
 
@@ -42,7 +47,7 @@ contains
         ! File handling
         integer, parameter :: unit = 7
         character(len=150) :: qinit_fname
-    
+        
         if (.not.module_setup) then
 
             write(GEO_PARM_UNIT,*) ' '
@@ -63,25 +68,41 @@ contains
                 write(GEO_PARM_UNIT,*)  '  qinit_type = 0, no perturbation'
                 print *,'  qinit_type = 0, no perturbation'
                 return
-            endif
-            read(unit,*) qinit_fname
-            read(unit,"(2i2)") min_level_qinit, max_level_qinit
+            else if (qinit_type > 0 .and. qinit_type < 5) then
+                read(unit,*) qinit_fname
+                read(unit,"(2i2)") min_level_qinit, max_level_qinit
 
-            write(GEO_PARM_UNIT,*) '   min_level, max_level, qinit_fname:'
-            write(GEO_PARM_UNIT,*)  min_level_qinit, max_level_qinit, qinit_fname
-            
-            call read_qinit(qinit_fname)
+                write(GEO_PARM_UNIT,*) '   min_level, max_level, qinit_fname:'
+                write(GEO_PARM_UNIT,*)  min_level_qinit, max_level_qinit, qinit_fname
+                
+                call read_qinit(qinit_fname)
+            else if (qinit_type >= 5) then
+                read(unit,*) epsilon
+                read(unit,*) init_location
+                read(unit,*) wave_family
+                read(unit,*) angle
+                read(unit,*) sigma
+
+                write(GEO_PARM_UNIT,*) " epsilon = ",  epsilon
+                write(GEO_PARM_UNIT,*) " init_location = ",  init_location
+                write(GEO_PARM_UNIT,*) " wave_family = ",  wave_family
+                write(GEO_PARM_UNIT,*) " angle = ",  angle
+                write(GEO_PARM_UNIT,*) " sigma = ",  sigma
+            endif
+
+            close(unit)
 
             module_setup = .true.
         end if
-    
+
     end subroutine set_qinit
+
 
 
     subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use multilayer_module, only: num_layers, eta_init
-        use geoclaw_module, only: rho
+        use geoclaw_module, only: sea_level, pi, g => grav, rho
+        use multilayer_module, only: aux_layer_index, r, eta_init
     
         implicit none
     
@@ -92,56 +113,45 @@ contains
         real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
         
         ! Local
-        integer :: i, j, layer_index
-        real(kind=8) :: ximc,xim,x,xip,xipc,yjmc,yjm,y,yjp,yjpc,dq
+        integer :: i,j
+        real(kind=8) :: ximc,xim,x,xc,xip,xipc,yjmc,yjm,y,yc,yjp,yjpc,dq
+
+        real(kind=8) :: xmid,m,x_c,y_c, effective_b
+        real(kind=8) :: eigen_vector(6),gamma,lambda,alpha,h_1,h_2,deta
         
         ! Topography integral function
         real(kind=8) :: topointegral
+        do i = 1-mbc, mx+mbc
+            x = xlower + (i - 0.5d0)*dx
+            xim = x - 0.5d0 * dx
+            xip = x + 0.5d0 * dx
+            do j = 1-mbc, my+mbc
+                y = ylower + (j - 0.5d0) * dy
+                yjm = y - 0.5d0 * dy
+                yjp = y + 0.5d0 * dy
 
-        if (qinit_type > 0) then
-            do i=1-mbc,mx+mbc
-                x = xlower + (i-0.5d0)*dx
-                xim = x - 0.5d0*dx
-                xip = x + 0.5d0*dx
-                do j=1-mbc,my+mbc
-                    y = ylower + (j-0.5d0)*dy
-                    yjm = y - 0.5d0*dy
-                    yjp = y + 0.5d0*dy
+                ! Check to see if we are in the qinit region at this grid point
+                if ((xip > x_low_qinit).and.(xim < x_hi_qinit).and.  &
+                    (yjp > y_low_qinit).and.(yjm < y_hi_qinit)) then
+                    xipc = min(xip, x_hi_qinit)
+                    ximc = max(xim, x_low_qinit)
+                    xc = 0.5d0 * (xipc + ximc)
 
-                    ! Check to see if we are in the qinit region at this grid point
-                    if ((xip > x_low_qinit).and.(xim < x_hi_qinit).and.  &
-                        (yjp > y_low_qinit).and.(yjm < y_hi_qinit)) then
+                    yjpc=min(yjp,y_hi_qinit)
+                    yjmc=max(yjm,y_low_qinit)
+                    yc=0.5d0*(yjmc+yjpc)
 
-                        xipc=min(xip,x_hi_qinit)
-                        ximc=max(xim,x_low_qinit)
+                    dq = topointegral(ximc,xipc,yjmc,yjpc,x_low_qinit, &
+                                      y_low_qinit,dx_qinit,dy_qinit,mx_qinit, &
+                                      my_qinit,qinit,1)
+                    dq = dq / ((xipc-ximc)*(yjpc-yjmc))
 
-                        yjpc=min(yjp,y_hi_qinit)
-                        yjmc=max(yjm,y_low_qinit)
-
-                        dq = topointegral(ximc,xipc,yjmc,yjpc,x_low_qinit, &
-                                          y_low_qinit,dx_qinit,dy_qinit,mx_qinit, &
-                                          my_qinit,qinit,1)
-                        dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(2,i,j))
-
-                        if (qinit_type <= 3 * num_layers) then 
-                            if (aux(1,i,j) <= eta_init(qinit_type)) then
-                                q(qinit_type,i,j) = q(qinit_type,i,j) + dq
-                            endif
-                        else if (qinit_type > 3 * num_layers .and.             &
-                                 qinit_type <= 4 * num_layers) then
-                            layer_index = qinit_type - 3 * num_layers
-                            q(layer_index, i, j) = q(layer_index, i, j)        &
-                                                         + dq * rho(layer_index)
-                            ! modify layer above to accomodate this perturbation
-                            if (layer_index > 1) then
-                                stop "Not implemented yet"
-                            end if
-                        endif
-                    endif
-                enddo
+                    effective_b = max(aux(1,i,j), eta_init(2))
+                    q(1,i,j) = max((dq - effective_b) * rho(1), 0.d0)
+                endif
             enddo
-        endif
-        
+        enddo
+
     end subroutine add_perturbation
 
         

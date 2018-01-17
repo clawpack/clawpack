@@ -50,7 +50,7 @@ c      dimension work(mwork)
       logical :: debug = .false.
       logical :: dump = .false.
 c
-      
+      tcfmax = -rinfinity
       level = node(nestlevel,mptr)
 
       if (dump) then
@@ -242,28 +242,33 @@ c
 c       # update q
         dtdx = dt/dx
         dtdy = dt/dy
-        do 50 m=1,nvar
-        do 50 i=mbc+1,mitot-mbc
-        do 50 j=mbc+1,mjtot-mbc
          if (mcapa.eq.0) then
+          do 50 j=mbc+1,mjtot-mbc
+          do 50 i=mbc+1,mitot-mbc
+          do 50 m=1,nvar
 c
 c            # no capa array.  Standard flux differencing:
 
            q(m,i,j) = q(m,i,j)
      &           - dtdx * (fm(m,i+1,j) - fp(m,i,j))
      &           - dtdy * (gm(m,i,j+1) - gp(m,i,j))
+ 50       continue
          else
+          do 51 j=mbc+1,mjtot-mbc
+          do 51 i=mbc+1,mitot-mbc
+          do 51 m=1,nvar
 c            # with capa array.
            q(m,i,j) = q(m,i,j)
      &           - (dtdx * (fm(m,i+1,j) - fp(m,i,j))
      &           +  dtdy * (gm(m,i,j+1) - gp(m,i,j))) / aux(mcapa,i,j)
+ 51       continue
 !           write(outunit,543) m,i,j,q(m,i,j),fm(m,i+1,j),fp(m,i,j),
 !     .        gm(m,i,j+1), gp(m,i,j)
 543       format(3i4,5e25.16)
 
          endif
 
- 50      continue
+c 50      continue
 c
 c     # Copied here from b4step2 since need to do before saving to qc1d:
       forall(i=1:mitot, j=1:mjtot, k=1:num_layers,
@@ -393,3 +398,4 @@ c            write(*,545) i,j,(q(i,j,ivar),ivar=1,nvar)
 c
       return
       end
+

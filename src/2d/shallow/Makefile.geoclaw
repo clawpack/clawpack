@@ -129,7 +129,7 @@ COMMON_SOURCES += \
   $(GEOLIB)/filval.f90 \
   $(GEOLIB)/filpatch.f90 \
   $(GEOLIB)/bc2amr.f \
-  $(GEOLIB)/update.f \
+  $(GEOLIB)/update.f90 \
   $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine2.f90  \
   $(GEOLIB)/allowflag.f90  \
