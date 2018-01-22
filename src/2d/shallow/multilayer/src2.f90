@@ -10,11 +10,15 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     use geoclaw_module, only: g => grav, RAD2DEG, pi, rho_air, ambient_pressure
     use geoclaw_module, only: coriolis_forcing, coriolis, rho
     use geoclaw_module, only: friction_forcing, friction_depth
+    use geoclaw_module, only: manning_coefficient
+    use geoclaw_module, only: manning_break, num_manning
     use geoclaw_module, only: spherical_distance, coordinate_system
 
     use amr_module, only: mcapa, cflv1
       
     use multilayer_module, only: num_layers, dry_tolerance
+    
+    use friction_module, only: variable_friction, friction_index
 
     implicit none
     
@@ -27,15 +31,15 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
     ! Locals
-    integer :: i, j, m, k, bottom_index, bottom_layer, layer_index
+    integer :: i, j, m, k, bottom_index, bottom_layer, layer, nman
     logical :: found
     real(kind=8) :: xm, xc, xp, ym, yc, yp, dx_meters, dy_meters
-    real(kind=8) :: h(num_layers), hu, hv, u, v, hu0, hv0
+    real(kind=8) :: h(num_layers), hu, hv, u, v, hu0, hv0, coeff
     real(kind=8) :: tau, wind_speed, theta, phi, psi, P_gradient(2), S(2), sloc(2)
     real(kind=8) :: fdt, Ddt, a(2,2)
 
     ! Physics parameters
-    real(kind=8), parameter :: fric_coefficient = 7.d0 / 3.d0
+    real(kind=8), parameter :: manning_power = 7.d0 / 3.d0
     real(kind=8), parameter :: H_break = 2.d0
     real(kind=8), parameter :: theta_f = 10.d0
     real(kind=8), parameter :: gamma_f = 4.d0 / 3.d0
@@ -156,9 +160,19 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     cycle
                 end if
 
+                if (variable_friction) then
+                    coeff = aux(friction_index, i, j)
+                else
+                    do nman = num_manning, 1, -1
+                        if (aux(1,i,j) .lt. manning_break(nman)) then
+                            coeff = manning_coefficient(nman)
+                        endif
+                    enddo
+                end if
+
                 ! Apply friction if in shallow enough water
                 if (sum(h) <= friction_depth) then
-                    tau = g * aux(friction_index,i,j)**2 / h(bottom_layer)**(fric_coefficient) &
+                    tau = g * coeff**2 / h(bottom_layer)**(manning_power) &
                             * (1.d0 + (H_break / h(bottom_layer))**theta_f)**(gamma_f / theta_f) &
                             * sqrt(hu**2 + hv**2)
                     q(bottom_index + 2,i,j) = q(bottom_index + 2,i,j) / (1.d0 + dt * tau)
@@ -190,9 +204,9 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
 
             do i=1,mx
                 do m=1,num_layers
-                    layer_index = 3 * (m-1)
-                    hu = q(layer_index + 2,i,j)
-                    hv = q(layer_index + 3,i,j)
+                    layer = 3 * (m-1)
+                    hu = q(layer + 2,i,j)
+                    hv = q(layer + 3,i,j)
                     ! Note that these are not really hu, hv but rho * hu and 
                     ! rho * hv actually
                     q(2,i,j) = hu * a(1,1) + hv * a(1,2)

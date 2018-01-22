@@ -17,11 +17,13 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     use geoclaw_module, only: coordinate_system, earth_radius, deg2rad
     use geoclaw_module, only: sea_level, ambient_pressure
 
-    use storm_module, only: storm_type, wind_index, pressure_index
+    use storm_module, only: wind_forcing, pressure_forcing
+    use storm_module, only: wind_index, pressure_index, set_storm_fields
 
-    use friction_module, only: friction_index, set_friction_field
+    use friction_module, only: variable_friction, friction_index
+    use friction_module, only: set_friction_field
 
-    use multilayer_module, only: eta_init, num_layers, aux_layer_index
+    use multilayer_module, only: eta_init, num_layers, layer_index
 
     use topo_module
     
@@ -46,20 +48,39 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             stop
         endif
     endif
-    
-    ! Set default values for aux variables
-    aux(1,:,:) = 0.d0 ! Bathymetry
-    aux(2,:,:) = 1.d0 ! Grid cell area
-    aux(3,:,:) = 1.d0 ! Length ratio for edge
-    aux(friction_index,:,:) = 0.d0 ! Manning's-N friction coefficeint
-    if (storm_type > 0) then
-        ! Set these to something non-offensive
-        aux(wind_index,:,:) = 0.d0 ! Wind speed x-direction
-        aux(wind_index+1,:,:) = 0.d0 ! Wind speed y-direction
-        aux(pressure_index,:,:) = ambient_pressure ! Pressure field
+
+    ! Check below is new in 5.2.1 -- need to rethink for storm surge
+    ! and other applications where other aux arrays might be used?
+    if (coordinate_system == 1) then
+        if (mcapa > 0) then
+            print *,'ERROR in setaux:  for coordinate_system==1'
+            print *,'     need mcapa == 0 and maux == 1'
+            print *,'     have mcapa = ',mcapa,'  maux = ',maux
+            stop
+        else if (maux > 1) then
+            ! Should not need to set aux(2,:,:) in this case, but 
+            ! for some reason it bombs, e.g. in bowl-radial if maux>1.
+            aux(2,:,:) = 1.d0 
+            !aux(3,:,:) = 1.d0
+        endif
     endif
+
+    ! If using a variable friction field initialize the coefficients to 0
+    if (variable_friction) then
+        aux(friction_index,:,:) = 0.d0
+    endif
+
+    ! Storm fields if used
+    if (wind_forcing) then
+        aux(wind_index, :, :) = 0.d0
+        aux(wind_index + 1, :, :) = 0.d0
+    endif
+    if (pressure_forcing) then
+        aux(pressure_index, :, :) = ambient_pressure
+    endif
+
     ! Initial layer depths for multilayer
-    aux(aux_layer_index:num_layers - 1 + aux_layer_index,:,:) = 0.d0 
+    aux(layer_index:num_layers - 1 + layer_index,:,:) = 0.d0 
 
     ! Set analytical bathymetry here if requested
     if (test_topography > 0) then
@@ -68,7 +89,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                                    ylow + (j - 0.5d0) * dy)
         end forall
     endif
-    
 
 ! test:  compute integer indices based off same corner of domain 
 !        to reduce round off discrepancies
@@ -160,7 +180,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
     ! Set friction coefficient based on a set of depth levels
     if (friction_index > 0) then
-       call set_friction_field(mx,my,mbc,maux,xlow,ylow,dx,dy,aux)
+       call set_friction_field(mx, my, mbc, maux, xlow, ylow, dx, dy, aux)
     endif
 
     ! Record initial depths if using multiple layers
@@ -170,26 +190,26 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 if (eta_init(m) > aux(1,i,j)) then
                     if (eta_init(m+1) > aux(1,i,j)) then
                         ! There's a layer below this one
-                        aux(aux_layer_index + (m - 1), i, j) =      &
+                        aux(layer_index + (m - 1), i, j) =      &
                                                  eta_init(m) - eta_init(m+1)
                     else
                         ! This is the last wet layer
-                        aux(aux_layer_index + (m - 1), i, j) =      &
+                        aux(layer_index + (m - 1), i, j) =      &
                                                     eta_init(m) - aux(1,i,j)
                     endif
                 else
                     ! This layer is dry here
-                    aux(aux_layer_index + (m - 1), i, j) = 0.d0
+                    aux(layer_index + (m - 1), i, j) = 0.d0
                 endif
             enddo    
             ! Handle bottom layer seperately
             if (eta_init(num_layers) > aux(1,i,j)) then
                 ! Bottom layer is wet here
-                aux(aux_layer_index + num_layers - 1,i,j) =             &
+                aux(layer_index + num_layers - 1,i,j) =             &
                                            eta_init(num_layers) - aux(1,i,j)        
             else
                 ! Bottom layer is dry here
-                aux(aux_layer_index + num_layers - 1,i,j) = 0.d0
+                aux(layer_index + num_layers - 1,i,j) = 0.d0
             endif
         enddo
     enddo

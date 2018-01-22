@@ -23,9 +23,9 @@ module friction_module
     logical, private :: module_setup = .false.
 
     ! Parameters
-    integer, public, parameter :: friction_index = 4
+    integer, public :: friction_index
 
-    ! Whether to use variable friction and what type to specify
+    ! Whether to use variable friction and what type to specif
     logical, public :: variable_friction
 
     ! Support for region based specification
@@ -83,7 +83,8 @@ contains
             endif
 
             ! Basic switch to turn on variable friction
-            read(unit,*) variable_friction
+            read(unit, *) variable_friction
+            read(unit, *) friction_index
             read(unit,'(a)')
 
             if (variable_friction) then

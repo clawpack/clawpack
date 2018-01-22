@@ -13,7 +13,7 @@ module multilayer_module
     logical, private :: module_setup = .false.
 
     ! Storage parameters
-    integer :: aux_layer_index
+    integer :: layer_index
     
     ! Physical parameters
     integer :: num_layers
@@ -98,6 +98,7 @@ contains
             endif
             read(IOUNIT, *) eta_init
             read(IOUNIT, *) wave_tolerance
+            read(IOUNIT, *) layer_index
             read(IOUNIT, *)
 
             ! Algorithmic parameters
@@ -107,13 +108,6 @@ contains
             read(IOUNIT, "(i1)") inundation_method
             
             close(IOUNIT) 
-
-            ! Set layer index - depends on whether a storm surge is being modeled
-            if (storm_specification_type /= 0) then
-                aux_layer_index = 5
-            else
-                aux_layer_index = 8
-            end if
 
             ! Currently just set dry_tolerance(:) = dry_tolerance
             dry_tolerance = geo_dry_tolerance
