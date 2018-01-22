@@ -38,7 +38,7 @@ contains
     subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
         use geoclaw_module, only: sea_level, pi, g => grav, rho
-        use multilayer_module, only: aux_layer_index, r
+        use multilayer_module, only: layer_index, r
     
         implicit none
     
@@ -105,20 +105,20 @@ contains
                         ! Test perturbations - these only work in the x-direction
                         if (qinit_type == 5 .or. qinit_type == 6) then
                             ! Calculate wave family for perturbation
-                            gamma = aux(aux_layer_index+1,i,j) / aux(aux_layer_index,i,j)
+                            gamma = aux(layer_index+1,i,j) / aux(layer_index,i,j)
                             select case(wave_family)
                                 case(1) ! Shallow water, left-going
                                     alpha = 0.5d0 * (gamma - 1.d0 + sqrt((gamma-1.d0)**2+4.d0*r*gamma))
-                                    lambda = -sqrt(g*aux(aux_layer_index,i,j)*(1.d0+alpha))
+                                    lambda = -sqrt(g*aux(layer_index,i,j)*(1.d0+alpha))
                                 case(2) ! Internal wave, left-going
                                     alpha = 0.5d0 * (gamma - 1.d0 - sqrt((gamma-1.d0)**2+4.d0*r*gamma))
-                                    lambda = -sqrt(g*aux(aux_layer_index,i,j)*(1.d0+alpha))
+                                    lambda = -sqrt(g*aux(layer_index,i,j)*(1.d0+alpha))
                                 case(3) ! Internal wave, right-going
                                     alpha = 0.5d0 * (gamma - 1.d0 - sqrt((gamma-1.d0)**2+4.d0*r*gamma))
-                                    lambda = sqrt(g*aux(aux_layer_index,i,j)*(1.d0+alpha))
+                                    lambda = sqrt(g*aux(layer_index,i,j)*(1.d0+alpha))
                                 case(4) ! Shallow water, right-going
                                     alpha = 0.5d0 * (gamma - 1.d0 + sqrt((gamma-1.d0)**2+4.d0*r*gamma))
-                                    lambda = sqrt(g*aux(aux_layer_index,i,j)*(1.d0+alpha))
+                                    lambda = sqrt(g*aux(layer_index,i,j)*(1.d0+alpha))
                             end select
                             eigen_vector = [1.d0,lambda,0.d0,alpha,lambda*alpha,0.d0]
 
