@@ -351,9 +351,9 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         self.add_attribute('drag_law',1)
         self.add_attribute('pressure_forcing',False)
 
-        # Algorithm parameters
-        self.add_attribute("wind_index", 5)
-        self.add_attribute("pressure_index", 7)
+        # Algorithm parameters - Indexing is python based
+        self.add_attribute("wind_index", 4)
+        self.add_attribute("pressure_index", 6)
         self.add_attribute("display_landfall_time", False)
 
         # AMR parameters
@@ -372,28 +372,36 @@ class SurgeData(clawpack.clawutil.data.ClawData):
         # print "Creating data file %s" % out_file
         self.open_data_file(out_file,data_source)
 
-        self.data_write('wind_forcing',description='(Wind source term used)')
-        self.data_write('drag_law',description='(Type of drag law to use)')
-        self.data_write('pressure_forcing',description="(Pressure source term used)")
+        self.data_write('wind_forcing', description='(Wind source term used)')
+        self.data_write('drag_law', description='(Type of drag law to use)')
+        self.data_write('pressure_forcing',
+                        description="(Pressure source term used)")
         self.data_write()
 
-        self.data_write("wind_index", description="(Index into aux array for wind (size 2))")
-        self.data_write("pressure_index", description="(Index into aux array for pressure (size 1))")
-        self.data_write("display_landfall_time", description='(Display time relative to landfall)')
+        self.data_write("wind_index", value=self.wind_index + 1,
+                        description="(Index into aux array - fortran indexing)")
+        self.data_write("pressure_index", value=self.pressure_index +  1,
+                        description="(Index into aux array - fortran indexing)")
+        self.data_write("display_landfall_time", 
+                        description='(Display time relative to landfall)')
         self.data_write()
 
         if isinstance(self.wind_refine, bool):
             if not self.wind_refine:
-                self.data_write('wind_refine', value=False, description='(Refinement ratios)')
+                self.data_write('wind_refine', value=False,
+                                description='(Refinement ratios)')
         elif isinstance(self.wind_refine, type(None)):
-            self.data_write('wind_refine', value=False, description='(Refinement ratios)')
+            self.data_write('wind_refine', value=False,
+                            description='(Refinement ratios)')
         else:
             self.data_write('wind_refine',description='(Refinement ratios)')
         if isinstance(self.R_refine, bool):
             if not self.R_refine:
-                self.data_write('R_refine', value=False, description='(Refinement ratios)')
+                self.data_write('R_refine', value=False,
+                                description='(Refinement ratios)')
         elif isinstance(self.R_refine, type(None)):
-            self.data_write('R_refine', value=False, description='(Refinement ratios)')
+            self.data_write('R_refine', value=False,
+                            description='(Refinement ratios)')
         else:
             self.data_write('R_refine', description='(Refinement ratios)')
         self.data_write()
@@ -409,16 +417,14 @@ class SurgeData(clawpack.clawutil.data.ClawData):
                                         self.storm_specification_type],
                                 description="(Storm specification)")
             else:
-                raise ValueError("Unknown storm specification type %s" 
-                                    % self.storm_specification_type)
+                raise ValueError("Unknown storm specification type %s"
+                                 % self.storm_specification_type)
         else:
-            self.data_write("storm_specification_type", 
+            self.data_write("storm_specification_type",
                             description="(Storm specification)")
         self.data_write("storm_file", description='(Path to storm data)')
 
-
         self.close_data_file()
-
 
 
 class FrictionData(clawpack.clawutil.data.ClawData):
@@ -426,24 +432,30 @@ class FrictionData(clawpack.clawutil.data.ClawData):
 
     def __init__(self):
         r""""""
-        
+
         super(FrictionData, self).__init__()
 
         # Variable friction support
-        self.add_attribute('variable_friction',False)
+        self.add_attribute('variable_friction', False)
+
+        # Index where the variable friction field is stored (Python indexed)
+        self.add_attribute('friction_index', 3)
 
         # Region support
-        self.add_attribute('friction_regions',[])
+        self.add_attribute('friction_regions', [])
 
         # File support
-        self.add_attribute('friction_files',[])
-
+        self.add_attribute('friction_files', [])
 
     def write(self, out_file='friction.data', data_source='setrun.py'):
 
-        self.open_data_file(out_file,data_source)
+        self.open_data_file(out_file, data_source)
 
-        self.data_write('variable_friction',description="(method for setting variable friction)")
+        self.data_write('variable_friction',
+                        description="(method for setting variable friction)")
+        self.data_write('friction_index', value=self.friction_index + 1,
+                        description=("(Index into aux array ",
+                                     "- fortran indexing)"))
         self.data_write()
         if self.variable_friction:
             # Region based friction
@@ -452,10 +464,11 @@ class FrictionData(clawpack.clawutil.data.ClawData):
                             description="(Friction Regions)")
             self.data_write()
             for region in self.friction_regions:
-                self.data_write(value=region[0],alt_name="lower")
-                self.data_write(value=region[1],alt_name="upper")
-                self.data_write(value=region[2],alt_name="depths")
-                self.data_write(value=region[3],alt_name="manning_coefficients")
+                self.data_write(value=region[0], alt_name="lower")
+                self.data_write(value=region[1], alt_name="upper")
+                self.data_write(value=region[2], alt_name="depths")
+                self.data_write(value=region[3],
+                                alt_name="manning_coefficients")
                 self.data_write()
 
             # File based friction
@@ -467,47 +480,52 @@ class FrictionData(clawpack.clawutil.data.ClawData):
         self.close_data_file()
 
 
-
 class MultilayerData(clawpack.clawutil.data.ClawData):
     r"""
     Multilayer SWE data object
-
     """
 
     def __init__(self):
         super(MultilayerData, self).__init__()
 
         # Physics parameters
-        self.add_attribute('num_layers',1)
-        self.add_attribute('rho',[1025.0,1028.0])
-        self.add_attribute('eta',[0.0,-200.0])
-        self.add_attribute('wave_tolerance',[1.e-1,1.e-1])
-        
+        self.add_attribute('num_layers', 1)
+        self.add_attribute('rho', [1025.0, 1028.0])
+        self.add_attribute('eta', [0.0, -200.0])
+        self.add_attribute('wave_tolerance', [1.e-1, 1.e-1])
+
         # Algorithm parameters
-        self.add_attribute('eigen_method',4)
-        self.add_attribute('inundation_method',2)
-        self.add_attribute('check_richardson',True)
-        self.add_attribute('richardson_tolerance',0.95)
+        self.add_attribute('eigen_method', 4)
+        self.add_attribute('inundation_method', 2)
+        self.add_attribute('check_richardson', True)
+        self.add_attribute('richardson_tolerance', 0.95)
+        self.add_attribute('layer_index', 8)
 
         # Need to adjust refinement module for this, dry_limit is in geodata
-        self.add_attribute('wave_tolerance',[1e-1,2e-1])
-        self.add_attribute('dry_limit',False)
-    
+        self.add_attribute('wave_tolerance', [1e-1, 2e-1])
+        self.add_attribute('dry_limit', False)
 
-    def write(self,out_file='./multilayer.data',datasource="setrun.py"):
-        
+    def write(self, out_file='./multilayer.data', datasource="setrun.py"):
+
         self.open_data_file(out_file, datasource)
-        
+
         self.data_write('num_layers', description='(Number of layers)')
-        self.data_write('eta',description='(Initial top surface of each layer)')
-        self.data_write('wave_tolerance',description='(Tolerance of surface purtibation per layer, used for refinement criteria)')
+        self.data_write('eta',
+                        description='(Initial top surface of each layer)')
+        self.data_write('wave_tolerance',
+                        description=('(Tolerance of surface perturbation per',
+                                     ' layer, used for refinement criteria)'))
+        self.data_write('layer_index', value=self.layer_index + 1,
+                        description=("(Index into aux array -",
+                                     " fortran indexing)"))
         self.data_write(None)
-        self.data_write('check_richardson',description="(Check Richardson number)")
-        self.data_write('richardson_tolerance',description='(Tolerance for Richardson number)')
-        self.data_write('eigen_method',description='(Method for calculating eigenspace)')
-        self.data_write('inundation_method',description='(Method for calculating inundation eigenspace)')
-        
-        # self.data_write('wave_tolerance',description='(Tolerance for wave height refinement)')
-        # self.data_write('dry_limit',description='(Turn off limiting when near a dry state)')
-        
+        self.data_write('check_richardson',
+                        description="(Check Richardson number)")
+        self.data_write('richardson_tolerance',
+                        description='(Tolerance for Richardson number)')
+        self.data_write('eigen_method',
+                        description='(Method for calculating eigenspace)')
+        self.data_write('inundation_method',
+                        description=('(Method for calculating inundation ',
+                                     'eigenspace)'))
         self.close_data_file()
