@@ -18,3 +18,7 @@ _plots/
 *.xyz
 scratch/*
 !scratch/README.txt
+*DS_Store
+*.log
+*_plots*
+*_output*

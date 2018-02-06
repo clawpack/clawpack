@@ -9,7 +9,6 @@ c
 c
       use amr_module
       use adjoint_module, only: innerprod_index
-      use innerprod_module, only: calculate_max_innerproduct
       implicit double precision (a-h,o-z)
       character*10  fname1, fname2, fname3, fname4, fname5
 
