@@ -6,39 +6,47 @@ c --------------------------------------------------------------
 c
       subroutine errf1(rctfine,nvar,rctcrse,mptr,mi2tot,mj2tot,
      2                 mitot,mjtot,rctflg,mibuff,mjbuff,auxfine,
-     2                 naux,auxcrse)
+     2                 naux,auxcrse,nx,ny)
 
-      use adjoint_module, only: innerprod_index
-      use innerprod_module, only: calculate_max_innerproduct
+      use adjoint_module, only: innerprod_index,
+     .        totnum_adjoints, adjoints, trange_start, trange_final,
+     .        levtol, eptr, errors
+      use innerprod_module, only: calculate_innerproduct
       use amr_module, only: rnode,node,hxposs,hyposs,possk,tol,nghost
       use amr_module, only: iorder,cornylo,cornxlo,edebug,eprint,goodpt
       use amr_module, only: outunit,timemult,badpt,nestlevel,mcapa
+      use amr_module, only: t0,tfinal,numcells
       use refinement_module, only: wave_tolerance
       use geoclaw_module, only:dry_tolerance, sea_level
       implicit none
 
-      integer, intent(in) :: nvar, mptr, mi2tot, mj2tot
+      integer, intent(in) :: nvar, mptr, mi2tot, mj2tot,nx,ny
       integer, intent(in) :: mitot, mjtot,mibuff,mjbuff, naux
       real(kind=8), intent(in) :: rctfine(nvar,mitot,mjtot)
       real(kind=8), intent(inout) :: rctcrse(nvar,mi2tot,mj2tot)
       real(kind=8), intent(inout) :: auxfine(naux,mitot,mjtot)
       real(kind=8), intent(in) :: auxcrse(naux,mi2tot,mj2tot)
+      real(kind=8) :: aux_temp(1:nx,1:ny)
       real(kind=8), intent(inout) :: rctflg(mibuff,mjbuff)
+      real(kind=8) :: est(nvar,mitot,mjtot)
+      logical :: mask_selecta(totnum_adjoints), adjoints_found
 
       logical :: allowflag
       external allowflag
 
 c     Local variables
-      integer :: i, j, ifine, jfine, jj, ii, levm, m
+      integer :: i, j, ifine, jfine, jj, ii, levm, m, k
       integer :: ico, jco, nwet
       real(kind=8) :: errmax, err2, order
       real(kind=8) :: hx, hy, dt, rflag, time
       real(kind=8) :: xofi, ybot, xleft, yofj, capa, capacrse
-      real(kind=8) :: hcrse, hucrse, hvcrse, etacrse, bcrse
+      real(kind=8) :: hcrse, hucrse, hvcrse, etacrse
+      real(kind=8) :: bcrse(mitot,mjtot)
       real(kind=8) :: hf, huf, hvf, etaf, bf, etac1
       real(kind=8) :: hc, huc, hvc, etac, hav, etaav, bav
       real(kind=8) :: etasum, hsum, husum, hvsum, bsum
       real(kind=8) :: etaerr, herr, huerr, hverr, innerprod
+      real(kind=8) :: tol_exact
 c
 c
 c ::::::::::::::::::::::::::::: ERRF1 ::::::::::::::::::::::::::::::::
@@ -67,6 +75,21 @@ c
       err2   = 0.0d0
       order  = dble(2**(iorder+1) - 2)
 
+      auxfine(innerprod_index,:,:) = 0.0d0
+      mask_selecta = .false.
+      adjoints_found = .false.
+
+c     Calculating correct tol for this level
+c     --------------------
+c     Total error allowed in this time step
+      tol_exact = tol*dt/tfinal
+c     Error allowed at this level
+      tol_exact = tol_exact/(2**(levm - 1))
+c     Error allowed per cell at this level
+      tol_exact = tol_exact/(numcells(levm)*hx*hy)
+
+      if (t0+possk(levm) .eq. time) levtol(levm) = tol_exact
+
 c
 c     Print values for debugging
 c
@@ -90,6 +113,21 @@ c
 c Main loop: flag points and set extra aux values
 c
  20   continue
+      jfine = nghost+1
+      do j = nghost+1,mj2tot-nghost
+          ifine = nghost+1
+          do i = nghost+1,mi2tot-nghost
+
+              bcrse(ifine,jfine) = auxcrse(1,i,j)
+              bcrse(ifine+1,jfine) = auxcrse(1,i,j)
+              bcrse(ifine+1,jfine+1) = auxcrse(1,i,j)
+              bcrse(ifine,jfine+1) = auxcrse(1,i,j)
+
+              ifine = ifine + 2
+          enddo
+          jfine = jfine + 2
+      enddo
+
       jfine = nghost+1
       do 35  j = nghost+1, mj2tot-nghost
           yofj  = ybot + (dble(jfine) - .5d0)*hy
@@ -116,8 +154,8 @@ c
               hcrse = rctcrse(1,i,j)
               hucrse= rctcrse(2,i,j)
               hvcrse= rctcrse(3,i,j)
-              bcrse = auxcrse(1,i,j)
-              etacrse = hcrse+bcrse
+
+              etacrse = hcrse+bcrse(ifine,jfine)
 
               if (hcrse > dry_tolerance) then
 
@@ -168,8 +206,9 @@ c               # Finding coarsened values
                     etaav = etasum/dble(nwet)
                     bav = bsum/dble(nwet)
 
-c                    hc=max(etaav-bcrse*capacrse,0.d0) !tsunamiclaw method
-                    hc = min(hav,(max(etaav-bcrse*capacrse,0.d0)))
+c                    hc=max(etaav-bcrse(ifine,jfine)*capacrse,0.d0) !tsunamiclaw method
+                    hc = min(hav,
+     .                   (max(etaav-bcrse(ifine,jfine)*capacrse,0.d0)))
                     if (hsum .ne. 0) then
                         huc = (min(hav,hc)/hsum)*husum
                         hvc = (min(hav,hc)/hsum)*hvsum
@@ -187,42 +226,29 @@ c                    hc=max(etaav-bcrse*capacrse,0.d0) !tsunamiclaw method
                 hc = hc / capacrse
                 huc = huc / capacrse
                 hvc = hvc / capacrse
-                etac = hc + bcrse
+                etac = hc + bcrse(ifine,jfine)
 
 c               # Finding errors
                 herr  = dabs((hc-hcrse)/ order)
                 huerr = dabs((huc-hucrse)/ order)
                 hverr = dabs((hvc-hvcrse)/ order)
                 etaerr= dabs((etac-etacrse)/ order)
-              endif
 
-c
-c             Set innerproduct for fine grid
-c
-              innerprod = calculate_max_innerproduct(time,
-     .           xofi,yofj,etaerr,huerr,hverr,bcrse)
-c              write(*,*) "In errf1:", innerprod
-              do jco = 1,2
-                do ico = 1,2
-                  if (mcapa .eq. 0) then
-                    capa=1.0d0
-                  else
-                    capa=auxfine(2,ifine+ico-1,jfine+jco-1)
-                  endif
+                est(1,ifine,jfine) = dabs((etac-etacrse)/ order)
+                est(2,ifine,jfine) = dabs((huc-hucrse)/ order)
+                est(3,ifine,jfine) = dabs((hvc-hvcrse)/ order)
 
-                  hf =rctfine(1,ifine+ico-1,jfine+jco-1)*capa
+c               retaining directionality of the wave
+                est(1,ifine,jfine) = sign(est(1,ifine,jfine),etacrse)
+                est(2,ifine,jfine) = sign(est(2,ifine,jfine),hucrse)
+                est(3,ifine,jfine) = sign(est(3,ifine,jfine),hvcrse)
 
-                  auxfine(innerprod_index,ifine+ico-1,jfine+jco-1)
-     .                      = innerprod
+                do k = 1,nvar
+                    est(k,ifine + 1,jfine) = est(k,ifine,jfine)
+                    est(k,ifine + 1,jfine + 1) = est(k,ifine,jfine)
+                    est(k,ifine,jfine + 1) = est(k,ifine,jfine)
                 enddo
-              enddo
-
-c             Flag point if error is large enough
-              if (innerprod .ge. tol) then
-                  rflag  = badpt
               endif
-
-              rctcrse(1,i,j) = rflag
 
               ifine = ifine + 2
  30       continue
@@ -230,47 +256,63 @@ c             Flag point if error is large enough
           jfine = jfine + 2
  35    continue
 
-c
-c  print out intermediate flagged rctcrse (for debugging)
-c
-      if (eprint) then
-         err2 = dsqrt(err2/dble((mi2tot-2*nghost)*(mj2tot-2*nghost)))
-         write(outunit,103) mptr, levm, errmax, err2
- 103     format(' grid ',i4,' level ',i4,
-     .          ' max. error = ',e15.7,' err2 = ',e15.7)
-         if (edebug) then
-           write(outunit,*) ' flagged points on coarsened grid ',
-     .                      '(no ghost cells) for grid ',mptr
-           do 45 jj = nghost+1, mj2tot-nghost
-              j = mj2tot + 1 - jj
-              write(outunit,106) (nint(rctcrse(1,i,j)),
-     .                            i=nghost+1,mi2tot-nghost)
-106           format(1h ,80i1)
-45         continue
-         endif
+c     Loop over adjoint snapshots
+      do k=1,totnum_adjoints
+          if ((time+adjoints(k)%time) >= trange_start .and.
+     .        (time+adjoints(k)%time) <= trange_final) then
+              mask_selecta(k) = .true.
+              adjoints_found = .true.
+          endif
+      enddo
+
+      if(.not. adjoints_found) then
+          write(*,*) "Note: no adjoint snapshots ",
+     .        "found in time range."
+          write(*,*) "Consider increasing time rage of interest, ",
+     .        "or adding more snapshots."
       endif
 
-c
-c     If coarse point is flagged, set point in flag array
-c
-      jfine   = nghost+1
-      do 70 j = nghost+1, mj2tot-nghost
-          ifine   = nghost+1
-          do 60 i = nghost+1, mi2tot-nghost
-             if (rctcrse(1,i,j) .eq. goodpt) go to 55
-c                ## never set rctflg to good, since flag2refine may
-c                ## have previously set it to bad
-c                ## can only add bad pts in this routine
-                 rctflg(ifine,jfine)    = badpt
-                 rctflg(ifine+1,jfine)  = badpt
-                 rctflg(ifine,jfine+1)  = badpt
-                 rctflg(ifine+1,jfine+1)= badpt
+      do k=1,totnum_adjoints-1
+          if((.not. mask_selecta(k)) .and.
+     .        (mask_selecta(k+1))) then
+              mask_selecta(k) = .true.
+              exit
+          endif
+      enddo
 
- 55           ifine   = ifine + 2
- 60        continue
+      do k=totnum_adjoints,2,-1
+          if((.not. mask_selecta(k)) .and.
+     .        (mask_selecta(k-1))) then
+              mask_selecta(k) = .true.
+              exit
+          endif
+      enddo
 
-           jfine   = jfine + 2
- 70    continue
+      do 12 k = 1,totnum_adjoints
+c         ! Consider only snapshots that are within the desired time range
+          if (mask_selecta(k)) then
+c             set innerproduct for fine grid
+              aux_temp(:,:) =
+     .            calculate_innerproduct(time,est,k,nx,ny,
+     .            xleft,ybot,hx,hy,nvar,nghost,bcrse)
+
+              do 22  i  = 1, nx
+                  do 23  j  = 1, ny
+                     auxfine(innerprod_index,i,j) =
+     .                max(auxfine(innerprod_index,i,j),
+     .                    aux_temp(i,j))
+
+                     if (auxfine(innerprod_index,i,j) .ge. tol) then
+c                     ## never set rctflg to good, since flag2refine may
+c                     ## have previously set it to bad
+c                     ## can only add bad pts in this routine
+                         rctflg(i,j)    = badpt
+                     endif
+
+ 23           continue
+ 22           continue
+          endif
+ 12   continue
 
 c
 c     Print out values for debugging
@@ -281,6 +323,7 @@ c
          if (edebug) then
           do 56 jj = nghost+1, mjtot-nghost
            j = mjtot + 1 - jj
+ 106       format(1h ,80i1)
            write(outunit,106)
      &      (nint(rctflg(i,j)),i=nghost+1,mitot-nghost)
  56       continue

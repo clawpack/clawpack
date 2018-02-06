@@ -38,8 +38,10 @@
 
 subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                             tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
-    use adjoint_module, only: innerprod_index
-    use innerprod_module, only: calculate_max_innerproduct
+
+    use innerprod_module, only: calculate_innerproduct
+    use adjoint_module, only: totnum_adjoints, innerprod_index
+    use adjoint_module, only: adjoints, trange_start, trange_final
 
     use amr_module, only: mxnest, t0
     use geoclaw_module, only:dry_tolerance, sea_level
@@ -74,15 +76,20 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     external allowflag
 
     ! Locals
-    integer :: i,j,m
+    integer :: i,j,m,r
     real(kind=8) :: max_innerprod
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
     real(kind=8) :: dqi(meqn), dqj(meqn), dq(meqn),eta
     logical :: checkregions
+    logical :: mask_selecta(totnum_adjoints), adjoints_found
+    real(kind=8) :: aux_temp(mx,my)
 
     ! Initialize flags
     amrflags = DONTFLAG
     checkregions = .TRUE.
+    aux(innerprod_index,:,:) = 0.0
+    mask_selecta = .false.
+    adjoints_found = .false.
 
     y_loop: do j = 1,my
       y_c = ylower + (j - 0.5d0) * dy
@@ -145,23 +152,76 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             cycle x_loop
           endif
         endif
-
-        ! -----------------------------------------------------------------
-        ! Refinement not forced, so check if it is allowed and if so,
-        ! check if there is a reason to flag this point:
-        if (allowflag(x_c,y_c,t,level) .and. q(1,i,j) > tolsp) then
-            eta = q(1,i,j) + aux(1,i,j)
-
-            aux(innerprod_index,i,j) = calculate_max_innerproduct &
-                             (t,x_c,y_c,eta,q(2,i,j),q(3,i,j),aux(1,i,j))
-
-            ! Check wave criteria
-              if (aux(innerprod_index,i,j) > tolsp) then
-                amrflags(i,j) = DOFLAG
-                cycle x_loop
-              endif
-        endif
       enddo x_loop
     enddo y_loop
+    ! Finished checking if refinement is forced
+
+    ! -----------------------------------------------------------------
+    ! Check if refinment is allowed and if so,
+    ! check if there is a reason to flag this point:
+
+    ! Loop over adjoint snapshots
+    do r=1,totnum_adjoints
+        if ((t+adjoints(r)%time) >= trange_start .and. &
+               (t+adjoints(r)%time) <= trange_final) then
+            mask_selecta(r) = .true.
+            adjoints_found = .true.
+        endif
+    enddo
+
+    if(.not. adjoints_found) then
+        write(*,*) "Note: no adjoint snapshots found in time range."
+        write(*,*) "Consider increasing time rage of interest, or adding more snapshots."
+    endif
+
+
+    do r=1,totnum_adjoints-1
+        if((.not. mask_selecta(r)) .and. &
+                (mask_selecta(r+1))) then
+            mask_selecta(r) = .true.
+            exit
+        endif
+    enddo
+
+    do r=totnum_adjoints,2,-1
+        if((.not. mask_selecta(r)) .and. &
+               (mask_selecta(r-1))) then
+            mask_selecta(r) = .true.
+            exit
+        endif
+    enddo
+
+    aloop: do r=1,totnum_adjoints
+
+        ! Consider only snapshots that are within the desired time range
+        if (mask_selecta(r)) then
+            ! Calculate inner product with current snapshot
+            aux_temp(:,:) = calculate_innerproduct &
+                  (t,q,r,mx,my,xlower,ylower,dx,dy,meqn,mbc,aux(1,:,:))
+
+            ! Save max inner product
+            do i=1,mx
+                do j = 1,my
+                    aux(innerprod_index,i,j) = &
+                           max(aux(innerprod_index,i,j), &
+                           aux_temp(i,j))
+                enddo
+            enddo
+        endif
+
+    enddo aloop
+
+    ! Flag locations that need refining
+    y_loop2: do j = 1,my
+        y_c = ylower + (j - 0.5d0) * dy
+        x_loop2: do i = 1,mx
+            x_c = xlower + (i - 0.5d0) * dx
+
+            if (allowflag(x_c,y_c,t,level) .and. aux(innerprod_index,i,j) > tolsp) then
+                amrflags(i,j) = DOFLAG
+                cycle x_loop2
+            endif
+        enddo x_loop2
+    enddo y_loop2
 
 end subroutine flag2refine2
