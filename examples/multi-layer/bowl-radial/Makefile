@@ -21,7 +21,7 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?=
+FFLAGS ?= 
 
 # Include flags for LAPACK linking
 UNAME = $(shell uname)
@@ -94,7 +94,21 @@ SOURCES = \
   $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/rpt2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f
+  # $(CLAW)/riemann/src/rpn2_geoclaw.f \
+  # $(CLAW)/riemann/src/rpt2_geoclaw.f \
+  # $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
+
+# Construct the topography data
+.PHONY: topo all
+topo:
+	python maketopo.py
+
+all: 
+	$(MAKE) topo
+	$(MAKE) .plots
+	$(MAKE) .htmls
+
