@@ -24,11 +24,18 @@ adjoint_output = os.path.abspath('adjoint/_output')
 print('Will flag using adjoint solution from  %s' % adjoint_output)
 
 # Time period of interest:
-t1 = 0.
-t2 = 4.*3600.
+t1 = 3.0*3600.
+t2 = 4.0*3600.
+
+# Determining type of adjoint flagging:
+
+# taking inner product with forward solution or Richardson error:
+flag_forward_adjoint = True
+flag_richardson_adjoint = False
 
 # tolerance for adjoint flagging:
-adjoint_flag_tolerance = 0.000001 
+adjoint_flag_tolerance = 0.0005
+#adjoint_flag_tolerance = 0.00001    # suggested if using Richardson error
 #-----------------------------------------------
 
 
@@ -317,11 +324,12 @@ def setrun(claw_pkg='geoclaw'):
     # need 4 values, set in setadjoint
 
 
-    # Flag using refinement routine flag2refine rather than richardson error
-    amrdata.flag_richardson = False   # use Richardson?
-    amrdata.flag_richardson_tol = 0.002  # Richardson tolerance
-
-    amrdata.flag2refine = True  # for adjoint flagging
+    # Flag for refinement based on Richardson error estimater:
+    amrdata.flag_richardson = False
+    
+    # Flag for refinement using routine flag2refine:
+    amrdata.flag2refine = False
+    
     # see setadjoint to set tolerance for adjoint flagging
 
     # steps to take on each level L between regriddings of level L+1:
@@ -471,8 +479,17 @@ def setadjoint(rundata):
     # adjoint_flag_tolerance, t1, t2, adjoint_output
     # Then you don't need to modify this function...
 
-    rundata.amrdata.flag2refine = True  # for adjoint flagging
-    rundata.amrdata.flag2refine_tol = adjoint_flag_tolerance
+    # flag and tolerance for adjoint flagging:
+    if flag_forward_adjoint == True:
+        # setting up taking inner product with forward solution
+        rundata.amrdata.flag2refine = True
+        rundata.amrdata.flag2refine_tol = adjoint_flag_tolerance
+    elif flag_richardson_adjoint == True:
+        # setting up taking inner product with Richardson error
+        rundata.amrdata.flag_richardson = True
+        rundata.amrdata.flag_richardson_tol = adjoint_flag_tolerance
+    else:
+        print("No refinement flag set!")
 
     rundata.clawdata.num_aux = 4   # 4 required for adjoint flagging
     rundata.amrdata.aux_type = ['center','capacity','yleft','center']
@@ -496,7 +513,6 @@ def setadjoint(rundata):
     counter = 1
     for fname in files:
         f = open(fname)
-        time = f.readline().split()[-1]
         adjointdata.add_param('file' + str(counter), fname, \
             'Binary file' + str(counter))
         counter = counter + 1

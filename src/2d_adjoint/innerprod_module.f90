@@ -6,79 +6,144 @@ module innerprod_module
 
 contains
 
-    function calculate_max_innerproduct(t,x_c,y_c,eta,q2,q3,aux1) result(max_innerprod)
+    function calculate_innerproduct(t,q,k,mx_f,my_f,xlower_f, &
+               ylower_f,dx_f,dy_f,meqn_f,mbc_f,aux1) result(innerprod)
 
         use adjoint_module
+        use amr_module, only : flag_richardson, flag_gradient
 
-        real(kind=8), intent(in) :: t
-        integer :: r
-        real(kind=8) :: q_innerprod1, q_innerprod2, q_innerprod, max_innerprod
-        real(kind=8) :: x_c,y_c,eta,q2,q3
-        real(kind=8) :: aux1, t_nm
+        implicit none
 
-        max_innerprod = 0.d0
+        real(kind=8), intent(in) :: t,xlower_f,ylower_f,dx_f,dy_f
+        integer :: k,mx_f,my_f,meqn_f,mbc_f
+        real(kind=8), intent(in) :: q(meqn_f,1-mbc_f:mx_f+mbc_f,1-mbc_f:my_f+mbc_f)
 
-        aloop: do r=1, totnum_adjoints
+        integer :: mx_a, my_a, mptr_a, mbc_a
+        integer :: i, j, i1, i2, j1, j2, level, loc, z, m
+        real(kind=8) :: dx_a, xlower_a, xupper_a, xupper_f
+        real(kind=8) :: dy_a, ylower_a, yupper_a, yupper_f
+        real(kind=8) :: x1, x2, y1, y2
 
-            if (r .ne. 1) then
-                t_nm = adjoints(r-1)%time
+        real(kind=8) :: innerprod(mx_f,my_f), q_innerprod(mx_f,my_f)
+        logical :: mask_forward(mx_f,my_f)
+        real(kind=8) :: q_interp(adjoints(k)%meqn,mx_f,my_f), eta
+        real(kind=8) :: aux1(1-mbc_f:mx_f+mbc_f,1-mbc_f:my_f+mbc_f)
+
+        logical, allocatable :: mask_adjoint(:,:)
+
+        xupper_f = xlower_f + mx_f*dx_f
+        yupper_f = ylower_f + my_f*dy_f
+
+        innerprod = 0.d0
+
+        ! Loop over patches in adjoint solution
+        do z = 1, adjoints(k)%ngrids
+            mptr_a = adjoints(k)%gridpointer(z)
+            level = adjoints(k)%gridlevel(mptr_a)
+
+            ! Number of points in x and y
+            mx_a = adjoints(k)%ncellsx(mptr_a)
+            my_a = adjoints(k)%ncellsy(mptr_a)
+
+            ! Finding extreem values for grid
+            xlower_a = adjoints(k)%xlowvals(mptr_a)
+            dx_a = adjoints(k)%hxposs(level)
+            xupper_a = xlower_a + mx_a*dx_a
+            ylower_a = adjoints(k)%ylowvals(mptr_a)
+            dy_a = adjoints(k)%hyposs(level)
+            yupper_a = ylower_a + my_a*dy_a
+
+            loc = adjoints(k)%loc(mptr_a)
+
+            ! Check if adjoint patch overlaps with forward patch
+            x1 = max(xlower_f,xlower_a)
+            x2 = min(xupper_f,xupper_a)
+            y1 = max(ylower_f,ylower_a)
+            y2 = min(yupper_f,yupper_a)
+
+            if ((x1 > x2) .or. (y1 > y2)) then
+                ! Skipping interpolation if grids don't overlap
+                mask_forward = .false.
+                continue
             else
-                t_nm = 0.d0
-            endif
+                mbc_a = adjoints(k)%nghost
+                allocate(mask_adjoint(1-mbc_a:mx_a+mbc_a, 1-mbc_a:my_a+mbc_a))
 
-            if ((t+adjoints(r)%time) >= trange_start .and. &
-                (t+adjoints(r)%time) <=trange_final) then
+                ! Create a mask that is .true. only in part of patch intersecting forward patch:
+                i1 = max(int((x1 - xlower_a + 0.5d0*dx_a) / dx_a), 0)
+                i2 = min(int((x2 - xlower_a + 0.5d0*dx_a) / dx_a) + 1, mx_a+1)
+                j1 = max(int((y1 - ylower_a + 0.5d0*dy_a) / dy_a), 0)
+                j2 = min(int((y2 - ylower_a + 0.5d0*dy_a) / dy_a) + 1, my_a+1)
 
-                q_innerprod1 = 0.d0
-                q_innerprod2 = 0.d0
+                forall (i=1-mbc_a:mx_a+mbc_a, j=1-mbc_a:my_a+mbc_a)
+                    mask_adjoint(i,j) = ((i >= i1) .and. (i <= i2) .and. &
+                            (j >= j1) .and. (j <= j2))
+                end forall
 
-                q_innerprod1 = calculate_innerproduct(r,x_c,y_c,eta,q2,q3,aux1)
-                if (r .ne. 1) then
-                    q_innerprod2 = calculate_innerproduct(r-1,x_c,y_c,eta,q2,q3,aux1)
+                ! Create a mask that is .true. only in part of forward patch intersecting patch:
+
+                i1 = max(int((x1 - xlower_f + 0.5d0*dx_f) / dx_f)+1, 0)
+                i2 = min(int((x2 - xlower_f + 0.5d0*dx_f) / dx_f), mx_f)
+                j1 = max(int((y1 - ylower_f + 0.5d0*dy_f) / dy_f)+1, 0)
+                j2 = min(int((y2 - ylower_f + 0.5d0*dy_f) / dy_f), my_f)
+
+                forall (i=1:mx_f, j=1:my_f)
+                    mask_forward(i,j) = ((i >= i1) .and. (i <= i2) .and. &
+                             (j >= j1) .and. (j <= j2))
+                end forall
+
+                ! Interpolate adjoint values to q_interp
+                ! Note that values in q_interp will only be set properly where
+                ! mask_adjoint == .true.
+                call interp_adjoint( &
+                    adjoints(k)%meqn, k, q_interp, xlower_a, ylower_a, &
+                    dx_a, dy_a, mx_a, my_a, xlower_f, ylower_f, &
+                    dx_f, dy_f, mx_f, my_f, &
+                    mask_adjoint, mptr_a, mask_forward)
+
+                q_innerprod = 0.d0
+
+                ! Checking wet and dry states
+                forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
+                    mask_forward(i,j) = (mask_forward(i,j) .and. &
+                          (aux1(i,j) < 0.d0) .and. &
+                          (q_interp(4,i,j) - q_interp(1,i,j) < 0.d0))
+                end forall
+
+                ! For each valid point, calculate inner product
+                if (flag_gradient) then
+                  forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
+                    eta = q(1,i,j) + aux1(i,j)
+
+                    q_innerprod(i,j) = abs( &
+                        eta * q_interp(4,i,j) &
+                        + q(2,i,j) * q_interp(2,i,j) &
+                        + q(3,i,j) * q_interp(3,i,j))
+                  end forall
                 endif
 
-                q_innerprod = max(q_innerprod1, q_innerprod2)
-                if (q_innerprod > max_innerprod) then
-                    max_innerprod = q_innerprod
+                if (flag_richardson) then
+                  forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
+                    q_innerprod(i,j) = abs( &
+                        q(1,i,j) * q_interp(4,i,j) &
+                        + q(2,i,j) * q_interp(2,i,j) &
+                        + q(3,i,j) * q_interp(3,i,j))
+                  end forall
                 endif
+
+
+                do i=1,mx_f
+                    do j=1,my_f
+                        if (q_innerprod(i,j) > innerprod(i,j)) then
+                            innerprod(i,j) = q_innerprod(i,j)
+                        endif
+                    enddo
+                enddo
+
+                deallocate(mask_adjoint)
             endif
+        enddo
 
-        enddo aloop
-
-    end function calculate_max_innerproduct
-
-    function calculate_innerproduct(r,x_c,y_c,eta,q2,q3,aux1) result(q_innerprod)
-
-        use adjoint_module
-
-        integer :: r
-        real(kind=8) :: q_innerprod
-        double precision, allocatable :: q_interp(:)
-        real(kind=8) :: x_c,y_c,eta,q2,q3
-        real(kind=8) :: aux_interp, aux1
-
-        allocate(q_interp(adjoints(r)%meqn))
-
-        ! If q is on land, don't computer the inner product
-        if(aux1 > 0.d0) then
-            q_innerprod = 0.d0
-            return
-        endif
-
-        call interp_adjoint(adjoints(r)%meqn, &
-            adjoints(r)%naux, x_c,y_c,q_interp, r)
-        aux_interp = q_interp(4) - q_interp(1)
-
-        ! If q_adjoint is on land, don't computer the inner product
-        if(aux_interp > 0.d0) then
-            q_innerprod = 0.d0
-            return
-        endif
-
-        q_innerprod = abs( &
-            eta * q_interp(4) &
-            + q2 * q_interp(2) &
-            + q3 * q_interp(3))
 
     end function calculate_innerproduct
 
