@@ -24,6 +24,9 @@ c   # Other local variables
       integer :: mbuff,mi2tot,mibuff,midub,mitot
       integer :: mj2tot,mjbuff,mjdub,mjtot
 
+      write(*,*) "Warning: adjoint-error flagging ",
+     &            "isn't fully implemented for GeoClaw."
+
 c :::::::::::::::::::::::::: ERREST :::::::::::::::::::::::::::::::::::
 c for this grid at level lcheck:
 c  estimate the error by taking a large (2h,2k) step based on the
