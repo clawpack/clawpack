@@ -92,10 +92,10 @@ def setplot(plotdata=None):
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
-    plotitem.add_colorbar = True
+    plotitem.add_colorbar = False
     plotitem.colorbar_shrink = 0.75
     plotitem.amr_celledges_show = [0,0,0]
-    plotitem.patchedges_show = 0
+    plotitem.patchedges_show = [0,1,1]
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -146,11 +146,11 @@ def setplot(plotdata=None):
         return soln
 
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
-    #plotitem.plot_var = 4
     plotitem.plot_var = masked_inner_product
     plotitem.pcolor_cmap = colormaps.white_red
     plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 0.001
+    plotitem.pcolor_cmax = 0.005
+    #plotitem.pcolor_cmax = 0.00001 # use for adjoint-error flagging
 
     plotitem.add_colorbar = False   # doesn't work when adjoint all masked
     plotitem.colorbar_shrink = 0.75
