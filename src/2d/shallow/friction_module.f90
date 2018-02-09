@@ -25,7 +25,7 @@ module friction_module
     ! Parameters
     integer, public :: friction_index
 
-    ! Whether to use variable friction and what type to specif
+    ! Whether to use variable friction and what type to specify
     logical, public :: variable_friction
 
     ! Support for region based specification

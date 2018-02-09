@@ -13,7 +13,7 @@ module multilayer_module
     logical, private :: module_setup = .false.
 
     ! Storage parameters
-    integer :: layer_index
+    integer :: aux_layer_index
     
     ! Physical parameters
     integer :: num_layers
@@ -98,7 +98,7 @@ contains
             endif
             read(IOUNIT, *) eta_init
             read(IOUNIT, *) wave_tolerance
-            read(IOUNIT, *) layer_index
+            read(IOUNIT, *) aux_layer_index
             read(IOUNIT, *)
 
             ! Algorithmic parameters

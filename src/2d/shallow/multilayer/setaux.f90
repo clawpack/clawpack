@@ -23,7 +23,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     use friction_module, only: variable_friction, friction_index
     use friction_module, only: set_friction_field
 
-    use multilayer_module, only: eta_init, num_layers, layer_index
+    use multilayer_module, only: eta_init, num_layers, aux_layer_index
 
     use topo_module
     
@@ -80,7 +80,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     endif
 
     ! Initial layer depths for multilayer
-    aux(layer_index:num_layers - 1 + layer_index,:,:) = 0.d0 
+    aux(aux_layer_index:num_layers - 1 + aux_layer_index,:,:) = 0.d0 
 
     ! Set analytical bathymetry here if requested
     if (test_topography > 0) then
@@ -190,26 +190,26 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 if (eta_init(m) > aux(1,i,j)) then
                     if (eta_init(m+1) > aux(1,i,j)) then
                         ! There's a layer below this one
-                        aux(layer_index + (m - 1), i, j) =      &
+                        aux(aux_layer_index + (m - 1), i, j) =      &
                                                  eta_init(m) - eta_init(m+1)
                     else
                         ! This is the last wet layer
-                        aux(layer_index + (m - 1), i, j) =      &
+                        aux(aux_layer_index + (m - 1), i, j) =      &
                                                     eta_init(m) - aux(1,i,j)
                     endif
                 else
                     ! This layer is dry here
-                    aux(layer_index + (m - 1), i, j) = 0.d0
+                    aux(aux_layer_index + (m - 1), i, j) = 0.d0
                 endif
             enddo    
             ! Handle bottom layer seperately
             if (eta_init(num_layers) > aux(1,i,j)) then
                 ! Bottom layer is wet here
-                aux(layer_index + num_layers - 1,i,j) =             &
+                aux(aux_layer_index + num_layers - 1,i,j) =             &
                                            eta_init(num_layers) - aux(1,i,j)        
             else
                 ! Bottom layer is dry here
-                aux(layer_index + num_layers - 1,i,j) = 0.d0
+                aux(aux_layer_index + num_layers - 1,i,j) = 0.d0
             endif
         enddo
     enddo
