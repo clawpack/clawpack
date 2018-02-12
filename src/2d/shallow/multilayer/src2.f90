@@ -45,86 +45,14 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
     real(kind=8), parameter :: gamma_f = 4.d0 / 3.d0
 
     ! Algorithm parameters
-    ! Here to prevent a divide by zero in friction term
-    real(kind=8), parameter :: friction_tolerance = 1.0d-30
+    ! Parameter controls when to zero out the momentum at a depth in the
+    ! friction source term
+    real(kind=8), parameter :: depth_tolerance = 1.0d-30
 
     character(len=*), parameter :: CFL_FORMAT =   &
                         "('*** WARNING *** Courant number  =', d12.4," // &
                          "'  is larger than input cfl_max = ', d12.4," // &
                          "' in src2.')"
-
-    ! Algorithm parameters
-    ! Parameter controls when to zero out the momentum at a depth in the
-    ! friction source term
-    real(kind=8), parameter :: depth_tolerance = 1.0d-30
-
-    ! wind -----------------------------------------------------------
-    if (wind_forcing) then
-        ! Force only the top layer of water, assumes top most layer is last
-        ! to go dry
-        do j=1,my
-            yc = ylower + (j - 0.5d0) * dy
-            do i=1,mx
-                xc = xlower + (i - 0.5d0) * dx
-                if (q(1,i,j) / rho(1) > dry_tolerance(1)) then
-                    psi = atan2(yc - sloc(2), xc - sloc(1))
-                    if (theta > psi) then
-                        phi = (2.d0 * pi - theta + psi) * RAD2DEG
-                    else
-                        phi = (psi - theta) * RAD2DEG 
-                    endif
-                    wind_speed = sqrt(aux(wind_index,i,j)**2        &
-                                    + aux(wind_index+1,i,j)**2)
-                    tau = wind_drag(wind_speed, phi) * rho_air * wind_speed
-                    q(2,i,j) = q(2,i,j) + dt * tau * aux(wind_index,i,j)
-                    q(3,i,j) = q(3,i,j) + dt * tau * aux(wind_index+1,i,j)
-                endif
-            enddo
-        enddo
-    endif
-    ! ----------------------------------------------------------------
-
-    ! Atmosphere Pressure --------------------------------------------
-    ! Handled in Riemann solver
-    ! if (pressure_forcing) then
-    !     do j=1,my  
-    !         ym = ylower + (j - 1.d0) * dy
-    !         yc = ylower + (j - 0.5d0) * dy
-    !         yp = ylower + j * dy
-    !         do i=1,mx  
-    !             xm = xlower + (i - 1.d0) * dx
-    !             xc = xlower + (i - 0.5d0) * dx
-    !             xp = xlower + i * dx
-                
-    !             if (coordinate_system == 2) then
-    !                 ! Convert distance in lat-long to meters
-    !                 dx_meters = spherical_distance(xp,yc,xm,yc)
-    !                 dy_meters = spherical_distance(xc,yp,xc,ym)
-    !             else
-    !                 dx_meters = dx
-    !                 dy_meters = dy
-    !             endif
-
-    !             ! Calculate gradient of Pressure
-    !             P_gradient(1) = (aux(pressure_index,i+1,j) &
-    !                            - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
-    !             P_gradient(2) = (aux(pressure_index,i,j+1) &
-    !                            - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
-
-    !             ! Modify momentum in each layer
-    !             do k=1,num_layers
-    !                 layer_index = 3 * (k - 1)
-    !                 h(k) = q(layer_index + 1, i, j) / rho(k)
-    !                 if (h(k) > dry_tolerance(k)) then
-    !                     q(layer_index + 2, i, j) = q(layer_index + 2, i, j)   &
-    !                                 - dt * h(k) * P_gradient(1)
-    !                     q(layer_index + 3, i, j) = q(layer_index + 3, i, j)   &
-    !                                 - dt * h(k) * P_gradient(2)
-    !                 end if
-    !             end do
-    !         enddo
-    !     enddo
-    ! endif
 
     ! ----------------------------------------------------------------
     ! Friction source term - Use backward Euler to solve
@@ -141,7 +69,7 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 m = num_layers
                 found = .false.
                 do while(.not.found .and. m > 0)
-                    if (h(m) > friction_tolerance) then
+                    if (h(m) > depth_tolerance) then
                         ! Extract momentum components and exit loop
                         bottom_layer = m
                         bottom_index = 3 * (m - 1)
@@ -164,7 +92,7 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                     coeff = aux(friction_index, i, j)
                 else
                     do nman = num_manning, 1, -1
-                        if (aux(1,i,j) .lt. manning_break(nman)) then
+                        if (aux(1,i,j) < manning_break(nman)) then
                             coeff = manning_coefficient(nman)
                         endif
                     enddo
@@ -173,8 +101,9 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
                 ! Apply friction if in shallow enough water
                 if (sum(h) <= friction_depth) then
                     tau = g * coeff**2 / h(bottom_layer)**(manning_power) &
-                            * (1.d0 + (H_break / h(bottom_layer))**theta_f)**(gamma_f / theta_f) &
-                            * sqrt(hu**2 + hv**2)
+                            * sqrt(hu**2 + hv**2) &
+                            * (1.d0 + (H_break / h(bottom_layer))**theta_f)**(gamma_f / theta_f)
+                            
                     q(bottom_index + 2,i,j) = q(bottom_index + 2,i,j) / (1.d0 + dt * tau)
                     q(bottom_index + 3,i,j) = q(bottom_index + 3,i,j) / (1.d0 + dt * tau)
                 endif
@@ -216,5 +145,73 @@ subroutine src2(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux,t,dt)
         enddo
     endif
     ! End of coriolis source term
+
+    ! wind -----------------------------------------------------------
+    if (wind_forcing) then
+        ! Force only the top layer of water, assumes top most layer is last
+        ! to go dry
+        do j=1,my
+            yc = ylower + (j - 0.5d0) * dy
+            do i=1,mx
+                xc = xlower + (i - 0.5d0) * dx
+                if (q(1,i,j) / rho(1) > dry_tolerance(1)) then
+                    psi = atan2(yc - sloc(2), xc - sloc(1))
+                    if (theta > psi) then
+                        phi = (2.d0 * pi - theta + psi) * RAD2DEG
+                    else
+                        phi = (psi - theta) * RAD2DEG 
+                    endif
+                    wind_speed = sqrt(aux(wind_index,i,j)**2        &
+                                    + aux(wind_index+1,i,j)**2)
+                    tau = wind_drag(wind_speed, phi) * rho_air * wind_speed
+                    q(2,i,j) = q(2,i,j) + dt * tau * aux(wind_index,i,j)
+                    q(3,i,j) = q(3,i,j) + dt * tau * aux(wind_index+1,i,j)
+                endif
+            enddo
+        enddo
+    endif
+    ! ----------------------------------------------------------------
+
+    ! Atmosphere Pressure --------------------------------------------
+    ! Not yet handled in Riemann solver
+    if (pressure_forcing) then
+        do j=1,my  
+            ym = ylower + (j - 1.d0) * dy
+            yc = ylower + (j - 0.5d0) * dy
+            yp = ylower + j * dy
+            do i=1,mx  
+                xm = xlower + (i - 1.d0) * dx
+                xc = xlower + (i - 0.5d0) * dx
+                xp = xlower + i * dx
+                
+                if (coordinate_system == 2) then
+                    ! Convert distance in lat-long to meters
+                    dx_meters = spherical_distance(xp,yc,xm,yc)
+                    dy_meters = spherical_distance(xc,yp,xc,ym)
+                else
+                    dx_meters = dx
+                    dy_meters = dy
+                endif
+
+                ! Calculate gradient of Pressure
+                P_gradient(1) = (aux(pressure_index,i+1,j) &
+                               - aux(pressure_index,i-1,j)) / (2.d0 * dx_meters)
+                P_gradient(2) = (aux(pressure_index,i,j+1) &
+                               - aux(pressure_index,i,j-1)) / (2.d0 * dy_meters)
+
+                ! Modify momentum in each layer
+                do k=1,num_layers
+                    layer = 3 * (k - 1)
+                    h(k) = q(layer + 1, i, j) / rho(k)
+                    if (h(k) > dry_tolerance(k)) then
+                        q(layer + 2, i, j) = q(layer + 2, i, j)   &
+                                    - dt * h(k) * P_gradient(1)
+                        q(layer + 3, i, j) = q(layer + 3, i, j)   &
+                                    - dt * h(k) * P_gradient(2)
+                    end if
+                end do
+            enddo
+        enddo
+    endif
 
 end subroutine src2
