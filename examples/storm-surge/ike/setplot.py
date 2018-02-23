@@ -72,7 +72,7 @@ def setplot(plotdata=None):
                                "ylimits": (27.5, 30.5),
                                "figsize": (8, 2.7)}}
 
-    for (name, region_dict) in regions.iteritems():
+    for (name, region_dict) in regions.items():
 
         # Surface Figure
         plotfigure = plotdata.new_plotfigure(name="Surface - %s" % name)
