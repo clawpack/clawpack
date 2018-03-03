@@ -58,13 +58,13 @@ class MultilayerTest(test.GeoClawRegressionTest):
         self.rundata.qinit_data.angle = numpy.pi / 4.0
         self.write_rundata_objects()
 
-        # Run code and check
+        # Run code and check surface heights
         self.run_code()
-        self.check_gauges(save=save, gauge_id=0, indices=(3, 6))
-        self.check_gauges(save=save, gauge_id=1, indices=(3, 6))
-        self.check_gauges(save=save, gauge_id=2, indices=(3, 6))
-        self.check_gauges(save=save, gauge_id=3, indices=(3, 6))
-        self.check_gauges(save=save, gauge_id=4, indices=(3, 6))
+        self.check_gauges(save=save, gauge_id=0, indices=(6, 7))
+        self.check_gauges(save=save, gauge_id=1, indices=(6, 7))
+        self.check_gauges(save=save, gauge_id=2, indices=(6, 7))
+        self.check_gauges(save=save, gauge_id=3, indices=(6, 7))
+        self.check_gauges(save=save, gauge_id=4, indices=(6, 7))
 
         # If we have gotten here then we do not need to copy the run results
         self.success = True
