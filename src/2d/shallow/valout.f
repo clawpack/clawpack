@@ -6,6 +6,7 @@ c
       use amr_module
       use storm_module, only: storm_specification_type
       use storm_module, only: output_storm_location
+      use storm_module, only: landfall, display_landfall_time
 
       implicit double precision (a-h,o-z)
       character*10  fname1, fname2, fname3, fname4, fname5
@@ -23,6 +24,8 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
       real(kind=8), allocatable :: qeta(:)
 
       integer :: clock_start, clock_finish, clock_rate
+
+      character(len=128) :: time_format
 
       iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
@@ -283,9 +286,17 @@ c     # Print meqn = nvar+1 because eta added.
      &       i6,'                 nghost'/,/)
 c
 
-      write(6,601) matlabu,time
-  601 format('AMRCLAW: Frame ',i4,
-     &       ' output files done at time t = ', d13.6,/)
+
+      if (display_landfall_time) then      
+c         Convert time to days
+          timenew = timenew / (3.6d3 * 24d0)
+          time_format = "('AMRCLAW: Frame ',i4,' output files done" //
+     &                  " at time t = ', f5.2,/)"
+      else
+          time_format = "('AMRCLAW: Frame ',i4,' output files done" //
+     &                  " at time t = ', d13.6,/)"
+      endif
+      print time_format, matlabu, time
 
       matlabu = matlabu + 1
 
