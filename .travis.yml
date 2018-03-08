@@ -23,6 +23,7 @@ install:
   - export CLAW=${PWD}
   - export FC=gfortran
   - cd geoclaw
+  - pip install -r requirements.txt
   
 before_script:
   # Print CPU info for debugging purposes:
