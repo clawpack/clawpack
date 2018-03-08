@@ -23,7 +23,6 @@ import os
 import os.path
 
 import numpy
-import requests
 
 # ==============================================================================
 #  Constants
@@ -180,6 +179,8 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
       - water_level (numpy.ndarray): preliminary or verified water levels
       - prediction (numpy.ndarray): tide predictions
     """
+    import requests
+
     def fetch(product, expected_header, col_idx, col_types):
         noaa_params = get_noaa_params(product)
         cache_path = get_cache_path(product)

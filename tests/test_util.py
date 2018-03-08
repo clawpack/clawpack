@@ -2,10 +2,16 @@
 
 import datetime
 
-import mockfs
+from nose import SkipTest
 from nose.tools import raises
 import numpy as np
-import requests_mock
+
+try:
+    import mockfs
+    import requests
+    import requests_mock
+except ImportError:
+    raise SkipTest('Required libraries not available')
 
 from clawpack.geoclaw.util import NOAA_API_URL, fetch_noaa_tide_data
 
@@ -70,8 +76,8 @@ class TestFetchNoaaTideData:
         self._fetch_and_assert(date_time_expected, water_level_expected,
                                prediction_expected)
 
-    @requests_mock.Mocker()
     @raises(ValueError)
+    @requests_mock.Mocker()
     def test_api_error(self, mock):
         # configure endpoint to return an error
         mock.get(NOAA_API_URL, text='Something went wrong')
@@ -79,8 +85,8 @@ class TestFetchNoaaTideData:
         # should raise ValueError
         fetch_noaa_tide_data(self.station, self.begin_date, self.end_date)
 
-    @requests_mock.Mocker()
     @raises(ValueError)
+    @requests_mock.Mocker()
     def test_date_time_range_mismatch(self, mock):
         # missing first two entries
         water_level_response = \
