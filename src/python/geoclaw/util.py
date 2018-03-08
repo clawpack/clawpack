@@ -19,11 +19,11 @@ Module provides provides utility functions.
 from __future__ import absolute_import
 from __future__ import print_function
 import io
-import requests
 import os
 import os.path
 
 import numpy
+import requests
 
 # ==============================================================================
 #  Constants
@@ -152,7 +152,7 @@ def inv_haversine(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
 
 
 def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
-        datum='STND', units='metric', cache_dir='_cache'):
+                         datum='STND', units='metric', cache_dir='_cache'):
     r"""Fetch water levels and tide predictions at given NOAA tide station.
 
     The data is returned in 6 minute intervals between the specified begin and
@@ -187,17 +187,17 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
         # use cached data if available
         if os.path.exists(cache_path):
             print('Using cached {} data for station {}'.format(
-                    product, station))
+                product, station))
             return load_from_cache(cache_path, col_idx, col_types)
 
         # otherwise, retrieve data from NOAA and cache it
         print('Fetching {} data from NOAA for station {}'.format(
-                product, station))
-        return fetch_from_noaa(noaa_params, expected_header, col_idx, col_types,
-                cache_path)
+            product, station))
+        return fetch_from_noaa(noaa_params, expected_header, col_idx,
+                               col_types, cache_path)
 
     def fetch_from_noaa(noaa_params, expected_header, col_idx, col_types,
-            cache_path):
+                        cache_path):
         with requests.get(NOAA_API_URL, params=noaa_params) as response:
             with io.StringIO(response.text) as data:
                 # ensure that received header is correct
@@ -229,7 +229,8 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
     def parse(data, col_idx, col_types, header):
         # read data into structured array, skipping header row if present
         a = numpy.genfromtxt(data, usecols=col_idx, dtype=col_types,
-                skip_header=int(header), delimiter=',', missing_values='')
+                             skip_header=int(header), delimiter=',',
+                             missing_values='')
 
         # return tuple of columns
         return tuple(a[col] for col in a.dtype.names)
@@ -251,8 +252,8 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
     def get_cache_path(product):
         cache_date_fmt = '%Y%m%d%H%M'
         dates = '{}_{}'.format(
-                begin_date.strftime(cache_date_fmt),
-                end_date.strftime(cache_date_fmt))
+            begin_date.strftime(cache_date_fmt),
+            end_date.strftime(cache_date_fmt))
         filename = '{}_{}_{}'.format(time_zone, datum, units)
         abs_cache_dir = os.path.abspath(cache_dir)
         return os.path.join(abs_cache_dir, product, station, dates, filename)
@@ -263,11 +264,11 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
     col_types = 'datetime64[m], float'
 
     # fetch water levels and tide predictions
-    date_time, water_level = fetch('water_level',
-            'Date Time, Water Level, Sigma, O, F, R, L, Quality',
-            col_idx, col_types)
+    date_time, water_level = fetch(
+        'water_level', 'Date Time, Water Level, Sigma, O, F, R, L, Quality',
+        col_idx, col_types)
     date_time2, prediction = fetch('predictions', 'Date Time, Prediction',
-            col_idx, col_types)
+                                   col_idx, col_types)
 
     # ensure that date/time ranges are the same
     if not numpy.array_equal(date_time, date_time2):
