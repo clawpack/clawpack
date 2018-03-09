@@ -196,7 +196,7 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
             product, station))
         full_url = '{}?{}'.format(NOAA_API_URL, urlencode(noaa_params))
         with urlopen(full_url) as response:
-            text = response.read().decode()
+            text = response.read().decode('utf-8')
             with io.StringIO(text) as data:
                 # ensure that received header is correct
                 header = data.readline().strip()
