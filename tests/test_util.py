@@ -42,13 +42,12 @@ class TestFetchNoaaTideData:
              '2000-10-30 12:18,1.004,0.004,0,0,0,0,v\n'
              '2000-10-30 12:24,1.005,0.005,0,0,0,0,v\n')
 
-        predictions_response = \
-            ('Date Time, Prediction\n'
-             '2000-10-30 12:00,1.101\n'
-             '2000-10-30 12:06,1.102\n'
-             '2000-10-30 12:12,1.103\n'
-             '2000-10-30 12:18,1.104\n'
-             '2000-10-30 12:24,1.105\n')
+        predictions_response = ('Date Time, Prediction\n'
+                                '2000-10-30 12:00,1.101\n'
+                                '2000-10-30 12:06,1.102\n'
+                                '2000-10-30 12:12,1.103\n'
+                                '2000-10-30 12:18,1.104\n'
+                                '2000-10-30 12:24,1.105\n')
 
         date_time_range = ['2000-10-30T12:00',
                            '2000-10-30T12:06',
@@ -104,11 +103,10 @@ class TestFetchNoaaTideData:
              '2000-10-30 12:24,1.005,0.005,0,0,0,0,v\n')
 
         # missing last two entries
-        predictions_response = \
-            ('Date Time, Prediction\n'
-             '2000-10-30 12:00,1.101\n'
-             '2000-10-30 12:06,1.102\n'
-             '2000-10-30 12:12,1.103\n')
+        predictions_response = ('Date Time, Prediction\n'
+                                '2000-10-30 12:00,1.101\n'
+                                '2000-10-30 12:06,1.102\n'
+                                '2000-10-30 12:12,1.103\n')
 
         # monkey patch urllib to return mock data
         def mock_read_response(url):
@@ -137,13 +135,12 @@ class TestFetchNoaaTideData:
              '2000-10-30 12:24,1.005,0.005,0,0,0,0,v\n')
 
         # missing a prediction value
-        predictions_response = \
-            ('Date Time, Prediction\n'
-             '2000-10-30 12:00,1.101\n'
-             '2000-10-30 12:06,1.102\n'
-             '2000-10-30 12:12,1.103\n'
-             '2000-10-30 12:18,\n'
-             '2000-10-30 12:24,1.105\n')
+        predictions_response = ('Date Time, Prediction\n'
+                                '2000-10-30 12:00,1.101\n'
+                                '2000-10-30 12:06,1.102\n'
+                                '2000-10-30 12:12,1.103\n'
+                                '2000-10-30 12:18,\n'
+                                '2000-10-30 12:24,1.105\n')
 
         date_time_range = ['2000-10-30T12:00',
                            '2000-10-30T12:06',
@@ -180,6 +177,7 @@ class TestFetchNoaaTideData:
 
     @staticmethod
     def _monkey_patch_urlopen(mock_read_response):
+        '''Modify 'util.urlopen' to return a custom response.'''
         def mock_urlopen(url):
             class MockHttpResponse:
                 def __enter__(self):
@@ -189,9 +187,11 @@ class TestFetchNoaaTideData:
                     pass
 
                 def read(self):
+                    # encode mock response
                     text = mock_read_response(url)
                     return text.encode('utf-8')
 
             return MockHttpResponse()
 
+        # replace 'util.urlopen' with mock implementation
         util.urlopen = mock_urlopen
