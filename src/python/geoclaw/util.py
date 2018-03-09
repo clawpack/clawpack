@@ -23,6 +23,8 @@ import os
 import os.path
 
 import numpy
+from six.moves.urllib.parse import urlencode
+from six.moves.urllib.request import urlopen
 
 # ==============================================================================
 #  Constants
@@ -179,8 +181,6 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
       - water_level (numpy.ndarray): preliminary or verified water levels
       - prediction (numpy.ndarray): tide predictions
     """
-    import requests
-
     def fetch(product, expected_header, col_idx, col_types):
         noaa_params = get_noaa_params(product)
         cache_path = get_cache_path(product)
@@ -199,16 +199,18 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
 
     def fetch_from_noaa(noaa_params, expected_header, col_idx, col_types,
                         cache_path):
-        with requests.get(NOAA_API_URL, params=noaa_params) as response:
-            with io.StringIO(response.text) as data:
+        full_url = '{}?{}'.format(NOAA_API_URL, urlencode(noaa_params))
+        with urlopen(full_url) as response:
+            text = response.read().decode()
+            with io.StringIO(text) as data:
                 # ensure that received header is correct
                 header = data.readline().strip()
-                if header != expected_header:
+                if header != expected_header or 'Error' in text:
                     # if not, response contains error message
-                    raise ValueError(response.text)
+                    raise ValueError(text)
 
                 # if there were no errors, then cache response
-                save_to_cache(cache_path, response.text)
+                save_to_cache(cache_path, text)
 
                 return parse(data, col_idx, col_types, header=False)
 
@@ -252,9 +254,8 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
 
     def get_cache_path(product):
         cache_date_fmt = '%Y%m%d%H%M'
-        dates = '{}_{}'.format(
-            begin_date.strftime(cache_date_fmt),
-            end_date.strftime(cache_date_fmt))
+        dates = '{}_{}'.format(begin_date.strftime(cache_date_fmt),
+                               end_date.strftime(cache_date_fmt))
         filename = '{}_{}_{}'.format(time_zone, datum, units)
         abs_cache_dir = os.path.abspath(cache_dir)
         return os.path.join(abs_cache_dir, product, station, dates, filename)
