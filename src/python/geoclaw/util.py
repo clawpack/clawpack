@@ -189,16 +189,11 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
         if os.path.exists(cache_path):
             print('Using cached {} data for station {}'.format(
                 product, station))
-            return load_from_cache(cache_path, col_idx, col_types)
+            return parse(cache_path, col_idx, col_types, header=True)
 
         # otherwise, retrieve data from NOAA and cache it
         print('Fetching {} data from NOAA for station {}'.format(
             product, station))
-        return fetch_from_noaa(noaa_params, expected_header, col_idx,
-                               col_types, cache_path)
-
-    def fetch_from_noaa(noaa_params, expected_header, col_idx, col_types,
-                        cache_path):
         full_url = '{}?{}'.format(NOAA_API_URL, urlencode(noaa_params))
         with urlopen(full_url) as response:
             text = response.read().decode()
@@ -229,18 +224,13 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
         }
         return noaa_params
 
-    def parse(data, col_idx, col_types, header):
-        # read data into structured array, skipping header row if present
-        a = numpy.genfromtxt(data, usecols=col_idx, dtype=col_types,
-                             skip_header=int(header), delimiter=',',
-                             missing_values='')
-
-        # return tuple of columns
-        return tuple(a[col] for col in a.dtype.names)
-
-    def load_from_cache(cache_path, col_idx, col_types):
-        with open(cache_path, 'r') as data:
-            return parse(data, col_idx, col_types, header=True)
+    def get_cache_path(product):
+        cache_date_fmt = '%Y%m%d%H%M'
+        dates = '{}_{}'.format(begin_date.strftime(cache_date_fmt),
+                               end_date.strftime(cache_date_fmt))
+        filename = '{}_{}_{}'.format(time_zone, datum, units)
+        abs_cache_dir = os.path.abspath(cache_dir)
+        return os.path.join(abs_cache_dir, product, station, dates, filename)
 
     def save_to_cache(cache_path, data):
         # make parent directories if they do not exist
@@ -252,13 +242,14 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
         with open(cache_path, 'w') as cache_file:
             cache_file.write(data)
 
-    def get_cache_path(product):
-        cache_date_fmt = '%Y%m%d%H%M'
-        dates = '{}_{}'.format(begin_date.strftime(cache_date_fmt),
-                               end_date.strftime(cache_date_fmt))
-        filename = '{}_{}_{}'.format(time_zone, datum, units)
-        abs_cache_dir = os.path.abspath(cache_dir)
-        return os.path.join(abs_cache_dir, product, station, dates, filename)
+    def parse(data, col_idx, col_types, header):
+        # read data into structured array, skipping header row if present
+        a = numpy.genfromtxt(data, usecols=col_idx, dtype=col_types,
+                             skip_header=int(header), delimiter=',',
+                             missing_values='')
+
+        # return tuple of columns
+        return tuple(a[col] for col in a.dtype.names)
 
     # only need first two columns of data; first column contains date/time,
     # and second column contains corresponding value

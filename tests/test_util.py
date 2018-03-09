@@ -64,8 +64,9 @@ class TestFetchNoaaTideData:
         def mock_read_response(url):
             if 'product=water_level' in url:
                 return water_level_response
-            elif 'product=predictions' in url:
+            if 'product=predictions' in url:
                 return predictions_response
+            raise AssertionError
         self._monkey_patch_urlopen(mock_read_response)
 
         # first time, should fetch data and save in cache
@@ -113,8 +114,9 @@ class TestFetchNoaaTideData:
         def mock_read_response(url):
             if 'product=water_level' in url:
                 return water_level_response
-            elif 'product=predictions' in url:
+            if 'product=predictions' in url:
                 return predictions_response
+            raise AssertionError
         self._monkey_patch_urlopen(mock_read_response)
 
         # should raise ValueError
@@ -157,8 +159,9 @@ class TestFetchNoaaTideData:
         def mock_read_response(url):
             if 'product=water_level' in url:
                 return water_level_response
-            elif 'product=predictions' in url:
+            if 'product=predictions' in url:
                 return predictions_response
+            raise AssertionError
         self._monkey_patch_urlopen(mock_read_response)
 
         self._fetch_and_assert(date_time_expected, water_level_expected,
@@ -182,7 +185,7 @@ class TestFetchNoaaTideData:
                 def __enter__(self):
                     return self
 
-                def __exit__(self, t, val, tb):
+                def __exit__(self, exc_type, exc_value, traceback):
                     pass
 
                 def read(self):
