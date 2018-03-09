@@ -664,7 +664,7 @@ def kml_gauge(mapping):
 
 
 
-def kml_timespan(t1,t2,event_time=None,tz=None,tscale=3600):
+def kml_timespan(t1,t2,event_time=None,tz=None,tscale=1):
 
     r"""
     Create time strings necessary for sliders in Google Earth.  The time
