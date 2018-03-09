@@ -66,8 +66,6 @@ class TestFetchNoaaTideData:
                 return water_level_response
             elif 'product=predictions' in url:
                 return predictions_response
-            else:
-                raise AssertionError('Unexpected URL', url)
         self._monkey_patch_urlopen(mock_read_response)
 
         # first time, should fetch data and save in cache
@@ -117,8 +115,6 @@ class TestFetchNoaaTideData:
                 return water_level_response
             elif 'product=predictions' in url:
                 return predictions_response
-            else:
-                raise AssertionError('Unexpected URL', url)
         self._monkey_patch_urlopen(mock_read_response)
 
         # should raise ValueError
@@ -163,8 +159,6 @@ class TestFetchNoaaTideData:
                 return water_level_response
             elif 'product=predictions' in url:
                 return predictions_response
-            else:
-                raise AssertionError('Unexpected URL', url)
         self._monkey_patch_urlopen(mock_read_response)
 
         self._fetch_and_assert(date_time_expected, water_level_expected,
