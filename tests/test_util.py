@@ -192,7 +192,8 @@ class TestFetchNoaaTideData:
                     pass
 
                 def read(self):
-                    return bytes(mock_read_response(url), 'utf-8')
+                    text = mock_read_response(url)
+                    return text.encode('utf-8')
 
             return MockHttpResponse()
 
