@@ -153,8 +153,9 @@ def inv_haversine(d,x1,y1,y2,Rsphere=Rearth,units='degrees'):
 
 
 def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
-                         datum='STND', units='metric', cache_dir='_cache'):
-    r"""Fetch water levels and tide predictions at given NOAA tide station.
+                         datum='STND', units='metric', cache_dir=None,
+                         verbose=True):
+    """Fetch water levels and tide predictions at given NOAA tide station.
 
     The data is returned in 6 minute intervals between the specified begin and
     end dates/times.  A complete specification of the NOAA CO-OPS API for Data
@@ -162,8 +163,10 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
 
         https://tidesandcurrents.noaa.gov/api/
 
-    By default, retrieved data is cached in the subdirectory '_cache' of the
-    current working directory.
+    By default, retrieved data is cached in the geoclaw scratch directory
+    located at:
+
+        $CLAW/geoclaw/scratch
 
     :Required Arguments:
       - station (string): 7 character station ID
@@ -174,26 +177,36 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
       - time_zone (string): see NOAA API documentation for possible values
       - datum (string): see NOAA API documentation for possible values
       - units (string): see NOAA API documentation for possible values
-      - cache_dir (string): directory to use for caching retrieved data
+      - cache_dir (string): alternative directory to use for caching data
+      - verbose (bool): whether to output informational messages
 
     :Returns:
       - date_time (numpy.ndarray): times corresponding to retrieved data
       - water_level (numpy.ndarray): preliminary or verified water levels
       - prediction (numpy.ndarray): tide predictions
     """
+    # use geoclaw scratch directory for caching by default
+    if cache_dir is None:
+        if 'CLAW' not in os.environ:
+            raise ValueError('CLAW environment variable not set')
+        claw_dir = os.environ['CLAW']
+        cache_dir = os.path.join(claw_dir, 'geoclaw', 'scratch')
+
     def fetch(product, expected_header, col_idx, col_types):
         noaa_params = get_noaa_params(product)
         cache_path = get_cache_path(product)
 
         # use cached data if available
         if os.path.exists(cache_path):
-            print('Using cached {} data for station {}'.format(
-                product, station))
+            if verbose:
+                print('Using cached {} data for station {}'.format(
+                    product, station))
             return parse(cache_path, col_idx, col_types, header=True)
 
         # otherwise, retrieve data from NOAA and cache it
-        print('Fetching {} data from NOAA for station {}'.format(
-            product, station))
+        if verbose:
+            print('Fetching {} data from NOAA for station {}'.format(
+                product, station))
         full_url = '{}?{}'.format(NOAA_API_URL, urlencode(noaa_params))
         with urlopen(full_url) as response:
             text = response.read().decode('utf-8')

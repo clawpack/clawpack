@@ -177,7 +177,7 @@ class TestFetchNoaaTideData:
 
     @staticmethod
     def _monkey_patch_urlopen(mock_read_response):
-        '''Modify 'util.urlopen' to return a custom response.'''
+        """Modify 'util.urlopen' to return a custom response."""
         def mock_urlopen(url):
             class MockHttpResponse:
                 def __enter__(self):
