@@ -10,6 +10,8 @@ Module defines a class and routines for managing parameterized storm input.
 from __future__ import print_function
 from __future__ import absolute_import
 
+from six.moves import range
+
 import sys
 import os
 
@@ -120,8 +122,7 @@ class Storm(object):
                           "imd": ["IMD", None],
                           "tcvitals": ["TC-Vitals", None]}
 
-    def __init__(self, path=None, empty_storm=False, file_format="hurdat",
-                       **kwargs):
+    def __init__(self, path=None, file_format="ATCF", **kwargs):
         r"""Storm Initiatlization Routine
 
         See :class:`Storm` for more info.
@@ -142,7 +143,7 @@ class Storm(object):
         self.classification = None          # Classification of storm (e.g. HU)
         self.event = None                   # Event (e.g. landfall) - HURDAT
 
-        if not empty_storm:
+        if path is not None:
             self.read(path, file_format=file_format, **kwargs)
 
     # ==========================================================================
@@ -154,6 +155,9 @@ class Storm(object):
                                                         self.t[-1].isoformat())
                             ))
         return output
+
+    def __repr__(self):
+        return "None"
 
     # ==========================================================================
     # Read Routines
@@ -1239,25 +1243,32 @@ def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
     day = mat['daystore']
     month = mat['monthstore']
     year = mat['yearstore']
-    radius_max_winds = mat['rmstore']
-    max_winds = mat['vstore']
+    max_wind_radius = mat['rmstore']
+    max_wind_speed = mat['vstore']
     central_pressure = mat['pstore']
 
     # Convert into storms and truncate zeros
     storms = []
-    for n in xrange(lon.shape[0]):
+    for n in range(lon.shape[0]):
         m = len(lon[n].nonzero()[0])
 
         storm = Storm()
         storm.t = [datetime.datetime(year[0, n],
                                      month[n, i],
                                      day[n, i],
-                                     hour[n, i]) for i in xrange(m)]
+                                     hour[n, i]) for i in range(m)]
+
+        storm.eye_location = numpy.empty((m, 2))
+        storm.max_wind_speed = numpy.empty(m)
+        storm.max_wind_radius = numpy.empty(m)
+        storm.central_pressure = numpy.empty(m)
+
         storm.eye_location[:, 0] = lon[n, :m]
         storm.eye_location[:, 1] = lat[n, :m]
-        storm.max_wind_speed = max_winds[n, :m]
-        storm.radius_max_winds = radius_max_winds[n, :m]
+        storm.max_wind_speed = max_wind_speed[n, :m]
+        storm.max_wind_radius = max_wind_radius[n, :m]
         storm.central_pressure = central_pressure[n, :m]
+        storm.storm_radius = numpy.ones(m) * 300e3
 
         include_storm = True
         if mask_distance is not None:
