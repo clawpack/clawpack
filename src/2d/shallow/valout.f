@@ -26,6 +26,7 @@ c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
       integer :: clock_start, clock_finish, clock_rate
 
       character(len=128) :: time_format
+      real(kind=8) :: timenew
 
       iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
       iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
@@ -289,14 +290,19 @@ c
 
       if (display_landfall_time) then      
 c         Convert time to days
-          timenew = timenew / (3.6d3 * 24d0)
+          timenew = time / (3.6d3 * 24d0)
+C           if (timenew < 1d-99) then
+C               timenew = 0.d0
+C           end if
           time_format = "('AMRCLAW: Frame ',i4,' output files done" //
      &                  " at time t = ', f5.2,/)"
       else
+          timenew = time
           time_format = "('AMRCLAW: Frame ',i4,' output files done" //
      &                  " at time t = ', d13.6,/)"
       endif
-      print time_format, matlabu, time
+      print time_format, matlabu, timenew
+
 
       matlabu = matlabu + 1
 
