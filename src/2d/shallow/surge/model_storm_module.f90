@@ -61,6 +61,9 @@ module model_storm_module
     ! Storm field ramping width - Represents crudely the ramping radial area
     real(kind=8), parameter :: RAMP_WIDTH = 100.0d3
 
+    ! Time tracking tolerance allowance - allows for the beginning of the storm
+    ! track to be close to but not equal the start time of the simulation
+    real(kind=8), parameter :: TRACKING_TOLERANCE = 1d-10
 
 contains
 
@@ -150,9 +153,12 @@ contains
             storm%velocity(:, storm%num_casts) = storm%velocity(:,  &
                                                             storm%num_casts - 1)
 
-            if (t0 < storm%track(1, 1)) then
-                print *,t0,storm%track(1, 1)
-                stop "Start time is before first forecast time."
+            if (abs(t0 - storm%track(1, 1)) > TRACKING_TOLERANCE) then
+                print *, 
+                print *, "Start time", t0, " is outside of the tracking"
+                print *, "tolerance range with the track start"
+                print *, storm%track(1, 1), "."
+                stop
             endif
 
             ! This is used to speed up searching for correct storm data
@@ -252,7 +258,13 @@ contains
         else
             t0 = storm%track(1,last_storm_index - 1)
             t1 = storm%track(1,last_storm_index)
-            if (t0 < t .and. t <= t1) then
+
+            ! Check to see if we are close enough to the current index to just
+            ! use that, tolerance is based on TRACKING_TOLERANCE
+            if ((abs(t0 - t) < TRACKING_TOLERANCE) .or.   &
+                (abs(t1 - t) < TRACKING_TOLERANCE) .or.   &
+                (t0 < t .and. t < t1)) then
+                
                 index = last_storm_index
             else if ( t1 < t ) then
                 found = .false.
@@ -266,7 +278,8 @@ contains
                 if (.not. found) then
                     index = storm%num_casts + 1
                 endif
-            else ! t <= t0
+            else
+                ! Fail gracefully
                 if (last_storm_index == 2) then
                     index = -1
                 else
