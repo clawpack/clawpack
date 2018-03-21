@@ -153,7 +153,7 @@ contains
             storm%velocity(:, storm%num_casts) = storm%velocity(:,  &
                                                             storm%num_casts - 1)
 
-            if (abs(t0 - storm%track(1, 1)) > TRACKING_TOLERANCE) then
+            if (t0 <= storm%track(1, 1) - TRACKING_TOLERANCE) then
                 print *, 
                 print *, "Start time", t0, " is outside of the tracking"
                 print *, "tolerance range with the track start"
