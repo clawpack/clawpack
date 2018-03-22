@@ -81,7 +81,7 @@ program amr2
     use amr_module, only: lfine, lentot, iregridcount, avenumgrids
     use amr_module, only: tvoll, tvollCPU, rvoll, rvol, mstart, possk, ibuff
     use amr_module, only: timeRegridding,timeUpdating, timeValout
-    use amr_module, only: timeBound,timeStepgrid, timeFlagger,timeBufnst,timeFilvalTot
+    use amr_module, only: timeBound,timeStepgrid, timeFlagger,timeBufnst
     use amr_module, only: timeBoundCPU,timeStepGridCPU,timeRegriddingCPU
     use amr_module, only: timeValoutCPU
     use amr_module, only: kcheck, iorder, lendim, lenmax
@@ -449,6 +449,8 @@ program amr2
         open(outunit, file=outfile, status='unknown', position='append', &
                       form='formatted')
 
+        ! moved upt before restrt or won't properly initialize 
+        call set_fgmax()   
         call restrt(nsteps,time,nvar,naux)
         nstart  = nsteps
         tstart_thisrun = time
@@ -471,7 +473,6 @@ program amr2
         call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar, naux) ! Set gauge output
-        call set_fgmax()
 
     else
 

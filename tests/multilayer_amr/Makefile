@@ -1,4 +1,3 @@
-
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
 # options, and then includes the standard makefile pointed to by CLAWMAKE.
@@ -19,7 +18,11 @@ OUTDIR = _output               # Directory for output
 SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
+RESTART = False
+
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
+
+# Compiler flags can be specified here or set as an environment variable
 FFLAGS ?=
 
 # Include flags for LAPACK linking
@@ -51,7 +54,6 @@ else ifeq ($(UNAME), Linux)
 	endif
 endif
 
-
 # ---------------------------------
 # package sources for this program:
 # ---------------------------------
@@ -73,51 +75,28 @@ EXCLUDE_SOURCES = \
 # List of custom sources for this program:
 # ----------------------------------------
 
-RIEMANN = $(CLAW)/riemann/src
-
 MODULES = \
  $(GEOLIB)/multilayer/gauges_module.f90 \
- $(GEOLIB)/multilayer/qinit_module.f90 
+ ./qinit_module.f90
 
 SOURCES = \
+  ./qinit.f90 \
+  $(GEOLIB)/multilayer/setaux.f90 \
   $(GEOLIB)/multilayer/b4step2.f90 \
   $(GEOLIB)/multilayer/getmaxspeed.f90 \
-  $(GEOLIB)/multilayer/qinit.f90 \
-  $(GEOLIB)/multilayer/setaux.f90 \
-  $(GEOLIB)/multilayer/src2.f90 \
   $(GEOLIB)/multilayer/stepgrid.f \
   $(GEOLIB)/multilayer/valout.f \
-  $(RIEMANN)/rpn2_layered_shallow_water.f90 \
-  $(RIEMANN)/rpt2_layered_shallow_water.f90 \
-  $(RIEMANN)/geoclaw_riemann_utils.f
-  # $(GEOLIB)/multilayer/qinit.f90 \
-  # $(GEOLIB)/multilayer/setaux.f90 \
-  # $(GEOLIB)/multilayer/b4step2.f90 \
-  # $(GEOLIB)/multilayer/getmaxspeed.f90 \
-  # $(GEOLIB)/multilayer/stepgrid.f \
-  # $(GEOLIB)/multilayer/valout.f \
-  # $(GEOLIB)/multilayer/src2.f90 \
-  # $(RIEMANN)/rpn2_geoclaw.f \
-  # $(RIEMANN)/rpt2_geoclaw.f \
-  # $(RIEMANN)/geoclaw_riemann_utils.f \
+  $(GEOLIB)/multilayer/src2.f90 \
+  $(GEOLIB)/multilayer/filpatch.f90 \
+  $(GEOLIB)/multilayer/filval.f90 \
+  $(GEOLIB)/multilayer/flag2refine2.f90 \
+  $(GEOLIB)/multilayer/step2.f90 \
+  $(GEOLIB)/multilayer/upbnd.f \
+  $(GEOLIB)/multilayer/update.f90 \
+  $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \
+  $(CLAW)/riemann/src/rpt2_layered_shallow_water.f90 \
+  $(CLAW)/riemann/src/geoclaw_riemann_utils.f
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
-
-
-# Construct the topography data
-.PHONY: topo all
-
-gulf_caribbean.tt3:
-	python get_bathy.py
-
-topo: gulf_caribbean.tt3
-
--all:
-	$(MAKE) topo
-	$(MAKE) .plots
-	$(MAKE) .htmls
-
-
-### DO NOT remove this line - make depends on it ###

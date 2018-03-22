@@ -1,0 +1,97 @@
+Clawpack Git Status 
+Diffs can be found in /Users/mandli/src/clawpack/geoclaw/tests/netcdf_topo/regression_data/claw_git_diffs.txt
+
+Thu, 06 Apr 2017 09:28:37 CDT
+$CLAW = /Users/mandli/src/clawpack
+$FC = not set
+
+
+===========
+classic
+===========
+/Users/mandli/src/clawpack/classic
+
+--- last commit ---
+d6e4f9e Merge pull request #75 from mandli/add-utility-module
+
+--- branch and status ---
+## master...clawpack/master [behind 8]
+ M examples/acoustics_1d_example1/qinit.f90
+
+
+===========
+amrclaw
+===========
+/Users/mandli/src/clawpack/amrclaw
+
+--- last commit ---
+816b620 Merge pull request #188 from mjberger/cleanTimers
+
+--- branch and status ---
+## master...clawpack/master
+
+
+===========
+clawutil
+===========
+/Users/mandli/src/clawpack/clawutil
+
+--- last commit ---
+d10c970 Merge pull request #117 from ketch/remove_tabs
+
+--- branch and status ---
+## master...clawpack/master
+
+
+===========
+pyclaw
+===========
+/Users/mandli/src/clawpack/pyclaw
+
+--- last commit ---
+fc216e59 Add full package structure for ForestClaw
+
+--- branch and status ---
+## add-forestclaw-reading...mandli/add-forestclaw-reading
+
+
+===========
+visclaw
+===========
+/Users/mandli/src/clawpack/visclaw
+
+--- last commit ---
+2f3f9c7 Merge pull request #208 from ketch/improve_ianimate
+
+--- branch and status ---
+## master...clawpack/master
+
+
+===========
+riemann
+===========
+/Users/mandli/src/clawpack/riemann
+
+--- last commit ---
+1cba0cc Merge pull request #128 from ketch/nonlinear_elasticity_bugfix
+
+--- branch and status ---
+## update-multilayer...clawpack/master
+ M src/rpn2_layered_shallow_water.f90
+
+
+===========
+geoclaw
+===========
+/Users/mandli/src/clawpack/geoclaw
+
+--- last commit ---
+bcd06a5 Do not as much NetCDF structure
+
+--- branch and status ---
+## fix-netcdf-bathy...clawpack/master [ahead 1]
+ M examples/multi-layer/plane_wave/setplot.py
+ M examples/multi-layer/plane_wave/setrun.py
+ M src/2d/shallow/multilayer/setaux.f90
+ M src/python/geoclaw/data.py
+ M tests/netcdf_topo/regression_data/gauge00001.txt

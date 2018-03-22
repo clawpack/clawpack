@@ -150,7 +150,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     ml_plot.add_surface_elevation(plotaxes,1,bounds=top_surface_limits)
     # ml_plot.add_surface_elevation(plotaxes,1,bounds=[-0.06,0.06])
     # ml_plot.add_surface_elevation(plotaxes,1)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
     
     # Bottom surface
     plotaxes = plotfigure.new_plotaxes()
@@ -163,7 +163,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # ml_plot.add_surface_elevation(plotaxes,2,bounds=[-300-0.5,-300+0.5])
     ml_plot.add_surface_elevation(plotaxes,2,bounds=internal_surface_limits)
     # ml_plot.add_surface_elevation(plotaxes,2)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 2)
     
     # ========================================================================
     #  Depths
@@ -181,7 +181,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = pcolor_afteraxes
     ml_plot.add_layer_depth(plotaxes,1,bounds=[-0.1,1.1])
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
     
     # Bottom surface
     plotaxes = plotfigure.new_plotaxes()
@@ -192,7 +192,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = pcolor_afteraxes
     ml_plot.add_layer_depth(plotaxes,2,bounds=[-0.1,0.7])
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 2)
     
     # ========================================================================
     #  Water Speed
@@ -212,7 +212,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # add_speed(plotaxes,1,bounds=[0.00,0.2])
     ml_plot.add_speed(plotaxes,1,bounds=top_speed_limits)
     # add_speed(plotaxes,1)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
     
     # Bottom layer speed
     plotaxes = plotfigure.new_plotaxes()
@@ -225,7 +225,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # add_speed(plotaxes,2,bounds=[0.0,1e-10])
     ml_plot.add_speed(plotaxes,2,bounds=internal_speed_limits)
     # add_speed(plotaxes,2)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 2)
     
     # Individual components
     plotfigure = plotdata.new_plotfigure(name='speed_components',figno=401)
@@ -242,7 +242,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotaxes.afteraxes = pcolor_afteraxes
     # add_x_velocity(plotaxes,1,bounds=[-1e-10,1e-10])
     ml_plot.add_x_velocity(plotaxes,1)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.title = "Y-Velocity - Top Layer"
@@ -253,7 +253,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotaxes.afteraxes = pcolor_afteraxes
     # add_y_velocity(plotaxes,1,bounds=[-0.000125,0.000125])
     ml_plot.add_y_velocity(plotaxes,1)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
     
     # Bottom layer
     plotaxes = plotfigure.new_plotaxes()
@@ -265,7 +265,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotaxes.afteraxes = pcolor_afteraxes
     # add_x_velocity(plotaxes,2,bounds=[-1e-10,1e-10])
     ml_plot.add_x_velocity(plotaxes,2)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 2)
     
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.title = "Y-Velocity - Bottom Layer"
@@ -276,7 +276,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotaxes.afteraxes = pcolor_afteraxes
     # add_y_velocity(plotaxes,2,bounds=[-0.8e-6,.8e-6])
     ml_plot.add_y_velocity(plotaxes,2)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 2)
 
     # ========================================================================
     #  Profile Plots
@@ -440,7 +440,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     # plotitem.amr_patchedges_show = [1,1,1]
 
     # Land
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
     
     # ========================================================================
     #  Contour plot for surface
@@ -460,7 +460,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = contour_afteraxes
     ml_plot.add_surface_elevation(plotaxes,plot_type='contour',surface=1,bounds=[-2.5,-1.5,-0.5,0.5,1.5,2.5])
-    ml_plot.add_land(plotaxes,plot_type='contour')
+    ml_plot.add_land(plotaxes,1,plot_type='contour')
     
     # Internal Surface
     plotaxes = plotfigure.new_plotaxes()
@@ -471,7 +471,7 @@ def setplot(plotdata,  bathy_location=0.15,  bathy_angle=0.0,
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = contour_afteraxes
     ml_plot.add_surface_elevation(plotaxes,plot_type='contour',surface=2,bounds=[-2.5,-1.5,-0.5,0.5,1.5,2.5])
-    ml_plot.add_land(plotaxes,plot_type='contour')
+    ml_plot.add_land(plotaxes,2,plot_type='contour')
     
     # ========================================================================
     #  Contour plot for speed

@@ -19,10 +19,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     use amr_module, only: outunit, NEEDS_TO_BE_SET
     use amr_module, only: newstl, iregsz, jregsz
 
-    use multilayer_module, only: num_layers, rho, eta_init, dry_tolerance
-
     use topo_module, only: aux_finalized
-    use geoclaw_module, only: sea_level
+    use geoclaw_module, only: dry_tolerance, sea_level
     use refinement_module, only: varRefTime
     use topo_module, only: aux_finalized
 
@@ -39,8 +37,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
     ! Local storage
     integer :: refinement_ratio_x, refinement_ratio_y, iclo, jclo, ichi, jchi, ng, i, ico, ifine
-    integer :: ii, ivar, j, jco, jfine, jj, layer, i_layer
-    real(kind=8) :: h, h_i, h_j, b(5), bfine
+    integer :: ii, ivar, j, jco, jfine, jj
     real(kind=8) :: valc(nvar,mic,mjc), auxc(naux,mic,mjc)
     real(kind=8) :: coarseval(3), dx_coarse, dy_coarse, xl, xr, yb, yt, area
     real(kind=8) :: dividemass, finemass, hvf, s1m, s1p, slopex, slopey, vel
@@ -157,161 +154,142 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     ! For shallow water over topograpdy, in coarse cells convert from h to eta,
     ! before interpolating:
     !-----------------------------
-    !do layer = 1, num_layers
-      ! Prepare slopes - use min-mod limiters
-      do j=2, mjc-1
-          do i=2, mic-1
+
+    ! Prepare slopes - use min-mod limiters
+    do j=2, mjc-1
+        do i=2, mic-1
             fineflag(1) = .false.
-            b = ( (/ auxc(1, i, j), auxc(1, i-1, j), auxc(1, i+1, j), auxc(1, i, j-1), auxc(1, i, j+1) /) )
+            ! interpolate eta to find depth
+            do ii=-1,1
+                coarseval(2+ii) = valc(1,i+ii,j)  + auxc(1,i+ii,j)
+                if (valc(1,i+ii,j)  <= dry_tolerance) then
+                    coarseval(2+ii)=sea_level
+                end if
+            end do
+            s1p = coarseval(3) - coarseval(2)
+            s1m = coarseval(2) - coarseval(1)
+            slopex = min(abs(s1p), abs(s1m)) &
+                                * sign(1.d0,coarseval(3) - coarseval(1))
+            if (s1m*s1p <= 0.d0) slopex=0.d0
 
-            do layer = num_layers, 1, -1
-                h = valc(3*layer-2, i, j) / rho(layer)
-                if (h < dry_tolerance(layer)) then
-                    coarseval(2) = eta_init(layer)
-                else
-                  coarseval(2) = h + b(1)
-                endif
-                ! interpolate eta to find depth
-                do ii = -1, 1, 2
-                    h_i = valc(3*layer-2, i+ii, j) / rho(layer)
-                    if (h_i < dry_tolerance(layer)) then
-                        coarseval(2+ii) = eta_init(layer)
-                    else
-                        coarseval(2+ii) = h_i + b((5+ii)/2)
-                    endif
-                    b((5+ii)/2) = h_i + b((5+ii)/2)
-                enddo
+            do jj=-1,1
+                coarseval(2+jj) = valc(1,i,j+jj) + auxc(1,i,j+jj)
+                if (valc(1,i,j+jj) <= dry_tolerance) then
+                    coarseval(2+jj)=sea_level
+                end if
+            end do
+            s1p = coarseval(3) - coarseval(2)
+            s1m = coarseval(2) - coarseval(1)
+            slopey = min(abs(s1p), abs(s1m)) &
+                                * sign(1.d0,coarseval(3)-coarseval(1))
+            if (s1m*s1p <= 0.d0) slopey=0.d0
 
-                s1p = coarseval(3) - coarseval(2)
-                s1m = coarseval(2) - coarseval(1)
-                slopex = min(abs(s1p), abs(s1m)) * sign(1.d0,coarseval(3) - coarseval(1))
-                if (s1m*s1p <= 0.d0) slopex=0.d0
-
-                do jj = -1, 1, 2
-                    h_j = valc(3*layer-2, i, j+jj) / rho(layer)
-                    if (h_j < dry_tolerance(layer)) then
-                        coarseval(2+jj) = eta_init(layer)
-                    else
-                        coarseval(2+jj) = h_j + b((9+jj)/2)
-                    endif
-                    b((9+jj)/2) = h_j + b((9+jj)/2)
-                enddo
-
-                s1p = coarseval(3) - coarseval(2)
-                s1m = coarseval(2) - coarseval(1)
-                slopey = min(abs(s1p), abs(s1m)) * sign(1.d0,coarseval(3)-coarseval(1))
-                if (s1m*s1p <= 0.d0) slopey=0.d0
-
-                ! Interpolate from coarse cells to fine grid to find depth
-                finemass = 0.d0
+            ! Interpolate from coarse cells to fine grid to find depth
+            finemass = 0.d0
                 do jco = 1,refinement_ratio_y
-                    do ico = 1,refinement_ratio_x
-                        yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
-                        xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
-                        jfine = (j-2) * refinement_ratio_y + nghost + jco
-                        ifine = (i-2) * refinement_ratio_x + nghost + ico
-                        bfine = aux(1, ifine, jfine)
-                        do i_layer = layer+1, num_layers
-                            bfine = bfine + val(3*i_layer-2,ifine,jfine)/rho(i_layer)
-                        enddo
-                        if (setflags(ifine,jfine) .eq. NEEDS_TO_BE_SET) then
-                            val(3*layer-2,ifine,jfine) = (coarseval(2) + (xoff * slopex) + (yoff * slopey) - bfine) * rho(layer)
-                            val(3*layer-2,ifine,jfine) = max(0.d0, val(3*layer-2,ifine,jfine))
-                            finemass = finemass + val(3*layer-2,ifine,jfine)
-                          if (val(3*layer-2,ifine,jfine) <= dry_tolerance(layer)) then
-                              fineflag(1) = .true.
-                              val(3*layer-1,ifine,jfine) = 0.d0
-                              val(3*layer,ifine,jfine) = 0.d0
-                          endif
+               do ico = 1,refinement_ratio_x
+                    yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
+                    xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
+                    jfine = (j-2) * refinement_ratio_y + nghost + jco
+                    ifine = (i-2) * refinement_ratio_x + nghost + ico
+                    if (setflags(ifine,jfine) .eq. NEEDS_TO_BE_SET) then
+                       val(1,ifine,jfine) = (coarseval(2) + xoff * slopex &
+                                                          + yoff * slopey)
+                       val(1,ifine,jfine) = max(0.d0, val(1,ifine,jfine)  &
+                                               - aux(1,ifine,jfine))
+                       finemass = finemass + val(1,ifine,jfine)
+                       if (val(1,ifine,jfine) <= dry_tolerance) then
+                          fineflag(1) = .true.
+                          val(2,ifine,jfine) = 0.d0
+                          val(3,ifine,jfine) = 0.d0
+                       endif
+                    endif
+                end do
+            end do
+
+            !------ Determine Momentum ----------------------------------
+            ! finemass is the total mass in all new fine grid cells
+            ! all fine mass has been determined for this coarse grid cell
+            ! if all fine cells are dry, momentum has already been set
+            if (finemass >= dry_tolerance) then
+                do ivar = 2,nvar
+                    fineflag(ivar)=.false.
+                    s1p = (valc(ivar,i+1,j) - valc(ivar,i,j))
+                    s1m = (valc(ivar,i,j) - valc(ivar,i-1,j))
+                    slopex = min(abs(s1p), abs(s1m)) &
+                     * sign(1.d0,(valc(ivar,i+1,j) - valc(ivar,i-1,j)))
+                    if (s1m*s1p.le.0.d0) slopex=0.d0
+                
+                    s1p = (valc(ivar,i,j+1) - valc(ivar,i,j))
+                    s1m = (valc(ivar,i,j) - valc(ivar,i,j-1))
+                    slopey = min(abs(s1p), abs(s1m)) &
+                     * sign(1.d0,(valc(ivar,i,j+1) - valc(ivar,i,j-1)))
+                    if (s1m*s1p <= 0.d0) slopey=0.d0
+
+                    if (valc(1,i,j) > dry_tolerance) then
+                        velmax = valc(ivar,i,j) / valc(1,i,j)
+                        velmin = valc(ivar,i,j) / valc(1,i,j)
+                    else
+                        velmax = 0.d0
+                        velmin = 0.d0
+                    endif
+               
+                    do ii = -1,1,2
+                        if (valc(1,i+ii,j) > dry_tolerance) then
+                            vel = valc(ivar,i+ii,j) / valc(1,i+ii,j)
+                            velmax = max(vel,velmax)
+                            velmin = min(vel,velmin)
+                        endif
+                        if (valc(1,i,j+ii) > dry_tolerance) then
+                            vel = valc(ivar,i,j+ii) / valc(1,i,j+ii)
+                            velmax = max(vel,velmax)
+                            velmin = min(vel,velmin)
                         endif
                     enddo
-                enddo
 
-                ! increment b
-                b(1) = b(1) + h
+                    ! try to set momentum
+                    do ico = 1,refinement_ratio_x
+                        if (fineflag(1).or.fineflag(ivar)) exit
 
-                !------ Determine Momentum ----------------------------------
-                ! finemass is the total mass in all new fine grid cells
-                ! all fine mass has been determined for this coarse grid cell
-                ! if all fine cells are dry, momentum has already been set
-                if (finemass >= dry_tolerance(layer)) then
-                    do ivar = 3*layer-1,3*layer
-                        fineflag(ivar)=.false.
-                        s1p = (valc(ivar,i+1,j) - valc(ivar,i,j))
-                        s1m = (valc(ivar,i,j) - valc(ivar,i-1,j))
-                        slopex = min(abs(s1p), abs(s1m)) &
-                        * sign(1.d0,(valc(ivar,i+1,j) - valc(ivar,i-1,j)))
-                        if (s1m*s1p.le.0.d0) slopex=0.d0
-
-                        s1p = (valc(ivar,i,j+1) - valc(ivar,i,j))
-                        s1m = (valc(ivar,i,j) - valc(ivar,i,j-1))
-                        slopey = min(abs(s1p), abs(s1m)) &
-                        * sign(1.d0,(valc(ivar,i,j+1) - valc(ivar,i,j-1)))
-                        if (s1m*s1p <= 0.d0) slopey=0.d0
-
-                        if (valc(3*layer-2,i,j) > dry_tolerance(layer)) then
-                          velmax = valc(ivar,i,j) / valc(3*layer-2,i,j)
-                          velmin = valc(ivar,i,j) / valc(3*layer-2,i,j)
-                        else
-                          velmax = 0.d0
-                          velmin = 0.d0
-                        endif
-
-                        do ii = -1,1,2
-                          if (valc(3*layer-2,i+ii,j) > dry_tolerance(layer)) then
-                              vel = valc(ivar,i+ii,j) / valc(3*layer-2,i+ii,j)
-                              velmax = max(vel,velmax)
-                              velmin = min(vel,velmin)
-                          endif
-                          if (valc(3*layer-2,i,j+ii) > dry_tolerance(layer)) then
-                              vel = valc(ivar,i,j+ii) / valc(3*layer-2,i,j+ii)
-                              velmax = max(vel,velmax)
-                              velmin = min(vel,velmin)
-                          endif
-                        enddo
-
-                        ! try to set momentum
-                        do ico = 1,refinement_ratio_x
-                            if (fineflag(1).or.fineflag(ivar)) exit
-
-                            do jco = 1,refinement_ratio_y
-                              jfine = (j-2) * refinement_ratio_y + nghost + jco
-                              ifine = (i-2) * refinement_ratio_x + nghost + ico
-                              yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
-                              xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
-                              hvf = valc(ivar,i,j) + xoff * slopex &
-                                                            + yoff*slopey
-                              vf = hvf / (val(3*layer-2,ifine,jfine))
-                              if (vf > velmax .or. vf < velmin) then
+                        do jco = 1,refinement_ratio_y
+                            jfine = (j-2) * refinement_ratio_y + nghost + jco
+                            ifine = (i-2) * refinement_ratio_x + nghost + ico
+                            yoff = (real(jco,kind=8) - 0.5d0) / refinement_ratio_y - 0.5d0
+                            xoff = (real(ico,kind=8) - 0.5d0) / refinement_ratio_x - 0.5d0
+                            hvf = valc(ivar,i,j) + xoff * slopex &
+                                                          + yoff*slopey
+                            vf = hvf / (val(1,ifine,jfine))
+                            if (vf > velmax .or. vf < velmin) then
                                 fineflag(ivar) = .true.
                                 exit
-                              else
+                            else
                                 val(ivar,ifine,jfine) = hvf
-                              endif
+                            endif
+                        enddo
+                    enddo
+
+                    ! momentum is set to preserve old momentum or not violate
+                    ! generating new extrema in velocities
+                    if (fineflag(1) .or. fineflag(ivar)) then
+                        ! more mass now, conserve momentum
+                        area = real(refinement_ratio_x * refinement_ratio_y,kind=8)
+                        dividemass = max(finemass,valc(1,i,j))
+                        Vnew = area * valc(ivar,i,j) / (dividemass)
+
+                            do jco = 1,refinement_ratio_y
+                            do ico = 1,refinement_ratio_x
+                                jfine = (j-2) * refinement_ratio_y + nghost + jco
+                                ifine = (i-2) * refinement_ratio_x + nghost + ico
+                                val(ivar,ifine,jfine) = Vnew * val(1,ifine,jfine)
                             enddo
                         enddo
+                    endif
 
-                      ! momentum is set to preserve old momentum or not violate
-                      ! generating new extrema in velocities
-                      if (fineflag(1) .or. fineflag(ivar)) then
-                          ! more mass now, conserve momentum
-                          area = real(refinement_ratio_x * refinement_ratio_y,kind=8)
-                          dividemass = max(finemass,valc(3*layer-2,i,j))
-                          Vnew = area * valc(ivar,i,j) / (dividemass)
+                enddo
+            endif
 
-                          do jco = 1,refinement_ratio_y
-                              do ico = 1,refinement_ratio_x
-                                  jfine = (j-2) * refinement_ratio_y + nghost + jco
-                                  ifine = (i-2) * refinement_ratio_x + nghost + ico
-                                  val(ivar,ifine,jfine) = Vnew * val(3*layer-2,ifine,jfine)
-                              enddo
-                          enddo
-                      endif
-                  enddo
-              endif
-          enddo ! end of layers
-      enddo !end of coarse loop
-    enddo   !end of coarse loop
+        enddo !end of coarse loop
+    enddo !end of coarse loop
 
     ! scan for max wave speed on newly created grid. this will be used to set appropriate
     ! time step and appropriate refinement in time. For this app not nec to refine by same
@@ -339,6 +317,8 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
 
     if (varRefTime) then   ! keep consistent with setgrd_geo and qinit_geo
         sp_over_h = get_max_speed(val,mitot,mjtot,nvar,aux,naux,nghost,dx,dy)
+    else
+        sp_over_h = 0.d0  ! not used but set so do not get exceptions
     endif
 
 end subroutine filval

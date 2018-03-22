@@ -13,10 +13,10 @@ def maketopo():
     """
     nxpoints = 201
     nypoints = 201
-    xlower = -100.e0
-    xupper = 100.e0
-    yupper = 100.e0
-    ylower = -100.e0
+    xlower = -1000.e0
+    xupper = 1000.e0
+    yupper = 1000.e0
+    ylower = -1000.e0
     outfile= "bowl.topotype2"     
 
     topography = Topography(topo_func=topo)
@@ -60,7 +60,7 @@ def qinit(x,y):
     """
     from numpy import where
     ze = -((x+0e0)**2 + (y+0e0)**2)/100
-    z = where(ze>-10, 15.0*exp(ze), 0.)
+    z = where(ze>-10, 4.0*exp(ze), 0.)
     return z
 
 if __name__=='__main__':

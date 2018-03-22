@@ -4,7 +4,8 @@ c
       subroutine valout (lst, lend, time, nvar, naux)
 c
       use amr_module
-      use multilayer_module, only: num_layers, rho
+      use geoclaw_module, only: rho
+      use multilayer_module, only: num_layers
       implicit double precision (a-h,o-z)
       character(len=10) :: fname1, fname2, fname3, fname4
 
@@ -71,7 +72,6 @@ c            # binary output
              open(unit=matunit4,file=fname4,status='unknown',
      &               access='stream')
              endif
-
          level = lst
          ngrids = 0
 c65      if (level .gt. lfine) go to 90
@@ -127,24 +127,17 @@ c                 # output in 1d format if ny=1:
                    enddo
 
                    ! Extract depth and momenta
-                   do k=1,num_layers-1
+                   do k=1,num_layers
                      index = 3 * (k - 1)
                      h(k) = alloc(iadd(index + 1,i,j)) / rho(k)
                      hu(k)= alloc(iadd(index + 2,i,j)) / rho(k)
                      hv(k) = alloc(iadd(index + 3,i,j)) / rho(k)
                    end do
-                  ! Extract bottom layer
-                  index = 3 * (num_layers - 1) 
-                  h(num_layers) = alloc(iadd(index+1,i,j)) 
-     &                                                 / rho(num_layers)
-                  hu(num_layers) = alloc(iadd(index+2,i,j)) 
-     &                                                 / rho(num_layers)
-                  hv(num_layers) = alloc(iadd(index+3,i,j)) 
-     &                                                 / rho(num_layers)
 
                   ! Calculate surfaces
                   eta(num_layers) = h(num_layers) 
      &                                           + alloc(iaddaux(1,i,j))
+
                   do k=num_layers-1,1,-1
                     eta(k) = h(k) + eta(k+1)
                     if (abs(eta(k)) < 1d-90) then
@@ -152,12 +145,13 @@ c                 # output in 1d format if ny=1:
                     endif
                   enddo
 
-                  write(matunit1,109) (h(k),hu(k),hv(k),k=1,num_layers),
-     &                                (eta(k),k=1,num_layers)
+                  write(matunit1,109) 
+     &                         (h(k), hu(k), hv(k), k = 1, num_layers),
+     &                         (eta(k), k=1, num_layers)
                 enddo
                 write(matunit1,*) ' '
              enddo
-  109        format(4e26.16)
+  109        format(50e26.16)
          endif
 
          if (output_format == 3) then
@@ -188,6 +182,7 @@ C            # Need to augment q with eta:
                   ! Calculate surfaces
                   eta(num_layers) = h(num_layers) 
      &                                           + alloc(iaddaux(1,i,j))
+                  
                   do k=num_layers-1,1,-1
                     eta(k) = h(k) + eta(k+1)
                   enddo

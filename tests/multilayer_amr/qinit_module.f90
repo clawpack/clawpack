@@ -45,8 +45,9 @@ contains
         character(len=*), optional, intent(in) :: fname
         
         ! File handling
-        integer, parameter :: unit = 7
         character(len=150) :: qinit_fname
+        integer, parameter :: unit = 7
+        character(len=150) :: x
         
         if (.not.module_setup) then
 
@@ -101,8 +102,8 @@ contains
 
     subroutine add_perturbation(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     
-        use geoclaw_module, only: sea_level, pi, g => grav
-        use multilayer_module, only: aux_layer_index, rho, r
+        use geoclaw_module, only: sea_level, pi, g => grav, rho
+        use multilayer_module, only: aux_layer_index, r, eta_init
     
         implicit none
     
@@ -116,49 +117,43 @@ contains
         integer :: i,j
         real(kind=8) :: ximc,xim,x,xc,xip,xipc,yjmc,yjm,y,yc,yjp,yjpc,dq
 
-        real(kind=8) :: xmid,m,x_c,y_c
+        real(kind=8) :: xmid,m,x_c,y_c, effective_b
         real(kind=8) :: eigen_vector(6),gamma,lambda,alpha,h_1,h_2,deta
         
         ! Topography integral function
         real(kind=8) :: topointegral
-        
-        if (qinit_type > 0 .and. qinit_type < 5) then
-            do i=1-mbc,mx+mbc
-                x = xlower + (i-0.5d0)*dx
-                xim = x - 0.5d0*dx
-                xip = x + 0.5d0*dx
-                do j=1-mbc,my+mbc
-                    y = ylower + (j-0.5d0)*dy
-                    yjm = y - 0.5d0*dy
-                    yjp = y + 0.5d0*dy
+
+        if (qinit_type == 4) then
+            do i = 1-mbc, mx+mbc
+                x = xlower + (i - 0.5d0)*dx
+                xim = x - 0.5d0 * dx
+                xip = x + 0.5d0 * dx
+                do j = 1-mbc, my+mbc
+                    y = ylower + (j - 0.5d0) * dy
+                    yjm = y - 0.5d0 * dy
+                    yjp = y + 0.5d0 * dy
 
                     ! Check to see if we are in the qinit region at this grid point
                     if ((xip > x_low_qinit).and.(xim < x_hi_qinit).and.  &
                         (yjp > y_low_qinit).and.(yjm < y_hi_qinit)) then
 
-                        xipc=min(xip,x_hi_qinit)
-                        ximc=max(xim,x_low_qinit)
-                        xc=0.5d0*(xipc+ximc)
+                        xipc = min(xip, x_hi_qinit)
+                        ximc = max(xim, x_low_qinit)
 
                         yjpc=min(yjp,y_hi_qinit)
                         yjmc=max(yjm,y_low_qinit)
-                        yc=0.5d0*(yjmc+yjpc)
 
-                        dq = topointegral(ximc,xc,xipc,yjmc,yc,yjpc,x_low_qinit, &
+                        dq = topointegral(ximc,xipc,yjmc,yjpc,x_low_qinit, &
                                           y_low_qinit,dx_qinit,dy_qinit,mx_qinit, &
                                           my_qinit,qinit,1)
-                        dq = dq / ((xipc-ximc)*(yjpc-yjmc)*aux(2,i,j))
+                        dq = dq / ((xipc-ximc)*(yjpc-yjmc))
 
-                        if (qinit_type < 4) then 
-                            if (aux(1,i,j) <= sea_level) then
-                                q(qinit_type,i,j) = q(qinit_type,i,j) + dq
-                            endif
-                        else if (qinit_type == 4) then
-                            q(1,i,j) = max(dq-aux(1,i,j),0.d0)
-                        endif
+                        effective_b = max(aux(1,i,j), eta_init(2))
+                        q(1,i,j) = max((dq-effective_b) * rho(1),0.d0)
                     endif
                 enddo
             enddo
+
         else if (qinit_type > 4) then
             do i=1,mx
                 x = xlower + (i - 0.5d0) * dx

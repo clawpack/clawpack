@@ -28,8 +28,8 @@ c :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       use amr_module
 
-      use geoclaw_module, only: grav
-      use multilayer_module, only: num_layers, dry_tolerance, rho
+      use geoclaw_module, only: grav, rho
+      use multilayer_module, only: num_layers, dry_tolerance
       
       use fixedgrids_module
 

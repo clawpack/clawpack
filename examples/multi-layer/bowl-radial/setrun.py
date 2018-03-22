@@ -70,8 +70,8 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 41
-    clawdata.num_cells[1] = 41
+    clawdata.num_cells[0] = 40
+    clawdata.num_cells[1] = 40
 
 
     # ---------------
@@ -112,7 +112,7 @@ def setrun(claw_pkg='geoclaw'):
     # Note that the time integration stops after the final output time.
     # The solution at initial time t0 is always written in addition.
 
-    clawdata.output_style = 3
+    clawdata.output_style = 1
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
@@ -126,7 +126,7 @@ def setrun(claw_pkg='geoclaw'):
 
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
-        clawdata.output_step_interval = 10
+        clawdata.output_step_interval = 1
         clawdata.total_steps = 500
         clawdata.output_t0 = True
         
@@ -374,11 +374,11 @@ def setgeo(rundata):
     geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = [0.0, -20]
     geo_data.dry_tolerance = 1.e-1
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025
     geo_data.friction_depth = 20.0
+    geo_data.rho = [0.9, 1.0]
 
     # Refinement data
     refinement_data = rundata.refinement_data
@@ -392,7 +392,6 @@ def setgeo(rundata):
     # for topography, append lines of the form
     #    [topotype, minlevel, maxlevel, t1, t2, fname]
     topo_data.topofiles.append([2, 1, 3, 0., 1.e10, 'bowl.topotype2'])
-    # topo_data.topofiles.append([2, 1, 5, 0.0, 1e10, 'topo.tt2'])
 
     # == setdtopo.data values ==
     dtopo_data = rundata.dtopo_data
@@ -423,7 +422,6 @@ def set_multilayer(rundata):
 
     # Physics parameters
     data.num_layers = 2
-    data.rho = [0.9, 1.0]
     data.eta = [0.0, -20]
     
     # Algorithm parameters
@@ -431,57 +429,12 @@ def set_multilayer(rundata):
     data.inundation_method = 2
     data.richardson_tolerance = np.infty
     data.wave_tolerance = [1e-3,1e-2]
-    # data.dry_limit = True
 
-    # rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 4
-    # rundata.qinit_data.epsilon = 0.02
-    # rundata.qinit_data.angle = 0.0
-    # rundata.qinit_data.sigma = 0.02
-    # rundata.qinit_data.wave_family = 4
-    # rundata.qinit_data.init_location = [-0.1,0.0]
+
 
     return rundata
 
-# Rotation transformations
-def transform_c2p(x,y,x0,y0,theta):
-    return ((x+x0)*np.cos(theta) - (y+y0)*np.sin(theta),
-            (x+x0)*np.sin(theta) + (y+y0)*np.cos(theta))
-
-def transform_p2c(x,y,x0,y0,theta):
-    return ( x*np.cos(theta) + y*np.sin(theta) - x0,
-            -x*np.sin(theta) + y*np.cos(theta) - y0)
-    
-def bathy_step(x, y, location=0.15, angle=0.0, left=-80.0, right=-10.0):
-    x_c,y_c = transform_p2c(x, y, location, 0.0, angle)
-    return ((x_c <= 0.0) * left 
-          + (x_c >  0.0) * right)
-
-
-def write_topo_file(run_data, out_file, **kwargs):
-
-    # Make topography
-    topo_func = lambda x, y: bathy_step(x, y, **kwargs)
-    topo = tt.Topography(topo_func=topo_func)
-    topo.x = np.linspace(run_data.clawdata.lower[0], 
-                            run_data.clawdata.upper[0], 
-                            run_data.clawdata.num_cells[0] + 8)
-    topo.y = np.linspace(run_data.clawdata.lower[1], 
-                            run_data.clawdata.upper[1], 
-                            run_data.clawdata.num_cells[1] + 8)
-    topo.write(out_file)
-
-    # Write out simple bathy geometry file for communication to the plotting
-    with open("./bathy_geometry.data", 'w') as bathy_geometry_file:
-        if "location" in kwargs:
-            location = kwargs['location']
-        else:
-            location = 0.15
-        if "angle" in kwargs:
-            angle = kwargs['angle']
-        else:
-            angle = 0.0
-        bathy_geometry_file.write("%s\n%s" % (location, angle) )
 
 
 if __name__ == '__main__':
@@ -490,4 +443,3 @@ if __name__ == '__main__':
     rundata = setrun(*sys.argv[1:])
     rundata.write()
 
-    write_topo_file(rundata, 'topo.tt2')
