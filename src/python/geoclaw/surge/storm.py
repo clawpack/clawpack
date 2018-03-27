@@ -18,6 +18,7 @@ import os
 import os
 import numpy
 import datetime
+import dateutil.parser
 import clawpack.geoclaw.units as units
 import clawpack.clawutil.data
 
@@ -240,13 +241,16 @@ class Storm(object):
 
         with open(path, 'r') as data_file:
             num_casts = int(data_file.readline())
-            self.time_offset = datetime.datetime.strptime(data_file.readline(),
-                                                          "%Y-%n-%dT%H:%M:%S")
+            self.time_offset = datetime.datetime.strptime(
+                                                      data_file.readline()[:19],
+                                                      '%Y-%m-%dT%H:%M:%S')
 
         data = numpy.loadtxt(path, skiprows=3)
         num_forecasts = data.shape[0]
+        self.eye_location = numpy.empty((2, num_forecasts))
         assert(num_casts == num_forecasts)
-        self.t = data[:, 0]
+        self.t = [self.time_offset + datetime.timedelta(seconds=data[i, 0]) 
+                  for i in range(num_forecasts)]
         self.eye_location[0, :] = data[:, 1]
         self.eye_location[1, :] = data[:, 2]
         self.max_wind_speed = data[:, 3]
@@ -850,7 +854,7 @@ class Storm(object):
         with open(path, 'w') as data_file:
             for n in range(self.t.shape[0]):
                 data_file.write("".join((", " * 2,
-                                         "%s" % self.seconds2date(self.t[n]),
+                                         "%s" % seconds2date(self.t[n]),
                                          ", " * 4,
                                          "%s" % (int(self.eye_location[n, 0] *
                                                      10.0)),
