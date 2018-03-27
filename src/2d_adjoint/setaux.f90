@@ -86,7 +86,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     if (adjoint_flagging) then
         do jj=1-mbc,my+mbc
             do ii=1-mbc,mx+mbc
-                if (aux(innerprod_index,ii,jj) .eq. NEEDS_TO_BE_SET) then
+                if (aux(1,ii,jj) .eq. NEEDS_TO_BE_SET) then
                     aux(innerprod_index,ii,jj) = 0.d0
                     endif
                 enddo
