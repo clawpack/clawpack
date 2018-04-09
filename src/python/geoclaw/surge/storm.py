@@ -18,7 +18,6 @@ import os
 import os
 import numpy
 import datetime
-import dateutil.parser
 import clawpack.geoclaw.units as units
 import clawpack.clawutil.data
 
