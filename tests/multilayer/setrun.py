@@ -377,7 +377,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.pprint = False      # proj. of tagged points
     amrdata.rprint = False      # print regridding summary
     amrdata.sprint = False      # space/memory output
-    amrdata.tprint = True       # time step reporting each level
+    amrdata.tprint = False       # time step reporting each level
     amrdata.uprint = False      # update/upbnd reporting
     
     # More AMR parameters can be set -- see the defaults in pyclaw/data.py
@@ -464,8 +464,6 @@ def setgeo(rundata):
 
     # == setqinit.data values ==
     qinit_data = rundata.qinit_data
-
-
 
     return rundata
     # end of function setgeo
