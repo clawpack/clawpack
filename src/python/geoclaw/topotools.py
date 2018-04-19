@@ -407,7 +407,8 @@ class Topography(object):
                                      "%s != %s." % (begin_delta, end_delta))
                        
                 dx = numpy.round(begin_delta[0], 15) 
-                self._delta = (dx, dx)
+                dy = numpy.round(begin_delta[1], 15) 
+                self._delta = (dx, dy)
         return self._delta
 
 

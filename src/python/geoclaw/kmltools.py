@@ -664,7 +664,7 @@ def kml_gauge(mapping):
 
 
 
-def kml_timespan(t1,t2,event_time=None,tz=None):
+def kml_timespan(t1,t2,event_time=None,tz=None,tscale=1):
 
     r"""
     Create time strings necessary for sliders in Google Earth.  The time
@@ -694,6 +694,9 @@ def kml_timespan(t1,t2,event_time=None,tz=None):
 
     """
 
+    t1 = t1*tscale   # Time converted to seconds
+    t2 = t2*tscale
+
     import time
     # to adjust time from UTC to time in event locale.
     if event_time == None:
@@ -701,7 +704,7 @@ def kml_timespan(t1,t2,event_time=None,tz=None):
         starttime = time.mktime(time.localtime())  # seconds UTC
         tz_offset = time.timezone/3600.0   # in seconds
     else:
-        ev = event_time + [0,0,0]   # Extend to 9 tuple; no DST
+        ev = tuple(event_time) + (0,0,0)   # Extend to 9 tuple; no DST
         # mktime returns time in seconds + timezone offset, i.e. seconds UTC
         # Subtract out the timezone offset here, since it will get added back
         # in when we do gmtime(starttime + ...) below.
@@ -719,7 +722,7 @@ def kml_timespan(t1,t2,event_time=None,tz=None):
     else:
         # Google Earth will show time slider time in local time, where
         # local + offset = UTC.
-        tz_offset = tz_offset*3600.0    # Offset in seconds
+        tz_offset = tz_offset*3600.    # Offset in seconds
         tz = time.gmtime(abs(tz_offset))
         if (tz_offset > 0):
             tzstr = time.strftime("+%H:%M",tz)  # Time to UTC
