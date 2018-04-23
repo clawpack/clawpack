@@ -83,7 +83,7 @@ program amr2
     use amr_module, only: timeRegridding,timeUpdating, timeValout
     use amr_module, only: timeBound,timeStepgrid, timeFlagger,timeBufnst
     use amr_module, only: timeBoundCPU,timeStepGridCPU,timeRegriddingCPU
-    use amr_module, only: timeValoutCPU
+    use amr_module, only: timeValoutCPU,timeTick,timeTickCPU
     use amr_module, only: kcheck, iorder, lendim, lenmax
 
     use amr_module, only: dprint, eprint, edebug, gprint, nprint, pprint
@@ -700,13 +700,15 @@ program amr2
     write(outunit,*)
     
     !Total Time
-!     format_string="('Total time:   ',1f15.3,'        ',1f15.3,'  ')"
-!     write(outunit,format_string) &
-!             real(timeTick,kind=8) / real(clock_rate,kind=8), &
-!             timeTickCPU         
-!     write(*,format_string) &
-!             real(timeTick,kind=8) / real(clock_rate,kind=8), &
-!             timeTickCPU         
+    format_string="('Total time:   ',1f15.3,'        ',1f15.3,'  ')"
+
+!    write(*,format_string)  &
+!            real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8), &
+!            cpu_finish-cpu_start
+    write(*,format_string) real(timeTick,kind=8)/real(clock_rate,kind=8), &
+            timeTickCPU
+    write(outunit,format_string) real(timeTick,kind=8)/real(clock_rate,kind=8), &
+            timeTickCPU
     
     format_string="('Using',i3,' thread(s)')"
     write(outunit,format_string) maxthreads
