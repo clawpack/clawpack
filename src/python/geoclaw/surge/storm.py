@@ -1,11 +1,19 @@
 #!/usr/bin/env python
+
 r"""
 Module defines a class and routines for managing parameterized storm input.
 
 :Formats Supported:
+    - GeoClaw
+    - ATCF
+    - HURDAT
+    - JMA
+    - IMD
 
 :Models Supported:
-
+    - Holland 1980
+    - Holland 2010
+    - Chavas, Lin, Emmanuel 2015
 """
 
 from __future__ import print_function
@@ -218,7 +226,7 @@ class Storm(object):
         num_forecasts = data.shape[0]
         self.eye_location = numpy.empty((2, num_forecasts))
         assert(num_casts == num_forecasts)
-        self.t = [self.time_offset + datetime.timedelta(seconds=data[i, 0]) 
+        self.t = [self.time_offset + datetime.timedelta(seconds=data[i, 0])
                   for i in range(num_forecasts)]
         self.eye_location[0, :] = data[:, 1]
         self.eye_location[1, :] = data[:, 2]
@@ -307,7 +315,7 @@ class Storm(object):
                 self.max_wind_radius[i] = (float(data[19]) * 1.852000003180799
                                            * 1000.0)
 
-    def read_hurdat(self, path, single_storm=True, name=None, year=None, 
+    def read_hurdat(self, path, single_storm=True, name=None, year=None,
                                 verbose=False):
         r"""Read in HURDAT formatted storm file
 
@@ -596,7 +604,7 @@ class Storm(object):
         """
         raise ValueError("File type not implemented yet.")
 
-    def read_tcvitals(self, path, single_storm=True, name=None, year=None, 
+    def read_tcvitals(self, path, single_storm=True, name=None, year=None,
                                   verbose=False):
         r"""Extract relevant hurricane data from TCVITALS file
             and update storm fields with proper values.
@@ -1212,7 +1220,7 @@ if __name__ == '__main__':
     parser.add_argument("-f", "--from", default="atcf", dest="input_format",
                         help="Format to convert from, defaults to 'atcf'")
     parser.add_argument("-o", "--output", default="geoclaw.storm",
-                        dest="output_path", 
+                        dest="output_path",
                         help="Output path, default to 'geoclaw.storm'")
     parser.add_argument("-t", "--to", default="geoclaw",
                         dest="output_format",
@@ -1225,4 +1233,4 @@ if __name__ == '__main__':
     input_storm = Storm(args.path, file_format=args.input_format,
                         verbose=args.verbose)
     input_storm.write(args.output_path, file_format=args.output_format,
-                                        verbose=args.verbose)
+                      verbose=args.verbose)
