@@ -1667,7 +1667,8 @@ class SubFault(object):
         x=zeros(lon.shape)
         y=zeros(lon.shape)
         zone=zeros(lon.shape)
-        b=chararray(lon.shape)
+        #b=chararray(lon.shape) # gives byte error
+        b=len(lon)*['A']  # list of characters, modified in loop below
         if projection_zone == None:
             #Determine most suitable UTM zone
             for k in range(len(lon)):
