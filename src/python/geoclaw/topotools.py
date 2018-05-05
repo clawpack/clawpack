@@ -647,8 +647,8 @@ class Topography(object):
             elif abs(self.topo_type) in [2,3]:
                 # Get header information
                 N = self.read_header()  # note this also sets self._extent
-                self._x = numpy.linspace(self.extent[0], self.extent[1], N[0])
-                self._y = numpy.linspace(self.extent[2], self.extent[3], N[1])
+                                        # self._x, self._y, self._delta, 
+                                        # and  self.grid_registration
 
                 if abs(self.topo_type) == 2:
                     # Data is read in as a single column, reshape it
@@ -757,12 +757,27 @@ class Topography(object):
                     # Assume the header is flipped from what we expect
                     num_cells[0] = int(first_line.split()[-1])
                     value_index = -1
+                    label_index = 0
                 else:
                     value_index = 0
+                    label_index = -1
 
                 num_cells[1] = int(topo_file.readline().split()[value_index])
-                self._extent[0] = float(topo_file.readline().split()[value_index])
-                self._extent[2] = float(topo_file.readline().split()[value_index])
+
+                xline = topo_file.readline().split()
+                xll = float(xline[value_index])
+                x_registration = xline[label_index][1:]  # drop 'x' character
+
+                yline = topo_file.readline().split()
+                yll = float(yline[value_index])
+                y_registration = yline[label_index][1:]  # drop 'y' character
+
+                if x_registration == y_registration:
+                    self.grid_registration = x_registration
+                else:
+                    raise IOError("x_registration and y_registration don't " \
+                        + "match: %s,%s" % (x_registration, y_registration))
+
                 # parse line allowing possibility of dx and dy (or just dx=dy)
                 line = topo_file.readline()
                 tokens = line.split() 
@@ -773,20 +788,40 @@ class Topography(object):
                         values.append(v)
                     except:
                         pass
+                dx = values[0]
                 if len(values) == 1:
-                    self._delta = (values[0], values[0]) # if only dx given
+                    dy = dx   # only dx given
                 elif len(values) == 2:
+                    dy = values[1]
                     self._delta = (values[0], values[1])  # if dx,dy on line
                 else:
                     raise IOError("Cannot parse dx,dy line: %s" % line)
+                self._delta = (dx, dy)
                     
                         
                 self.no_data_value = float(topo_file.readline().split()[value_index])
+
+                x = numpy.linspace(xll, xll+(num_cells[0]-1)*dx, num_cells[0])
+                y = numpy.linspace(yll, yll+(num_cells[1]-1)*dy, num_cells[1])
+                if self.grid_registration in ['lower', 'llcenter']:
+                    # extent gives cell center / data locations:
+                    self._x = x
+                    self._y = y
+                elif self.grid_registration == 'llcorner':
+                    # extent gives lower left corner:
+                    # data points are offset by dx/2, dy/2
+                    self._x = x + dx/2.
+                    self._y = y + dy/2.
+                else:
+                    raise IOError('Unrecognized grid_registration: %s' \
+                                    % self.grid_registration)
                 
-                self._extent[1] = self._extent[0] + \
-                                    (num_cells[0]-1)*self._delta[0]
-                self._extent[3] = self._extent[2] + \
-                                    (num_cells[1]-1)*self._delta[1]
+                # set extent based on data locations (not lower corner for 'llcorner')
+                self._extent = [self._x[0],self._x[-1],self._y[0],self._y[-1]]
+    
+                if self.grid_registration == 'llcorner':
+                    print('grid registration: %s' % self.grid_registration)
+                    print('     will shift x,y values by (dx/2, dy/2) to centers')
 
         else:
             raise IOError("Cannot read header for topo_type %s" % self.topo_type)
