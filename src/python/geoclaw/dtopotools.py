@@ -1788,7 +1788,7 @@ class SiftFault(Fault):
                 subfault.width = float(tokens[9])
                 subfault.rake = float(tokens[10])
                 subfault.coordinate_specification = "noaa sift"
-                # subfault.mu = ??  ## currently using SubFault default
+                subfault.mu = 4.e11 # dynes/cm**2 = 4e10 Pa
                 subfault.convert_to_standard_units(self.input_units)
                 self.sift_subfaults[name] = subfault
 
