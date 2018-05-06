@@ -271,6 +271,11 @@ class Topography(object):
     A class representing a single topography file.
 
     :Properties:
+    
+    Note: Modified to check the `grid_registration` when reading or writing
+    topo files and properly deal with `llcorner` registration in which case
+    the x,y data should be offset by dx/2, dy/2 from the lower left corner 
+    specified in the header of a DEM file.
 
     :Initialization:
          - 
@@ -278,7 +283,7 @@ class Topography(object):
     :Examples:
 
         >>> import clawpack.geoclaw.topotools as topo
-        >>> topo_file = topo.Topography('./topo.tt3')
+        >>> topo_file = topo.Topography('./topo.tt3', topo_type=3)
         >>> topo_file.plot()
 
     """
@@ -820,8 +825,8 @@ class Topography(object):
                 self._extent = [self._x[0],self._x[-1],self._y[0],self._y[-1]]
     
                 if self.grid_registration == 'llcorner':
-                    print('grid registration: %s' % self.grid_registration)
-                    print('     will shift x,y values by (dx/2, dy/2) to centers')
+                    print('*** Note: since grid registration is llcorner,')
+                    print('    will shift x,y values by (dx/2, dy/2) to cell centers')
 
         else:
             raise IOError("Cannot read header for topo_type %s" % self.topo_type)
@@ -829,7 +834,7 @@ class Topography(object):
         return num_cells
 
     def write(self, path, topo_type=None, no_data_value=None, masked=True, 
-                header_style='geoclaw', Z_format="%15.7e"):
+                header_style='geoclaw', Z_format="%15.7e", grid_registration=None):
         r"""Write out a topography file to path of type *topo_type*.
 
         Writes out a topography file of topo type specified with *topo_type* or
@@ -847,7 +852,9 @@ class Topography(object):
          - *masked* (bool) - unused??
          - *header_style* (str) - indicates format of header lines
              'geoclaw' or 'default'  ==> write value then label 
+                                     with grid_registration == 'lower' as default
              'arcgis' or 'asc' ==> write label then value  
+                                     with grid_registration == 'llcorner' as default
                         (needed for .asc files in ArcGIS)
          - *Z_format* (str) - string format to use for Z values
            The default format "%15.7e" gives at least millimeter precision
@@ -858,6 +865,8 @@ class Topography(object):
            etopo1 data is integers and so has a resolution of 1 meter.
            In this case a cropped or coarsened version might be written
            with `Z_format = "%7i"`, for example.
+         - *grid_registration* (str) - 'lower', 'llcorner', 'llcenter' 
+                or None for defaults described above.
 
         """
 
@@ -905,13 +914,34 @@ class Topography(object):
                         outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
 
         elif topo_type == 2 or topo_type == 3:
+
+            if grid_registration is None:
+                if header_style in ['geoclaw','default']:
+                    grid_registration = 'lower'
+                elif header_style in ['arcgis','asc']:
+                    grid_registration = 'llcorner'
+                else:
+                    raise ValueError("*** Unrecognized header_style")
+
+            if grid_registration in ['lower','llcenter']:
+                xlower = self.x[0]
+                ylower = self.y[0]
+            elif grid_registration == 'llcorner':
+                xlower = self.x[0] - self.delta[0]/2.
+                ylower = self.y[0] - self.delta[1]/2.
+            else:
+                raise ValueError('Unrecognized grid_registration: %s' \
+                                % grid_registration)
+            xlabel = 'x' + grid_registration
+            ylabel = 'y' + grid_registration
+
             with open(path, 'w') as outfile:
                 # Write out header
                 if header_style in ['geoclaw','default']:
                     outfile.write('%6i                              ncols\n' % self.Z.shape[1])
                     outfile.write('%6i                              nrows\n' % self.Z.shape[0])
-                    outfile.write('%22.15e              xlower\n' % self.extent[0])
-                    outfile.write('%22.15e              ylower\n' % self.extent[2])
+                    outfile.write('%22.15e              %s\n' % (xlower,xlabel))
+                    outfile.write('%22.15e              %s\n' % (ylower,ylabel))
                     if abs(self.delta[0] - self.delta[1])/self.delta[0] < 1e-8:
                         # write only dx in usual case:
                         outfile.write('%22.15e              cellsize\n' \
@@ -924,8 +954,8 @@ class Topography(object):
                 elif header_style in ['arcgis','asc']:
                     outfile.write('ncols  %6i\n' % self.Z.shape[1])
                     outfile.write('nrows  %6i\n' % self.Z.shape[0]) 
-                    outfile.write('xllcorner %22.15e\n' % self.extent[0])
-                    outfile.write('yllcorner %22.15e\n' % self.extent[2])
+                    outfile.write('%s  %22.15e\n' % (xlabel,xlower))
+                    outfile.write('%s  %22.15e\n' % (ylabel,ylower))
                     outfile.write('cellsize %22.15e\n'  % self.delta[0])
                     outfile.write('nodata_value  %10i\n' % no_data_value)
                 else:
