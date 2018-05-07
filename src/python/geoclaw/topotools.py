@@ -777,14 +777,17 @@ class Topography(object):
 
                 xline = topo_file.readline().split()
                 xll = float(xline[value_index])
-                x_registration = xline[label_index][1:]  # drop 'x' character
+                # drop 'x' character and convert remaining string to lower case:
+                x_registration = xline[label_index][1:].lower()
 
                 yline = topo_file.readline().split()
                 yll = float(yline[value_index])
-                y_registration = yline[label_index][1:]  # drop 'y' character
-
+                # drop 'y' character and convert remaining string to lower case:
+                y_registration = yline[label_index][1:].lower()
+                
                 if x_registration == y_registration:
                     self.grid_registration = x_registration
+                    # expect registration in ['llcorner', 'llcenter', 'lower']
                 else:
                     raise IOError("x_registration and y_registration don't " \
                         + "match: %s,%s" % (x_registration, y_registration))
@@ -823,6 +826,8 @@ class Topography(object):
                     # data points are offset by dx/2, dy/2
                     self._x = x + dx/2.
                     self._y = y + dy/2.
+                    print('*** Note: since grid registration is llcorner,')
+                    print('    will shift x,y values by (dx/2, dy/2) to cell centers')
                 else:
                     # assume that x,y are cell center / data locations:
                     self._x = x
@@ -833,10 +838,6 @@ class Topography(object):
                 
                 # set extent based on data locations (not lower corner for 'llcorner')
                 self._extent = [self._x[0],self._x[-1],self._y[0],self._y[-1]]
-    
-                if self.grid_registration == 'llcorner':
-                    print('*** Note: since grid registration is llcorner,')
-                    print('    will shift x,y values by (dx/2, dy/2) to cell centers')
 
         else:
             raise IOError("Cannot read header for topo_type %s" % self.topo_type)
