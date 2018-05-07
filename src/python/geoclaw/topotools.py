@@ -812,17 +812,21 @@ class Topography(object):
                 x = numpy.linspace(xll, xll+(num_cells[0]-1)*dx, num_cells[0])
                 y = numpy.linspace(yll, yll+(num_cells[1]-1)*dy, num_cells[1])
                 if self.grid_registration in ['lower', 'llcenter']:
-                    # extent gives cell center / data locations:
+                    # x,y are cell center / data locations:
                     self._x = x
                     self._y = y
                 elif self.grid_registration == 'llcorner':
-                    # extent gives lower left corner:
+                    # x,y are lower left corners:
                     # data points are offset by dx/2, dy/2
                     self._x = x + dx/2.
                     self._y = y + dy/2.
                 else:
-                    raise IOError('Unrecognized grid_registration: %s' \
+                    # assume that x,y are cell center / data locations:
+                    self._x = x
+                    self._y = y
+                    print('*** Warning: Unrecognized grid_registration: %s' \
                                     % self.grid_registration)
+                    print('    Assuming x,y at grid points')
                 
                 # set extent based on data locations (not lower corner for 'llcorner')
                 self._extent = [self._x[0],self._x[-1],self._y[0],self._y[-1]]
