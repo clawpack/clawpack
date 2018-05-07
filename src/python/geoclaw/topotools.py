@@ -473,6 +473,8 @@ class Topography(object):
                 if self._z is None:
                 # Try to read the data, may not have done this yet
                     if self.topo_type is None:
+                        self.topo_type = determine_topo_type(self.path)
+                    if self.topo_type is None:
                         raise ValueError("topo_type must be specified")
                     self.read(path=self.path, topo_type=self.topo_type, mask=mask)
                     if self._Z is not None:
@@ -603,7 +605,8 @@ class Topography(object):
                 # Try to look at suffix for type
                 self.topo_type = determine_topo_type(self.path)
                 if self.topo_type is None:
-                    self.topo_type = 3
+                    #self.topo_type = 3
+                    raise ValueError("topo_type must be specified")
 
         if self.unstructured:
             # Read in the data as series of tuples
