@@ -283,7 +283,8 @@ class Topography(object):
     :Examples:
 
         >>> import clawpack.geoclaw.topotools as topo
-        >>> topo_file = topo.Topography('./topo.tt3', topo_type=3)
+        >>> topo_file = topo.Topography()
+        >>> topo_file.read('./topo.tt3', topo_type=3)
         >>> topo_file.plot()
 
     """
@@ -471,7 +472,9 @@ class Topography(object):
                 # RJL: why do we expect 1d z?
                 if self._z is None:
                 # Try to read the data, may not have done this yet
-                    self.read(path=self.path, mask=mask)
+                    if self.topo_type is None:
+                        raise ValueError("topo_type must be specified")
+                    self.read(path=self.path, topo_type=self.topo_type, mask=mask)
                     if self._Z is not None:
                         # We are done, the read function did our work
                         return
