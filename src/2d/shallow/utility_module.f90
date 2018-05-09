@@ -244,10 +244,10 @@ contains
         ! loop over string elements
         do i = 1, len( output_string )
 
-          ! find location of letter in lower case constant string
-          n = index( lower_case, output_string( i:i ) )
+          ! find location of letter in upper case constant string
+          n = index( upper_case, output_string( i:i ) )
 
-          ! if current substring is an lower case letter, make it lower case
+          ! if current substring is an upper case letter, make it lower case
           if ( n /= 0 ) output_string( i:i ) = lower_case( n:n )
 
         end do
