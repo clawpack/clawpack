@@ -693,7 +693,7 @@ contains
 #endif
 
         use geoclaw_module
-        use utility_module, only: parse_values
+        use utility_module, only: parse_values, to_lower
 
         implicit none
 
@@ -795,14 +795,14 @@ contains
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 xll = values(1)
-                xll_registered = ((index(str, 'xllcorner') > 0) .or. &
-                          (index(str, 'XLLCORNER') > 0))
+                str = to_lower(str)  ! convert to lower case
+                xll_registered = (index(str, 'xllcorner') > 0)
 
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 yll = values(1)
-                yll_registered = ((index(str, 'yllcorner') > 0) .or. &
-                          (index(str, 'YLLCORNER') > 0))
+                str = to_lower(str)  ! convert to lower case
+                yll_registered = (index(str, 'yllcorner') > 0)
 
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
