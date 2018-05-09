@@ -92,9 +92,7 @@ def create_topo_func(loc,verbose=False):
      - *loc* (list) - Create a topography file with the profile denoted by the
        tuples inside of loc.  A sample set of points are shown below.  Note 
        that the first value of the list is the x location and the second is 
-       the height of the topography.
-
-       **This figure doesn't show up properly in Sphinx docs...**
+       the height of the topography::
 
         z (m)
         ^                                                  o loc[5]  o
@@ -865,8 +863,8 @@ class Topography(object):
              'geoclaw' or 'default'  ==> write value then label 
                                      with grid_registration == 'lower' as default
              'arcgis' or 'asc' ==> write label then value  
-                                     with grid_registration == 'llcorner' as default
-                        (needed for .asc files in ArcGIS)
+                                   with grid_registration == 'llcorner' as default
+                                   (needed for .asc files in ArcGIS)
          - *Z_format* (str) - string format to use for Z values
            The default format "%15.7e" gives at least millimeter precision
            for topography with abs(Z) < 10000 and results in
