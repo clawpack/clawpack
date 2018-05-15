@@ -123,3 +123,90 @@ def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
         topo.read(file_path, topo_type=3)
         return topo
 
+def etopo1_download_nc(xlimits, ylimits, coarsen=1, verbose=True):
+
+    """
+    Download a subset of the etopo1 topography from the NCEI NetCDF server,
+    return it as a topotools.Topography object. 
+
+    The data for points in the region specified by `xlimits, ylimits`
+    is selected and then coarsened by a factor `coarsen`.
+
+    Uses the database described at
+        https://www.ngdc.noaa.gov/mgg/global/global.html
+
+    The lat-lon values are grid-registered as described at
+        https://www.ngdc.noaa.gov/mgg/global/gridregistration.html
+
+    Sample usage:
+
+        from clawpack.geoclaw import etopotools
+        xlimits = [-126,-122]; ylimits = [46,49]
+        topo = etopotools.etopo1_download_nc(xlimits,ylimits,coarsen=2)
+
+        topo.plot()   # to plot 
+        topo.write('etopo_sample_2min.tt3', topo_type=3)  # to save topofile
+
+    This should give a 2-minute resolution DEM of the Western Washington coast.
+    """
+
+    from clawpack.geoclaw import topotools
+    from pylab import find
+    try:
+        import xarray
+    except:
+        print('*** You need to install xarray, see:')
+        print('***     https://xarray.pydata.org/en/stable/')
+
+    x1, x2 = xlimits
+    y1, y2 = ylimits
+
+    assert (type(coarsen) is int) and (coarsen > 0), \
+           '*** coarsen must be a positive integer'
+
+    etopo1_url = 'https://www.ngdc.noaa.gov/thredds/dodsC/global/ETOPO1_Ice_g_gmt4.nc'
+
+    if verbose:
+        print('Opening remote netCDF file')
+        print('    %s' % etopo1_url)
+
+    f = xarray.open_dataset(etopo1_url)
+
+    assert ('lon' in f.keys()) and ('lat' in f.keys()) and ('z' in f.keys()), \
+            '*** open_dataset returns object missing expected keys'
+
+    # download all of 1d arrays x,y for longitude and latitude since small:
+    x = f['lon']
+    y = f['lat']
+
+    # download only the desired part of the 2d f['z'] array:
+
+    i1 = find(x>=x1).min()
+    i2 = find(x<=x2).max() + 1
+    j1 = find(y>=y1).min()
+    j2 = find(y<=y2).max() + 1
+
+    # create new xarray object with this (possibly coarsened) subset:
+
+    xs = x[i1:i2:coarsen]
+    ys = y[j1:j2:coarsen]
+
+    Zs = f['z'][j1:j2:coarsen, i1:i2:coarsen]
+
+    # create Topography object to return:
+    topo = topotools.Topography()
+    topo._x = xs
+    topo._y = ys
+    topo._Z = Zs
+    topo.generate_2d_coordinates()
+
+    if verbose:
+        print('Returning a Topography object with Z.shape = %s' \
+                % str(topo.Z.shape))
+        print('x ranges from %.5f to %.5f with dx = %.8f' \
+                % (topo.x[0], topo.x[-1], topo.delta[0]))
+        print('y ranges from %.5f to %.5f with dy = %.8f' \
+                % (topo.y[0], topo.y[-1], topo.delta[1]))
+
+    return topo
+
