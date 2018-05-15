@@ -58,6 +58,11 @@ def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
     if dy is None:
         dy = dx
 
+    arcminute = 1/60.
+    if abs(dx-arcminute)>1e-8 or abs(dy-arcminute)>1e-8:
+        print('*** Warning: data may not be properly subsampled at')
+        print('*** resolutions other than 1 arcminute, dx=dy=1/60.')
+
     x1,x2 = xlimits
     y1,y2 = ylimits
 
