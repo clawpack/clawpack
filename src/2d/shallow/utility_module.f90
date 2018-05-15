@@ -204,10 +204,10 @@ contains
         do i = 1, len( output_string )
 
             ! -- find location of letter in lower case constant string
-            n = index( lower_case, output_string( i:i ) )
+            n = index( LOWER_CASE, output_string( i:i ) )
 
             ! -- if current substring is a lower case letter, make it upper case
-            if ( n /= 0 ) output_string( i:i ) = upper_case( n:n )
+            if ( n /= 0 ) output_string( i:i ) = UPPER_CASE( n:n )
 
         end do
 
@@ -244,11 +244,11 @@ contains
         ! loop over string elements
         do i = 1, len( output_string )
 
-          ! find location of letter in lower case constant string
-          n = index( lower_case, output_string( i:i ) )
+          ! find location of letter in upper case constant string
+          n = index( UPPER_CASE, output_string( i:i ) )
 
-          ! if current substring is an lower case letter, make it lower case
-          if ( n /= 0 ) output_string( i:i ) = lower_case( n:n )
+          ! if current substring is an upper case letter, make it lower case
+          if ( n /= 0 ) output_string( i:i ) = LOWER_CASE( n:n )
 
         end do
 
