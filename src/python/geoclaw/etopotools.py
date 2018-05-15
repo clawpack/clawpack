@@ -105,12 +105,12 @@ def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
             x2file = float(lines[3].split()[1])
             lines[2] = 'xllcorner    %1.12f\n' % x1file
             lines[3] = 'yllcorner    %1.12f\n' % x2file
-            lines = lines[:5] + ['nodata_value    -99999\n'] + lines[5:]
+            if 'nodata_value' not in lines[5]:
+                lines = lines[:5] + ['nodata_value    -99999\n'] + lines[5:]
+                print("Added nodata_value line")
             f = open(file_path,'w')
             f.writelines(lines)
             f.close()
-            #print("Shifted xllcorner and yllcorner to cell centers")
-            print("Added nodata_value line")
         print("Created file: ",file_path)
 
     if return_topo:
