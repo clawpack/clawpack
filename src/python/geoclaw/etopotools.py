@@ -123,7 +123,7 @@ def etopo1_download(xlimits, ylimits, dx=0.0166666666667, dy=None, \
         topo.read(file_path, topo_type=3)
         return topo
 
-def etopo1_download_nc(xlimits, ylimits, coarsen=1, verbose=True):
+def etopo1_download_nc(xlimits, ylimits, coarsen=1, verbose=False):
 
     """
     Download a subset of the etopo1 topography from the NCEI NetCDF server,
@@ -142,7 +142,8 @@ def etopo1_download_nc(xlimits, ylimits, coarsen=1, verbose=True):
 
         from clawpack.geoclaw import etopotools
         xlimits = [-126,-122]; ylimits = [46,49]
-        topo = etopotools.etopo1_download_nc(xlimits,ylimits,coarsen=2)
+        topo = etopotools.etopo1_download_nc(xlimits,ylimits,
+                                             coarsen=2,verbose=True)
 
         topo.plot()   # to plot 
         topo.write('etopo_sample_2min.tt3', topo_type=3)  # to save topofile
