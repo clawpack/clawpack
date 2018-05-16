@@ -4,6 +4,7 @@
 Tools to download etopo topography/bathymetry data from NCEI (formerly NGDC).
 See http://www.ngdc.noaa.gov/mgg/global/global.html
 
+Note the new etopo1_download_nc is better to use than etopo1_download.
 """
 
 
