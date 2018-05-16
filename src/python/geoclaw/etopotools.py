@@ -144,11 +144,15 @@ def etopo1_download_nc(xlimits, ylimits, coarsen=1, verbose=False):
         xlimits = [-126,-122]; ylimits = [46,49]
         topo = etopotools.etopo1_download_nc(xlimits,ylimits,
                                              coarsen=2,verbose=True)
+        # to plot:
+        topo.plot()
 
-        topo.plot()   # to plot 
-        topo.write('etopo_sample_2min.tt3', topo_type=3)  # to save topofile
+        # to save topofile for input to GeoClaw:
+        topo.write('etopo_sample_2min.tt3', topo_type=3, Z_format='%.0f')  
 
     This should give a 2-minute resolution DEM of the Western Washington coast.
+    Note that etopo1 Z values are integers (vertical resolution is 1 meter)
+    and using `Z_format='%.0f'` will save as integers to minimize file size.
     """
 
     from clawpack.geoclaw import topotools
