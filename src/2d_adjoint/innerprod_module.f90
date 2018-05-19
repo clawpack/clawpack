@@ -113,10 +113,8 @@ contains
                 ! For each valid point, calculate inner product
                 if (flag_gradient) then
                   forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
-                    eta = q(1,i,j) + aux1(i,j)
-
-                    q_innerprod(i,j) = abs( &
-                        eta * q_interp(4,i,j) &
+                      q_innerprod(i,j) = abs( &
+                        (q(1,i,j) + aux1(i,j)) * q_interp(4,i,j) &
                         + q(2,i,j) * q_interp(2,i,j) &
                         + q(3,i,j) * q_interp(3,i,j))
                   end forall
