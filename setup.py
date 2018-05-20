@@ -61,6 +61,7 @@ SUBPACKAGES = {
     'pyclaw': {
         'python_src_dir': [('pyclaw', 'src'),
                            ('petclaw', 'src'),
+                           ('forestclaw', 'src'),
                            (join('pyclaw','examples'), '..')]
     },
     'riemann': {
@@ -92,7 +93,7 @@ Operating System :: MacOS
 
 MAJOR               = 5
 MINOR               = 4
-MICRO               = 0
+MICRO               = 1
 TYPE                = ''
 VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
 
