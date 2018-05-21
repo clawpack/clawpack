@@ -1589,6 +1589,8 @@ def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True,
     if path in remote_topo_urls.keys():
         path = remote_topo_urls[path]
 
+    if verbose:
+        print("Will read netCDF data from \n    %s" % path)
 
     if return_xarray:
         f = xarray.open_dataset(path)
