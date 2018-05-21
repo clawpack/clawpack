@@ -28,5 +28,5 @@ test:
     imports:
         - clawpack.pyclaw
         - clawpack.petclaw
-        - clawpack.pyclaw.io.hdf5
+        - clawpack.pyclaw.fileio.hdf5
         - clawpack.riemann.euler_4wave_2D
