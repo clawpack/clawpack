@@ -6,7 +6,7 @@ c --------------------------------------------------------------
 c
       subroutine errf1(rctfine,nvar,rctcrse,mptr,mi2tot,mj2tot,
      2                 mitot,mjtot,rctflg,mibuff,mjbuff,auxfine,
-     2                 naux,auxcrse,nx,ny)
+     2                 naux,auxcrse,nx,ny,mask_selecta)
 
       use adjoint_module, only: innerprod_index,
      .        totnum_adjoints, adjoints, trange_start, trange_final,
@@ -29,7 +29,7 @@ c
       real(kind=8) :: aux_temp(1:nx,1:ny)
       real(kind=8), intent(inout) :: rctflg(mibuff,mjbuff)
       real(kind=8) :: est(nvar,mitot,mjtot)
-      logical :: mask_selecta(totnum_adjoints), adjoints_found
+      logical :: mask_selecta(totnum_adjoints)
 
       logical :: allowflag
       external allowflag
@@ -76,8 +76,6 @@ c
       order  = dble(2**(iorder+1) - 2)
 
       auxfine(innerprod_index,:,:) = 0.0d0
-      mask_selecta = .false.
-      adjoints_found = .false.
 
 c     Calculating correct tol for this level
 c     --------------------
@@ -255,38 +253,6 @@ c               retaining directionality of the wave
 
           jfine = jfine + 2
  35    continue
-
-c     Loop over adjoint snapshots
-      do k=1,totnum_adjoints
-          if ((time+adjoints(k)%time) >= trange_start .and.
-     .        (time+adjoints(k)%time) <= trange_final) then
-              mask_selecta(k) = .true.
-              adjoints_found = .true.
-          endif
-      enddo
-
-      if(.not. adjoints_found) then
-          write(*,*) "Note: no adjoint snapshots ",
-     .        "found in time range."
-          write(*,*) "Consider increasing time rage of interest, ",
-     .        "or adding more snapshots."
-      endif
-
-      do k=1,totnum_adjoints-1
-          if((.not. mask_selecta(k)) .and.
-     .        (mask_selecta(k+1))) then
-              mask_selecta(k) = .true.
-              exit
-          endif
-      enddo
-
-      do k=totnum_adjoints,2,-1
-          if((.not. mask_selecta(k)) .and.
-     .        (mask_selecta(k-1))) then
-              mask_selecta(k) = .true.
-              exit
-          endif
-      enddo
 
       do 12 k = 1,totnum_adjoints
 c         ! Consider only snapshots that are within the desired time range

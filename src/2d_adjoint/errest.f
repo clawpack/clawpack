@@ -3,10 +3,11 @@ c -------------------------------------------------------------
 c Modified from errest.f in amrclaw to pass aux arrays into errf1.f
 c -------------------------------------------------------------
 c
-      subroutine errest (nvar,naux,lcheck,mptr,nx,ny)
+      subroutine errest (nvar,naux,lcheck,mptr,nx,ny,mask_selecta)
 c
       use amr_module, only: node,store1,store2,storeaux,alloc
       use amr_module, only: nghost,tempptr,storeflags,ibuff
+      use adjoint_module, only: totnum_adjoints
       implicit none
 
       integer, intent(in) :: nvar, naux, lcheck, mptr, nx, ny
@@ -23,6 +24,7 @@ c   # Other local variables
       integer :: locamrflags,locaux,locbig,locnew,locold
       integer :: mbuff,mi2tot,mibuff,midub,mitot
       integer :: mj2tot,mjbuff,mjdub,mjtot
+      logical mask_selecta(totnum_adjoints)
 
       write(*,*) "Warning: adjoint-error flagging ",
      &            "isn't fully implemented for GeoClaw."
@@ -71,7 +73,7 @@ c     ## by flag2refine so make sure not to overwrite
 
       call errf1(alloc(locbig),nvar,valbgc,mptr,mi2tot,mj2tot,
      1           mitot,mjtot,alloc(locamrflags),mibuff,mjbuff,
-     1           alloc(locaux),naux,auxbgc,nx,ny)
+     1           alloc(locaux),naux,auxbgc,nx,ny,mask_selecta)
 
 c
       return
