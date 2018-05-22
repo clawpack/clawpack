@@ -37,11 +37,10 @@
 ! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
-                            tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
+                            tolsp,q,aux,amrflags,DONTFLAG,DOFLAG,mask_selecta)
 
     use innerprod_module, only: calculate_innerproduct
     use adjoint_module, only: totnum_adjoints, innerprod_index
-    use adjoint_module, only: adjoints, trange_start, trange_final
 
     use amr_module, only: mxnest, t0
     use geoclaw_module, only:dry_tolerance, sea_level
@@ -81,15 +80,13 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
     real(kind=8) :: dqi(meqn), dqj(meqn), dq(meqn),eta
     logical :: checkregions
-    logical :: mask_selecta(totnum_adjoints), adjoints_found
+    logical :: mask_selecta(totnum_adjoints)
     real(kind=8) :: aux_temp(mx,my)
 
     ! Initialize flags
     amrflags = DONTFLAG
     checkregions = .TRUE.
     aux(innerprod_index,:,:) = 0.0
-    mask_selecta = .false.
-    adjoints_found = .false.
 
     y_loop: do j = 1,my
       y_c = ylower + (j - 0.5d0) * dy
@@ -159,37 +156,6 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     ! -----------------------------------------------------------------
     ! Check if refinment is allowed and if so,
     ! check if there is a reason to flag this point:
-
-    ! Loop over adjoint snapshots
-    do r=1,totnum_adjoints
-        if ((t+adjoints(r)%time) >= trange_start .and. &
-               (t+adjoints(r)%time) <= trange_final) then
-            mask_selecta(r) = .true.
-            adjoints_found = .true.
-        endif
-    enddo
-
-    if(.not. adjoints_found) then
-        write(*,*) "Note: no adjoint snapshots found in time range."
-        write(*,*) "Consider increasing time rage of interest, or adding more snapshots."
-    endif
-
-
-    do r=1,totnum_adjoints-1
-        if((.not. mask_selecta(r)) .and. &
-                (mask_selecta(r+1))) then
-            mask_selecta(r) = .true.
-            exit
-        endif
-    enddo
-
-    do r=totnum_adjoints,2,-1
-        if((.not. mask_selecta(r)) .and. &
-               (mask_selecta(r-1))) then
-            mask_selecta(r) = .true.
-            exit
-        endif
-    enddo
 
     aloop: do r=1,totnum_adjoints
 
