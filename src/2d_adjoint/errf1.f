@@ -26,7 +26,6 @@ c
       real(kind=8), intent(inout) :: rctcrse(nvar,mi2tot,mj2tot)
       real(kind=8), intent(inout) :: auxfine(naux,mitot,mjtot)
       real(kind=8), intent(in) :: auxcrse(naux,mi2tot,mj2tot)
-      real(kind=8) :: aux_temp(1:nx,1:ny)
       real(kind=8), intent(inout) :: rctflg(mibuff,mjbuff)
       real(kind=8) :: est(nvar,mitot,mjtot)
       logical :: mask_selecta(totnum_adjoints)
@@ -258,27 +257,23 @@ c               retaining directionality of the wave
 c         ! Consider only snapshots that are within the desired time range
           if (mask_selecta(k)) then
 c             set innerproduct for fine grid
-              aux_temp(:,:) =
-     .            calculate_innerproduct(time,est,k,nx,ny,
-     .            xleft,ybot,hx,hy,nvar,nghost,bcrse)
+              call calculate_innerproduct(time,est,k,nx,ny,
+     .            xleft,ybot,hx,hy,nvar,nghost,bcrse,
+     .            auxfine(innerprod_index,1:nx,1:ny))
+          endif
+ 12   continue
 
-              do 22  i  = 1, nx
-                  do 23  j  = 1, ny
-                     auxfine(innerprod_index,i,j) =
-     .                max(auxfine(innerprod_index,i,j),
-     .                    aux_temp(i,j))
-
-                     if (auxfine(innerprod_index,i,j) .ge. tol) then
+      do 22  i  = 1, nx
+        do 23  j  = 1, ny
+          if (auxfine(innerprod_index,i,j) .ge. tol) then
 c                     ## never set rctflg to good, since flag2refine may
 c                     ## have previously set it to bad
 c                     ## can only add bad pts in this routine
-                         rctflg(i,j)    = badpt
-                     endif
-
- 23           continue
- 22           continue
+              rctflg(i,j)    = badpt
           endif
- 12   continue
+
+ 23     continue
+ 22   continue
 
 c
 c     Print out values for debugging
