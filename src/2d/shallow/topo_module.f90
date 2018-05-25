@@ -220,6 +220,22 @@ contains
                     topotime(i) = -huge(1.0)
                     call read_topo_file(mxtopo(i),mytopo(i),itopotype(i),topofname(i), &
                         topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
+
+                    ! set topo0save(i) = 1 if this topo file intersects any
+                    ! dtopo file.  This approach to setting topo0save is changed from 
+                    ! v5.4.1, where it only checked if some dtopo point lies within the
+                    ! topo grid, which might not happen for small scale topo
+                    do j=mtopofiles - num_dtopo + 1, mtopofiles
+                        if ((xhitopo(i)<xlowtopo(j)) .or. &
+                            (xlowtopo(i)>xhitopo(j)) .or. &
+                            (yhitopo(i)<ylowtopo(j)) .or. &
+                            (ylowtopo(i)>yhitopo(j))) then
+                              topo0save(i) = 0
+                          else
+                              topo0save(i) = 1
+                          endif
+
+                    enddo
                 enddo
 
                 ! topography order...This determines which order to process topography
@@ -364,8 +380,14 @@ contains
                      !no intersection
                      cycle
                   else !lies in this topofile
-                     !save this topo
-                     topo0save(id) = 1
+
+                     ! Old way of setting topo0save up to v5.4.1.
+                     ! This assumed topo file did not
+                     ! intersect dtopo file if this point was never reached.
+                     ! Not true if topofile has such small extent that it lies between
+                     ! dtopo points.  Now instead we set topo0save earlier.
+                     !topo0save(id) = 1
+
                      !find indices for bilinear cell in topo
                      !arrays are in form of DEM...high y values first
                      !note for xy points lying on nodes all indices will be equal
