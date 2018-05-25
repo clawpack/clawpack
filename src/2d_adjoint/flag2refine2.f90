@@ -163,8 +163,16 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
         ! Refinement is not forced, so check if it is allowed and if so,
         ! check if there is a reason to flag this point:
         if (allowflag(x_c,y_c,t,level) .and. aux(innerprod_index,i,j) > tolsp) then
-            amrflags(i,j) = DOFLAG
-            cycle x_loop
+            ! Check to see if we are near shore
+            if (q(1,i,j) < deep_depth) then
+                amrflags(i,j) = DOFLAG
+                cycle x_loop
+            ! Check if we are allowed to flag in deep water
+            ! anyway
+            else if (level < max_level_deep) then
+                amrflags(i,j) = DOFLAG
+                cycle x_loop
+            endif
         endif
 
       enddo x_loop
