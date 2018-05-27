@@ -85,8 +85,7 @@ module gauges_module
     type(gauge_type), allocatable :: gauges(:)
 
     ! Gauge source info
-    integer, allocatable, dimension(:) ::  mbestsrc, mbestorder, &
-                          igauge, mbestg1, mbestg2
+    integer, allocatable, dimension(:) ::  mbestsrc, igauge
 
     logical, parameter :: INTERPOLATE = .true.
 
@@ -331,6 +330,7 @@ contains
 !     This is a refactoring of dumpgauge.f from Clawpack 5.2 
 !     Loops over only the gauges to be handled by this grid, as specified
 !     by indices from mbestg1(mptr) to mbestg2(mptr)
+!     NO MORE mbestg1 and 2.  Loop through all gauges. No sorting too.
 
         use amr_module, only: nestlevel, nghost, timemult, rnode, node, maxvar
         use amr_module, only: maxaux, hxposs, hyposs
