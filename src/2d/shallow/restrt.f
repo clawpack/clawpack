@@ -41,10 +41,13 @@ c     rstfile  = 'restart.data'
       open(rstunit,file=trim(rstfile),status='old',form='unformatted')
       rewind rstunit
 
-      read(rstunit) lenmax,lendim,isize
+      !read(rstunit) lenmax,lendim,isize
+      !! new version has flexible node size, so need to read current size maxgr
+      read(rstunit) lenmax,lendim,isize,maxgr
 
 c     # need to allocate for dynamic memory:
       call restrt_alloc(isize)
+      call restrt_nodes(maxgr)
 
       read(rstunit) (alloc(i),i=1,lendim)
       read(rstunit) hxposs,hyposs,possk,icheck
