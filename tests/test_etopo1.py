@@ -1,5 +1,5 @@
 
-from pylab import *
+from __future__ import print_function
 import numpy
 from clawpack.geoclaw import topotools
 
@@ -22,15 +22,16 @@ def test_etopo1_topo(make_plot=False, save=False):
            "topo10.Z does not agree with archived data"
     
     if make_plot:
-        figure(figsize=(12,5))
-        ax1 = subplot(1,2,1)
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(12,5))
+        ax1 = plt.subplot(1,2,1)
         topo1.plot(axes=ax1)
-        title('1 minute etopo1 data')
-        ax10 = subplot(1,2,2)
+        plt.title('1 minute etopo1 data')
+        ax10 = plt.subplot(1,2,2)
         topo10.plot(axes=ax10)
-        title('10 minute etopo1 data')
+        plt.title('10 minute etopo1 data')
         pname = 'etopo1_test_plot.png'
-        savefig(pname)
+        plt.savefig(pname)
         print('Created %s' % pname)
     
 def test_etopo1_xarray():
@@ -48,6 +49,7 @@ def test_etopo1_xarray():
     
 
 if __name__ == "__main__":
+    import sys
     if len(sys.argv) > 1:
         if "plot" in sys.argv[1].lower():
             test_etopo1_topo(make_plot=True)
