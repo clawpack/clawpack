@@ -107,6 +107,11 @@ COMMON_SOURCES += \
   $(AMRLIB)/cstore.f \
   $(AMRLIB)/saveqc.f \
   $(AMRLIB)/opendatafile.f \
+  $(AMRLIB)/init_bndryList.f \
+  $(AMRLIB)/resize_bndryList.f \
+  $(AMRLIB)/init_nodes.f90 \
+  $(AMRLIB)/restrt_nodes.f90 \
+  $(AMRLIB)/resize_nodes.f90 \
   $(AMRLIB)/init_alloc.f90 \
   $(AMRLIB)/restrt_alloc.f90 \
   $(AMRLIB)/resize_alloc.f90
