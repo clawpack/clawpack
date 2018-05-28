@@ -1,11 +1,18 @@
 
 from __future__ import print_function
 import numpy
+import nose
 from clawpack.geoclaw import topotools
 
 extent = [-125,-124, 48, 48.5]
 
 def test_etopo1_topo(make_plot=False, save=False):
+    
+    try:
+        import netCDF4
+    except:
+        raise nose.SkipTest("netCDF4 not installed, skipping test")
+        
     topo1 = topotools.read_netcdf('etopo1', extent=extent, verbose=True)
 
     topo10 = topotools.read_netcdf('etopo1', extent=extent, 
@@ -36,7 +43,11 @@ def test_etopo1_topo(make_plot=False, save=False):
     
 def test_etopo1_xarray():
 
-    import xarray
+    try:
+        import xarray
+    except:
+        raise nose.SkipTest("xarray not installed, skipping test")
+        
     topo10,topo10_xarray = topotools.read_netcdf('etopo1', extent=extent, 
                                                  return_xarray=True,
                                                  coarsen=10, verbose=True)
@@ -58,11 +69,6 @@ if __name__ == "__main__":
     else:
         # Run tests
         test_etopo1_topo()
-        try:
-            import xarray
-            test_etopo1_xarray()
-        except:
-            print("Skipping test_etopo1_xarray since xarray not installed")
-
+        test_etopo1_xarray()
         print("All tests passed.")
 
