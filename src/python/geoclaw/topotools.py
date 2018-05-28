@@ -1517,3 +1517,148 @@ class Topography(object):
         return shoreline_xy
 
 
+
+# Define convenience dictionary of URLs for some online DEMs in netCDF form:
+remote_topo_urls = {}
+
+# global 1 arcminute topography:
+remote_topo_urls['etopo1'] = \
+    'https://www.ngdc.noaa.gov/thredds/dodsC/global/ETOPO1_Ice_g_gmt4.nc'
+
+# some 1/3 arcsecond coastal modeling DEMs:
+server = 'https://www.ngdc.noaa.gov/thredds/dodsC/regional/'
+remote_topo_urls['astoria'] = server + 'astoria_13_mhw_2012.nc'
+remote_topo_urls['puget_sound'] = server + 'puget_sound_13_mhw_2014.nc'
+remote_topo_urls['port_townsend'] = server + 'port_townsend_13_mhw_2011.nc'
+remote_topo_urls['strait_of_juan_de_fuca'] = \
+    server + 'strait_of_juan_de_fuca_13_navd88_2015.nc'
+
+
+
+def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True, 
+                return_xarray=False, verbose=False):
+
+    """
+    :Input:
+
+     - *path* (str) - Path to the file to read, or url to remote file,
+       or a key into the topotools.remote_topo_urls dictionary.
+     - *zvar* (str) - variable to read as Z=elevation. 
+       if None, will try 'Band1', 'z', 'elevation'.
+     - *extent* - [x1,x2,y1,y2] for desired subset, or 'all' for entire file
+     - *coarsen* (int) - factor to coarsen by, 1 by default.
+     - *return_topo* (bool) - if True, return a topotools.Topography object.
+       default is True
+     - *return_xarray* (bool) - if True, return an xarray.Dataset object.
+       default is False
+
+    :Output:
+     - topo and/or xarray_ds depending on what was requested.
+       (either a single object or a tuple of two objects.)
+
+    If `return_xarray == True` then `xarray` is used to read the data,
+    otherwise `netCDF4` is used directly.
+
+    Sample usage:
+
+        from clawpack.geoclaw import topotools
+        extent = [-126,-122,46,49]
+        path = 'etopo1'
+        topo = topotools.read_netcdf(path, extent=extent, coarsen=2, \
+                                     verbose=True)
+
+        # to plot:
+        topo.plot()
+
+        # to save topofile for input to GeoClaw:
+        topo.write('etopo_sample_2min.tt3', topo_type=3, Z_format='%.0f')  
+
+    This should give a 2-minute resolution DEM of the Western Washington coast.
+    Note that etopo1 Z values are integers (vertical resolution is 1 meter)
+    and using `Z_format='%.0f'` will save as integers to minimize file size.
+    """
+    
+    from clawpack.geoclaw import topotools
+    from numpy import array
+    from matplotlib.mlab import find
+    import netCDF4
+    if return_xarray:
+        import xarray
+
+    # check if path is a key in the remote_topo_urls dictionary:
+    if path in remote_topo_urls.keys():
+        path = remote_topo_urls[path]
+
+    if verbose:
+        print("Will read netCDF data from \n    %s" % path)
+
+    if return_xarray:
+        f = xarray.open_dataset(path)
+    else: 
+        f = netCDF4.Dataset(path, 'r')
+
+    x = f.variables['lon']
+    y = f.variables['lat']
+
+    # for selecting subset based on extent, convert to arrays if netCDF4 used:
+    if not return_xarray:
+        x = array(x)
+        y = array(y)
+    
+    if zvar is None:
+        if 'Band1' in f.variables:
+            zvar = 'Band1'
+        elif 'z' in f.variables:
+            zvar = 'z'
+        elif 'elevation' in f.variables:
+            zvar = 'elevation'
+        else:
+            raise ValueError("*** Unrecognized zvar in netCDF file")
+
+    if extent == 'all':
+        xs = x[::coarsen]
+        ys = y[::coarsen]
+        Zs = f.variables[zvar][::coarsen,::coarsen]
+    else:
+        x1,x2,y1,y2 = extent
+        i1 = find(x>=x1).min()
+        i2 = find(x<=x2).max() + 1
+        j1 = find(y>=y1).min()
+        j2 = find(y<=y2).max() + 1
+
+        # create new xarray object with this (possibly coarsened) subset:
+
+        xs = x[i1:i2:coarsen]
+        ys = y[j1:j2:coarsen]
+        Zs = f.variables[zvar][j1:j2:coarsen, i1:i2:coarsen]
+
+    if verbose:
+        print('Returning a DEM with shape = %s' \
+                % str(Zs.shape))
+        print('x ranges from %.5f to %.5f with dx = %.8f' \
+                % (xs[0], xs[-1], (xs[1]-xs[0])))
+        print('y ranges from %.5f to %.5f with dy = %.8f' \
+                % (ys[0], ys[-1], (ys[1]-ys[0])))
+    output = None
+
+    if return_topo:
+        topo = topotools.Topography()
+        topo._x = xs
+        topo._y = ys
+        topo._Z = Zs
+        topo.generate_2d_coordinates()
+
+        output = topo
+            
+    if return_xarray:
+        # Create a new xarray.Dataset with this subsampled, coarsened data:
+        dims = (len(xs),len(ys))
+        xarray_ds = xarray.Dataset({'z':(dims,Zs)}, coords={'lon':xs, 'lat':ys})
+        if output is None:
+            output = xarray_ds
+        else:
+            output = (topo, xarray_ds)
+
+    return output
+
+
