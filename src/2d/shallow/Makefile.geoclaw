@@ -46,7 +46,6 @@ COMMON_SOURCES += \
   $(AMRLIB)/prepbigstep.f \
   $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/flagger.f \
-  $(AMRLIB)/flagregions.f90 \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl2.f \
@@ -107,6 +106,11 @@ COMMON_SOURCES += \
   $(AMRLIB)/cstore.f \
   $(AMRLIB)/saveqc.f \
   $(AMRLIB)/opendatafile.f \
+  $(AMRLIB)/init_bndryList.f \
+  $(AMRLIB)/resize_bndryList.f \
+  $(AMRLIB)/init_nodes.f90 \
+  $(AMRLIB)/restrt_nodes.f90 \
+  $(AMRLIB)/resize_nodes.f90 \
   $(AMRLIB)/init_alloc.f90 \
   $(AMRLIB)/restrt_alloc.f90 \
   $(AMRLIB)/resize_alloc.f90
