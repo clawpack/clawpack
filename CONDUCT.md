@@ -56,8 +56,8 @@ further defined and clarified by project maintainers.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported by contacting one of the project team,
-either (David Ketcheson)[david.ketcheson@kaust.edu.sa], (Randy
-LeVeque)[rjl@uw.edu], or (Kyle Mandli)[kyle.mandli@columbia.edu]. All
+either [David Ketcheson](david.ketcheson@kaust.edu.sa), [Randy
+LeVeque](rjl@uw.edu), or [Kyle Mandli](kyle.mandli@columbia.edu). All
 complaints will be reviewed and investigated and will result in a response that
 is deemed necessary and appropriate to the circumstances. The project team is
 obligated to maintain confidentiality with regard to the reporter of an incident.
