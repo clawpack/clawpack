@@ -175,7 +175,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.output_format = 'ascii'      # 'ascii', 'binary', 'netcdf' 
 
     clawdata.output_q_components = 'all'   # need all
-    clawdata.output_aux_components = 'none'  # eta=h+B is in q
+    clawdata.output_aux_components = 'all'  # need this to plot inner product
     clawdata.output_aux_onlyonce = False    # output aux arrays each frame
 
 

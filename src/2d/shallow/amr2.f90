@@ -103,6 +103,7 @@ program amr2
     use regions_module, only: set_regions
     use fgmax_module, only: set_fgmax, FG_num_fgrids
     use multilayer_module, only: set_multilayer
+    use adjoint_module, only: read_adjoint_data
 
     implicit none
 
@@ -473,6 +474,7 @@ program amr2
         call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar, naux) ! Set gauge output
+        call read_adjoint_data()          ! Read adjoint solution
 
     else
 
@@ -496,6 +498,7 @@ program amr2
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar, naux) ! Set gauge output
         call set_fgmax()
+        call read_adjoint_data()          ! Read adjoint solution
 
         cflmax = 0.d0   ! otherwise use previously heckpointed val
 

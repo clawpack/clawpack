@@ -140,9 +140,9 @@ def setplot(plotdata=None):
 
     def masked_inner_product(current_data):
         from numpy import ma
-        q = current_data.q
+        aux = current_data.aux
         tol = 1e-15
-        soln = ma.masked_where(q[4,:,:] < tol, q[4,:,:])
+        soln = ma.masked_where(aux[3,:,:] < tol, aux[3,:,:])
         return soln
 
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')

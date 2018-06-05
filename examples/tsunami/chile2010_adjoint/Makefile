@@ -31,8 +31,8 @@ FFLAGS = -O2 -fopenmp
 # package sources for this program:
 # ---------------------------------
 
-ADJGEOLIB:=$(CLAW)/geoclaw/src/2d_adjoint
-include $(ADJGEOLIB)/Makefile.adjoint_geoclaw
+GEOLIB:=$(CLAW)/geoclaw/src/2d/shallow
+include $(GEOLIB)/Makefile.geoclaw
 
 # ---------------------------------------
 # package sources specifically to exclude

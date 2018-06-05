@@ -7,6 +7,8 @@ c
 c
       use amr_module, only: node,store1,store2,storeaux,alloc
       use amr_module, only: nghost,tempptr,storeflags,ibuff
+      use adjoint_module, only : adjoint_flagging
+      use adjointsup_module, only: errf1a
       implicit none
 
       integer, intent(in) :: nvar, naux, lcheck, mptr, nx, ny
@@ -64,10 +66,16 @@ c     ## by flag2refine so make sure not to overwrite
       locamrflags = node(storeflags, mptr)    
       mbuff = max(nghost,ibuff+1)  
       mibuff = nx + 2*mbuff 
-      mjbuff = ny + 2*mbuff 
-      call errf1(alloc(locbig),nvar,valbgc,mptr,mi2tot,mj2tot,
+      mjbuff = ny + 2*mbuff
+      if (adjoint_flagging) then
+          call errf1a(alloc(locbig),nvar,valbgc,mptr,mi2tot,mj2tot,
      1           mitot,mjtot,alloc(locamrflags),mibuff,mjbuff,
      1           alloc(locaux),naux,auxbgc)
+      else
+          call errf1(alloc(locbig),nvar,valbgc,mptr,mi2tot,mj2tot,
+     1           mitot,mjtot,alloc(locamrflags),mibuff,mjbuff,
+     1           alloc(locaux),naux,auxbgc)
+      endif
 
 c
       return
