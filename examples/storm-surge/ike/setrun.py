@@ -425,7 +425,7 @@ def setgeo(rundata):
             open(atcf_path, 'w') as atcf_unzipped_file:
         atcf_unzipped_file.write(atcf_file.read().decode('ascii'))
 
-    ike = Storm(path=atcf_path, file_format="ATCF", single_storm=True)
+    ike = Storm(path=atcf_path, file_format="ATCF")
 
     # Calculate landfall time - Need to specify as the file above does not
     # include this info (9/13/2008 ~ 7 UTC)

@@ -214,6 +214,7 @@ class Storm(object):
 
         :Input:
          - *path* (string) Path to the file to be read.
+         - *verbose* (bool) Output more info regarding reading.
         """
 
         with open(path, 'r') as data_file:
@@ -243,6 +244,7 @@ class Storm(object):
 
         :Input:
          - *path* (string) Path to the file to be read.
+         - *verbose* (bool) Output more info regarding reading.
         """
 
         # No header, can assume storm data
@@ -337,6 +339,7 @@ class Storm(object):
          - *year* (int) Additional filtering criteria.  If there are multiple
            storms with the same name use the year of the storm to pick out the
            right one.
+         - *verbose* (bool) Output more info regarding reading.
 
         :Raises:
          - *ValueError* If the method cannot find the name/year matching the
