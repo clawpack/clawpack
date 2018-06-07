@@ -1134,7 +1134,8 @@ class SubFault(object):
       Each will be a tuple *(x, y, depth)*.
     
 
-    Top edge    Bottom edge
+    Top edge    Bottom edge ::
+
       a ----------- b          ^ 
       |             |          |         ^
       |             |          |         |
