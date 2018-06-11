@@ -19,21 +19,23 @@ standard_units = {'time': 's',
                   'length': 'm',
                   'speed': 'm/s',
                   'radius': 'm',
-                  'pressure': 'Pa'}
+                  'pressure': 'Pa',
+                  'temperature': 'C'}
 
 # Unit conversion definitions - handles conversions to standard units above
 # The dictionary contains a list of values, the first is the conversion factor
 # and the second a human readable version of the unit.
 conversion_factor = {}
+units = {}
 
 # Length
 conversion_factor['m'] = [1.0, 'meters']
 conversion_factor['cm'] = [1e-2, 'centimeters']
 conversion_factor['km'] = [1e3, 'kilometers']
 conversion_factor['miles'] = [1.60934e3, 'miles']
-conversion_factor['nm'] = [1852.0, 'nautical miles']
+conversion_factor['nmi'] = [1852.0, 'nautical miles']
 conversion_factor['lat-long'] = [LAT2METER, 'longitude-latitude']
-length_units = ['m', 'cm', 'km', 'miles', 'nm', 'lat-long']
+units['length'] = ['m', 'cm', 'km', 'miles', 'nmi', 'lat-long']
 
 # Pressure - Rigidity
 conversion_factor['Pa'] = [1.0, "pascals"]
@@ -43,17 +45,23 @@ conversion_factor['GPa'] = [1.e9, "gigapascals"]
 conversion_factor['mbar'] = [1e2, "millibar"]
 conversion_factor['dyne/cm^2'] = [0.1, "Dynes/cm^2"]
 conversion_factor['dyne/m^2'] = [1.e-5, "Dynes/m^2"]
-pressure_units = ['Pa', 'KPa', 'MPa', 'GPa', 'mbar', 'dyne/cm^2', 'dyne/m^2']
+units['pressure'] = ['Pa', 'KPa', 'MPa', 'GPa', 'mbar', 'dyne/cm^2', 'dyne/m^2']
 
 # Speeds
 conversion_factor['m/s'] = [1.0, 'meters/second']
 conversion_factor['knots'] = [0.51444444, 'knots (nm / hour)']
-speed_units = ['m/s', 'knots']
+units['speed'] = ['m/s', 'knots']
 
 # Moments
 conversion_factor['N-m'] = [1.0, "Newton-Meters"]
 conversion_factor['dyne-cm'] = [1.e-7, "Dynes - Centimeter"]
-moment_units = ['N-m', 'dyne-cm']
+units['moment'] = ['N-m', 'dyne-cm']
+
+# Temperature
+conversion_factor['F'] = [lambda temp: (temp - 32.0) * 5.0 / 9.0, "Fahrenheit"]
+conversion_factor['C'] = [lambda temp: temp, "Celsius"]
+conversion_factor['K'] = [lambda temp: temp - 273.15, "Kelvin"]
+units['temperature'] = ['C', 'K', 'F']
 
 
 def units_available():
@@ -77,6 +85,11 @@ def units_available():
     for unit in moment_units:
         output = "\n".join((output, "  %s - %s" % (conversion_factor[unit][1],
                                                    unit)))
+
+    output = "\n".join((output, "Temperature"))
+    for unit in temperature_units:
+        output = "\n".join((output, "  %s" % (unit)))
+
     return output
 
 
@@ -108,17 +121,30 @@ def convert(value, old_units, new_units, verbose=False):
         raise ValueError("Units %s not found in list of supported ",
                          "conversions." % str(new_units))
 
+    for (name, group) in units.items():
+        if old_units in group:
+            if new_units not in group:
+                raise ValueError("Units %s and %s" % (old_units, new_units),
+                                 "do not appear in the same unit group ",
+                                 "%s." % (name))
+
     if verbose:
         print("Convert %s %s to %s." % (value, old_units, new_units))
 
-    return value * conversion_factor[old_units][0] /    \
-                   conversion_factor[new_units][0]
+    if old_units in units['temperature']:
+        # Handle the temperature conversions
+        return conversion_factor[new_units][0](
+                            convertion_factor[old_units][0](value))
+    else:
+        # Generic conversion
+        return value * conversion_factor[old_units][0] /    \
+                       conversion_factor[new_units][0]
 
 
 if __name__ == '__main__':
     # Add commandline unit conversion capability
     if len(sys.argv) == 4:
-        convert(float(sys.argv[1], sys.argv[2], sys.argv[3]))
+        convert(float(sys.argv[1]), sys.argv[2], sys.argv[3])
     else:
         # Usage and available units
         print("Usage:  Convert value in units to new units.")
