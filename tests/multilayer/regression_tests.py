@@ -60,11 +60,11 @@ class MultilayerTest(test.GeoClawRegressionTest):
 
         # Run code and check surface heights
         self.run_code()
-        self.check_gauges(save=save, gauge_id=0, indices=(6, 7))
-        self.check_gauges(save=save, gauge_id=1, indices=(6, 7))
-        self.check_gauges(save=save, gauge_id=2, indices=(6, 7))
-        self.check_gauges(save=save, gauge_id=3, indices=(6, 7))
-        self.check_gauges(save=save, gauge_id=4, indices=(6, 7))
+        self.check_gauges(save=save, gauge_id=0, indices=(6, 7), atol=1e-5)
+        self.check_gauges(save=save, gauge_id=1, indices=(6, 7), atol=1e-5)
+        self.check_gauges(save=save, gauge_id=2, indices=(6, 7), atol=1e-5)
+        self.check_gauges(save=save, gauge_id=3, indices=(6, 7), atol=1e-5)
+        self.check_gauges(save=save, gauge_id=4, indices=(6, 7), atol=1e-5)
 
         # If we have gotten here then we do not need to copy the run results
         self.success = True
