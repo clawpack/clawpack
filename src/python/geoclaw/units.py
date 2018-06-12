@@ -9,6 +9,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import sys
+import collections
 
 from clawpack.geoclaw.data import LAT2METER
 
@@ -25,43 +26,65 @@ standard_units = {'time': 's',
 # Unit conversion definitions - handles conversions to standard units above
 # The dictionary contains a list of values, the first is the conversion factor
 # and the second a human readable version of the unit.
-conversion_factor = {}
+conversion_func = {}
 units = {}
 
 # Length
-conversion_factor['m'] = [1.0, 'meters']
-conversion_factor['cm'] = [1e-2, 'centimeters']
-conversion_factor['km'] = [1e3, 'kilometers']
-conversion_factor['miles'] = [1.60934e3, 'miles']
-conversion_factor['nmi'] = [1852.0, 'nautical miles']
-conversion_factor['lat-long'] = [LAT2METER, 'longitude-latitude']
-units['length'] = ['m', 'cm', 'km', 'miles', 'nmi', 'lat-long']
+conversion_func['m'] = [lambda L: L,
+                        lambda L: L]
+conversion_func['cm'] = [lambda L: L * 1e-2,
+                         lambda L: L / 1e-2]
+conversion_func['km'] = [lambda L: L * 1e3,
+                         lambda L: L / 1e3]
+conversion_func['miles'] = [lambda L: L * 1.60934e3,
+                            lambda L: L / 1.60934e3]
+conversion_func['nmi'] = [lambda L: L * 1852.0,
+                          lambda L: L / 1852.0]
+conversion_func['lat-long'] = [lambda L: L * LAT2METER,
+                               lambda L: L / LAT2METER]
+units['length'] = collections.OrderedDict({'m': 'meters', 'cm': 'centimeters', 
+                                           'km': 'kilometers', 'miles': 'miles',
+                                           'nmi': 'nautical miles', 
+                                           'lat-long': 'longitude-latitude'})
 
 # Pressure - Rigidity
-conversion_factor['Pa'] = [1.0, "pascals"]
-conversion_factor['KPa'] = [1e3, "kilopascals"]
-conversion_factor['MPa'] = [1e6, "megapascals"]
-conversion_factor['GPa'] = [1.e9, "gigapascals"]
-conversion_factor['mbar'] = [1e2, "millibar"]
-conversion_factor['dyne/cm^2'] = [0.1, "Dynes/cm^2"]
-conversion_factor['dyne/m^2'] = [1.e-5, "Dynes/m^2"]
-units['pressure'] = ['Pa', 'KPa', 'MPa', 'GPa', 'mbar', 'dyne/cm^2', 'dyne/m^2']
+conversion_func['Pa'] = [lambda P: P, lambda P: P]
+conversion_func['KPa'] = [lambda P: P * 1e3,
+                          lambda P: P / 1e3]
+conversion_func['MPa'] = [lambda P: P * 1e6,
+                          lambda P: P / 1e6]
+conversion_func['GPa'] = [lambda P: P * 1.e9,
+                          lambda P: P / 1.e9]
+conversion_func['mbar'] = [lambda P: P * 1e2,
+                           lambda P: P / 1e2]
+conversion_func['dyne/cm^2'] = [lambda P: P * 0.1,
+                                lambda P: P / 0.1]
+conversion_func['dyne/m^2'] = [lambda P: P * 1.e-5,
+                               lambda P: P / 1.e-5]
+units['pressure'] = {'Pa': 'pascals', 'KPa': 'kilopascals', 
+                     'MPa': 'megapascals', 'GPa': 'gigapascals', 
+                     'mbar': 'millibar', 'dyne/cm^2': 'Dynes/cm^2', 
+                     'dyne/m^2': 'Dynes/m^2'}
 
 # Speeds
-conversion_factor['m/s'] = [1.0, 'meters/second']
-conversion_factor['knots'] = [0.51444444, 'knots (nm / hour)']
-units['speed'] = ['m/s', 'knots']
+conversion_func['m/s'] = [lambda v: v, lambda v: v]
+conversion_func['knots'] = [lambda v: v * 0.51444444, 
+                            lambda v: v / 0.51444444]
+units['speed'] = {'m/s': 'meters/second', 'knots': 'knots (nm / hour)'}
 
 # Moments
-conversion_factor['N-m'] = [1.0, "Newton-Meters"]
-conversion_factor['dyne-cm'] = [1.e-7, "Dynes - Centimeter"]
-units['moment'] = ['N-m', 'dyne-cm']
+conversion_func['N-m'] = [lambda M: M, lambda M: M]
+conversion_func['dyne-cm'] = [lambda M: M * 1.e-7,
+                              lambda M: M / 1.e-7]
+units['moment'] = {'N-m': "Newton-Meters", 'dyne-cm': "Dynes-Centimeter"}
 
 # Temperature
-conversion_factor['F'] = [lambda temp: (temp - 32.0) * 5.0 / 9.0, "Fahrenheit"]
-conversion_factor['C'] = [lambda temp: temp, "Celsius"]
-conversion_factor['K'] = [lambda temp: temp - 273.15, "Kelvin"]
-units['temperature'] = ['C', 'K', 'F']
+conversion_func['C'] = [lambda temp: temp, lambda temp: temp]
+conversion_func['F'] = [lambda temp: (temp - 32.0) * 5.0 / 9.0, 
+                        lambda temp: temp * 9.0 / 5.0 + 32.0]
+conversion_func['K'] = [lambda temp: temp + 273.15,
+                        lambda temp: temp - 273.15]
+units['temperature'] = {'C': "Celsius", 'F': "Fahrenheit", 'K': "Kelvin"}
 
 
 def units_available():
@@ -69,26 +92,10 @@ def units_available():
     Constructs a string suitable for reading detailing the units available.
     """
     output = ""
-    output = "\n".join((output, "Length"))
-    for unit in length_units:
-        output = "\n".join((output, "  %s - %s" % (conversion_factor[unit][1],
-                                                   unit)))
-    output = "\n".join((output, "Pressure - Rigidity"))
-    for unit in pressure_units:
-        output = "\n".join((output, "  %s - %s" % (conversion_factor[unit][1],
-                                                   unit)))
-    output = "\n".join((output, "Speeds"))
-    for unit in speed_units:
-        output = "\n".join((output, "  %s - %s" % (conversion_factor[unit][1],
-                                                   unit)))
-    output = "\n".join((output, "Moments"))
-    for unit in moment_units:
-        output = "\n".join((output, "  %s - %s" % (conversion_factor[unit][1],
-                                                   unit)))
-
-    output = "\n".join((output, "Temperature"))
-    for unit in temperature_units:
-        output = "\n".join((output, "  %s" % (unit)))
+    for (measurement_type, measurement_units) in units.items():
+        output = "\n".join((output, measurement_type.capitalize()))
+        for (abbrv, full_name) in measurement_units.items():
+            output = "\n".join((output, "  %s (%s)" % (abbrv, full_name)))
 
     return output
 
@@ -113,32 +120,24 @@ def convert(value, old_units, new_units, verbose=False):
      - (ndarray or float) The converted value(s)
     """
 
-    if old_units not in conversion_factor:
-        raise ValueError("Units %s not found in list of supported ",
-                         "conversions." % str(old_units))
+    found_type = None
+    for (measurement_type, measurement_units) in units.items():
+        if old_units in measurement_units:
+            found_type = measurement_type
+            break
 
-    if new_units not in conversion_factor:
-        raise ValueError("Units %s not found in list of supported ",
-                         "conversions." % str(new_units))
+    if found_type is None:
+        raise ValueError("Units %s not found in list of " % str(old_units),
+                         "supported conversions." )
 
-    for (name, group) in units.items():
-        if old_units in group:
-            if new_units not in group:
-                raise ValueError("Units %s and %s" % (old_units, new_units),
-                                 "do not appear in the same unit group ",
-                                 "%s." % (name))
+    if new_units not in units[found_type].keys():
+        raise ValueError("Units %s not found in list of " % str(new_units),
+                         "supported conversions of %s type." % found_type)
 
     if verbose:
         print("Convert %s %s to %s." % (value, old_units, new_units))
 
-    if old_units in units['temperature']:
-        # Handle the temperature conversions
-        return conversion_factor[new_units][0](
-                            convertion_factor[old_units][0](value))
-    else:
-        # Generic conversion
-        return value * conversion_factor[old_units][0] /    \
-                       conversion_factor[new_units][0]
+    return conversion_func[new_units][1](conversion_func[old_units][0](value))
 
 
 if __name__ == '__main__':
@@ -153,4 +152,6 @@ if __name__ == '__main__':
         print("units listed below.")
         print("")
         print("Available Units:")
+        print("  First value is the abbreviation that should be used as an")
+        print("  input unit while the second is the full name of the unit.")
         print(units_available())
