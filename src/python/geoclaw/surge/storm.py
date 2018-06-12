@@ -807,7 +807,7 @@ class Storm(object):
         """
         try:
             with open(path, 'w') as data_file:
-                for n in range(self.t.shape[0]):
+                for n in range(len(self.t)):
                     data_file.write("".join((", " * 2,
                                          "%s" % seconds2date(self.t[n]),
                                          ", " * 4,
