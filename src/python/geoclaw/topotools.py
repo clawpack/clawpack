@@ -1656,7 +1656,6 @@ def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True,
     
     from clawpack.geoclaw import topotools
     from numpy import array
-    from matplotlib.mlab import find
     import netCDF4
     if return_xarray:
         import xarray
@@ -1697,10 +1696,13 @@ def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True,
         Zs = f.variables[zvar][::coarsen,::coarsen]
     else:
         x1,x2,y1,y2 = extent
-        i1 = find(x>=x1).min()
-        i2 = find(x<=x2).max() + 1
-        j1 = find(y>=y1).min()
-        j2 = find(y<=y2).max() + 1
+        # find indices of x,y arrays for points lying within extent:
+        iindex = [i for i,xi in enumerate(x) if (x1 <= xi <= x2)]
+        jindex = [j for j,yj in enumerate(y) if (y1 <= yj <= y2)]
+        i1 = iindex[0]
+        i2 = iindex[-1] + 1
+        j1 = jindex[0]
+        j2 = jindex[-1] + 1
 
         # create new xarray object with this (possibly coarsened) subset:
 

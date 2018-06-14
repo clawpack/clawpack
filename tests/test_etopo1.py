@@ -2,7 +2,14 @@
 from __future__ import print_function
 import numpy
 import nose
+import os
 from clawpack.geoclaw import topotools
+
+
+# Set local test directory to get local files
+testdir = os.path.dirname(__file__)
+if len(testdir) == 0:
+     testdir = "./"
 
 extent = [-125,-124, 48, 48.5]
 
@@ -17,13 +24,13 @@ def test_etopo1_topo(make_plot=False, save=False):
 
     topo10 = topotools.read_netcdf('etopo1', extent=extent, 
                                    coarsen=10, verbose=True)
-    fname = 'data/etopo1_10min.asc'
+    testdata_path = os.path.join(testdir, 'data', 'etopo1_10min.asc')
     if save:
-        topo10.write(fname, topo_type=3, Z_format='%.0f')
-        print('Created %s' % fname)
+        topo10.write(testdata_path, topo_type=3, Z_format='%.0f')
+        print('Created %s' % testdata_path)
 
     topo10input = topotools.Topography()
-    topo10input.read(fname, topo_type=3)
+    topo10input.read(testdata_path, topo_type=3)
     
     assert numpy.allclose(topo10.Z, topo10input.Z), \
            "topo10.Z does not agree with archived data"
@@ -51,9 +58,10 @@ def test_etopo1_xarray():
     topo10,topo10_xarray = topotools.read_netcdf('etopo1', extent=extent, 
                                                  return_xarray=True,
                                                  coarsen=10, verbose=True)
-    fname = 'data/etopo1_10min.asc'
+
+    testdata_path = os.path.join(testdir, 'data', 'etopo1_10min.asc')
     topo10input = topotools.Topography()
-    topo10input.read(fname, topo_type=3)
+    topo10input.read(testdata_path, topo_type=3)
     
     assert numpy.allclose(topo10_xarray['z'], topo10input.Z), \
            "topo10_xarray['z'] does not agree with archived data"

@@ -12,6 +12,8 @@ before_install:
   - python -c "import numpy; print(numpy.__version__)"
   # - pip install matplotlib
   # - python -c "import matplotlib; print(matplotlib.__version__)"
+  - pip install netCDF4
+  - pip install xarray
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - python setup.py symlink-only
