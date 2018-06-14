@@ -15,7 +15,7 @@
 	url = ../amrclaw
 [submodule "geoclaw"]
 	path = geoclaw
-	url = ../geoclaw
+	url = https://github.com/mandli/geoclaw.git
 [submodule "classic"]
 	path = classic
 	url = ../classic
