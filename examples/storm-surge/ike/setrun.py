@@ -402,7 +402,7 @@ def setgeo(rundata):
     # ================
     data = rundata.surge_data
 
-    # Source term controls - These are currently not respected
+    # Source term controls
     data.wind_forcing = True
     data.drag_law = 1
     data.pressure_forcing = True
