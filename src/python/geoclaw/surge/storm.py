@@ -128,7 +128,7 @@ class Storm(object):
                           "hurdat": ["HURDAT", "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"],
                           "jma": ["JMA", "http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html"],
                           "imd": ["IMD", "http://www.rsmcnewdelhi.imd.gov.in/index.php"],
-                          "tcvitals": ["TC-Vitals", None]}
+                          "tcvitals": ["TC-Vitals", "http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm"]}
 
     def __init__(self, path=None, file_format="ATCF", **kwargs):
         r"""Storm Initiatlization Routine
@@ -197,7 +197,7 @@ class Storm(object):
                         " - HURDAT - http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html",
                         " - JMA - http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/besttrack.html",
                         " - IMD - http://www.rsmcnewdelhi.imd.gov.in/index.php",
-                        " - TCVITALS - ...")
+                        " - TCVITALS - http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm")
             raise NotImplementedError("\n".join(data_str))
 
         if file_format.lower() not in self._supported_formats.keys():
@@ -262,7 +262,6 @@ class Storm(object):
         #  central_pressure - convert from mbar to Pa - 100.0
         #  Radius of last isobar contour - convert from nm to m - 1.852000003180799d0 * 1000.0
         self.t = []
-        self.event = numpy.empty(num_lines, dtype=str)
         self.classification = numpy.empty(num_lines, dtype=str)
         self.eye_location = numpy.empty((num_lines, 2))
         self.max_wind_speed = numpy.empty(num_lines)
@@ -270,14 +269,15 @@ class Storm(object):
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
 
-        for (i, line) in enumerate(data_block):
-            # Skip empty linies
-            if len(line) == 0:
+        for (i, data) in enumerate(data_block):
+            # End at an empty lines - skips lines at the bottom of a file
+            if len(data) == 0:
                 break
-            data = line
 
-            # Mark if this is a shortened line
-            short_data = len(data) < 19
+            # Grab data regarding basin and cyclone number if we are starting
+            if i == 0:
+                self.basin = ATCF_basins[data[0]]
+                self.ID = int(data[1])
 
             # Create time
             self.t.append(datetime.datetime(int(data[2][:4]),
@@ -285,14 +285,14 @@ class Storm(object):
                                             int(data[2][6:8]),
                                             int(data[2][-2:])))
 
-            # If an event is occuring record it.  If landfall then use as an
-            # offset.   Note that if there are multiple landfalls the last one
-            # is used as the offset
-            if not short_data:
-                if len(data[22].strip()) > 0:
-                    self.event[i] = data[22].strip()
-                    if self.event[i].upper() == "L":
-                        self.time_offset = self.t[i]
+            # # If an event is occuring record it.  If landfall then use as an
+            # # offset.   Note that if there are multiple landfalls the last one
+            # # is used as the offset
+            # if not short_data:
+            #     if len(data[22].strip()) > 0:
+            #         self.event[i] = data[22].strip()
+            #         if self.event[i].upper() == "L":
+            #             self.time_offset = self.t[i]
 
             # Classification, note that this is not the category of the storm
             self.classification[i] = data[10]
@@ -310,7 +310,14 @@ class Storm(object):
             # Intensity information
             self.max_wind_speed[i] = float(data[8]) * 0.51444444
             self.central_pressure[i] = float(data[9]) * 100.0
-            if not short_data:
+
+            # Mark if this is a shortened line - does not contain max wind 
+            # radius and outer storm radius - set those to -1 to mark them as
+            # missing
+            if len(data) < 19:
+                self.storm_radius[i] = -1
+                self.max_wind_radius[i] = -1
+            else:
                 self.storm_radius[i] = (float(data[18]) * 1.852000003180799
                                         * 1000.0)
                 self.max_wind_radius[i] = (float(data[19]) * 1.852000003180799
@@ -645,14 +652,23 @@ class Storm(object):
 
         getattr(self, 'write_%s' % file_format.lower())(path)
 
-    def write_geoclaw(self, path, verbose=False):
+    def write_geoclaw(self, path, verbose=False, max_wind_radius_fill=None,
+                            storm_radius_fill=None):
         r"""Write out a GeoClaw formatted storm file
 
         GeoClaw storm files are read in by the GeoClaw Fortran code.
 
         :Input:
          - *path* (string) Path to the file to be written.
+         - *verbose* (bool)
+         - *max_wind_radius_fill* (func)
+         - *storm_radius_fill* (func)
         """
+
+        if max_wind_radius_fill is None:
+            max_wind_radius_fill = lambda t, storm: -1
+        if storm_radius_fill is None:
+            storm_radius_fill = lambda t, storm: -1
 
         # Remove duplicate times
         num_casts = len(self.t)
@@ -663,6 +679,9 @@ class Storm(object):
         try:
             with open(path, 'w') as data_file:
                 data_file.write("%s\n" % num_casts)
+                if self.time_offset is None:
+                    # Use the first time in sequence if not provided
+                    self.time_offset = self.t[0]
                 data_file.write("%s\n\n" % self.time_offset.isoformat())
                 for n in range(len(self.t)):
                     if n > 0:
@@ -670,13 +689,26 @@ class Storm(object):
                             continue
 
                     format_string = ("{:19,.8e} " * 7)[:-1] + "\n"
-                    data = ((self.t[n] - self.time_offset).total_seconds(),
-                            self.eye_location[n, 0],
-                            self.eye_location[n, 1],
-                            self.max_wind_speed[n],
-                            self.max_wind_radius[n],
-                            self.central_pressure[n],
-                            self.storm_radius[n])
+                    data = []
+                    data.append((self.t[n] - self.time_offset).total_seconds())
+                    data.append(self.eye_location[n, 0])
+                    data.append(self.eye_location[n, 1])
+                    data.append(self.max_wind_speed[n])
+                    # Allow custom function to set max wind radius if not 
+                    # available
+                    if self.max_wind_radius[n] == -1:
+                        data.append(max_wind_radius_fill(self.t[n], self))
+                    else:
+                        data.append(self.max_wind_radius[n])
+                    
+                    data.append(self.central_pressure[n])
+                    
+                    # Allow custom function to set storm radius if not available
+                    if self.storm_radius[n] == -1:
+                        data.append(storm_radius_fill(self.t[n], self))
+                    else:
+                        data.append(self.storm_radius[n])
+
                     data_file.write(format_string.format(*data))
 
         except Exception as e:
