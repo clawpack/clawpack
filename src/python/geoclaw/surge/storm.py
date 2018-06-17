@@ -11,6 +11,7 @@ ensembles of storms from various providers is also included.
     - HURDAT (reading only)
     - JMA (reading only)
     - IMD (planned)
+    - tcvitals (reading only)
 """
 
 from __future__ import print_function
@@ -319,8 +320,9 @@ class Storm(object):
         r"""Read in HURDAT formatted storm file
 
         This is the current version of HURDAT data available (HURDAT 2).  Note
-        that if the file contains multiple storms only the first will be read
-        in unless name and/or year is provided.
+        that this assumes there is only one storm in the file (includes the
+        header information though).  Future features will be added that will allow for 
+        a file to be read with multiple storms defined.
 
         For more details on the HURDAT format and getting data see
 
@@ -336,9 +338,18 @@ class Storm(object):
            value error is risen.
         """
 
-        data_block = []
         with open(path, 'r') as hurdat_file:
-            data_block.append(hurdat_file.readlines())
+            # Extract header
+            data = [value.strip() for value in 
+                    hurdat_file.readline().split(',')]
+            self.basin = data[0][:2]
+            self.name = data[1]
+            self.ID = data[2]
+
+            # Store rest of data
+            data_block = hurdat_file.readlines()
+        
+        num_lines = len(data_block)
 
         # Parse data block
         self.t = []
@@ -349,6 +360,7 @@ class Storm(object):
         self.central_pressure = numpy.empty(num_lines)
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
+
         for (i, line) in enumerate(data_block):
             if len(line) == 0:
                 break
@@ -391,8 +403,7 @@ class Storm(object):
     def read_jma(self, path, verbose=False):
         r"""Read in JMA formatted storm file
 
-        Note that if the file contains multiple storms only the first will be
-        read in unless name and/or year is provided.
+        Note that only files that contain one storm are currently supported.
 
         For more details on the JMA format and getting data see
 
@@ -410,7 +421,14 @@ class Storm(object):
 
         data_block = []
         with open(path, 'r') as JMA_file:
-            data_block.append(JMA_file.readlines())
+            # Extract header
+            data = JMA_file.readline()
+            self.ID = data[6:10]
+            num_lines = int(data[12:14])
+            self.name = data[30:51].strip()
+
+            data_block = JMA_file.readlines()
+        assert(num_lines == len(data_block))
 
         # Parse data block
         self.t = []
@@ -427,6 +445,7 @@ class Storm(object):
             data = [value.strip() for value in line.split(" ")]
 
             # Create time
+            print(data)
             self.t.append(datetime.datetime(int(data[0][:4]),
                                             int(data[0][4:6]),
                                             int(data[0][6:8]),
