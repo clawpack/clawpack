@@ -401,11 +401,12 @@ class Storm(object):
             else:
                 self.eye_location[i, 1] = -float(data[5][0:-1])
 
-            # Intensity information
+            # Intensity information - radii are not included directly in this
+            # format and instead radii of winds above a threshold are included
             self.max_wind_speed[i] = float(data[6])
             self.central_pressure[i] = float(data[7])
-            self.max_wind_radius[i] = float(data[8])
-            self.storm_radius[i] = float(data[9])
+            self.max_wind_radius[i] = -1
+            self.storm_radius[i] = -1
 
     def read_jma(self, path, verbose=False):
         r"""Read in JMA formatted storm file
@@ -449,42 +450,29 @@ class Storm(object):
         for (i, line) in enumerate(data_block):
             if len(line) == 0:
                 break
-            data = [value.strip() for value in line.split(" ")]
+            data = [value.strip() for value in line.split()]
 
             # Create time
-            print(data)
-            self.t.append(datetime.datetime(int(data[0][:4]),
+            self.t.append(datetime.datetime(int(data[0][:2]),
+                                            int(data[0][2:4]),
                                             int(data[0][4:6]),
-                                            int(data[0][6:8]),
-                                            int(data[1][:2]),
-                                            int(data[1][2:])))
-
-            # If an event is occuring record it.  If landfall then use as an
-            # offset.   Note that if there are multiple landfalls the last one
-            # is used as the offset
-            if len(data[2].strip()) > 0:
-                self.event[i] = data[2].strip()
-                if self.event[i].upper() == "L":
-                    self.time_offset = self.t[i]
+                                            int(data[0][6:])))
 
             # Classification, note that this is not the category of the storm
-            self.classification[i] = data[3]
+            self.classification[i] = int(data[1])
 
-            # Parse eye location
-            if data[4][-1] == "N":
-                self.eye_location[i, 0] = float(data[4][0:-1])
-            else:
-                self.eye_location[i, 0] = -float(data[4][0:-1])
-            if data[5][-1] == "E":
-                self.eye_location[i, 1] = float(data[5][0:-1])
-            else:
-                self.eye_location[i, 1] = -float(data[5][0:-1])
+            # Parse eye location - Always N latitude and E longitude
+            self.eye_location[i, 0] = float(data[4]) / 10.0
+            self.eye_location[i, 1] = float(data[3]) / 10.0
 
-            # Intensity information
+            # Intensity information - current the radii are not directly given
+            # Available data includes max/min of radius of winds of 50 and 
+            # 30 kts instead
+            print(data)
+            self.central_pressure[i] = float(data[5])
             self.max_wind_speed[i] = float(data[6])
-            self.central_pressure[i] = float(data[7])
-            self.max_wind_radius[i] = float(data[8])
-            self.storm_radius[i] = float(data[9])
+            self.max_wind_radius[i] = -1
+            self.storm_radius[i] = -1
 
     def read_imd(self, path, verbose=False):
         r"""Extract relevant hurricane data from IMD file
