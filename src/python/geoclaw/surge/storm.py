@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 
 r"""
-Module defines a class and routines for managing parameterized storm input.
+Module defines a class and routines for managing storm best-track type input and 
+testing reconstructed wind and pressure fields.  Additionally some support for 
+ensembles of storms from various providers is also included.
 
 :Formats Supported:
-    - GeoClaw
-    - ATCF
-    - HURDAT
-    - JMA
-    - IMD
-
-:Models Supported:
-    - Holland 1980
-    - Holland 2010
-    - Chavas, Lin, Emmanuel 2015
+    - GeoClaw (fully)
+    - ATCF (reading only)
+    - HURDAT (reading only)
+    - JMA (reading only)
+    - IMD (planned)
 """
 
 from __future__ import print_function
