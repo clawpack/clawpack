@@ -27,7 +27,7 @@ def test_etopo1_topo(make_plot=False, save=False):
     topo10 = topotools.read_netcdf('etopo1', extent=extent, 
                                    coarsen=10, verbose=True)
 
-    fname = os.path.join(os.path.dirname(__file__), 'data', 'etopo1_10min.asc')
+    testdata_path = os.path.join(os.path.dirname(__file__), 'data', 'etopo1_10min.asc')
     if save:
         topo10.write(testdata_path, topo_type=3, Z_format='%.0f')
         print('Created %s' % testdata_path)
