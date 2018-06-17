@@ -20,7 +20,7 @@ c
       logical vtime,dumpout/.false./,dumpchk/.false./,rest,dump_final
       dimension dtnew(maxlv), ntogo(maxlv), tlevel(maxlv)
       integer clock_start, clock_finish, clock_rate
-      integer tick_clock_start, tick_clock_finish, tick_clock_rate
+      integer tick_clock_finish, tick_clock_rate
       character(len=128) :: time_format
       real(kind=8) cpu_start,cpu_finish
 
