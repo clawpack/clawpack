@@ -11,7 +11,7 @@ ensembles of storms from various providers is also included.
     - HURDAT (reading only)
     - JMA (reading only)
     - IMD (planned)
-    - tcvitals (reading only)
+    - tcvitals (planned)
 """
 
 from __future__ import print_function
@@ -468,7 +468,6 @@ class Storm(object):
             # Intensity information - current the radii are not directly given
             # Available data includes max/min of radius of winds of 50 and 
             # 30 kts instead
-            print(data)
             self.central_pressure[i] = float(data[5])
             self.max_wind_speed[i] = float(data[6])
             self.max_wind_radius[i] = -1
@@ -494,12 +493,10 @@ class Storm(object):
          - *path* (string) Path to the file to be read.
          - *verbose* (bool) Output more info regarding reading.
 
-        :Raises:
-         - *ValueError* If the method cannot find the name/year matching the
-           storm or they are not provided when *single_storm == False* then a
-           value error is risen.
-
         """
+
+        raise NotImplementedError(("Reading in TCVITALS files is not implemented",
+                                   "yet but is planned for a future release."))
 
         try:
             import requests
@@ -648,9 +645,17 @@ class Storm(object):
 
         :Input:
          - *path* (string) Path to the file to be written.
-         - *verbose* (bool)
-         - *max_wind_radius_fill* (func)
-         - *storm_radius_fill* (func)
+         - *verbose* (bool) Print out additional information when writing.
+         - *max_wind_radius_fill* (func) Function that can be used to fill in
+           missing data for `max_wind_radius` values.  This defaults to simply 
+           setting the value to -1.  The function signature should be
+           `max_wind_radius(t, storm)` whre t is the time of the forecast and
+           `storm` is the storm object.
+         - *storm_radius_fill* (func) Function that can be used to fill in
+           missing data for `storm_radius` values.  This defaults to simply 
+           setting the value to -1.  The function signature should be
+           `storm_radius(t, storm)` whre t is the time of the forecast and
+           `storm` is the storm object.
         """
 
         if max_wind_radius_fill is None:
@@ -709,7 +714,8 @@ class Storm(object):
         r"""Write out a ATCF formatted storm file
 
         :Input:
-         - *path* (string) Path to the file to be written
+         - *path* (string) Path to the file to be written.
+         - *verbose* (bool) Print out additional information when writing.
         """
         raise NotImplementedError(("Writing out ATCF files is not implemented ",
                                    "yet but is planned for a future release."))
@@ -745,7 +751,8 @@ class Storm(object):
         r"""Write out a HURDAT formatted storm file
 
         :Input:
-         - *path* (string) Path to the file to be written
+         - *path* (string) Path to the file to be written.
+         - *verbose* (bool) Print out additional information when writing.
         """
         raise NotImplementedError(("Writing out hurdat files is not ",
                                    "implemented yet but is planned for a ",
@@ -799,7 +806,8 @@ class Storm(object):
         r"""Write out a JMA formatted storm file
 
         :Input:
-         - *path* (string) Path to the file to be written
+         - *path* (string) Path to the file to be written.
+         - *verbose* (bool) Print out additional information when writing.
         """
         raise NotImplementedError(("Writing out JMA files is not implemented ",
                                    "yet but is planned for a future release."))
@@ -831,13 +839,26 @@ class Storm(object):
             raise e
 
     def write_imd(self, path, verbose=False):
-        r"""Write out a IMD formatted storm file
+        r"""Write out an IMD formatted storm file
 
         :Input:
-         - *path* (string) Path to the file to be written
+         - *path* (string) Path to the file to be written.
+         - *verbose* (bool) Print out additional information when writing.
         """
         raise NotImplementedError(("Writing out IMD files is not implemented ",
                                    "yet but is planned for a future release."))
+
+    def write_tcvitals(self, path, verbose=False):
+        r"""Write out an TCVITALS formatted storm file
+
+        :Input:
+         - *path* (string) Path to the file to be written.
+         - *verbose* (bool) Print out additional information when writing.
+         """
+
+        raise NotImplementedError(("Writing in TCVITALS files is not",
+                                   "implemented yet but is planned for a ",
+                                   "future release."))
 
     # =========================================================================
     # Other Useful Routines

@@ -23,7 +23,7 @@ if len(testdir) == 0:
     testdir = "./"
 
 # Current tests
-file_format_tests = ['atcf', 'hurdat', 'jma', 'tcvitals']
+file_format_tests = ['atcf', 'hurdat', 'jma']
 
 def check_geoclaw(paths, check_header=False):
     """Check that two geoclaw formatted storm files are identical
