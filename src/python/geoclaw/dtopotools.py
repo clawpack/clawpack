@@ -1074,26 +1074,26 @@ class SubFault(object):
       Each will be a tuple *(x, y, depth)*.
 
     *corners[0,1,2,3]* refer to the points labeled a,b,c,d resp. below.
-      Each will be a tuple *(x, y, depth)*.
-    
-
-    Top edge    Bottom edge
-      a ----------- b          ^ 
-      |             |          |         ^
-      |             |          |         |
-      |             |          |         | along-strike direction
-      |             |          |         |
-      0------1------2          | length  |
-      |             |          |
-      |             |          |
-      |             |          |
-      |             |          |
-      d ----------- c          v
-      <------------->
-           width
-
-      <-- up dip direction
-
+      Each will be a tuple *(x, y, depth)*. ::
+         
+     
+         Top edge    Bottom edge
+           a ----------- b          ^ 
+           |             |          |         ^
+           |             |          |         |
+           |             |          |         | along-strike direction
+           |             |          |         |
+           0------1------2          | length  |
+           |             |          |
+           |             |          |
+           |             |          |
+           |             |          |
+           d ----------- c          v
+           <------------->
+                width
+     
+           <-- up dip direction
+     
 
 
     """

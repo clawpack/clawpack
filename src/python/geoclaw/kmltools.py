@@ -676,7 +676,7 @@ def kml_timespan(t1,t2,event_time=None,tz=None,tscale=1):
     event_time : Start of event in UTC :  [Y,M,D,H,M,S], e.g. [2010,2,27,3,34,0]
     tz         : time zone offset to UTC.  e.g. +3 for Chile; -9 for Japan.
 
-    Time span element looks like :
+    Time span element looks like ::
 
         <TimeSpan>
           <begin>2010-02-27T06:34:00+03:00</begin>
