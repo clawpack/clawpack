@@ -1,21 +1,21 @@
 [submodule "pyclaw"]
 	path = pyclaw
-	url = git@github.com:clawpack/pyclaw
+	url = https://github.com/clawpack/pyclaw.git
 [submodule "visclaw"]
 	path = visclaw
-	url = git@github.com:clawpack/visclaw
+	url = https://github.com/clawpack/visclaw.git
 [submodule "clawutil"]
 	path = clawutil
-	url = git@github.com:clawpack/clawutil
+	url = https://github.com/clawpack/clawutil.git
 [submodule "riemann"]
 	path = riemann
-	url = git@github.com:clawpack/riemann
+	url = https://github.com/clawpack/riemann.git
 [submodule "amrclaw"]
 	path = amrclaw
-	url = git@github.com:clawpack/amrclaw
+	url = https://github.com/clawpack/amrclaw.git
 [submodule "geoclaw"]
 	path = geoclaw
 	url = https://github.com/mandli/geoclaw.git
 [submodule "classic"]
 	path = classic
-	url = git@github.com:clawpack/classic
+	url = https://github.com/clawpack/classic.git
