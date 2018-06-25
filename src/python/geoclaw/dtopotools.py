@@ -243,45 +243,76 @@ def strike_direction(x1, y1, x2, y2):
     return s
 
 
-def rise_fraction(t, t0, t_rise, t_rise_ending=None):
+def rise_fraction(t, rupture_time, rise_time, rise_time_ending=None, 
+                  shape='quadratic'):
     """
-    A continuously differentiable piecewise quadratic function of t that is 
+    A continuous piecewise quadratic or linear function of t that is 
 
-     *  0 for t <= t0, 
-     *  1 for t >= t0 + t_rise + t_rise_ending 
+     *  0 for t <= rupture_time, 
+     *  1 for t >= rupture_time + rise_time 
 
-    with maximum slope at t0 + t_rise.
-    For specifying dynamic fault ruptures:  Subfault files often contain these
-    parameters for each subfault for an earthquake event.
-
-    *t* can be a scalar or a numpy array of times and the returned result
-    will have the same type.  A list or tuple of times returns a numpy array.
+    :Inputs:
+    
+    - *t* (scalar, list, or np.array): times at which to evaluate the 
+      rise function.
+    - *rupture_time* (float): time (seconds) when rupture starts.
+    - *rise_time* (float): duration of rupture (seconds).
+    - *rise_time_ending* (float or None): If None, it is internally set to 
+      `rise_time/2`. 
+    - *shape* (str): 
+      If `shape == "quadratic"`, the rise time function is piecewise quadratic,
+      continuously differentiable, with maximum slope at 
+      `t = rupture_time + rise_time - rise_time_ending`
+      and zero slope at `t = rupture_time` and `t = rupture_time + rise_time`.
+      If `shape == "linear"`, the rise time function is piecewise linear,
+      with value 0.5 at 
+      `t = rupture_time + rise_time - rise_time_ending`.
+    
+    :Outputs:
+    
+    *rf* (float or np.array): The rise time function evaluated at `t`.
+    If the input is a list or tuple of times, returns a numpy array.
+    
     """
 
     scalar = (type(t) in [float,int])
     t = numpy.array(t)
+    
+    t0 = rupture_time
+    rf = numpy.where(t<=t0, 0., 1.)
+    if rise_time==0:
+        return rf
+            
+    if rise_time_ending is None:
+        rise_time_ending = rise_time / 2.
+        
+    if (rise_time_ending <= 0) or (rise_time_ending >=rise_time):
+        raise ValueError("*** Require 0 < rise_time_ending < rise_time\n" \
+                         + "***  rise_time_ending = %s" % rise_time_ending)
 
-    if t_rise_ending is None: 
-        t_rise_ending = t_rise
+    rise_time_starting = rise_time - rise_time_ending
 
-    t1 = t0+t_rise
-    t2 = t1+t_rise_ending
+    t1 = t0+rise_time_starting
+    t2 = t1+rise_time_ending
 
-    rf = numpy.where(t<=t1, 0., 1.)
-    if t2 != t0:
-
-        t20 = float(t2-t0)
-        t10 = float(t1-t0)
-        t21 = float(t2-t1)
-
-        #c1 = t21 / (t20*t10*t21) 
-        #c2 = t10 / (t20*t10*t21) 
-        c = 1. / t21
-
-        rf = numpy.where((t>t1) & (t<=t2), c*(t-t1), rf)
-        #rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
-        #rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
-
+    t20 = float(t2-t0)
+    t10 = float(t1-t0)
+    t21 = float(t2-t1)
+    
+    if shape == 'quadratic':
+        c1 = t21 / (t20*t10*t21) 
+        c2 = t10 / (t20*t10*t21) 
+        rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
+        rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
+        
+    elif shape == 'linear':
+        s1 = 0.5 / t10
+        s2 = 0.5 / t21
+        rf = numpy.where((t>t0) & (t<=t1), s1*(t-t0), rf)
+        rf = numpy.where((t>t1) & (t<=t2), 0.5+s2*(t-t1), rf)
+    else:
+        raise ValueError("*** shape must be 'quadratic' or 'linear'")
+        
     if scalar:
         rf = float(rf)   # return a scalar if input t is scalar
 
@@ -841,17 +872,19 @@ class Fault(object):
             dZ = None
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
-                    t0 = 0.
-                    t1 = getattr(subfault,'rupture_time',0.)
-                    t2 = getattr(subfault,'rise_time',1.)
-                    #t0 = getattr(subfault,'rupture_time',0)
-                    #t1 = getattr(subfault,'rise_time',0.5)
-                    #t2 = getattr(subfault,'rise_time_ending',None)
-                    rf = rise_fraction([t_prev,t],t0,t1,t2)
-                    #rf = rise_fraction(t,t0,t1,t2)
+                    rupture_time = getattr(subfault,'rupture_time',0.)
+                    rise_time = getattr(subfault,'rise_time',1.)
+                    rise_time_ending = getattr(subfault,'rise_time_ending',None)
+
+                    rf = rise_fraction([t_prev,t],rupture_time=rupture_time,
+                                        rise_time=rise_time,
+                                        rise_time_ending=rise_time_ending,
+                                        shape='linear')
+
                     dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
                         dzt = dzt + dfrac * subfault.dtopo.dZ[0,:,:]
+                        
                 dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
                 if dZ is None:
                     dZ = dzt.copy()
