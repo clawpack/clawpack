@@ -243,43 +243,76 @@ def strike_direction(x1, y1, x2, y2):
     return s
 
 
-def rise_fraction(t, t0, t_rise, t_rise_ending=None):
+def rise_fraction(t, rupture_time, rise_time, rise_time_ending=None, 
+                  shape='quadratic'):
     """
-    A continuously differentiable piecewise quadratic function of t that is 
+    A continuous piecewise quadratic or linear function of t that is 
 
-     *  0 for t <= t0, 
-     *  1 for t >= t0 + t_rise + t_rise_ending 
+     *  0 for t <= rupture_time, 
+     *  1 for t >= rupture_time + rise_time 
 
-    with maximum slope at t0 + t_rise.
-    For specifying dynamic fault ruptures:  Subfault files often contain these
-    parameters for each subfault for an earthquake event.
-
-    *t* can be a scalar or a numpy array of times and the returned result
-    will have the same type.  A list or tuple of times returns a numpy array.
+    :Inputs:
+    
+    - *t* (scalar, list, or np.array): times at which to evaluate the 
+      rise function.
+    - *rupture_time* (float): time (seconds) when rupture starts.
+    - *rise_time* (float): duration of rupture (seconds).
+    - *rise_time_ending* (float or None): If None, it is internally set to 
+      `rise_time/2`. 
+    - *shape* (str): 
+      If `shape == "quadratic"`, the rise time function is piecewise quadratic,
+      continuously differentiable, with maximum slope at 
+      `t = rupture_time + rise_time - rise_time_ending`
+      and zero slope at `t = rupture_time` and `t = rupture_time + rise_time`.
+      If `shape == "linear"`, the rise time function is piecewise linear,
+      with value 0.5 at 
+      `t = rupture_time + rise_time - rise_time_ending`.
+    
+    :Outputs:
+    
+    *rf* (float or np.array): The rise time function evaluated at `t`.
+    If the input is a list or tuple of times, returns a numpy array.
+    
     """
 
     scalar = (type(t) in [float,int])
     t = numpy.array(t)
-
-    if t_rise_ending is None: 
-        t_rise_ending = t_rise
-
-    t1 = t0+t_rise
-    t2 = t1+t_rise_ending
-
+    
+    t0 = rupture_time
     rf = numpy.where(t<=t0, 0., 1.)
-    if t2 != t0:
+    if rise_time==0:
+        return rf
+            
+    if rise_time_ending is None:
+        rise_time_ending = rise_time / 2.
+        
+    if (rise_time_ending <= 0) or (rise_time_ending >=rise_time):
+        raise ValueError("*** Require 0 < rise_time_ending < rise_time\n" \
+                         + "***  rise_time_ending = %s" % rise_time_ending)
 
-        t20 = float(t2-t0)
-        t10 = float(t1-t0)
-        t21 = float(t2-t1)
+    rise_time_starting = rise_time - rise_time_ending
 
+    t1 = t0+rise_time_starting
+    t2 = t1+rise_time_ending
+
+    t20 = float(t2-t0)
+    t10 = float(t1-t0)
+    t21 = float(t2-t1)
+    
+    if shape == 'quadratic':
         c1 = t21 / (t20*t10*t21) 
         c2 = t10 / (t20*t10*t21) 
-
         rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
         rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
-
+        
+    elif shape == 'linear':
+        s1 = 0.5 / t10
+        s2 = 0.5 / t21
+        rf = numpy.where((t>t0) & (t<=t1), s1*(t-t0), rf)
+        rf = numpy.where((t>t1) & (t<=t2), 0.5+s2*(t-t1), rf)
+    else:
+        raise ValueError("*** shape must be 'quadratic' or 'linear'")
+        
     if scalar:
         rf = float(rf)   # return a scalar if input t is scalar
 
@@ -531,7 +564,7 @@ class DTopography(object):
         elif t >= self.times[-1]:
             return self.dZ[-1,:,:]
         else:
-            n = max(find(self.times <= t))
+            n = max(find(numpy.array(self.times) <= t))
             t1 = self.times[n]
             t2 = self.times[n+1]
             dz = (t2-t)/(t2-t1) * self.dZ[n,:,:] + \
@@ -839,13 +872,19 @@ class Fault(object):
             dZ = None
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
-                    t0 = getattr(subfault,'rupture_time',0)
-                    t1 = getattr(subfault,'rise_time',0.5)
-                    t2 = getattr(subfault,'rise_time_ending',None)
-                    rf = rise_fraction([t_prev,t],t0,t1,t2)
+                    rupture_time = getattr(subfault,'rupture_time',0.)
+                    rise_time = getattr(subfault,'rise_time',1.)
+                    rise_time_ending = getattr(subfault,'rise_time_ending',None)
+
+                    rf = rise_fraction([t_prev,t],rupture_time=rupture_time,
+                                        rise_time=rise_time,
+                                        rise_time_ending=rise_time_ending,
+                                        shape='linear')
+
                     dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
                         dzt = dzt + dfrac * subfault.dtopo.dZ[0,:,:]
+                        
                 dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
                 if dZ is None:
                     dZ = dzt.copy()
@@ -1253,6 +1292,7 @@ class SubFault(object):
         r"""Longitude of the subfault based on *coordinate_specification*."""
         self.coordinate_specification = None
         r"""Specifies where the latitude, longitude and depth are measured from."""
+        self._projection_zone = None
 
         # default value for rigidity = shear modulus
         # Note that standard units for mu is now Pascals.
@@ -1471,7 +1511,7 @@ class SubFault(object):
                                             self._centers[0][1] 
                                                                  - up_strike[1])
 
-    def calculate_geometry_triangles(self):
+    def calculate_geometry_triangles(self,rake=90.):
         r"""
         Calculate geometry for triangular subfaults
 
@@ -1487,48 +1527,77 @@ class SubFault(object):
         if self.coordinate_specification == 'triangular':
 
             cos = numpy.cos
+            sin = numpy.sin
             atan = numpy.arctan
             atan2 = numpy.arctan2
             divide = numpy.divide
             sqrt = numpy.sqrt
             cross = numpy.cross
             norm = numpy.linalg.norm
+            rad2deg = numpy.rad2deg
+            deg2rad = numpy.deg2rad
 
             x0 = numpy.array(self.corners)
             x = x0.copy()
-
+            x = numpy.array(x0)
+            
             x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative(lazy)
 
-            x_ave = numpy.mean(x,axis=0)
-            
             # convert lat-long coordinate to Cartesian
-            x[:,0] *= LAT2METER * cos( DEG2RAD*x_ave[1] ) 
-            x[:,1] *= LAT2METER 
+            #x[:,0] *= LAT2METER * cos( DEG2RAD*x_ave[1] ) 
+            #x[:,1] *= LAT2METER 
 
-            # compute strike and dip direction
-            # e3: vertical 
-            # v1,v2: tangents from x0
-            e3 = numpy.array([0.,0.,1.])
+            if 0:
+                # old coordinate transform
+
+                # compute strike and dip direction
+                # e3: vertical 
+                # v1,v2: tangents from x0
+                e3 = numpy.array([0.,0.,1.])
+                v1 = x[1,:] - x[0,:]
+                v2 = x[2,:] - x[0,:]
+
+                v1[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
+                v2[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
+                v1[1] *= LAT2METER 
+                v2[1] *= LAT2METER 
+
+            x[:,0],x[:,1] = self._llz2utm(x[:,0],x[:,1],\
+                    projection_zone=self._projection_zone)
+
             v1 = x[1,:] - x[0,:]
             v2 = x[2,:] - x[0,:]
-            
-            normal = cross(v1,v2)
-            if (normal[2] < 0):
-                normal = -normal
-            normal = normal/norm(normal)
 
-            strikev = cross(e3,normal)   # vector in strike direction
-            if norm(strikev) < 1e-12:
-                strikev = numpy.array([0.,1.,0.])
-            dipv = cross(strikev,normal) # vector in dip direction
-            
-            strike_rad = atan2(strikev[0],strikev[1])
-            dip_rad =atan(divide(abs(dipv[2]),sqrt(dipv[0]**2+dipv[1]**2)))
+            e3 = numpy.array([0.,0.,1.])
+            normal = cross(v1,v2)
+            strikev = cross(normal,e3)   # vector in strike direction
+
+            ##if norm(strikev) < 1e-12:
+            #    #strikev = numpy.array([0.,1.,0.])
+            #dipv = cross(strikev,normal) # vector in dip direction
+            #
+            #strike_rad = numpy.arctan( -normal[1] / normal[0] )
+            #dip_rad =atan(divide(abs(dipv[2]),sqrt(dipv[0]**2+dipv[1]**2)))
+
+            a = normal[0]
+            b = normal[1]
+            c = normal[2]
+            #Compute strike
+            strike_deg = rad2deg(numpy.arctan(-b/a))
+            #Compute dip
+            #beta=strike_rad + numpy.pi/2.
+            beta = deg2rad(strike_deg + 90)
+            m = numpy.array([sin(beta),cos(beta),0]) #Points in dip direction
+            n = numpy.array([a,b,c]) #Normal to the plane
+            dip_deg = abs(rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n)))))
             
             # convert to degrees
-            self.strike = numpy.rad2deg(strike_rad)
-            self.dip = numpy.rad2deg(dip_rad)
-            self.rake = 90.     # set default rake to 90 degrees
+            #strike_deg = numpy.rad2deg(strike_rad)
+            if strike_deg < 0.:
+                strike_deg = 360 + strike_deg
+            self.strike = strike_deg
+            self.dip = dip_deg
+            self.rake = rake     # set default rake to 90 degrees
 
             # find the center line
             xx = numpy.zeros((3,3))
@@ -1553,13 +1622,12 @@ class SubFault(object):
             # this is set temporarily so that Fault.Mw() can be computed
 
             # first convert distances from lat/long to meters
-            v1[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v1[0])   
-            v1[1] = LAT2METER * (v1[1])
+            #v1[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v1[0])   
+            #v1[1] = LAT2METER * (v1[1])
 
-            v2[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v2[0])
-            v2[1] = LAT2METER * (v2[1])
+            #v2[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v2[0])
+            #v2[1] = LAT2METER * (v2[1])
 
-            normal = cross(v1,v2)
             area = norm(normal) / 2.
             self.length = sqrt(area)
             self.width = sqrt(area)
@@ -1569,20 +1637,20 @@ class SubFault(object):
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
 
-    def set_corners(self,corners):
+    def set_corners(self,corners,rake=90.,projection_zone=None):
         r"""
             set three corners for a triangular fault.
-
-            Input `corners` should be a 3 x 3 array.
+            Input *corners* should be iterable of length 3.
         """
 
         if len(corners) == 3:
             self._corners =\
                 [corners[0],corners[1],corners[2]]
+            self._projection_zone = projection_zone
             self.coordinate_specification = 'triangular'
-            self.calculate_geometry_triangles()
+            self.calculate_geometry_triangles(rake=rake)
         else:
-            raise ValueError("Input not understood")
+            raise ValueError("Expected input of length 3")
 
 
     def _get_unit_slip_vector(self):
@@ -1611,6 +1679,47 @@ class SubFault(object):
 
         return z
 
+
+    def _llz2utm(self,lon,lat,projection_zone=None):
+        '''
+        Convert lat,lon to UTM
+
+        originally written by Diego Melgar (Univ of Oregon)
+
+        '''
+        from numpy import zeros,where,chararray
+        import utm
+        from pyproj import Proj
+        from scipy.stats import mode
+
+        array_dims = lon.shape
+    
+        lon = lon.flatten()
+        lat = lat.flatten()
+        
+        x=zeros(lon.shape)
+        y=zeros(lon.shape)
+        zone=zeros(lon.shape)
+        #b=chararray(lon.shape) # gives byte error
+        b=len(lon)*['A']  # list of characters, modified in loop below
+        if projection_zone == None:
+            #Determine most suitable UTM zone
+            for k in range(len(lon)):
+                #x,y,zone[k],b[k]=utm.from_latlon(lat[k],360-lon[k])
+                x,y,zone[k],b[k]=utm.from_latlon(lat[k],lon[k])
+            zone_mode=mode(zone)
+            i=where(zone==zone_mode)[0]
+            letter=b[i[0]]
+            z=str(int(zone[0]))+letter
+        else:
+            z=projection_zone
+        #p0 = Proj(proj='utm',zone=z,ellps='WGS84')
+        p0 = Proj(proj='utm',zone=z,ellps='WGS84')
+        x,y=p0(lon,lat)
+        
+        x = x.reshape(array_dims)
+        y = y.reshape(array_dims)
+        return x,y
 
     
     def okada(self, x, y):
@@ -1714,7 +1823,7 @@ class SubFault(object):
             floor = numpy.floor
 
             X1,X2 = numpy.meshgrid(x, y)   # uppercase
-            X3 = numpy.zeros(X1.shape)  # depth zero
+            X3 = numpy.zeros(X1.shape)   # depth zero
 
     
             # compute burgers vector
@@ -1760,13 +1869,13 @@ class SubFault(object):
 
                 Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3 = \
                 self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
-                w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
-                self._get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
-                                Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
-
                 #w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
-                #self._get_angular_dislocations_surface(Y1,Y2,Y3,beta,Odepth)
+                #self._get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
+                               #Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
 
+                w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
+                self._get_angular_dislocations_surface(Y1,Y2,Y3,beta,Odepth)
+                
                 w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 self._coord_transform(w11,w12,w13,w21,w22,w23,w31,w32,w33,alpha)
             
@@ -1784,29 +1893,17 @@ class SubFault(object):
 
 
         
-            # burgersv[2] has opposite sign in yi-coordinates
-            #dX = v11*burgersv[0] + v21*burgersv[1] - v31*burgersv[2]
-            #dY = v12*burgersv[0] + v22*burgersv[1] - v32*burgersv[2]
-            #dZ = v13*burgersv[0] + v23*burgersv[1] - v33*burgersv[2]
-
-            dX = v11*burgersv[0] + v21*burgersv[1] - v31*burgersv[2]
-            dY = v12*burgersv[0] + v22*burgersv[1] - v32*burgersv[2]
-            dZ = v13*burgersv[0] + v23*burgersv[1] - v33*burgersv[2]
-
-            #dX = v11*burgersv[0] + v12*burgersv[1] + v13*burgersv[2]
-            #dY = v21*burgersv[0] + v22*burgersv[1] + v23*burgersv[2]
-            #dZ = v31*burgersv[0] + v32*burgersv[1] + v33*burgersv[2]
-
-            #dX = v11*burgersv[0] + v12*burgersv[1] 
-            #dY = v21*burgersv[0] + v22*burgersv[1] 
-            #dZ = v31*burgersv[0] + v32*burgersv[1] 
+            # linear combination for each component of Burgers vectors
+            dX = -v11*burgersv[0] - v12*burgersv[1] + v13*burgersv[2]
+            dY = -v21*burgersv[0] - v22*burgersv[1] + v23*burgersv[2]
+            dZ = -v31*burgersv[0] - v32*burgersv[1] + v33*burgersv[2]
 
             dtopo = DTopography()
             dtopo.X = X1    # X1, X2 varname confusing?
             dtopo.Y = X2
             dtopo.dX = numpy.array(dX, ndmin=3)
             dtopo.dY = numpy.array(dY, ndmin=3)
-            dtopo.dZ = numpy.array(-dZ, ndmin=3)
+            dtopo.dZ = numpy.array(dZ, ndmin=3)
             dtopo.times = [0.]
             self.dtopo = dtopo
 
@@ -1829,11 +1926,9 @@ class SubFault(object):
 
         # TODO: put in a coordinate_specification == 'triangular' check here
         x = numpy.array(self.corners)
-
         y = numpy.zeros(x.shape)
 
         # convert to meters
-        y[:,0] = LAT2METER * numpy.cos( DEG2RAD*x[:,1] ) * x[:,0]
         y[:,0] = LAT2METER * numpy.cos( DEG2RAD*self.latitude )*x[:,0]
         y[:,1] = LAT2METER * x[:,1]
         y[:,2] = - numpy.abs(x[:,2])    #lazy
@@ -2229,7 +2324,7 @@ class SubFault(object):
 
         cos = numpy.cos
         sin = numpy.sin
-        
+
         w11 = sin(alpha)*v11 + cos(alpha)*v12
         w12 = cos(alpha)*v11 - sin(alpha)*v12
         w13 = v13
@@ -2283,18 +2378,8 @@ class SubFault(object):
         Odepth = numpy.abs(Odepth)
         
         # convert lat/long to meters
-        #X1 = LAT2METER * (numpy.cos( DEG2RAD*X2 ) * X1 \
-        #X1 = LAT2METER * (numpy.cos( DEG2RAD*self.latitude ) * X1 \
-                          #- numpy.cos( DEG2RAD*self.latitude) * Olong)
         X1 = LAT2METER * numpy.cos( DEG2RAD*self.latitude ) * (X1 - Olong)
         X2 = LAT2METER * (X2 - Olat)
-
-        #Olong = LAT2METER * numpy.cos( DEG2RAD*self. ) * Olong 
-        #Olong = LAT2METER * numpy.cos( DEG2RAD*Olat ) * Olong 
-        #Olat = LAT2METER * Olat 
-
-        #X1 = X1 - Olong
-        #X2 = X2 - Olat
 
         Y1 = numpy.zeros(dims)       # yi-coordinates
         Y2 = numpy.zeros(dims)       # yi-coordinates
@@ -2315,7 +2400,7 @@ class SubFault(object):
         # rotate by -alpha in long/lat plane
         Y1 = numpy.sin(alpha)*X1 + numpy.cos(alpha)*X2
         Y2 = numpy.cos(alpha)*X1 - numpy.sin(alpha)*X2
-        Y3 = X3 - Odepth 
+        Y3 = X3 - numpy.abs(Odepth)
         
         Z1 = numpy.cos(beta)*Y1 - numpy.sin(beta)*Y3
         Z2 = Y2
@@ -2323,7 +2408,7 @@ class SubFault(object):
 
         Yb1 = Y1
         Yb2 = Y2
-        Yb3 = X3 + Odepth  
+        Yb3 = X3 + numpy.abs(Odepth)
 
         Zb1 =  numpy.cos(beta)*Y1 + numpy.sin(beta)*Yb3
         Zb2 =  Y2
@@ -2390,7 +2475,7 @@ class SubFault(object):
         r = numpy.sqrt(y1**2 + y2**2 + q**2)
         xx = numpy.sqrt(y1**2 + q**2)
         a4 = 2.0*poisson/cs*(numpy.log(r+d_bar) - sn*numpy.log(r+y2))
-        f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*3.14159)
+        f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*numpy.pi)
     
         return f
     
@@ -2407,7 +2492,7 @@ class SubFault(object):
         r = numpy.sqrt(y1**2 + y2**2 + q**2)
         xx = numpy.sqrt(y1**2 + q**2)
         a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
-        f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
+        f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*numpy.pi)
     
         return f
 
