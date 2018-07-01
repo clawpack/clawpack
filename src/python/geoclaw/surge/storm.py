@@ -43,6 +43,18 @@ ATCF_basins = {"AL": "Atlantic",
                "LS": "Southern Atlantic",
                "WP": "North West Pacific"}
 
+# TCVitals basins with their expanded names
+# see http://www.emc.ncep.noaa.gov/HWRF/tcvitals-draft.html
+TCVitals_Basins = {"L": "North Atlantic",
+                   "E": "North East Pacific",
+                   "C": "North Central Pacific",
+ 		   "W": "North West Pacific",
+		   "B": "Bay of Bengal (North Indian Ocean)",
+		   "A": "Arabian Sea (North Indian Ocean)",
+		   "Q": "South Atlantic",
+		   "P": "South Pacific",
+		   "S": "South Indian Ocean"}
+
 # Tropical Cyclone Designations
 # see https://www.nrlmry.navy.mil/atcf_web/docs/database/new/abrdeck.html
 TC_designations = {"DB": "disturbance",
@@ -482,10 +494,72 @@ class Storm(object):
 
         Return ValueError if format incorrect or if file not IMD.
         """
-        raise NotImplementedError(("Reading in IMD files is not implemented ",
-                                   "yet but is planned for a future release."))
+ 
+        # Read the imd file
+        data_block = []
+        with open(path, 'r') as IMD_File:
+            for line in IMD_File:
+                line = line.split(",")
+                line = [value.strip() for value in line]
+                #add line to data_block if line has data
+                try:
+                    float(line[0])
+                    float(line[5])
+                    float(line[6])
+                    float(line[8])
+                    float(line[9])
+                    data_block.append(line)
+                except:
+                    pass
+        num_lines = len(data_block)
+
+        # initialize empty arrays for Storm attributes
+        self.t = []
+        self.classification = numpy.empty(num_lines, dtype=str)
+        self.eye_location = numpy.empty((num_lines, 2))
+        self.max_wind_speed = numpy.empty(num_lines)
+        self.central_pressure = numpy.empty(num_lines)
+        self.max_wind_radius = numpy.empty(num_lines)
+        self.storm_radius = numpy.empty(num_lines)
+
+        for (i, data) in enumerate(data_block):
+
+            # End at an empty lines - skips lines at the bottom of a file
+            if len(data) == 0:
+                break
+
+            # Grab data regarding basin and cyclone number if we are starting
+            if i == 0:
+                self.basin = data[1]
+                self.ID = int(data[0])
+
+            # If no date copy date from previous row
+            if data[3] == '':
+                data[3] = data_block[i-1][3]
+            # Create time
+            self.t.append(datetime.datetime(int(data[3][6:]),
+                                            int(data[3][3:5]),
+                                            int(data[3][:2]),
+                                            int(data[4])//100))
+           
+            # Classification, note that this is not the category of the storm
+            self.classification[i] = data[11]
+
+            # Parse eye location - longitude/latitude order
+            self.eye_location[i, 1] = float(data[5])
+            self.eye_location[i, 0] = float(data[6])
+
+            # Intensity information
+            self.max_wind_speed[i] = float(data[9]) * 0.51444444
+            self.central_pressure[i] = float(data[8])
+         
+            # Does not contain max wind radius and outer storm radius
+            # - set those to -1 to mark them as missing
+            self.storm_radius[i] = -1
+            self.max_wind_radius[i] = -1
 
     def read_tcvitals(self, path, verbose=False):
+
         r"""Extract relevant hurricane data from TCVITALS file
             and update storm fields with proper values.
 
@@ -495,123 +569,60 @@ class Storm(object):
 
         """
 
-        raise NotImplementedError(("Reading in TCVITALS files is not implemented",
-                                   "yet but is planned for a future release."))
+        # read in TCVitals_file
+        data_block = []
+        with open(path, 'r') as TCVitals_file:
+            data = TCVitals_file.readlines()
+            for line in data:
+                line = line.split()
+                line = [value.strip() for value in line]
+                data_block.append(line)
+        num_lines = len(data_block)
 
-        try:
-            import requests
-        except ImportError as e:
-            print("The 'requests' module is required to read TCVitals data.")
-            raise e
+        # Parse data block - convert to correct units
+        # Conversions:
+        #  max_wind_radius  - convert from km to m - 1000.0
+        #  Central_pressure - convert from mbar to Pa - 100.0
+        #  Radius of last isobar contour - convert from km to m - 1000.0
+        self.t = []
+        self.classification = numpy.empty(num_lines, dtype=str)
+        self.eye_location = numpy.empty((num_lines, 2))
+        self.max_wind_speed = numpy.empty(num_lines)
+        self.central_pressure = numpy.empty(num_lines)
+        self.max_wind_radius = numpy.empty(num_lines)
+        self.storm_radius = numpy.empty(num_lines)
+         
+        for (i, data) in enumerate(data_block):
+            # End at an empty lines - skips lines at the bottom of a file
+            if len(data) == 0:
+                break
 
-        try:
-            from bs4 import BeautifulSoup
-        except ImportError as e:
-            print("BeautfulSoup is required for reading in TCVitals data.")
-            raise e
-
-        if int(year) < 2011:
-            err_msg = "Years not contained on this page"
-            raise ValueError(err_msg)
-        else:
-            if int(year) == 2016:
-                file_directory_url = "".join((path))
+            # Grab data regarding basin and cyclone number if we are starting
+            if i == 0:
+                self.basin = TCVitals_Basins[data[1][2:]]
+                self.ID = int(data[1][:2])
+                   
+            # Create time
+            self.t.append(datetime.datetime(int(data[3][0:4]),
+                                            int(data[3][4:6]),
+                                            int(data[3][6:]),
+                                            int(data[4][:2])))
+            
+            # Parse eye location - longitude/latitude order
+            if data[5][-1] == 'N':
+                self.eye_location[i, 1] = float(data[5][0:-1])/10.0
             else:
-                file_directory_url = "".join((path, year, '/'))
-            print('File Directory URL:', file_directory_url)
-            storm_directory_page = requests.get(file_directory_url)
-            soup = BeautifulSoup(storm_directory_page.content,
-                                 'html.parser')
-            storm_directory_links = soup.find_all('a')
-            storm_files = []
-            for link in storm_directory_links:
-                if ".dat" in str(link):
-                    if "combined" in str(link):
-                        continue
-                    else:
-                        storm_files.append(str(link)[9:35])
+                self.eye_location[i, 1] = -float(data[5][0:-1])/10.0
+            if data[6][-1] == "E":
+                self.eye_location[i, 0] = float(data[6][0:-1])/10.0
+            else:
+                self.eye_location[i, 0] = -float(data[6][0:-1])/10.0
 
-            found = False
-            for data_file_name in storm_files:
-                data_file_url = "".join((file_directory_url,
-                                         data_file_name))
-                unpack = True
-                data_path = clawpack.clawutil.data.get_remote_file(
-                                              data_file_url, unpack=unpack)
-                with open(data_path, 'r') as data:
-                    for line in data:
-                        self.name = line.split()[2]
-                        if name.upper() == self.name.upper():
-                            found = True
-                            break
-                        else:
-                            continue
-                data.close()
-
-                if found:
-                    storm_file_url = data_file_url
-                    self.name = name.upper()
-                    print('Storm File URL', storm_file_url)
-                    os.remove(data_path)
-                    break
-                else:
-                    os.remove(data_path)
-                    continue
-
-            if not found:
-                return("Storm not found for the year you specified.")
-
-            storm_path = clawpack.clawutil.data.get_remote_file(
-                                               storm_file_url, unpack=True)
-
-            data_block = []
-            with open(storm_path, 'r') as tcvitals_file:
-                data_block = tcvitals_file.readlines()
-            print('data_block', data_block)
-
-            num_lines = len(data_block)
-
-            # Parse data block
-            self.t = []
-            self.event = numpy.empty(num_lines, dtype=str)
-            self.classification = numpy.empty(num_lines, dtype=str)
-            self.eye_location = numpy.empty((num_lines, 2))
-            self.max_wind_speed = numpy.empty(num_lines)
-            self.central_pressure = numpy.empty(num_lines)
-            self.max_wind_radius = numpy.empty(num_lines)
-            self.storm_radius = numpy.empty(num_lines)
-
-            len_data = []
-
-            for (i, line) in enumerate(data_block):
-                if len(line) == 0:
-                    break
-                data = [value.strip() for value in line.split()]
-
-                self.t.append(datetime.datetime(int(data[3][0:4]),
-                                                int(data[3][4:6]),
-                                                int(data[3][6:8]),
-                                                int(data[4][0:2]),
-                                                int(data[4][2:])))
-
-                self.event[i] = data[1][-1]
-                if self.event[i] == 'L':
-                    self.time_offset = self.t[i]
-
-                if data[5][-1] == 'N':
-                    self.eye_location[i, 0] = float(data[5][0:-1])/10
-                else:
-                    self.eye_location[i, 0] = -float(data[5][0:-1])/10
-                if data[6][-1] == "E":
-                    self.eye_location[i, 1] = float(data[6][0:-1])/10
-                else:
-                    self.eye_location[i, 1] = -float(data[6][0:-1])/10
-
-                # Intensity Information
-                self.max_wind_speed[i] = float(data[8])
-                self.central_pressure[i] = float(data[9])
-                self.max_wind_radius[i] = float(data[11])
-                self.storm_radius[i] = float(data[13])
+            # Intensity Information
+            self.max_wind_speed[i] = float(data[12])
+            self.central_pressure[i] = float(data[9]) * 100.0
+            self.max_wind_radius[i] = float(data[13]) * 1000.0
+            self.storm_radius[i] = float(data[11]) * 1000.0
 
     # =========================================================================
     # Write Routines
