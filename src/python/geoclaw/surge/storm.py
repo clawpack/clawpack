@@ -11,7 +11,7 @@ ensembles of storms from various providers is also included.
     - HURDAT (reading only)
     - JMA (reading only)
     - IMD (planned)
-    - tcvitals (planned)
+    - tcvitals (reading only)
 """
 
 from __future__ import print_function
