@@ -49,6 +49,8 @@ units['length'] = collections.OrderedDict({'m': 'meters', 'cm': 'centimeters',
 
 # Pressure - Rigidity
 conversion_func['Pa'] = [lambda P: P, lambda P: P]
+conversion_func['hPa'] = [lambda P: P * 1e2, 
+                          lambda P: P / 1e2]
 conversion_func['KPa'] = [lambda P: P * 1e3,
                           lambda P: P / 1e3]
 conversion_func['MPa'] = [lambda P: P * 1e6,
@@ -61,10 +63,10 @@ conversion_func['dyne/cm^2'] = [lambda P: P * 0.1,
                                 lambda P: P / 0.1]
 conversion_func['dyne/m^2'] = [lambda P: P * 1.e-5,
                                lambda P: P / 1.e-5]
-units['pressure'] = {'Pa': 'pascals', 'KPa': 'kilopascals', 
-                     'MPa': 'megapascals', 'GPa': 'gigapascals', 
-                     'mbar': 'millibar', 'dyne/cm^2': 'Dynes/cm^2', 
-                     'dyne/m^2': 'Dynes/m^2'}
+units['pressure'] = {'Pa': 'pascals', 'hPa': 'hectopascals', 
+                     'KPa': 'kilopascals', 'MPa': 'megapascals', 
+                     'GPa': 'gigapascals', 'mbar': 'millibar', 
+                     'dyne/cm^2': 'Dynes/cm^2', 'dyne/m^2': 'Dynes/m^2'}
 
 # Speeds
 conversion_func['m/s'] = [lambda v: v, lambda v: v]

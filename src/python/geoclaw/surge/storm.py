@@ -317,8 +317,8 @@ class Storm(object):
                 self.eye_location[i, 0] = -float(data[7][0:-1]) / 10.0
 
             # Intensity information
-            self.max_wind_speed[i] = float(data[8]) * 0.51444444
-            self.central_pressure[i] = float(data[9]) * 100.0
+            self.max_wind_speed[i] = units.convert(float(data[8]), 'knots', 'm/s')
+            self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
 
             # Mark if this is a shortened line - does not contain max wind 
             # radius and outer storm radius - set those to -1 to mark them as
@@ -327,10 +327,8 @@ class Storm(object):
                 self.storm_radius[i] = -1
                 self.max_wind_radius[i] = -1
             else:
-                self.storm_radius[i] = (float(data[18]) * 1.852000003180799
-                                        * 1000.0)
-                self.max_wind_radius[i] = (float(data[19]) * 1.852000003180799
-                                           * 1000.0)
+                self.storm_radius[i] = units.convert(float(data[18]), 'nmi', 'm')
+                self.max_wind_radius[i] = units.convert(float(data[19]), 'nmi', 'm')
 
     def read_hurdat(self, path, verbose=False):
         r"""Read in HURDAT formatted storm file
@@ -412,8 +410,8 @@ class Storm(object):
 
             # Intensity information - radii are not included directly in this
             # format and instead radii of winds above a threshold are included
-            self.max_wind_speed[i] = float(data[6])
-            self.central_pressure[i] = float(data[7])
+            self.max_wind_speed[i] = units.convert(float(data[6]), 'knots', 'm/s')
+            self.central_pressure[i] = units.convert(float(data[7]), 'mbar', 'Pa')
             warnings.warn(missing_data_warning_str)
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
@@ -478,8 +476,8 @@ class Storm(object):
             # Intensity information - current the radii are not directly given
             # Available data includes max/min of radius of winds of 50 and 
             # 30 kts instead
-            self.central_pressure[i] = float(data[5])
-            self.max_wind_speed[i] = float(data[6])
+            self.central_pressure[i] = units.convert(float(data[5]), 'hPa', 'Pa')
+            self.max_wind_speed[i] = units.convert(float(data[6]), 'knots', 'm/s')
             warnings.warn(missing_data_warning_str)
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
