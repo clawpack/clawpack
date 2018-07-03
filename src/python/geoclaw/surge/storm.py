@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 from six.moves import range
 
+import warnings
 import sys
 import os
 import argparse
@@ -72,6 +73,14 @@ hurdat_special_entries = {"L": "landfall",
                           "S": "status change",
                           "G": "genesis",
                           "T": "additional track point"}
+
+
+# Warning for formats that have yet to have a default way to determine crticial
+# radii from the input data
+missing_data_warning_str = """*** Cannot yet automatically determine the
+    maximum wind radius.  Will write out GeoClaw
+    formats but note that these will not work
+    when running GeoClaw currently."""
 
 
 # =============================================================================
@@ -405,6 +414,7 @@ class Storm(object):
             # format and instead radii of winds above a threshold are included
             self.max_wind_speed[i] = float(data[6])
             self.central_pressure[i] = float(data[7])
+            warnings.warn(missing_data_warning_str)
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
@@ -470,6 +480,7 @@ class Storm(object):
             # 30 kts instead
             self.central_pressure[i] = float(data[5])
             self.max_wind_speed[i] = float(data[6])
+            warnings.warn(missing_data_warning_str)
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
@@ -649,13 +660,17 @@ class Storm(object):
          - *max_wind_radius_fill* (func) Function that can be used to fill in
            missing data for `max_wind_radius` values.  This defaults to simply 
            setting the value to -1.  The function signature should be
-           `max_wind_radius(t, storm)` whre t is the time of the forecast and
-           `storm` is the storm object.
+           `max_wind_radius(t, storm)` where t is the time of the forecast and
+           `storm` is the storm object.  Note that if this or `storm_radius` 
+           field remains -1 that this data line will be assumed to be redundant 
+           and not be written out.
          - *storm_radius_fill* (func) Function that can be used to fill in
            missing data for `storm_radius` values.  This defaults to simply 
            setting the value to -1.  The function signature should be
-           `storm_radius(t, storm)` whre t is the time of the forecast and
-           `storm` is the storm object.
+           `storm_radius(t, storm)` where t is the time of the forecast and
+           `storm` is the storm object.  Note that if this or `max_wind_radius` 
+           field remains -1 that this data line will be assumed to be redundant 
+           and not be written 
         """
 
         if max_wind_radius_fill is None:
@@ -663,46 +678,63 @@ class Storm(object):
         if storm_radius_fill is None:
             storm_radius_fill = lambda t, storm: -1
 
-        # Remove duplicate times
-        num_casts = len(self.t)
-        for n in range(1, len(self.t)):
-            if self.t[n] == self.t[n - 1]:
-                num_casts -= 1
+        # Create list for output
+        # Leave this first line blank as we need to count the actual valid lines
+        # that will be left in the file below
+        num_casts = 0
+        data_string = [""]
+        if self.time_offset is None:
+            # Use the first time in sequence if not provided
+            self.time_offset = self.t[0]
+        import pdb; pdb.set_trace()
+        data_string.append("%s\n\n" % self.time_offset.isoformat())
+        for n in range(len(self.t)):
+            # Remove duplicate times
+            if n > 0:
+                if self.t[n] == self.t[n - 1]:
+                    continue
 
+            format_string = ("{:19,.8e} " * 7)[:-1] + "\n"
+            data = []
+            data.append((self.t[n] - self.time_offset).total_seconds())
+            data.append(self.eye_location[n, 0])
+            data.append(self.eye_location[n, 1])
+            data.append(self.max_wind_speed[n])
+            # Allow custom function to set max wind radius if not 
+            # available
+            if self.max_wind_radius[n] == -1:
+                new_wind_radius = max_wind_radius_fill(self.t[n], self)
+                if new_wind_radius == -1:
+                    continue
+                else:
+                    data.append(new_wind_radius)
+            else:
+                data.append(self.max_wind_radius[n])
+            
+            data.append(self.central_pressure[n])
+            
+            # Allow custom function to set storm radius if not available
+            if self.storm_radius[n] == -1:
+                new_storm_radius = storm_radius_fill(self.t[n], self)
+                if new_storm_radius == -1:
+                    continue
+                else:
+                    data.append(new_storm_radius)
+            else:
+                data.append(self.storm_radius[n])
+
+            data_string.append(format_string.format(*data))
+            num_casts += 1
+
+
+        # Write to actual file now that we know exactly how many lines it will
+        # contain
         try:
-            with open(path, 'w') as data_file:
-                data_file.write("%s\n" % num_casts)
-                if self.time_offset is None:
-                    # Use the first time in sequence if not provided
-                    self.time_offset = self.t[0]
-                data_file.write("%s\n\n" % self.time_offset.isoformat())
-                for n in range(len(self.t)):
-                    if n > 0:
-                        if self.t[n] == self.t[n - 1]:
-                            continue
-
-                    format_string = ("{:19,.8e} " * 7)[:-1] + "\n"
-                    data = []
-                    data.append((self.t[n] - self.time_offset).total_seconds())
-                    data.append(self.eye_location[n, 0])
-                    data.append(self.eye_location[n, 1])
-                    data.append(self.max_wind_speed[n])
-                    # Allow custom function to set max wind radius if not 
-                    # available
-                    if self.max_wind_radius[n] == -1:
-                        data.append(max_wind_radius_fill(self.t[n], self))
-                    else:
-                        data.append(self.max_wind_radius[n])
-                    
-                    data.append(self.central_pressure[n])
-                    
-                    # Allow custom function to set storm radius if not available
-                    if self.storm_radius[n] == -1:
-                        data.append(storm_radius_fill(self.t[n], self))
-                    else:
-                        data.append(self.storm_radius[n])
-
-                    data_file.write(format_string.format(*data))
+            # Update number of forecasts here
+            data_string[0] = "%s\n" % num_casts
+            with open(path, "w") as data_file:
+                for data_line in data_string:
+                    data_file.write(data_line)
 
         except Exception as e:
             # Remove possibly partially generated file if not successful

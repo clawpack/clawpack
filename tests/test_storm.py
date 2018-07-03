@@ -97,6 +97,13 @@ def test_storm_IO(save=False):
 
             # Read in test data and write it back out in the GeoClaw format
             test_storm = storm.Storm(input_path, file_format=file_format)
+            
+            # Temporary testing thing to get around missing data in formats that
+            # do not provide the proper radii
+            if file_format in ['hurdat', 'jma']:
+                test_storm.max_wind_radius[:] = 0.0
+                test_storm.storm_radius[:] = 0.0
+
             test_storm.write(out_path, file_format="geoclaw")
 
             # Save new geoclaw test files into check_path if requested
