@@ -686,7 +686,6 @@ class Storm(object):
         if self.time_offset is None:
             # Use the first time in sequence if not provided
             self.time_offset = self.t[0]
-        import pdb; pdb.set_trace()
         data_string.append("%s\n\n" % self.time_offset.isoformat())
         for n in range(len(self.t)):
             # Remove duplicate times
