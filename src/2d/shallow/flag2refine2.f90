@@ -21,9 +21,9 @@
 !
 ! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
-                       tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
+                       tolsp,q,aux,amrflags)
 
-    use amr_module, only: mxnest, t0
+    use amr_module, only: mxnest, t0, DOFLAG, UNSET
     use geoclaw_module, only:dry_tolerance, sea_level
     use geoclaw_module, only: spherical_distance, coordinate_system
 
@@ -53,8 +53,6 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
 
     ! Flagging
     real(kind=8), intent(in out) :: amrflags(1-mbuff:mx+mbuff,1-mbuff:my+mbuff)
-    real(kind=8), intent(in) :: DONTFLAG
-    real(kind=8), intent(in) :: DOFLAG
 
     logical :: allowflag
     external allowflag
@@ -67,8 +65,9 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     ! Storm specific variables
     real(kind=8) :: R_eye(2), wind_speed
 
-    ! Initialize flags
-    amrflags = DONTFLAG
+    ! Don't initialize flags, since they were already
+    ! flagged by flagregions2
+    ! amrflags = DONTFLAG
 
     ! Loop over interior points on this grid
     ! (i,j) grid cell is [x_low,x_hi] x [y_low,y_hi], cell center at (x_c,y_c)
@@ -128,19 +127,6 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                 endif
             enddo
 
-            ! Check to see if refinement is forced in any other region:
-            do m=1,num_regions
-                if (level < regions(m)%min_level .and. &
-                    t >= regions(m)%t_low .and. t <= regions(m)%t_hi) then
-                    if (x_hi > regions(m)%x_low .and. x_low < regions(m)%x_hi .and. &
-                        y_hi > regions(m)%y_low .and. y_low < regions(m)%y_hi ) then
-
-                        amrflags(i,j) = DOFLAG
-                        cycle x_loop
-                    endif
-                endif
-            enddo
-
             ! Check if we're in the dtopo region and need to refine:
             ! force refinement to level minleveldtopo
             do m = 1,num_dtopo
@@ -169,9 +155,12 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             endif
 
             ! -----------------------------------------------------------------
-            ! Refinement not forced, so check if it is allowed and if so,
-            ! check if there is a reason to flag this point:
-            if (allowflag(x_c,y_c,t,level)) then
+            ! Refinement not forced, so check if it is allowed 
+            ! and if the flag is still UNSET. If so,
+            ! check if there is a reason to flag this point.
+            ! If flag == DONTFLAG then refinement is forbidden by a region,
+            ! if flag == DOFLAG checking is not needed
+            if (allowflag(x_c,y_c,t,level) .and. amrflags(i,j) == UNSET) then
 
                 if (q(1,i,j) > dry_tolerance) then
                     eta = q(1,i,j) + aux(1,i,j)
