@@ -96,7 +96,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                         ds = sqrt((x_c - R_eye(1))**2 + (y_c - R_eye(2))**2)
                     end if
                     
-                    if ( ds < R_refine(m) .and. level <= m ) then
+                    if ( ds < R_refine(m) .and. level <= m .and. amrflags(i,j) == UNSET) then
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
                     endif
@@ -106,7 +106,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                 if (wind_forcing) then
                     wind_speed = sqrt(aux(wind_index,i,j)**2 + aux(wind_index+1,i,j)**2)
                     do m=1,size(wind_refine,1)
-                        if ((wind_speed > wind_refine(m)) .and. (level <= m)) then
+                        if ((wind_speed > wind_refine(m)) .and. (level <= m) &
+                             .and. amrflags(i,j) == UNSET) then
                             amrflags(i,j) = DOFLAG
                             cycle x_loop
                         endif
@@ -119,7 +120,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             do m=1,mtopofiles
                 if (level < minleveltopo(m) .and. t >= tlowtopo(m) .and. t <= thitopo(m)) then
                     if (  x_hi > xlowtopo(m) .and. x_low < xhitopo(m) .and. &
-                          y_hi > ylowtopo(m) .and. y_low < yhitopo(m) ) then
+                          y_hi > ylowtopo(m) .and. y_low < yhitopo(m) &
+                           .and. amrflags(i,j) == UNSET) then
 
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
@@ -133,7 +135,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                 if (level < minleveldtopo(m).and. &
                     t <= tfdtopo(m) .and. & !t.ge.t0dtopo(m).and.
                     x_hi > xlowdtopo(m) .and. x_low < xhidtopo(m).and. &
-                    y_hi > ylowdtopo(m) .and. y_low < yhidtopo(m)) then
+                    y_hi > ylowdtopo(m) .and. y_low < yhidtopo(m) &
+                    .and. amrflags(i,j) == UNSET) then
 
                     amrflags(i,j) = DOFLAG
                     cycle x_loop
@@ -144,7 +147,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! specified and need to force refinement:
             ! This assumes that t0 = 0.d0, should really be t0 but we do
             ! not have access to that parameter in this routine
-            if (qinit_type > 0 .and. t == t0) then
+            if (qinit_type > 0 .and. t == t0 .and. amrflags(i,j) == UNSET) then
                 if (level < min_level_qinit .and. &
                     x_hi > x_low_qinit .and. x_low < x_hi_qinit .and. &
                     y_hi > y_low_qinit .and. y_low < y_hi_qinit) then
