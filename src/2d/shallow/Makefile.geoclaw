@@ -35,7 +35,6 @@ COMMON_SOURCES += \
   $(AMRLIB)/quick_sort1.f \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/check4nans.f90 \
-  $(AMRLIB)/spest2.f  \
   $(AMRLIB)/init_iflags.f \
   $(AMRLIB)/igetsp.f \
   $(AMRLIB)/reclam.f \
