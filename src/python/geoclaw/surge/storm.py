@@ -5,6 +5,22 @@ Module defines a class and routines for managing storm best-track type input and
 testing reconstructed wind and pressure fields.  Additionally some support for 
 ensembles of storms from various providers is also included.
 
+The primary class of interest in the module is the `Storm` class that
+facilitates dealing with various best-track formats found around the world and
+the expected GeoClaw storm format that is read into the FORTRAN code.  The basic
+workflow in a `setrun.py` file would do the following:
+
+1. Create a `Storm` object by reading in from a file::
+
+    storm = clawpack.geoclaw.surge.storm.Storm("my_storm.txt", file_format='ATCF')
+
+2. Write out the storm object created into the GeoClaw format::
+
+    storm.write("my_geoclaw_storm.txt", file_format="geoclaw")
+
+3. Specify the path to the GeoClaw formatted storm file, in this case 
+   "my_geoclaw_storm.txt".
+
 :Formats Supported:
     - GeoClaw (fully)
     - ATCF (reading only)
@@ -106,9 +122,9 @@ class Storm(object):
        Note that when written some formats require a *time_offset* to be set.
      - *eye_location* (ndarray(:, :)) location of the eye of the storm.
        Default units are in signed decimcal longitude and latitude.
-     - *max_wind_speed (ndarray(:)) Maximum wind speed.  Default units are
+     - *max_wind_speed* (ndarray(:)) Maximum wind speed.  Default units are
        meters/second.
-     - *max_wind_radius (ndarray(:)) Radius at which the maximum wind speed
+     - *max_wind_radius* (ndarray(:)) Radius at which the maximum wind speed
        occurs.  Default units are meters.
      - *central_pressure* (ndarray(:)) Central pressure of storm.  Default
        units are Pascals.
@@ -183,7 +199,7 @@ class Storm(object):
 
         :Input:
          - *path* (string) Path to data file.
-         - *file_format (string) Format of the data file.  See list of
+         - *file_format* (string) Format of the data file.  See list of
            supported formats for a list of valid strings.  Defaults to
            "hurdat".
          - *kwargs* (dict) Keyword dictionary for additional arguments that can
@@ -629,7 +645,7 @@ class Storm(object):
 
         :Input:
          - *path* (string) Path to data file.
-         - *file_format (string) Format of the data file.  See list of
+         - *file_format* (string) Format of the data file.  See list of
            supported formats for a list of valid strings.  Defaults to
            "geoclaw".
          - *kwargs* (dict) Keyword dictionary for additional arguments that can
