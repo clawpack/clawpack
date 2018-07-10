@@ -25,6 +25,7 @@ workflow in a `setrun.py` file would do the following:
     - GeoClaw (fully)
     - ATCF (reading only)
     - HURDAT (reading only)
+    - IBTrACS (reading only)
     - JMA (reading only)
     - IMD (planned)
     - tcvitals (planned)
@@ -32,7 +33,6 @@ workflow in a `setrun.py` file would do the following:
 
 from __future__ import print_function
 from __future__ import absolute_import
-
 from six.moves import range
 
 import warnings
@@ -40,6 +40,8 @@ import sys
 import os
 import argparse
 import datetime
+import xarray as xr
+from pandas import to_datetime
 
 import numpy
 
@@ -151,6 +153,7 @@ class Storm(object):
     _supported_formats = {"geoclaw": ["GeoClaw", "http://www.clawpack.org/storms"],
                           "atcf": ["ATCF", "http://www.nrlmry.navy.mil/atcf_web/docs/database/new/database.html"],
                           "hurdat": ["HURDAT", "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"],
+                          "ibtracs": ["IBTrACS", "ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"],
                           "jma": ["JMA", "http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html"],
                           "imd": ["IMD", "http://www.rsmcnewdelhi.imd.gov.in/index.php"],
                           "tcvitals": ["TC-Vitals", "http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm"]}
@@ -220,6 +223,7 @@ class Storm(object):
                         "files:",
                         " - ATCF - http://ftp.nhc.noaa.gov/atcf/archive/",
                         " - HURDAT - http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html",
+                        " - IBTrACS - ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"
                         " - JMA - http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/besttrack.html",
                         " - IMD - http://www.rsmcnewdelhi.imd.gov.in/index.php",
                         " - TCVITALS - http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm")
@@ -432,6 +436,88 @@ class Storm(object):
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
+    def read_ibtracs(self, path, storm_name, year):
+        r"""Read in IBTrACS formatted storm file
+
+        This reads in the netcdf-formatted IBTrACS v4 BETA data. The .nc
+        file passed as *path* must contain a storm matching *storm_name*
+        and *year*. This function will be updated, if needed, once the BETA
+        version becomes an operational release.
+
+        NOTE: Thus far, only the reading of hurdat/atcf-based best tracks (i.e. USA
+        tracks) is supported. 
+
+        TODO: account for data formats from other reporting agencies
+
+        For more details on the IBTrACS v4 BETA format and getting data see
+
+        ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional/
+
+        :Input:
+         - *path* (string) Path to the file to be read.
+         - *storm_name* (string) name of storm of interest (NAME field in IBTrACS).
+         - *year* (int) year of storm of interest
+
+        :Raises:
+         - *ValueError* If the method cannot find the name/year matching the
+           storm then a value error is risen.
+        """
+
+        storm_name = storm_name.upper()
+        with xr.open_dataset(path,drop_variables=['time']) as ds:
+
+            ## SLICE IBTRACS DATASET
+
+            # match on storm-name and year
+            storm_match = (ds.name == storm_name.encode())
+            dts = xr.DataArray.from_series(to_datetime(ds.iso_time.astype(str).to_series())).values
+            ds.iso_time.values = dts
+            year_match = (ds.iso_time.dt.year == year).any(dim='time')
+            ds = ds.sel(storm=(year_match & storm_match)).squeeze()
+            # make sure 
+            if ('storm' in ds.dims.keys()) and (ds.storm.shape[0] == 0):
+                raise ValueError('Storm/year not found in provided file')
+
+            # include only valid time points for this storm
+            # i.e. when we have max wind values
+            ds = ds.sel(time=(ds.wmo_wind>=0))
+
+
+            ## CONVERT TO GEOCLAW FORMAT
+
+            # assign basin to be the basin where track originates
+            # in case track moves across basins
+            self.basin = ds.basin.values[0].astype(str)
+            self.name = storm_name
+            self.ID = ds.sid.astype(str).item()
+
+            # convert datetime64 to datetime.datetime
+            self.t = []
+            for d in ds.iso_time:
+                t = d.dt
+                self.t.append(datetime.datetime(t.year,t.month,t.day,t.hour,t.minute,t.second))
+
+            ## events
+            self.event = ds.usa_record.values.astype(str)
+
+            # time offset
+            self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+
+            # Classification, note that this is not the category of the storm
+            self.classification = ds.usa_status.values
+            self.eye_location = numpy.array([ds.lat,ds.lon]).T
+
+            # Intensity information - for now, including only common, basic intensity
+            # info.
+            # TODO: add more detailed info for storms that have it
+            self.max_wind_speed = units.convert(ds.wmo_wind,'knots','m/s').values
+            self.central_pressure = units.convert(ds.wmo_pres,'mbar','Pa').values
+            self.max_wind_radius = units.convert(ds.usa_rmw,'nmi','m').where(
+                    ds.usa_rmw >= 0,-1).values
+            self.storm_radius = units.convert(ds.usa_roci,'nmi','m').where(
+                    ds.usa_roci >= 0,-1).values
+
+            
     def read_jma(self, path, verbose=False):
         r"""Read in JMA formatted storm file
 
