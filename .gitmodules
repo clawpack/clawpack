@@ -15,7 +15,7 @@
 	url = git@github.com:clawpack/amrclaw
 [submodule "geoclaw"]
 	path = geoclaw
-	url = https://github.com/mandli/geoclaw.git
+	url = https://github.com/bolliger32/geoclaw.git
 [submodule "classic"]
 	path = classic
 	url = git@github.com:clawpack/classic
