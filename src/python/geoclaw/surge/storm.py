@@ -420,13 +420,13 @@ class Storm(object):
 
             # Parse eye location
             if data[4][-1] == "N":
-                self.eye_location[i, 0] = float(data[4][0:-1])
+                self.eye_location[i, 1] = float(data[4][0:-1])
             else:
-                self.eye_location[i, 0] = -float(data[4][0:-1])
+                self.eye_location[i, 1] = -float(data[4][0:-1])
             if data[5][-1] == "E":
-                self.eye_location[i, 1] = float(data[5][0:-1])
+                self.eye_location[i, 0] = float(data[5][0:-1])
             else:
-                self.eye_location[i, 1] = -float(data[5][0:-1])
+                self.eye_location[i, 0] = -float(data[5][0:-1])
 
             # Intensity information - radii are not included directly in this
             # format and instead radii of winds above a threshold are included
@@ -505,7 +505,7 @@ class Storm(object):
 
             # Classification, note that this is not the category of the storm
             self.classification = ds.usa_status.values
-            self.eye_location = numpy.array([ds.lat,ds.lon]).T
+            self.eye_location = numpy.array([ds.lon,ds.lat]).T
 
             # Intensity information - for now, including only common, basic intensity
             # info.
