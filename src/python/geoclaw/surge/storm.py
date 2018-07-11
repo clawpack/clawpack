@@ -505,7 +505,7 @@ class Storm(object):
 
             # Classification, note that this is not the category of the storm
             self.classification = ds.usa_status.values
-            self.eye_location = numpy.array([ds.lon,ds.lat]).T
+            self.eye_location = numpy.array([ds.lat,ds.lon]).T
 
             # Intensity information - for now, including only common, basic intensity
             # info.
