@@ -607,69 +607,11 @@ class Storm(object):
 
         Return ValueError if format incorrect or if file not IMD.
         """
+        raise NotImplementedError(("Reading in IMD files is not ",
+                                   "implemented yet but is planned for a ",
+                                   "future release."))
  
-        # Read the imd file
-        data_block = []
-        with open(path, 'r') as IMD_File:
-            for line in IMD_File:
-                line = line.split(",")
-                line = [value.strip() for value in line]
-                #add line to data_block if line has data
-                try:
-                    float(line[0])
-                    float(line[5])
-                    float(line[6])
-                    float(line[8])
-                    float(line[9])
-                    data_block.append(line)
-                except:
-                    pass
-        num_lines = len(data_block)
 
-        # initialize empty arrays for Storm attributes
-        self.t = []
-        self.classification = numpy.empty(num_lines, dtype=str)
-        self.eye_location = numpy.empty((num_lines, 2))
-        self.max_wind_speed = numpy.empty(num_lines)
-        self.central_pressure = numpy.empty(num_lines)
-        self.max_wind_radius = numpy.empty(num_lines)
-        self.storm_radius = numpy.empty(num_lines)
-
-        for (i, data) in enumerate(data_block):
-
-            # End at an empty lines - skips lines at the bottom of a file
-            if len(data) == 0:
-                break
-
-            # Grab data regarding basin and cyclone number if we are starting
-            if i == 0:
-                self.basin = data[1]
-                self.ID = int(data[0])
-
-            # If no date copy date from previous row
-            if data[3] == '':
-                data[3] = data_block[i-1][3]
-            # Create time
-            self.t.append(datetime.datetime(int(data[3][6:]),
-                                            int(data[3][3:5]),
-                                            int(data[3][:2]),
-                                            int(data[4])//100))
-           
-            # Classification, note that this is not the category of the storm
-            self.classification[i] = data[11]
-
-            # Parse eye location - longitude/latitude order
-            self.eye_location[i, 1] = float(data[5])
-            self.eye_location[i, 0] = float(data[6])
-
-            # Intensity information
-            self.max_wind_speed[i] = float(data[9]) * 0.51444444
-            self.central_pressure[i] = float(data[8])
-         
-            # Does not contain max wind radius and outer storm radius
-            # - set those to -1 to mark them as missing
-            self.storm_radius[i] = -1
-            self.max_wind_radius[i] = -1
 
     def read_tcvitals(self, path, verbose=False):
 
