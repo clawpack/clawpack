@@ -40,8 +40,6 @@ import sys
 import os
 import argparse
 import datetime
-import xarray as xr
-from pandas import to_datetime
 
 import numpy
 
@@ -462,6 +460,10 @@ class Storm(object):
          - *ValueError* If the method cannot find the name/year matching the
            storm then a value error is risen.
         """
+
+        # imports that you don't need for other read functions
+        import xarray as xr
+        from pandas import to_datetime
 
         storm_name = storm_name.upper()
         with xr.open_dataset(path,drop_variables=['time']) as ds:
