@@ -23,7 +23,7 @@ if len(testdir) == 0:
     testdir = "./"
 
 # Current tests
-file_format_tests = ['atcf', 'hurdat', 'jma']
+file_format_tests = ['atcf', 'hurdat', 'jma','ibtracs']
 
 def check_geoclaw(paths, check_header=False):
     """Check that two geoclaw formatted storm files are identical
@@ -90,13 +90,23 @@ def test_storm_IO(save=False):
         # Currently we read in the format, write it back out in the GeoClaw 
         # format and check the stored GeoClaw file for that format
         for file_format in file_format_tests:
-            input_path = os.path.join(testdir, "data", "storm", "%s.txt" % file_format)
+            if file_format=='ibtracs':
+                file_suffix = 'nc'
+            else:
+                file_suffix = 'txt'
+            input_path = os.path.join(testdir, "data", "storm", "%s.%s" % (file_format,file_suffix))
             out_path = os.path.join(temp_path, '%s_geoclaw.txt' % file_format)
             check_path = os.path.join(testdir, "data", "storm", 
                                       "%s_geoclaw.txt" % file_format)
 
             # Read in test data and write it back out in the GeoClaw format
-            test_storm = storm.Storm(input_path, file_format=file_format)
+            # for IBTrACS input, need storm/year info
+            if file_format=='ibtracs':
+                kwargs = {'storm_name':'IKE',
+                         'year':2008}
+            else:
+                kwargs = {}
+            test_storm = storm.Storm(input_path, file_format=file_format, **kwargs)
             
             # Temporary testing thing to get around missing data in formats that
             # do not provide the proper radii
