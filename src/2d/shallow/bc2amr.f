@@ -119,7 +119,7 @@ c     # zero-order extrapolation:
       do 115 j = 1,ncol
          do 115 i=1,nxl
             do 115 m=1,meqn
-               aux(1,i,j) = aux(1,nxl+1,j)  !inserted for bc2amr_noslope
+               aux(:,i,j) = aux(:,nxl+1,j)  !inserted for bc2amr_noslope
                val(m,i,j) = val(m,nxl+1,j)
   115       continue
       go to 199
@@ -133,7 +133,7 @@ c     # solid wall (assumes 2'nd component is velocity or momentum in x):
       do 135 j = 1,ncol
          do 135 i=1,nxl
             do 135 m=1,meqn
-               aux(1,i,j) = aux(1,2*nxl+1-i,j)  !inserted for bc2amr_noslope
+               aux(:,i,j) = aux(:,2*nxl+1-i,j)  !inserted for bc2amr_noslope
                val(m,i,j) = val(m,2*nxl+1-i,j)
   135       continue
 c     # negate the normal velocity:
@@ -173,7 +173,7 @@ c     # zero-order extrapolation:
       do 215 i=ibeg,nrow
          do 215 m=1,meqn
             do 215 j = 1,ncol
-               aux(1,i,j) = aux(1,ibeg-1,j) !inserted for bc2amr_noslope
+               aux(:,i,j) = aux(:,ibeg-1,j) !inserted for bc2amr_noslope
                val(m,i,j) = val(m,ibeg-1,j)
   215       continue
       go to 299
@@ -187,7 +187,7 @@ c     # solid wall (assumes 2'nd component is velocity or momentum in x):
       do 235 j = 1,ncol
          do 235 i=ibeg,nrow
             do 235 m=1,meqn
-               aux(1,i,j) = aux(1,2*ibeg-1-i,j) !inserted for bc2amr_noslope
+               aux(:,i,j) = aux(:,2*ibeg-1-i,j) !inserted for bc2amr_noslope
                val(m,i,j) = val(m,2*ibeg-1-i,j)
   235       continue
 c     # negate the normal velocity:
@@ -226,7 +226,7 @@ c     # zero-order extrapolation:
       do 315 j=1,nyb
          do 315 i=1,nrow
             do 315 m=1,meqn
-                aux(1,i,j) = aux(1,i,nyb+1) !inserted for bc2amr_noslope
+                aux(:,i,j) = aux(:,i,nyb+1) !inserted for bc2amr_noslope
                 val(m,i,j) = val(m,i,nyb+1)
   315       continue
       go to 399
@@ -240,7 +240,7 @@ c     # solid wall (assumes 3'rd component is velocity or momentum in y):
       do 335 j=1,nyb
          do 335 i=1,nrow
             do 335 m=1,meqn
-                aux(1,i,j) =  aux(1,i,2*nyb+1-j) !inserted for bc2amr_noslope
+                aux(:,i,j) =  aux(:,i,2*nyb+1-j) !inserted for bc2amr_noslope
                 val(m,i,j) =  val(m,i,2*nyb+1-j)
   335       continue
 c     # negate the normal velocity:
@@ -280,7 +280,7 @@ c     # zero-order extrapolation:
       do 415 j=jbeg,ncol
          do 415 i=1,nrow
             do 415 m=1,meqn
-               aux(1,i,j) = aux(1,i,jbeg-1)  !inserted for bc2amr_noslope
+               aux(:,i,j) = aux(:,i,jbeg-1)  !inserted for bc2amr_noslope
                val(m,i,j) = val(m,i,jbeg-1)
   415       continue
       go to 499
@@ -294,7 +294,7 @@ c     # solid wall (assumes 3'rd component is velocity or momentum in y):
       do 435 j=jbeg,ncol
          do 435 i=1,nrow
             do 435 m=1,meqn
-               aux(1,i,j) =  aux(1,i,2*jbeg-1-j)  !inserted for bc2amr_noslope
+               aux(:,i,j) =  aux(:,i,2*jbeg-1-j)  !inserted for bc2amr_noslope
                val(m,i,j) =  val(m,i,2*jbeg-1-j)
   435       continue
 c     # negate the normal velocity:

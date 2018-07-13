@@ -5,10 +5,27 @@ Module defines a class and routines for managing storm best-track type input and
 testing reconstructed wind and pressure fields.  Additionally some support for 
 ensembles of storms from various providers is also included.
 
+The primary class of interest in the module is the `Storm` class that
+facilitates dealing with various best-track formats found around the world and
+the expected GeoClaw storm format that is read into the FORTRAN code.  The basic
+workflow in a `setrun.py` file would do the following:
+
+1. Create a `Storm` object by reading in from a file::
+
+    storm = clawpack.geoclaw.surge.storm.Storm("my_storm.txt", file_format='ATCF')
+
+2. Write out the storm object created into the GeoClaw format::
+
+    storm.write("my_geoclaw_storm.txt", file_format="geoclaw")
+
+3. Specify the path to the GeoClaw formatted storm file, in this case 
+   "my_geoclaw_storm.txt".
+
 :Formats Supported:
     - GeoClaw (fully)
     - ATCF (reading only)
     - HURDAT (reading only)
+    - IBTrACS (reading only)
     - JMA (reading only)
     - IMD (planned)
     - tcvitals (reading only)
@@ -16,9 +33,9 @@ ensembles of storms from various providers is also included.
 
 from __future__ import print_function
 from __future__ import absolute_import
-
 from six.moves import range
 
+import warnings
 import sys
 import os
 import argparse
@@ -86,6 +103,14 @@ hurdat_special_entries = {"L": "landfall",
                           "T": "additional track point"}
 
 
+# Warning for formats that have yet to have a default way to determine crticial
+# radii from the input data
+missing_data_warning_str = """*** Cannot yet automatically determine the
+    maximum wind radius.  Will write out GeoClaw
+    formats but note that these will not work
+    when running GeoClaw currently."""
+
+
 # =============================================================================
 #  Basic storm class
 class Storm(object):
@@ -109,9 +134,9 @@ class Storm(object):
        Note that when written some formats require a *time_offset* to be set.
      - *eye_location* (ndarray(:, :)) location of the eye of the storm.
        Default units are in signed decimcal longitude and latitude.
-     - *max_wind_speed (ndarray(:)) Maximum wind speed.  Default units are
+     - *max_wind_speed* (ndarray(:)) Maximum wind speed.  Default units are
        meters/second.
-     - *max_wind_radius (ndarray(:)) Radius at which the maximum wind speed
+     - *max_wind_radius* (ndarray(:)) Radius at which the maximum wind speed
        occurs.  Default units are meters.
      - *central_pressure* (ndarray(:)) Central pressure of storm.  Default
        units are Pascals.
@@ -138,6 +163,7 @@ class Storm(object):
     _supported_formats = {"geoclaw": ["GeoClaw", "http://www.clawpack.org/storms"],
                           "atcf": ["ATCF", "http://www.nrlmry.navy.mil/atcf_web/docs/database/new/database.html"],
                           "hurdat": ["HURDAT", "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"],
+                          "ibtracs": ["IBTrACS", "ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"],
                           "jma": ["JMA", "http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html"],
                           "imd": ["IMD", "http://www.rsmcnewdelhi.imd.gov.in/index.php"],
                           "tcvitals": ["TC-Vitals", "http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm"]}
@@ -186,7 +212,7 @@ class Storm(object):
 
         :Input:
          - *path* (string) Path to data file.
-         - *file_format (string) Format of the data file.  See list of
+         - *file_format* (string) Format of the data file.  See list of
            supported formats for a list of valid strings.  Defaults to
            "hurdat".
          - *kwargs* (dict) Keyword dictionary for additional arguments that can
@@ -207,6 +233,7 @@ class Storm(object):
                         "files:",
                         " - ATCF - http://ftp.nhc.noaa.gov/atcf/archive/",
                         " - HURDAT - http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html",
+                        " - IBTrACS - ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"
                         " - JMA - http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/besttrack.html",
                         " - IMD - http://www.rsmcnewdelhi.imd.gov.in/index.php",
                         " - TCVITALS - http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm")
@@ -320,8 +347,8 @@ class Storm(object):
                 self.eye_location[i, 0] = -float(data[7][0:-1]) / 10.0
 
             # Intensity information
-            self.max_wind_speed[i] = float(data[8]) * 0.51444444
-            self.central_pressure[i] = float(data[9]) * 100.0
+            self.max_wind_speed[i] = units.convert(float(data[8]), 'knots', 'm/s')
+            self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
 
             # Mark if this is a shortened line - does not contain max wind 
             # radius and outer storm radius - set those to -1 to mark them as
@@ -330,10 +357,8 @@ class Storm(object):
                 self.storm_radius[i] = -1
                 self.max_wind_radius[i] = -1
             else:
-                self.storm_radius[i] = (float(data[18]) * 1.852000003180799
-                                        * 1000.0)
-                self.max_wind_radius[i] = (float(data[19]) * 1.852000003180799
-                                           * 1000.0)
+                self.storm_radius[i] = units.convert(float(data[18]), 'nmi', 'm')
+                self.max_wind_radius[i] = units.convert(float(data[19]), 'nmi', 'm')
 
     def read_hurdat(self, path, verbose=False):
         r"""Read in HURDAT formatted storm file
@@ -405,21 +430,108 @@ class Storm(object):
 
             # Parse eye location
             if data[4][-1] == "N":
-                self.eye_location[i, 0] = float(data[4][0:-1])
+                self.eye_location[i, 1] = float(data[4][0:-1])
             else:
-                self.eye_location[i, 0] = -float(data[4][0:-1])
+                self.eye_location[i, 1] = -float(data[4][0:-1])
             if data[5][-1] == "E":
-                self.eye_location[i, 1] = float(data[5][0:-1])
+                self.eye_location[i, 0] = float(data[5][0:-1])
             else:
-                self.eye_location[i, 1] = -float(data[5][0:-1])
+                self.eye_location[i, 0] = -float(data[5][0:-1])
 
             # Intensity information - radii are not included directly in this
             # format and instead radii of winds above a threshold are included
-            self.max_wind_speed[i] = float(data[6])
-            self.central_pressure[i] = float(data[7])
+            self.max_wind_speed[i] = units.convert(float(data[6]), 'knots', 'm/s')
+            self.central_pressure[i] = units.convert(float(data[7]), 'mbar', 'Pa')
+            warnings.warn(missing_data_warning_str)
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
+    def read_ibtracs(self, path, storm_name, year):
+        r"""Read in IBTrACS formatted storm file
+
+        This reads in the netcdf-formatted IBTrACS v4 BETA data. The .nc
+        file passed as *path* must contain a storm matching *storm_name*
+        and *year*. This function will be updated, if needed, once the BETA
+        version becomes an operational release.
+
+        NOTE: Thus far, only the reading of hurdat/atcf-based best tracks (i.e. USA
+        tracks) is supported. 
+
+        TODO: account for data formats from other reporting agencies
+
+        For more details on the IBTrACS v4 BETA format and getting data see
+
+        ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional/
+
+        :Input:
+         - *path* (string) Path to the file to be read.
+         - *storm_name* (string) name of storm of interest (NAME field in IBTrACS).
+         - *year* (int) year of storm of interest
+
+        :Raises:
+         - *ValueError* If the method cannot find the name/year matching the
+           storm then a value error is risen.
+        """
+
+        # imports that you don't need for other read functions
+        import xarray as xr
+        from pandas import to_datetime
+
+        storm_name = storm_name.upper()
+        with xr.open_dataset(path,drop_variables=['time']) as ds:
+
+            ## SLICE IBTRACS DATASET
+
+            # match on storm-name and year
+            storm_match = (ds.name == storm_name.encode())
+            dts = xr.DataArray.from_series(to_datetime(ds.iso_time.astype(str).to_series())).values
+            ds.iso_time.values = dts
+            year_match = (ds.iso_time.dt.year == year).any(dim='time')
+            ds = ds.sel(storm=(year_match & storm_match)).squeeze()
+            # make sure 
+            if ('storm' in ds.dims.keys()) and (ds.storm.shape[0] == 0):
+                raise ValueError('Storm/year not found in provided file')
+
+            # include only valid time points for this storm
+            # i.e. when we have max wind values
+            ds = ds.sel(time=(ds.wmo_wind>=0))
+
+
+            ## CONVERT TO GEOCLAW FORMAT
+
+            # assign basin to be the basin where track originates
+            # in case track moves across basins
+            self.basin = ds.basin.values[0].astype(str)
+            self.name = storm_name
+            self.ID = ds.sid.astype(str).item()
+
+            # convert datetime64 to datetime.datetime
+            self.t = []
+            for d in ds.iso_time:
+                t = d.dt
+                self.t.append(datetime.datetime(t.year,t.month,t.day,t.hour,t.minute,t.second))
+
+            ## events
+            self.event = ds.usa_record.values.astype(str)
+
+            # time offset
+            self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+
+            # Classification, note that this is not the category of the storm
+            self.classification = ds.usa_status.values
+            self.eye_location = numpy.array([ds.lon,ds.lat]).T
+
+            # Intensity information - for now, including only common, basic intensity
+            # info.
+            # TODO: add more detailed info for storms that have it
+            self.max_wind_speed = units.convert(ds.wmo_wind,'knots','m/s').values
+            self.central_pressure = units.convert(ds.wmo_pres,'mbar','Pa').values
+            self.max_wind_radius = units.convert(ds.usa_rmw,'nmi','m').where(
+                    ds.usa_rmw >= 0,-1).values
+            self.storm_radius = units.convert(ds.usa_roci,'nmi','m').where(
+                    ds.usa_roci >= 0,-1).values
+
+            
     def read_jma(self, path, verbose=False):
         r"""Read in JMA formatted storm file
 
@@ -480,8 +592,9 @@ class Storm(object):
             # Intensity information - current the radii are not directly given
             # Available data includes max/min of radius of winds of 50 and 
             # 30 kts instead
-            self.central_pressure[i] = float(data[5])
-            self.max_wind_speed[i] = float(data[6])
+            self.central_pressure[i] = units.convert(float(data[5]), 'hPa', 'Pa')
+            self.max_wind_speed[i] = units.convert(float(data[6]), 'knots', 'm/s')
+            warnings.warn(missing_data_warning_str)
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
@@ -631,7 +744,7 @@ class Storm(object):
 
         :Input:
          - *path* (string) Path to data file.
-         - *file_format (string) Format of the data file.  See list of
+         - *file_format* (string) Format of the data file.  See list of
            supported formats for a list of valid strings.  Defaults to
            "geoclaw".
          - *kwargs* (dict) Keyword dictionary for additional arguments that can
@@ -660,13 +773,17 @@ class Storm(object):
          - *max_wind_radius_fill* (func) Function that can be used to fill in
            missing data for `max_wind_radius` values.  This defaults to simply 
            setting the value to -1.  The function signature should be
-           `max_wind_radius(t, storm)` whre t is the time of the forecast and
-           `storm` is the storm object.
+           `max_wind_radius(t, storm)` where t is the time of the forecast and
+           `storm` is the storm object.  Note that if this or `storm_radius` 
+           field remains -1 that this data line will be assumed to be redundant 
+           and not be written out.
          - *storm_radius_fill* (func) Function that can be used to fill in
            missing data for `storm_radius` values.  This defaults to simply 
            setting the value to -1.  The function signature should be
-           `storm_radius(t, storm)` whre t is the time of the forecast and
-           `storm` is the storm object.
+           `storm_radius(t, storm)` where t is the time of the forecast and
+           `storm` is the storm object.  Note that if this or `max_wind_radius` 
+           field remains -1 that this data line will be assumed to be redundant 
+           and not be written 
         """
 
         if max_wind_radius_fill is None:
@@ -674,46 +791,62 @@ class Storm(object):
         if storm_radius_fill is None:
             storm_radius_fill = lambda t, storm: -1
 
-        # Remove duplicate times
-        num_casts = len(self.t)
-        for n in range(1, len(self.t)):
-            if self.t[n] == self.t[n - 1]:
-                num_casts -= 1
+        # Create list for output
+        # Leave this first line blank as we need to count the actual valid lines
+        # that will be left in the file below
+        num_casts = 0
+        data_string = [""]
+        if self.time_offset is None:
+            # Use the first time in sequence if not provided
+            self.time_offset = self.t[0]
+        data_string.append("%s\n\n" % self.time_offset.isoformat())
+        for n in range(len(self.t)):
+            # Remove duplicate times
+            if n > 0:
+                if self.t[n] == self.t[n - 1]:
+                    continue
 
+            format_string = ("{:19,.8e} " * 7)[:-1] + "\n"
+            data = []
+            data.append((self.t[n] - self.time_offset).total_seconds())
+            data.append(self.eye_location[n, 0])
+            data.append(self.eye_location[n, 1])
+            data.append(self.max_wind_speed[n])
+            # Allow custom function to set max wind radius if not 
+            # available
+            if self.max_wind_radius[n] == -1:
+                new_wind_radius = max_wind_radius_fill(self.t[n], self)
+                if new_wind_radius == -1:
+                    continue
+                else:
+                    data.append(new_wind_radius)
+            else:
+                data.append(self.max_wind_radius[n])
+            
+            data.append(self.central_pressure[n])
+            
+            # Allow custom function to set storm radius if not available
+            if self.storm_radius[n] == -1:
+                new_storm_radius = storm_radius_fill(self.t[n], self)
+                if new_storm_radius == -1:
+                    continue
+                else:
+                    data.append(new_storm_radius)
+            else:
+                data.append(self.storm_radius[n])
+
+            data_string.append(format_string.format(*data))
+            num_casts += 1
+
+
+        # Write to actual file now that we know exactly how many lines it will
+        # contain
         try:
-            with open(path, 'w') as data_file:
-                data_file.write("%s\n" % num_casts)
-                if self.time_offset is None:
-                    # Use the first time in sequence if not provided
-                    self.time_offset = self.t[0]
-                data_file.write("%s\n\n" % self.time_offset.isoformat())
-                for n in range(len(self.t)):
-                    if n > 0:
-                        if self.t[n] == self.t[n - 1]:
-                            continue
-
-                    format_string = ("{:19,.8e} " * 7)[:-1] + "\n"
-                    data = []
-                    data.append((self.t[n] - self.time_offset).total_seconds())
-                    data.append(self.eye_location[n, 0])
-                    data.append(self.eye_location[n, 1])
-                    data.append(self.max_wind_speed[n])
-                    # Allow custom function to set max wind radius if not 
-                    # available
-                    if self.max_wind_radius[n] == -1:
-                        data.append(max_wind_radius_fill(self.t[n], self))
-                    else:
-                        data.append(self.max_wind_radius[n])
-                    
-                    data.append(self.central_pressure[n])
-                    
-                    # Allow custom function to set storm radius if not available
-                    if self.storm_radius[n] == -1:
-                        data.append(storm_radius_fill(self.t[n], self))
-                    else:
-                        data.append(self.storm_radius[n])
-
-                    data_file.write(format_string.format(*data))
+            # Update number of forecasts here
+            data_string[0] = "%s\n" % num_casts
+            with open(path, "w") as data_file:
+                for data_line in data_string:
+                    data_file.write(data_line)
 
         except Exception as e:
             # Remove possibly partially generated file if not successful
@@ -1026,9 +1159,9 @@ class Storm(object):
 
 # Dictionary of models.  Keys are function names, values are the proper name
 # and a citation to the model
-_supported_models = {"holland_1980": ["Holland 1980", "Holland, G. J. An Analytic Model of the Wind and Pressure Profiles in Hurricanes. Monthly Weather Review 108, 1212–1218 (1980)."],
-                     "holland_2010": ["Holland 2010", "Holland, G. J., Belanger, J. I. & Fritz, A. A Revised Model for Radial Profiles of Hurricane Winds. Monthly Weather Review 138, 4393–4393 (2010)."],
-                     "cle_2015": ["Chavas, Lin, Emmanuel 2015", "Chavas, D. R., Lin, N. & Emanuel, K. A Model for the Complete Radial Structure of the Tropical Cyclone Wind Field. Part I: Comparison with Observed Structure*. http://dx.doi.org.ezproxy.cul.columbia.edu/10.1175/JAS-D-15-0014.1 72, 3647–3662 (2015)."]}
+_supported_models = {"holland_1980": ["Holland 1980", "Holland, G. J. An Analytic Model of the Wind and Pressure Profiles in Hurricanes. Monthly Weather Review 108, 1212-1218 (1980)."],
+                     "holland_2010": ["Holland 2010", "Holland, G. J., Belanger, J. I. & Fritz, A. A Revised Model for Radial Profiles of Hurricane Winds. Monthly Weather Review 138, 4393-4393 (2010)."],
+                     "cle_2015": ["Chavas, Lin, Emmanuel 2015", "Chavas, D. R., Lin, N. & Emanuel, K. A Model for the Complete Radial Structure of the Tropical Cyclone Wind Field. Part I: Comparison with Observed Structure*. http://dx.doi.org.ezproxy.cul.columbia.edu/10.1175/JAS-D-15-0014.1 72, 3647-3662 (2015)."]}
 
 
 # In the case where the field is not rotationally symmetric then the r value
