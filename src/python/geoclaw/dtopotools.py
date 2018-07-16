@@ -1482,13 +1482,14 @@ class SubFault(object):
         r"""
         Calculate geometry for triangular subfaults
 
-        uses *corners* to calculate *centers*, *longitude*, *latitude*,
+        - it uses *corners* to calculate *centers*, *longitude*, *latitude*,
         *depth*, *strike*, *dip*, *rake*, *length*, *width*.
 
-        sets *coordinate_specification* as "triangular"
+        - sets *coordinate_specification* as "triangular"
 
-        **Note: ** calculate_geometry() goes in *roughly* the opposite 
-        direction
+        - Note that calculate_geometry() computes 
+          long/lat/strik/dip/rake/length/width to calculate centers/corners
+        
         """
 
         if self.coordinate_specification == 'triangular':
@@ -1509,10 +1510,6 @@ class SubFault(object):
             x = numpy.array(x0)
             
             x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative(lazy)
-
-            # convert lat-long coordinate to Cartesian
-            #x[:,0] *= LAT2METER * cos( DEG2RAD*x_ave[1] ) 
-            #x[:,1] *= LAT2METER 
 
             if 0:
                 # old coordinate transform
@@ -1539,27 +1536,20 @@ class SubFault(object):
             normal = cross(v1,v2)
             strikev = cross(normal,e3)   # vector in strike direction
 
-            ##if norm(strikev) < 1e-12:
-            #    #strikev = numpy.array([0.,1.,0.])
-            #dipv = cross(strikev,normal) # vector in dip direction
-            #
-            #strike_rad = numpy.arctan( -normal[1] / normal[0] )
-            #dip_rad =atan(divide(abs(dipv[2]),sqrt(dipv[0]**2+dipv[1]**2)))
-
             a = normal[0]
             b = normal[1]
             c = normal[2]
+            
             #Compute strike
             strike_deg = rad2deg(numpy.arctan(-b/a))
+            
             #Compute dip
-            #beta=strike_rad + numpy.pi/2.
             beta = deg2rad(strike_deg + 90)
             m = numpy.array([sin(beta),cos(beta),0]) #Points in dip direction
             n = numpy.array([a,b,c]) #Normal to the plane
             dip_deg = abs(rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n)))))
             
-            # convert to degrees
-            #strike_deg = numpy.rad2deg(strike_rad)
+            # keep strike_deg positive
             if strike_deg < 0.:
                 strike_deg = 360 + strike_deg
             self.strike = strike_deg
@@ -1587,13 +1577,6 @@ class SubFault(object):
 
             # length and width are set to sqrt(area): 
             # this is set temporarily so that Fault.Mw() can be computed
-
-            # first convert distances from lat/long to meters
-            #v1[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v1[0])   
-            #v1[1] = LAT2METER * (v1[1])
-
-            #v2[0] = LAT2METER * cos(DEG2RAD * x[1,0]) * (v2[0])
-            #v2[1] = LAT2METER * (v2[1])
 
             area = norm(normal) / 2.
             self.length = sqrt(area)
@@ -1671,7 +1654,6 @@ class SubFault(object):
         if projection_zone == None:
             #Determine most suitable UTM zone
             for k in range(len(lon)):
-                #x,y,zone[k],b[k]=utm.from_latlon(lat[k],360-lon[k])
                 x,y,zone[k],b[k]=utm.from_latlon(lat[k],lon[k])
             zone_mode=mode(zone)
             i=where(zone==zone_mode)[0]
@@ -1679,7 +1661,6 @@ class SubFault(object):
             z=str(int(zone[0]))+letter
         else:
             z=projection_zone
-        #p0 = Proj(proj='utm',zone=z,ellps='WGS84')
         p0 = Proj(proj='utm',zone=z,ellps='WGS84')
         x,y=p0(lon,lat)
         
@@ -1835,10 +1816,7 @@ class SubFault(object):
 
                 Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3 = \
                 self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
-                #w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
-                #self._get_angular_dislocations(Y1,Y2,Y3,Z1,Z2,Z3,\
-                               #Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth)
-
+                
                 w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 self._get_angular_dislocations_surface(Y1,Y2,Y3,beta,Odepth)
                 
@@ -1944,13 +1922,16 @@ class SubFault(object):
                                   Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth):
                                   
         """
-        compute angular dislocations
+        compute angular dislocations at any internal points according to the 
+        paper
 
         M. Comninou and J. Dundurs 
         Journal of Elasticity, Vol. 5, Nos.3-4, Nov 1975
 
-        equations (1-29)
-
+        The specific equations used in the papers are (1-29). 
+        Note, this code is currently not used in computing the surface
+        deformations, see _get_angular_dislocations_surface
+        
         :Input:
             -  Y1, Y2, Y3
                Z1, Z2, Z3
@@ -1961,6 +1942,12 @@ class SubFault(object):
             - v11,v12,v13
               v21,v22,v23
               v31,v32,v33   : dislocation vectors
+
+
+        For a more recent reference with comprehensive review see:
+
+        Brendan J. Meade
+        Computers & Geosciences, Vol. 33, Issue 8, pp 1064-1075
 
         """
 
@@ -2205,6 +2192,34 @@ class SubFault(object):
         return v11,v12,v13,v21,v22,v23,v31,v32,v33
 
     def _get_angular_dislocations_surface(self,Y1,Y2,Y3,beta,Odepth):
+        """
+        compute angular dislocations at the *free surface* of the half space, 
+        according to the paper
+
+        M. Comninou and J. Dundurs 
+        Journal of Elasticity, Vol. 5, Nos.3-4, Nov 1975
+
+        The specific equations used in the papers are (1-29). 
+        
+        :Input:
+            -  Y1, Y2, Y3
+               Z1, Z2, Z3
+              Yb1,Yb2,Yb3
+              Zb1,Zb2,Zb3   : coordinates in meters
+
+        :Output:
+            - v11,v12,v13
+              v21,v22,v23
+              v31,v32,v33   : dislocation vectors
+
+
+        For a more recent reference with comprehensive review see:
+
+        Brendan J. Meade
+        Computers & Geosciences, Vol. 33, Issue 8, pp 1064-1075
+
+        """
+
 
 
         # shorthand for some elementary functions from numpy
@@ -2286,6 +2301,16 @@ class SubFault(object):
 
 
     def _coord_transform(self,v11,v12,v13,v21,v22,v23,v31,v32,v33,alpha):
+        """
+        compute coordinate transforms by computing 
+
+         [sin  cos   0] [v11 v12 v13] [sin  cos   0]
+         |cos -sin   0| |v21 v22 v23| |cos -sin   0|
+         [  0    0   1] [v31 v32 v33] [  0    0   1]
+
+        """
+
+
 
 
         cos = numpy.cos
@@ -2492,15 +2517,17 @@ class SubFault(object):
 
     def _dip_pt_slip(self, x, y, ang_dip, d):
         """
-        surface deformation due to point source
+        compute surface deformation due to point source.
+
+        - x, y: where to evaluate on the surface
+        - ang_dip: angle of the dip
+        - d: depth of the source
 
         """
         p = y*numpy.cos(ang_dip) + d*numpy.sin(ang_dip)
         q = y*numpy.sin(ang_dip) - d*numpy.cos(ang_dip)
 
         R = numpy.sqrt(x**2 + p**2 + q**2)
-
-        # is 2.*poisson = mu / (lam + mu) ?
 
         I1 = 2.*poisson*y*(1./(R*(R+d)**2) \
                 - x**2 * (3*R + d)/(R**3*(R+d)**3))
