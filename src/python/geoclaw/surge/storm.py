@@ -474,8 +474,12 @@ class Storm(object):
         """
 
         # imports that you don't need for other read functions
-        import xarray as xr
-        from pandas import to_datetime
+        try:
+            import xarray as xr
+            from pandas import to_datetime
+        except ModuleNotFoundError as e:
+            print("IBTrACS currently requires xarray and pandas to work.")
+            raise e
 
         storm_name = storm_name.upper()
         with xr.open_dataset(path,drop_variables=['time']) as ds:
@@ -1160,11 +1164,11 @@ def available_models():
 
 # =============================================================================
 # Ensmeble Storm Formats
-def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
+def load_emanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
                                mask_category=None, categorization="NHC"):
     r"""Load storms from a Matlab file containing storms
 
-    This format is based on the format Prof. Emmanuel uses to generate storms.
+    This format is based on the format Prof. Emanuel uses to generate storms.
 
     :Input:
      - *path* (string) Path to the file to be read in
