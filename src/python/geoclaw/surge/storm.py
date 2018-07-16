@@ -598,6 +598,7 @@ class Storm(object):
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
+
     def read_imd(self, path, verbose=False):
         r"""Extract relevant hurricane data from IMD file
             and update storm fields with proper values.
@@ -610,11 +611,9 @@ class Storm(object):
         raise NotImplementedError(("Reading in IMD files is not ",
                                    "implemented yet but is planned for a ",
                                    "future release."))
- 
 
 
     def read_tcvitals(self, path, verbose=False):
-
         r"""Extract relevant hurricane data from TCVITALS file
             and update storm fields with proper values.
 
@@ -675,9 +674,10 @@ class Storm(object):
 
             # Intensity Information
             self.max_wind_speed[i] = float(data[12])
-            self.central_pressure[i] = float(data[9]) * 100.0
-            self.max_wind_radius[i] = float(data[13]) * 1000.0
-            self.storm_radius[i] = float(data[11]) * 1000.0
+            self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
+            self.max_wind_radius[i] = units.convert(float(data[13]), 'km', 'm')
+            self.storm_radius[i] = units.convert(float(data[11]), 'km', 'm')
+
 
     # =========================================================================
     # Write Routines
@@ -1219,8 +1219,8 @@ def load_emmanuel_storms(path, mask_distance=None, mask_coordinate=(0.0, 0.0),
         storm.eye_location[:, 0] = lon[n, :m]
         storm.eye_location[:, 1] = lat[n, :m]
         storm.max_wind_speed = max_wind_speed[n, :m]
-        storm.max_wind_radius = max_wind_radius[n, :m]
-        storm.central_pressure = central_pressure[n, :m]
+        storm.max_wind_radius = units.convert(max_wind_radius[n, :m], 'km', 'm')
+        storm.central_pressure = units.convert(central_pressure[n, :m], 'hPa', 'Pa')
         storm.storm_radius = numpy.ones(m) * 300e3
 
         include_storm = True
