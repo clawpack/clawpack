@@ -693,7 +693,7 @@ contains
 #endif
 
         use geoclaw_module
-        use utility_module, only: parse_values
+        use utility_module, only: parse_values, to_lower
 
         implicit none
 
@@ -723,6 +723,7 @@ contains
         character(len=10) :: x_dim_name, x_var_name, y_dim_name, y_var_name, z_var_name
         integer(kind=4) :: x_var_id, y_var_id, z_var_id
         logical :: verbose
+        logical :: xll_registered, yll_registered
         ! character(len=10) :: x_dim_name, y_dim_name, z_dim_name
         ! character(len=10) :: x_var_name, y_var_name, z_var_name
         ! integer :: ios, root_id, x_var_id, y_var_id, z_var_id, var_ids(10)
@@ -794,10 +795,14 @@ contains
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 xll = values(1)
+                str = to_lower(str)  ! convert to lower case
+                xll_registered = (index(str, 'xllcorner') > 0)
 
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 yll = values(1)
+                str = to_lower(str)  ! convert to lower case
+                yll_registered = (index(str, 'yllcorner') > 0)
 
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
@@ -811,6 +816,19 @@ contains
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 nodata_value = values(1)
+
+                if (xll_registered) then
+                    xll = xll + 0.5d0*dx
+                    write(6,*) '*** in file: ',trim(fname)
+                    write(6,*) '    Shifting xllcorner by 0.5*dx to cell center'
+                    endif 
+
+                if (yll_registered) then
+                    yll = yll + 0.5d0*dy
+                    write(6,*) '*** in file: ',trim(fname)
+                    write(6,*) '    Shifting yllcorner by 0.5*dy to cell center'
+                    endif 
+
 
                 xhi = xll + (mx-1)*dx
                 yhi = yll + (my-1)*dy
