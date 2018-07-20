@@ -181,8 +181,8 @@ def setplot(plotdata=None):
 
     # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
-    plotitem.plot_var = 3
-    plotitem.plotstyle = 'b-'
+    # plotitem.plot_var = 3
+    # plotitem.plotstyle = 'b-'
 
     #
     #  Gauge Location Plot
