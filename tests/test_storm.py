@@ -145,42 +145,6 @@ def test_storm_IO(save=False):
     finally:
         shutil.rmtree(temp_path)
 
-@test.wip
-def test_emanuel_storms(save=False):
-    r"""Test reading Kerry Emmanuel's storm ensemble matlab files
-
-    :Input:
-     - *save* (bool) whether to save the data produced by the test as
-       new test data.  Defaults to `False`.
-    """
-
-    input_path = os.path.join(testdir, "data", "storm", "emmanuel.mat")
-    storms = storm.load_emanuel_storms(input_path)
-
-    # Check for scipy
-    try:
-        import scipy.io
-    except ModuleNotFoundError as e:
-        raise nose.SkipTest("Skipping test as scipy.io was not found.")
-
-    # Create temp directory
-    temp_path = tempfile.mkdtemp()
-
-    try:
-        # TODO need a smaller .mat file to save as test data
-        assert(False)
-    except Exception as e:
-        # If the assertion failed then copy the contents of the directory
-        test_dump_path = os.path.join(os.getcwd(), 'test_emanuel_storms')
-        if os.path.exists(test_dump_path):
-            shutil.rmtree(test_dump_path)
-        shutil.copytree(temp_path, os.path.join(os.getcwd(),
-                                                'test_emanuel_storms'))
-        raise e
-
-    finally:
-        shutil.rmtree(temp_path)
-
 
 if __name__ == '__main__':
     # Currently does not support only saving one of the format's data
@@ -188,4 +152,3 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         save = bool(sys.argv[1])
     test_storm_IO(save)
-    test_emmanuel_storms(save)
