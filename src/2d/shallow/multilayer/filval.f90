@@ -45,7 +45,7 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
     real(kind=8) :: coarseval(3), dx_coarse, dy_coarse, xl, xr, yb, yt, area
     real(kind=8) :: dividemass, finemass, hvf, s1m, s1p, slopex, slopey, vel
     real(kind=8) :: velmax, velmin, vf, vnew, xoff, yoff
-    logical :: fineflag(3)
+    logical :: fineflag(3*num_layers)
     real(kind=8) :: fliparray((mitot+mjtot)*(nvar+naux))
     real(kind=8) :: aux2(naux,mitot,mjtot)
     integer :: nx, ny
@@ -236,6 +236,9 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                 ! if all fine cells are dry, momentum has already been set
                 if (finemass >= dry_tolerance(layer)) then
                     do ivar = 3*layer-1,3*layer
+                        ! if (ivar>3) then
+                        !   print *, ivar
+                        ! endif
                         fineflag(ivar)=.false.
                         s1p = (valc(ivar,i+1,j) - valc(ivar,i,j))
                         s1m = (valc(ivar,i,j) - valc(ivar,i-1,j))
@@ -349,8 +352,8 @@ end subroutine filval
 
 subroutine dumpaux(aux,naux,mitot,mjtot)
    implicit none
-   real(kind=8) :: aux(naux,mitot,mjtot)
    integer :: naux,mitot,mjtot,i,j,iaux
+   real(kind=8) :: aux(naux,mitot,mjtot)
 
    do j = 1, mjtot 
    do i = 1, mitot 
