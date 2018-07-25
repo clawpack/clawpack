@@ -1877,7 +1877,7 @@ class SubFault(object):
             dZ = -v31*burgersv[0] - v32*burgersv[1] + v33*burgersv[2]
 
             dtopo = DTopography()
-            dtopo.X = X1    # X1, X2 varname confusing?
+            dtopo.X = X1    # DR: X1, X2 varname confusing?
             dtopo.Y = X2
             dtopo.dX = numpy.array(dX, ndmin=3)
             dtopo.dY = numpy.array(dY, ndmin=3)
@@ -1909,7 +1909,7 @@ class SubFault(object):
         # convert to meters
         y[:,0] = LAT2METER * numpy.cos( DEG2RAD*self.latitude )*x[:,0]
         y[:,1] = LAT2METER * x[:,1]
-        y[:,2] = - numpy.abs(x[:,2])    #lazy
+        y[:,2] = - numpy.abs(x[:,2])    # force sign
 
         v_list = [y[1,:] - y[0,:], y[2,:] - y[1,:], y[0,:] - y[2,:]]
 
@@ -1940,7 +1940,6 @@ class SubFault(object):
             alpha = numpy.arctan2(vn[0],vn[1])
             alpha_list.append(alpha)
 
-            #beta = numpy.arccos(numpy.dot(e3,vn))
             beta = numpy.pi/2 \
                  - numpy.arctan(\
                      numpy.divide(abs(vn[2]),
@@ -1983,6 +1982,8 @@ class SubFault(object):
         Brendan J. Meade
         Computers & Geosciences, Vol. 33, Issue 8, pp 1064-1075
 
+        Initially written by Donsub Rim (dr2965@columbia.edu), 2018-06-25
+
         """
 
         # shorthand for some elementary functions from numpy
@@ -1994,7 +1995,7 @@ class SubFault(object):
         sqrt = numpy.sqrt
         log = numpy.log
 
-        a = numpy.abs(Odepth)   #lazy
+        a = numpy.abs(Odepth)   # force sign
 
         nu = 0.25        # .5 * lambda / (lambda + mu) poisson ratio
 
@@ -2531,9 +2532,6 @@ class SubFault(object):
         q = y*numpy.sin(ang_dip) - d*numpy.cos(ang_dip)
 
         R = numpy.sqrt(x**2 + p**2 + q**2)
-
-        # is 2.*poisson = mu / (lam + mu) ?
-        # isn't it lam / (mu + lam)?
 
         I1 = 2.*poisson*y*(1/(R*(R + d)**2) \
                 - x**2 * (3*R + d) / (R**3 * (R + d)**3))
