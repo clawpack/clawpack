@@ -349,8 +349,8 @@ end subroutine filval
 
 subroutine dumpaux(aux,naux,mitot,mjtot)
    implicit none
-   integer :: naux,mitot,mjtot,i,j,iaux
    real(kind=8) :: aux(naux,mitot,mjtot)
+   integer :: naux,mitot,mjtot,i,j,iaux
 
    do j = 1, mjtot 
    do i = 1, mitot 
