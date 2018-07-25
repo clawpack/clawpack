@@ -236,9 +236,6 @@ subroutine filval(val, mitot, mjtot, dx, dy, level, time,  mic, &
                 ! if all fine cells are dry, momentum has already been set
                 if (finemass >= dry_tolerance(layer)) then
                     do ivar = 3*layer-1,3*layer
-                        ! if (ivar>3) then
-                        !   print *, ivar
-                        ! endif
                         fineflag(ivar)=.false.
                         s1p = (valc(ivar,i+1,j) - valc(ivar,i,j))
                         s1m = (valc(ivar,i,j) - valc(ivar,i-1,j))
