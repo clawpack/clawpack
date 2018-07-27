@@ -1,4 +1,6 @@
-subroutine step2(maxm,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,rpn2,rpt2)
+subroutine step2(maxm,meqn,maux,mbc,mx,my, &
+                 qold,aux,dx,dy,dt,cflgrid, &
+                 fm,fp,gm,gp,rpn2,rpt2)
 !     ==========================================================
 !
 !     # clawpack routine ...  modified for AMRCLAW
@@ -20,7 +22,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,
 !------------last modified 12/30/04--------------------------
 !
 
-    use geoclaw_module, only: dry_tolerance, rho
+    use geoclaw_module, only: dry_tolerance
     use amr_module, only: mwaves, mcapa
 
     implicit none
@@ -52,13 +54,13 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,
     real(kind=8) :: dtdx1d(1-mbc:maxm+mbc)
     real(kind=8) :: dtdy1d(1-mbc:maxm+mbc)
     
-    real(kind=8) ::  wave(meqn, mwaves, 1-mbc:maxm+mbc)
-    real(kind=8) ::     s(mwaves, 1-mbc:maxm + mbc)
-    real(kind=8) ::  amdq(meqn,1-mbc:maxm + mbc)
-    real(kind=8) ::  apdq(meqn,1-mbc:maxm + mbc)
-    real(kind=8) ::  cqxx(meqn,1-mbc:maxm + mbc)
-    real(kind=8) :: bmadq(meqn,1-mbc:maxm + mbc)
-    real(kind=8) :: bpadq(meqn,1-mbc:maxm + mbc)
+ !   real(kind=8) ::  wave(meqn, mwaves, 1-mbc:maxm+mbc)
+ !   real(kind=8) ::     s(mwaves, 1-mbc:maxm + mbc)
+ !   real(kind=8) ::  amdq(meqn,1-mbc:maxm + mbc)
+ !   real(kind=8) ::  apdq(meqn,1-mbc:maxm + mbc)
+!     real(kind=8) ::  cqxx(meqn,1-mbc:maxm + mbc)
+!     real(kind=8) :: bmadq(meqn,1-mbc:maxm + mbc)
+!     real(kind=8) :: bpadq(meqn,1-mbc:maxm + mbc)
     
     ! Looping scalar storage
     integer :: i,j,m,thread_num
@@ -66,18 +68,11 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,
     
     ! Common block storage
     integer :: icom,jcom
-    real(kind=8) :: dtcom,dxcom,dycom,tcom
-    common /comxyt/ dtcom,dxcom,dycom,tcom,icom,jcom
 
     ! Parameters
     ! Relimit fluxes to maintain positivity
     logical, parameter :: relimit = .false.
-    
-    ! Store mesh parameters in common block
-    dxcom = dx
-    dycom = dy
-    dtcom = dt
-    
+
     cflgrid = 0.d0
     dtdx = dt/dx
     dtdy = dt/dy
@@ -114,11 +109,10 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,
 
         ! Compute modifications fadd and gadd to fluxes along this slice:
         call flux2(1,maxm,meqn,maux,mbc,mx,q1d,dtdx1d,aux1,aux2,aux3, &
-                   faddm,faddp,gaddm,gaddp,cfl1d,wave,s, &
-                   amdq,apdq,cqxx,bmadq,bpadq,rpn2,rpt2) 
+                   faddm,faddp,gaddm,gaddp,cfl1d,rpn2,rpt2) 
 
         cflgrid = max(cflgrid,cfl1d)
-        !write(53,*) 'x-sweep: ',cfl1d,cflgrid
+        ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
         fm(:,1:mx+1,j) = fm(:,1:mx+1,j) + faddm(:,1:mx+1)
@@ -158,11 +152,10 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,
         
         ! Compute modifications fadd and gadd to fluxes along this slice
         call flux2(2,maxm,meqn,maux,mbc,my,q1d,dtdy1d,aux1,aux2,aux3, &
-                   faddm,faddp,gaddm,gaddp,cfl1d,wave,s,amdq,apdq,cqxx, &
-                   bmadq,bpadq,rpn2,rpt2)
+                   faddm,faddp,gaddm,gaddp,cfl1d,rpn2,rpt2)
 
         cflgrid = max(cflgrid,cfl1d)
-        !write(53,*) 'y-sweep: ',cfl1d,cflgrid
+        ! write(53,*) 'y-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
         gm(:,i,1:my+1) = gm(:,i,1:my+1) + faddm(:,1:my+1)
@@ -186,7 +179,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my,qold,aux,dx,dy,dt,cflgrid,fm,fp,gm,gp,
                 endif
                 p = max(0.d0,dtdxij*fm(1,i+1,j)) + max(0.d0,dtdyij*gm(1,i,j+1)) &
                   - min(0.d0,dtdxij*fp(1,i,j)) - min(0.d0,dtdyij*gp(1,i,j))
-                phi = min(1.d0,abs(qold(1,i,j) / rho(1) / (p+dry_tolerance(1))))
+                phi = min(1.d0,abs(qold(1,i,j) / (p+dry_tolerance)))
 
                 if (phi < 1.d0) then
                     do m=1,meqn

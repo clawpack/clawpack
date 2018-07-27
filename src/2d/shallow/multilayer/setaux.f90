@@ -33,7 +33,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
     
     ! Locals
-    integer :: i,j,m,iint,jint
+    integer :: ii,jj,i,j,m,iint,jint,ilo,jlo
     real(kind=8) :: x,y,xm,ym,xp,yp,topo_integral
     character(len=*), parameter :: aux_format = "(2i4,4d15.3)"
 
@@ -69,20 +69,36 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         end forall
     endif
     
+
+! test:  compute integer indices based off same corner of domain 
+!        to reduce round off discrepancies
+    ilo = floor((xlow - xlower + .05d0*dx)/dx)
+    jlo = floor((ylow - ylower + .05d0*dy)/dy)
+
     ! Set bathymetry
-    do j=1-mbc,my+mbc
-        ym = ylow + (j - 1.d0) * dy
-        y = ylow + (j - 0.5d0) * dy
-        yp = ylow + real(j,kind=8) * dy
-        do i=1-mbc,mx+mbc
-            xm = xlow + (i - 1.d0) * dx
-            x = xlow + (i - 0.5d0) * dx
-            xp = xlow + real(i,kind=8) * dx
+    do jj=1-mbc,my+mbc
+
+        !ym = ylow + (j - 1.d0) * dy
+        !y = ylow + (j - 0.5d0) * dy
+        !yp = ylow + real(j,kind=8) * dy
+
+        ym = ylower + (jlo+jj-1.d0) * dy
+        yp = ylower + (jlo+jj) * dy
+        y = 0.5d0*(ym+yp)
+
+        do ii=1-mbc,mx+mbc
+            !xm = xlow + (i - 1.d0) * dx
+            !x = xlow + (i - 0.5d0) * dx
+            !xp = xlow + real(i,kind=8) * dx
+
+            xm = xlower + (ilo+ii-1.d0) * dx
+            xp = xlower + (ilo+ii) * dx
+            x = 0.5d0*(xm+xp)
 
             ! Set lat-long cell info
             if (coordinate_system == 2) then
-                aux(2,i,j) = deg2rad * earth_radius**2 * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
-                aux(3,i,j) = ym * deg2rad
+                aux(2,ii,jj) = deg2rad * earth_radius**2 * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
+                aux(3,ii,jj) = ym * deg2rad
             endif
             
             ! skip setting aux(1,i,j) in ghost cell if outside physical domain
@@ -100,41 +116,52 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                     mxtopo,mytopo,mtopo,i0topo,mtopoorder, &
                     mtopofiles,mtoposize,topowork)
 
-                    aux(1,i,j) = topo_integral / (dx * dy * aux(2,i,j))
+
+                if (coordinate_system == 2) then
+                    aux(1,ii,jj) = topo_integral / (dx * dy * aux(2,ii,jj))
+                else
+                    aux(1,ii,jj) = topo_integral / (dx * dy)
+                endif
+
             endif
         enddo
     enddo
 
     ! Copy topo to ghost cells if outside physical domain
-    do j=1-mbc,my+mbc
-        y = ylow + (j-0.5d0) * dy
+
+   do jj=1-mbc,my+mbc
+        y = ylower + (jlo+jj-.5d0) * dy
         if ((y < ylower) .or. (y>yupper)) then
-            do i=1-mbc,mx+mbc
-                x = xlow + (i-0.5d0) * dx 
-                iint = i + max(0, ceiling((xlower-x)/dx)) &
-                         - max(0, ceiling((x-xupper)/dx))
-                jint = j + max(0, ceiling((ylower-y)/dy)) &
-                         - max(0, ceiling((y-yupper)/dy))
-                aux(1,i,j) = aux(1,iint,jint)
-            enddo
-        endif
-    enddo
-    do i=1-mbc,mx+mbc
-        x = xlow + (i-0.5d0) * dx
-        if ((x < xlower) .or. (x > xupper)) then
-            do j=1-mbc,my+mbc
-                y = ylow + (j-0.5d0) * dy 
-                iint = i + max(0, ceiling((xlower-x)/dx)) &
-                         - max(0, ceiling((x-xupper)/dx))
-                jint = j + max(0, ceiling((ylower-y)/dy)) &
-                         - max(0, ceiling((y-yupper)/dy))
-                aux(1,i,j) = aux(1,iint,jint)
+            do ii=1-mbc,mx+mbc
+                x = xlower + (ilo+ii-.5d0) * dx
+                iint = ii + max(0, ceiling((xlower-x)/dx)) &
+                         -  max(0, ceiling((x-xupper)/dx))
+                jint = jj + max(0, ceiling((ylower-y)/dy)) &
+                         -  max(0, ceiling((y-yupper)/dy))
+                aux(1,ii,jj) = aux(1,iint,jint)
             enddo
         endif
     enddo
 
+    do ii=1-mbc,mx+mbc
+        x =  xlower + (ilo+ii-.5d0) * dx
+        if ((x < xlower) .or. (x > xupper)) then
+            do jj=1-mbc,my+mbc
+                y = ylower + (jlo+jj-.5d0) * dy
+                iint = ii + max(0, ceiling((xlower-x)/dx)) &
+                          - max(0, ceiling((x-xupper)/dx))
+                jint = jj + max(0, ceiling((ylower-y)/dy)) &
+                          - max(0, ceiling((y-yupper)/dy))
+                aux(1,ii,jj) = aux(1,iint,jint)
+            enddo
+        endif
+    enddo  
+
+
     ! Set friction coefficient based on a set of depth levels
-    call set_friction_field(mx,my,mbc,maux,xlow,ylow,dx,dy,aux)
+    if (friction_index > 0) then
+       call set_friction_field(mx,my,mbc,maux,xlow,ylow,dx,dy,aux)
+    endif
 
     ! Record initial depths if using multiple layers
     do j=1-mbc,my+mbc

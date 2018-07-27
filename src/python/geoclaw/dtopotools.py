@@ -1217,26 +1217,26 @@ class SubFault(object):
       Each will be a tuple *(x, y, depth)*.
 
     *corners[0,1,2,3]* refer to the points labeled a,b,c,d resp. below.
-      Each will be a tuple *(x, y, depth)*.
-    
-
-    Top edge    Bottom edge
-      a ----------- b          ^ 
-      |             |          |         ^
-      |             |          |         |
-      |             |          |         | along-strike direction
-      |             |          |         |
-      0------1------2          | length  |
-      |             |          |
-      |             |          |
-      |             |          |
-      |             |          |
-      d ----------- c          v
-      <------------->
-           width
-
-      <-- up dip direction
-
+      Each will be a tuple *(x, y, depth)*. ::
+         
+     
+         Top edge    Bottom edge
+           a ----------- b          ^ 
+           |             |          |         ^
+           |             |          |         |
+           |             |          |         | along-strike direction
+           |             |          |         |
+           0------1------2          | length  |
+           |             |          |
+           |             |          |
+           |             |          |
+           |             |          |
+           d ----------- c          v
+           <------------->
+                width
+     
+           <-- up dip direction
+     
 
 
     """
@@ -2901,7 +2901,7 @@ class SiftFault(Fault):
                 subfault.width = float(tokens[9])
                 subfault.rake = float(tokens[10])
                 subfault.coordinate_specification = "noaa sift"
-                # subfault.mu = ??  ## currently using SubFault default
+                subfault.mu = 4.e11 # dynes/cm**2 = 4e10 Pa
                 subfault.convert_to_standard_units(self.input_units)
                 self.sift_subfaults[name] = subfault
 

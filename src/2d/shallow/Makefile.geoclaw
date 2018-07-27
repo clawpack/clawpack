@@ -47,7 +47,6 @@ COMMON_SOURCES += \
   $(AMRLIB)/prepbigstep.f \
   $(AMRLIB)/bufnst2.f \
   $(AMRLIB)/flagger.f \
-  $(AMRLIB)/flagregions.f90 \
   $(AMRLIB)/errf1.f \
   $(AMRLIB)/fixcapaq.f \
   $(AMRLIB)/flglvl2.f \
@@ -108,6 +107,11 @@ COMMON_SOURCES += \
   $(AMRLIB)/cstore.f \
   $(AMRLIB)/saveqc.f \
   $(AMRLIB)/opendatafile.f \
+  $(AMRLIB)/init_bndryList.f \
+  $(AMRLIB)/resize_bndryList.f \
+  $(AMRLIB)/init_nodes.f90 \
+  $(AMRLIB)/restrt_nodes.f90 \
+  $(AMRLIB)/resize_nodes.f90 \
   $(AMRLIB)/init_alloc.f90 \
   $(AMRLIB)/restrt_alloc.f90 \
   $(AMRLIB)/resize_alloc.f90
@@ -130,7 +134,7 @@ COMMON_SOURCES += \
   $(GEOLIB)/filval.f90 \
   $(GEOLIB)/filpatch.f90 \
   $(GEOLIB)/bc2amr.f \
-  $(GEOLIB)/update.f \
+  $(GEOLIB)/update.f90 \
   $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine2.f90  \
   $(GEOLIB)/allowflag.f90  \

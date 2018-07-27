@@ -1,9 +1,7 @@
 """
 Module to set up run time parameters for Clawpack.
-
 The values set in the function setrun are then written out to data files
 that will be read in by the Fortran code.
-
 """
 
 from __future__ import absolute_import
@@ -28,7 +26,6 @@ def transform_p2c(x,y,x0,y0,theta):
 class QinitMultilayerData(clawpack.geoclaw.data.QinitData):
     r"""
     Modified Qinit data object for multiple layers
-
     """
 
     def __init__(self):
@@ -78,13 +75,10 @@ def setrun(claw_pkg='geoclaw'):
 
     """
     Define the parameters used for running Clawpack.
-
     INPUT:
         claw_pkg expected to be "geoclaw" for this setrun.
-
     OUTPUT:
         rundata - object of class ClawRunData
-
     """
 
     from clawpack.clawutil import data
@@ -119,17 +113,17 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
 
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = -1      # west longitude
-    clawdata.upper[0] = 2.0       # east longitude
+    clawdata.lower[0] = -2      # west longitude
+    clawdata.upper[0] = 4.0       # east longitude
 
-    clawdata.lower[1] = -1.0       # south latitude
-    clawdata.upper[1] = 2.0         # north latitude
+    clawdata.lower[1] = -2.0       # south latitude
+    clawdata.upper[1] = 4.0         # north latitude
 
 
 
     # Number of grid cells: Coarsest grid
-    clawdata.num_cells[0] = 150
-    clawdata.num_cells[1] = 150
+    clawdata.num_cells[0] = 80
+    clawdata.num_cells[1] = 80
 
     # ---------------
     # Size of system:
@@ -173,8 +167,8 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 40
-        clawdata.tfinal = 1.0
+        clawdata.num_output_times = 10
+        clawdata.tfinal = 0.3
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -330,12 +324,12 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 1
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,6]
-    amrdata.refinement_ratios_y = [2,6]
-    amrdata.refinement_ratios_t = [2,6]
+    amrdata.refinement_ratios_x = [2,2]
+    amrdata.refinement_ratios_y = [2,2]
+    amrdata.refinement_ratios_t = [2,2]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
@@ -434,7 +428,6 @@ def setgeo(rundata):
     geo_data.coriolis_forcing = False
 
     # == Algorithm and Initial Conditions ==
-    geo_data.sea_level = 0.0
     geo_data.dry_tolerance = 1.e-3
     geo_data.friction_forcing = True
     geo_data.manning_coefficient = 0.025
@@ -470,11 +463,14 @@ def set_multilayer(rundata):
     # Physics parameters
     data.num_layers = 2
     data.eta = [0.0, -0.6]
+    data.rho = [922.5, 1025.0]
 
     # Algorithm parameters
     data.eigen_method = 2
     data.inundation_method = 2
     data.richardson_tolerance = 0.95
+    data.wave_tolerance = [1e-3,1e-2]
+    # data.dry_limit = True
 
     rundata.replace_data('qinit_data', QinitMultilayerData())
     rundata.qinit_data.qinit_type = 6

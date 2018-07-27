@@ -115,7 +115,7 @@ def test_read_sift_make_dtopo(save=False):
     sift_slip = {'acsza1':2, 'acszb1':3}
     fault = dtopotools.SiftFault(sift_slip)
 
-    assert abs(fault.Mw() - 7.3) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
+    assert abs(fault.Mw() - 7.966666666667) < 1e-4, "*** Mw is wrong: %g" % fault.Mw()
 
     xlower = 162.
     xupper = 168.
@@ -163,7 +163,7 @@ def test_SubdividedPlaneFault_make_dtopo(save=False):
     # print "new Mo = ",fault2.Mo()
     #fault2.plot_subfaults(slip_color=True)
 
-    assert abs(fault2.Mw() - 6.83402) < 1e-4, \
+    assert abs(fault2.Mw() - 7.500686667) < 1e-4, \
            "*** Mw is wrong: %g" % fault.Mw()
 
     xlower = 162.

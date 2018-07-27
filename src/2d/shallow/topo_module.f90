@@ -220,6 +220,22 @@ contains
                     topotime(i) = -huge(1.0)
                     call read_topo_file(mxtopo(i),mytopo(i),itopotype(i),topofname(i), &
                         topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
+
+                    ! set topo0save(i) = 1 if this topo file intersects any
+                    ! dtopo file.  This approach to setting topo0save is changed from 
+                    ! v5.4.1, where it only checked if some dtopo point lies within the
+                    ! topo grid, which might not happen for small scale topo
+                    do j=mtopofiles - num_dtopo + 1, mtopofiles
+                        if ((xhitopo(i)<xlowtopo(j)) .or. &
+                            (xlowtopo(i)>xhitopo(j)) .or. &
+                            (yhitopo(i)<ylowtopo(j)) .or. &
+                            (ylowtopo(i)>yhitopo(j))) then
+                              topo0save(i) = 0
+                          else
+                              topo0save(i) = 1
+                          endif
+
+                    enddo
                 enddo
 
                 ! topography order...This determines which order to process topography
@@ -364,8 +380,14 @@ contains
                      !no intersection
                      cycle
                   else !lies in this topofile
-                     !save this topo
-                     topo0save(id) = 1
+
+                     ! Old way of setting topo0save up to v5.4.1.
+                     ! This assumed topo file did not
+                     ! intersect dtopo file if this point was never reached.
+                     ! Not true if topofile has such small extent that it lies between
+                     ! dtopo points.  Now instead we set topo0save earlier.
+                     !topo0save(id) = 1
+
                      !find indices for bilinear cell in topo
                      !arrays are in form of DEM...high y values first
                      !note for xy points lying on nodes all indices will be equal
@@ -671,7 +693,7 @@ contains
 #endif
 
         use geoclaw_module
-        use utility_module, only: parse_values
+        use utility_module, only: parse_values, to_lower
 
         implicit none
 
@@ -701,6 +723,7 @@ contains
         character(len=10) :: x_dim_name, x_var_name, y_dim_name, y_var_name, z_var_name
         integer(kind=4) :: x_var_id, y_var_id, z_var_id
         logical :: verbose
+        logical :: xll_registered, yll_registered
         ! character(len=10) :: x_dim_name, y_dim_name, z_dim_name
         ! character(len=10) :: x_var_name, y_var_name, z_var_name
         ! integer :: ios, root_id, x_var_id, y_var_id, z_var_id, var_ids(10)
@@ -772,10 +795,14 @@ contains
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 xll = values(1)
+                str = to_lower(str)  ! convert to lower case
+                xll_registered = (index(str, 'xllcorner') > 0)
 
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 yll = values(1)
+                str = to_lower(str)  ! convert to lower case
+                yll_registered = (index(str, 'yllcorner') > 0)
 
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
@@ -789,6 +816,19 @@ contains
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 nodata_value = values(1)
+
+                if (xll_registered) then
+                    xll = xll + 0.5d0*dx
+                    write(6,*) '*** in file: ',trim(fname)
+                    write(6,*) '    Shifting xllcorner by 0.5*dx to cell center'
+                    endif 
+
+                if (yll_registered) then
+                    yll = yll + 0.5d0*dy
+                    write(6,*) '*** in file: ',trim(fname)
+                    write(6,*) '    Shifting yllcorner by 0.5*dy to cell center'
+                    endif 
+
 
                 xhi = xll + (mx-1)*dx
                 yhi = yll + (my-1)*dy

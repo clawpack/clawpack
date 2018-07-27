@@ -701,12 +701,14 @@ program amr2
     
     !Total Time
     format_string="('Total time:   ',1f15.3,'        ',1f15.3,'  ')"
-    write(outunit,format_string) &
-            real(timeTick,kind=8) / real(clock_rate,kind=8), &
-            timeTickCPU         
-    write(*,format_string) &
-            real(timeTick,kind=8) / real(clock_rate,kind=8), &
-            timeTickCPU         
+
+!    write(*,format_string)  &
+!            real(clock_finish - clock_start,kind=8) / real(clock_rate,kind=8), &
+!            cpu_finish-cpu_start
+    write(*,format_string) real(timeTick,kind=8)/real(clock_rate,kind=8), &
+            timeTickCPU
+    write(outunit,format_string) real(timeTick,kind=8)/real(clock_rate,kind=8), &
+            timeTickCPU
     
     format_string="('Using',i3,' thread(s)')"
     write(outunit,format_string) maxthreads

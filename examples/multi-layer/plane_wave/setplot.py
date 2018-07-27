@@ -104,6 +104,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
 
     # ========================================================================
     # Axis limits
+
     xlimits = [-0.5, 0.5]
     ylimits = [-0.5, 0.5]
     eta = [multilayer_data.eta[0], multilayer_data.eta[1]]
@@ -126,20 +127,53 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = pcolor_afteraxes
-    ml_plot.add_surface_elevation(plotaxes, 1, bounds=top_surface_limits)
-    ml_plot.add_land(plotaxes)
-
+    ml_plot.add_surface_elevation(plotaxes,1,bounds=top_surface_limits)
+    # ml_plot.add_surface_elevation(plotaxes,1,bounds=[-0.06,0.06])
+    # ml_plot.add_surface_elevation(plotaxes,1)
+    ml_plot.add_land(plotaxes, 1)
+    
     # Bottom surface
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.title = 'Internal Surface'
-    plotaxes.axescmd = 'subplot(1, 2, 2)'
+    plotaxes.axescmd = 'subplot(1,2,2)'
     plotaxes.scaled = True
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = pcolor_afteraxes
-    ml_plot.add_surface_elevation(plotaxes, 2, bounds=internal_surface_limits)
-    ml_plot.add_land(plotaxes)
-
+    # ml_plot.add_surface_elevation(plotaxes,2,bounds=[-300-0.5,-300+0.5])
+    ml_plot.add_surface_elevation(plotaxes,2,bounds=internal_surface_limits)
+    # ml_plot.add_surface_elevation(plotaxes,2)
+    ml_plot.add_land(plotaxes, 2)
+    
+    # ========================================================================
+    #  Depths
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='Depths', figno=42)
+    plotfigure.show = False
+    plotfigure.kwargs = {'figsize':(14,4)}
+    
+    # Top surface
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Top Layer Depth'
+    plotaxes.axescmd = 'subplot(1,2,1)'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = pcolor_afteraxes
+    ml_plot.add_layer_depth(plotaxes,1,bounds=[-0.1,1.1])
+    ml_plot.add_land(plotaxes, 1)
+    
+    # Bottom surface
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Bottom Layer Depth'
+    plotaxes.axescmd = 'subplot(1,2,2)'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = pcolor_afteraxes
+    ml_plot.add_layer_depth(plotaxes,2,bounds=[-0.1,0.7])
+    ml_plot.add_land(plotaxes, 2)
+    
     # ========================================================================
     #  Water Speed
     plotfigure = plotdata.new_plotfigure(name='speed')
@@ -155,7 +189,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     plotaxes.axescmd = 'subplot(1, 2, 1)'
     plotaxes.afteraxes = pcolor_afteraxes
     ml_plot.add_speed(plotaxes, 1, bounds=top_speed_limits)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
 
     # Bottom layer speed
     plotaxes = plotfigure.new_plotaxes()
@@ -163,11 +197,64 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     plotaxes.scaled = True
     plotaxes.xlimits = xlimits
     plotaxes.ylimits = ylimits
-    plotaxes.axescmd = 'subplot(1, 2, 2)'
+    plotaxes.axescmd = 'subplot(1,2,2)'
     plotaxes.afteraxes = pcolor_afteraxes
-    ml_plot.add_speed(plotaxes, 2, bounds=internal_speed_limits)
-    ml_plot.add_land(plotaxes)
+    # add_speed(plotaxes,2,bounds=[0.0,1e-10])
+    ml_plot.add_speed(plotaxes,2,bounds=internal_speed_limits)
+    # add_speed(plotaxes,2)
+    ml_plot.add_land(plotaxes, 2)
+    
+    # Individual components
+    plotfigure = plotdata.new_plotfigure(name='speed_components',figno=401)
+    plotfigure.show = False
+    plotfigure.kwargs = {'figsize':(14,14)}
+    
+    # Top layer
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = "X-Velocity - Top Layer"
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(2,2,1)'
+    plotaxes.afteraxes = pcolor_afteraxes
+    # add_x_velocity(plotaxes,1,bounds=[-1e-10,1e-10])
+    ml_plot.add_x_velocity(plotaxes,1)
+    ml_plot.add_land(plotaxes, 1)
+    
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = "Y-Velocity - Top Layer"
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(2,2,2)'
+    plotaxes.afteraxes = pcolor_afteraxes
+    # add_y_velocity(plotaxes,1,bounds=[-0.000125,0.000125])
+    ml_plot.add_y_velocity(plotaxes,1)
+    ml_plot.add_land(plotaxes, 1)
+    
+    # Bottom layer
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = "X-Velocity - Bottom Layer"
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(2,2,3)'
+    plotaxes.afteraxes = pcolor_afteraxes
+    # add_x_velocity(plotaxes,2,bounds=[-1e-10,1e-10])
+    ml_plot.add_x_velocity(plotaxes,2)
+    ml_plot.add_land(plotaxes, 2)
+    
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = "Y-Velocity - Bottom Layer"
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.axescmd = 'subplot(2,2,4)'
+    plotaxes.afteraxes = pcolor_afteraxes
+    # add_y_velocity(plotaxes,2,bounds=[-0.8e-6,.8e-6])
+    ml_plot.add_y_velocity(plotaxes,2)
 
+    ml_plot.add_land(plotaxes, 2)
     # ========================================================================
     #  Profile Plots
     #  Note that these are not currently plotted by default - set
@@ -244,6 +331,156 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     plotitem.color = (0.2, 0.8, 1.0)
     plotitem.show = True
 
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Y-Velocity'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = pcolor_afteraxes
+    
+    # Water
+    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    # # plotitem.plot_var = geoplot.surface
+    # plotitem.plot_var = water_v
+    # plotitem.pcolor_cmap = colormaps.make_colormap({1.0:'r',0.5:'w',0.0:'b'})
+    # # plotitem.pcolor_cmin = -1.e-10
+    # # plotitem.pcolor_cmax = 1.e-10
+    # # plotitem.pcolor_cmin = -2.5 # -3.0
+    # # plotitem.pcolor_cmax = 2.5 # 3.0
+    # plotitem.add_colorbar = True
+    # plotitem.amr_celledges_show = [0,0,0]
+    # plotitem.amr_patchedges_show = [1,1,1]
+
+    # Land
+    ml_plot.add_land(plotaxes, 1)
+    
+    # ========================================================================
+    #  Contour plot for surface
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='contour_surface',figno=15)
+    plotfigure.show = False
+    plotfigure.kwargs = {'figsize':(14,4)}
+    
+    # Set up for axes in this figure:
+    
+    # Top Surface
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Top Surface'
+    plotaxes.axescmd = 'subplot(1,2,1)'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = contour_afteraxes
+    ml_plot.add_surface_elevation(plotaxes,plot_type='contour',surface=1,bounds=[-2.5,-1.5,-0.5,0.5,1.5,2.5])
+    ml_plot.add_land(plotaxes, 1, plot_type='contour')
+    
+    # Internal Surface
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Internal Surface'
+    plotaxes.axescmd = 'subplot(1,2,2)'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = contour_afteraxes
+    ml_plot.add_surface_elevation(plotaxes,plot_type='contour',surface=2,bounds=[-2.5,-1.5,-0.5,0.5,1.5,2.5])
+    ml_plot.add_land(plotaxes, 2, plot_type='contour')
+    
+    # ========================================================================
+    #  Contour plot for speed
+    # ========================================================================
+    plotfigure = plotdata.new_plotfigure(name='contour_speed',figno=16)
+    plotfigure.show = False
+    plotfigure.kwargs = {'figsize':(14,4)}
+    
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.title = 'Current'
+    plotaxes.scaled = True
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.afteraxes = contour_afteraxes
+    
+    # Surface
+    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+    plotitem.plot_var = ml_plot.water_speed_depth_ave
+    plotitem.kwargs = {'linewidths':1}
+    # plotitem.contour_levels = [1.0,2.0,3.0,4.0,5.0,6.0]
+    plotitem.contour_levels = [0.5,1.5,3,4.5,6.0]
+    plotitem.amr_contour_show = [1,1,1]
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1]
+    plotitem.amr_contour_colors = 'k'
+    # plotitem.amr_contour_colors = ['r','k','b']  # color on each level
+    # plotitem.amr_grid_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+    plotitem.show = True 
+    
+    # Land
+    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+    plotitem.plot_var = geoplot.land
+    plotitem.contour_nlevels = 40
+    plotitem.contour_min = 0.0
+    plotitem.contour_max = 100.0
+    plotitem.amr_contour_colors = ['g']  # color on each level
+    plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+    plotitem.amr_celledges_show = 0
+    plotitem.amr_patchedges_show = 0
+    plotitem.show = True
+
+    # ========================================================================
+    #  Grid Cells
+    # ========================================================================
+    
+    # Figure for grid cells
+    plotfigure = plotdata.new_plotfigure(name='cells', figno=2)
+
+    # Set up for axes in this figure:
+    plotaxes = plotfigure.new_plotaxes()
+    plotaxes.xlimits = xlimits
+    plotaxes.ylimits = ylimits
+    plotaxes.title = 'Grid patches'
+    plotaxes.scaled = True
+
+    # Set up for item on these axes:
+    plotitem = plotaxes.new_plotitem(plot_type='2d_patch')
+    plotitem.amr_patch_bgcolor = ['#ffeeee', '#eeeeff', '#eeffee']
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_patchedges_show = [1,1,1]
+    
+    # ========================================================================
+    #  Vorticity Plot
+    # ========================================================================
+    # plotfigure = plotdata.new_plotfigure(name='vorticity',figno=17)
+    # plotfigure.show = False
+    # plotaxes = plotfigure.new_plotaxes()
+    # plotaxes.title = "Vorticity"
+    # plotaxes.scaled = True
+    # plotaxes.xlimits = xlimits
+    # plotaxes.ylimits = ylimits
+    # plotaxes.afteraxes = pcolor_afteraxes
+    # 
+    # # Vorticity
+    # plotitem = plotaxes.new_plotitem(plot_type='2d_imshow')
+    # plotitem.plot_var = 9
+    # plotitem.imshow_cmap = plt.get_cmap('PRGn')
+    # # plotitem.pcolor_cmap = plt.get_cmap('PuBu')
+    # # plotitem.pcolor_cmin = 0.0
+    # # plotitem.pcolor_cmax = 6.0
+    # plotitem.imshow_cmin = -1.e-2
+    # plotitem.imshow_cmax = 1.e-2
+    # plotitem.add_colorbar = True
+    # plotitem.amr_celledges_show = [0,0,0]
+    # plotitem.amr_patchedges_show = [1]
+    # 
+    # # Land
+    # plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
+    # plotitem.plot_var = geoplot.land
+    # plotitem.pcolor_cmap = geoplot.land_colors
+    # plotitem.pcolor_cmin = 0.0
+    # plotitem.pcolor_cmax = 80.0
+    # plotitem.add_colorbar = False
+    # plotitem.amr_celledges_show = [0,0,0]
+
     # ========================================================================
     #  Figures for gauges
 
@@ -303,7 +540,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = locations_afteraxes
     ml_plot.add_surface_elevation(plotaxes, 1, bounds=top_surface_limits)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 1)
 
     # Bottom surface
     plotaxes = plotfigure.new_plotaxes()
@@ -314,7 +551,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
     plotaxes.ylimits = ylimits
     plotaxes.afteraxes = locations_afteraxes
     ml_plot.add_surface_elevation(plotaxes, 2, bounds=internal_surface_limits)
-    ml_plot.add_land(plotaxes)
+    ml_plot.add_land(plotaxes, 2)
 
     # -----------------------------------------
     # Parameters used only when creating html and/or latex hardcopy
