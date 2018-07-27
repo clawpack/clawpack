@@ -1869,17 +1869,17 @@ class SubFault(object):
                 w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
                 self._coord_transform(w11,w12,w13,w21,w22,w23,w31,w32,w33,alpha)
             
-                v11 = v11 + sgn*w11
-                v21 = v21 + sgn*w21
-                v31 = v31 + sgn*w31
+                v11 += sgn*w11
+                v21 += sgn*w21
+                v31 += sgn*w31
 
-                v12 = v12 + sgn*w12
-                v22 = v22 + sgn*w22
-                v32 = v32 + sgn*w32
+                v12 += sgn*w12
+                v22 += sgn*w22
+                v32 += sgn*w32
 
-                v13 = v23 + sgn*w13
-                v23 = v23 + sgn*w23
-                v33 = v33 + sgn*w33
+                v13 += sgn*w13
+                v23 += sgn*w23
+                v33 += sgn*w33
 
 
         
