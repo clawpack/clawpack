@@ -243,8 +243,8 @@ def strike_direction(x1, y1, x2, y2):
     return s
 
 
-def rise_fraction(t, rupture_time, rise_time, rise_time_ending=None, 
-                  shape='quadratic'):
+def rise_fraction(t, rupture_time, rise_time, rise_time_starting=None, 
+                  rise_shape='quadratic'):
     """
     A continuous piecewise quadratic or linear function of t that is 
 
@@ -257,16 +257,16 @@ def rise_fraction(t, rupture_time, rise_time, rise_time_ending=None,
       rise function.
     - *rupture_time* (float): time (seconds) when rupture starts.
     - *rise_time* (float): duration of rupture (seconds).
-    - *rise_time_ending* (float or None): If None, it is internally set to 
+    - *rise_time_starting* (float or None): If None, it is internally set to 
       `rise_time/2`. 
-    - *shape* (str): 
-      If `shape == "quadratic"`, the rise time function is piecewise quadratic,
+    - *rise_shape* (str): 
+      If `rise_shape == "quadratic"`, the rise time function is piecewise quadratic,
       continuously differentiable, with maximum slope at 
-      `t = rupture_time + rise_time - rise_time_ending`
+      `t = rupture_time + rise_time_starting`
       and zero slope at `t = rupture_time` and `t = rupture_time + rise_time`.
-      If `shape == "linear"`, the rise time function is piecewise linear,
+      If `rise_shape == "linear"`, the rise time function is piecewise linear,
       with value 0.5 at 
-      `t = rupture_time + rise_time - rise_time_ending`.
+      `t = rupture_time + rise_time_starting`.
     
     :Outputs:
     
@@ -283,14 +283,15 @@ def rise_fraction(t, rupture_time, rise_time, rise_time_ending=None,
     if rise_time==0:
         return rf
             
-    if rise_time_ending is None:
-        rise_time_ending = rise_time / 2.
+    if rise_time_starting is None:
+        rise_time_starting = rise_time / 2.
         
-    if (rise_time_ending <= 0) or (rise_time_ending >=rise_time):
-        raise ValueError("*** Require 0 < rise_time_ending < rise_time\n" \
-                         + "***  rise_time_ending = %s" % rise_time_ending)
+    if (rise_time_starting <= 0) or (rise_time_starting >=rise_time):
+        raise ValueError("*** Require 0 < rise_time_starting < rise_time\n" \
+                         + "***  rise_time_starting = %s" % rise_time_starting \
+                         + "*** rise_time = %s" % rise_time)
 
-    rise_time_starting = rise_time - rise_time_ending
+    rise_time_ending = rise_time - rise_time_starting
 
     t1 = t0+rise_time_starting
     t2 = t1+rise_time_ending
@@ -299,19 +300,19 @@ def rise_fraction(t, rupture_time, rise_time, rise_time_ending=None,
     t10 = float(t1-t0)
     t21 = float(t2-t1)
     
-    if shape == 'quadratic':
+    if rise_shape == 'quadratic':
         c1 = t21 / (t20*t10*t21) 
         c2 = t10 / (t20*t10*t21) 
         rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
         rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
         
-    elif shape == 'linear':
+    elif rise_shape == 'linear':
         s1 = 0.5 / t10
         s2 = 0.5 / t21
         rf = numpy.where((t>t0) & (t<=t1), s1*(t-t0), rf)
         rf = numpy.where((t>t1) & (t<=t2), 0.5+s2*(t-t1), rf)
     else:
-        raise ValueError("*** shape must be 'quadratic' or 'linear'")
+        raise ValueError("*** rise_shape must be 'quadratic' or 'linear'")
         
     if scalar:
         rf = float(rf)   # return a scalar if input t is scalar
@@ -634,7 +635,7 @@ class Fault(object):
         """
 
         # Parameters for subfault specification
-        self.rupture_type = 'static' # 'static' or 'dynamic'
+        self.rupture_type = 'static' # 'static' or 'kinematic'
         #self.times = numpy.array([0., 1.])   # or just [0.] ??
         self.dtopo = None
 
@@ -679,7 +680,7 @@ class Fault(object):
             subfault that corresponds to the (longitude,latitude) and depth 
             of the subfault.  See the documentation for 
             *SubFault.calculate_geometry*.
-          - *rupture_type* (str) either "static" or "dynamic"
+          - *rupture_type* (str) either "static" or "kinematic"
           - *skiprows* (int) number of header lines to skip before data
           - *delimiter* (str) e.g. ',' for csv files
           - *input_units* (dict) indicating units for length, width, slip, depth,
@@ -872,14 +873,12 @@ class Fault(object):
             dZ = None
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
-                    rupture_time = getattr(subfault,'rupture_time',0.)
-                    rise_time = getattr(subfault,'rise_time',1.)
-                    rise_time_ending = getattr(subfault,'rise_time_ending',None)
 
-                    rf = rise_fraction([t_prev,t],rupture_time=rupture_time,
-                                        rise_time=rise_time,
-                                        rise_time_ending=rise_time_ending,
-                                        shape='linear')
+                    rf = rise_fraction([t_prev,t],
+                                       subfault.rupture_time,
+                                       subfault.rise_time,
+                                       subfault.rise_time_starting,
+                                       subfault.rise_shape)
 
                     dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
@@ -1292,14 +1291,27 @@ class SubFault(object):
         r"""Longitude of the subfault based on *coordinate_specification*."""
         self.coordinate_specification = None
         r"""Specifies where the latitude, longitude and depth are measured from."""
-        self._projection_zone = None
 
         # default value for rigidity = shear modulus
         # Note that standard units for mu is now Pascals.
         # Multiply by 10 to get dyne/cm^2 value.
         self.mu = 4e10
         r"""Rigidity (== shear modulus) in Pascals."""
+        
+        self.rupture_type = 'static'
+        r"""Either 'static' or 'kinematic'"""
+        
+        # For kinematic ruptures:
+        self.rupture_time = 0.
+        r"""Time subfault starts to rupture (sec)"""
+        self.rise_time = 1.
+        r"""Total rise time of subfault (sec)"""
+        self.rise_time_starting = None
+        r"""Optional time of first part of rise, before break in pw smooth rise"""
+        self.rise_shape = 'quadratic'
+        r"""Shape of rise, 'linear' or 'quadratic' (piecewise)"""
 
+        self._projection_zone = None
         self._centers = None
         self._corners = None
         self._gauss_pts = None
@@ -2590,19 +2602,18 @@ class SubFault(object):
 
           - *rupture_time*
           - *rise_time*
-          - *rise_time_ending*: optional, defaults to *rise_time*
+          - *rise_time_starting*: optional, defaults to *rise_time/2*
+          - *rise_shape*: optional, defaults to *quadratic*        
 
         """
         if (self.rupture_time is None) or (self.rise_time is None):
             raise ValueError("Computing a dynamic slip only works for dynamic ",
-                             "rupture types")
+                             "rupture types", 
+                             "/n    need to specify rupture_time, rise_time")
 
-        t0 = self.rupture_time
-        t1 = self.rise_time
-        t2 = getattr(self,'rise_time_ending',None)
-        rf = rise_fraction(t,t0,t1,t2)
+        rf = rise_fraction(t, self.rupture_time, self.rise_time,
+                           self.rise_time_starting. self.rise_shape)
         return rf * self.slip
-            
 
 
 
@@ -2644,7 +2655,8 @@ class UCSBFault(Fault):
         *path*.
 
         Subfault format contains info for dynamic rupture, so can specify 
-        rupture_type = 'static' or 'dynamic'
+        rupture_type = 'static' or 'kinematic' (or 'dynamic' for backward 
+        compatibility).
 
         """
 
@@ -2733,7 +2745,7 @@ class UCSBFault(Fault):
 
         column_map = {"latitude":0, "longitude":1, "depth":2, "slip":3,
                        "rake":4, "strike":5, "dip":6, "rupture_time":7,
-                       "rise_time":8, "rise_time_ending":9, "mu":10}
+                       "rise_time_starting":8, "rise_time_ending":9, "mu":10}
         defaults = {"length":dx, "width":dy}
         input_units = {"slip":"cm", "depth":"km", 'mu':"dyne/cm^2",
                                    "length":"km", "width":"km"}
@@ -2742,7 +2754,8 @@ class UCSBFault(Fault):
                                 coordinate_specification="centroid",
                                 input_units=input_units, defaults=defaults)
 
-
+        for s in self.subfaults:
+            s.rise_time = s.rise_time_starting + s.rise_time_ending
 
 # ==============================================================================
 #  CSV sub-class of Fault
@@ -2764,7 +2777,7 @@ class CSVFault(Fault):
         """
 
         possible_column_names = """longitude latitude length width depth strike dip
-                          rake slip mu rupture_time rise_time rise_time_ending""".split()
+                          rake slip mu rupture_time rise_time rise_time_ending rise_time_starting""".split()
         param = {}
         for n in possible_column_names:
             param[n] = n
