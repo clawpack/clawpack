@@ -1527,8 +1527,8 @@ class SubFault(object):
         r"""
         Calculate geometry for triangular subfaults
 
-        - it uses *corners* to calculate *centers*, *longitude*, *latitude*,
-        *depth*, *strike*, *dip*, *rake*, *length*, *width*.
+        - Uses *corners* to calculate *centers*, *longitude*, *latitude*,
+          *depth*, *strike*, *dip*, *rake*, *length*, *width*.
 
         - sets *coordinate_specification* as "triangular"
 
@@ -1579,6 +1579,8 @@ class SubFault(object):
 
             e3 = numpy.array([0.,0.,1.])
             normal = cross(v1,v2)
+            if normal[2] < 0:
+                normal = -normal
             strikev = cross(normal,e3)   # vector in strike direction
 
             a = normal[0]
@@ -1587,16 +1589,31 @@ class SubFault(object):
             
             #Compute strike
             strike_deg = rad2deg(numpy.arctan(-b/a))
+            print('+++ initial strike_deg = %g' % strike_deg)
             
             #Compute dip
             beta = deg2rad(strike_deg + 90)
             m = numpy.array([sin(beta),cos(beta),0]) #Points in dip direction
             n = numpy.array([a,b,c]) #Normal to the plane
-            dip_deg = abs(rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n)))))
+            #dip_deg = abs(rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n)))))
+
+            if abs(c) < 1e-8:
+                dip_deg = 90.   # vertical fault
+            else:
+                dip_deg = rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n))))
+            print('+++ initial dip_deg = %g' % dip_deg)
             
+            # dip should be between 0 and 90. If negative, reverse strike:
+            if dip_deg < 0:
+                strike_deg = strike_deg - 180.
+                dip_deg = -dip_deg
+            assert 0 <= dip_deg <= 90, '*** dip_deg = %g' % dip_deg
+
             # keep strike_deg positive
             if strike_deg < 0.:
                 strike_deg = 360 + strike_deg
+            assert 0 <= strike_deg <= 360, '*** strike_deg = %g' % strike_deg
+
             self.strike = strike_deg
             self.dip = dip_deg
             self.rake = rake     # set default rake to 90 degrees
