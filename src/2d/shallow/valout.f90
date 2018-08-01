@@ -401,6 +401,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     ! ==========================================================================
     ! Write out timing stats
     ! Assume that this has been started some where
+    ! if (.not.exists(timing_file_name)) then
     if (frame == 0) then
         ! Write header out and continue
         open(unit=out_unit, file=timing_file_name, form='formatted',         &
