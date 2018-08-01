@@ -1,301 +1,483 @@
-c
-c -----------------------------------------------------
-c
-      subroutine valout (lst, lend, time, nvar, naux)
-c
-      use amr_module
-      use storm_module, only: storm_type, output_storm_location
+!! Geoclaw specific output - adds eta to q array before writing out
+!!
+!! Write the results to the file fort.q<iframe>
+!! Use format required by matlab script  plotclaw2.m or Python tools
+!!
+!! set outaux = .true. to also output the aux arrays to fort.a<iframe>
+subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
 
-      implicit double precision (a-h,o-z)
-      character*10  fname1, fname2, fname3, fname4, fname5
+    use amr_module, only: alloc, t0, output_aux_onlyonce, output_aux_components
+    use amr_module, only: frame => matlabu, num_ghost => nghost, lstart
+    use amr_module, only: hxposs, hyposs, output_format, store1, storeaux
+    use amr_module, only: node, rnode, ndilo, ndihi, ndjlo, ndjhi
+    use amr_module, only: cornxlo, cornylo, levelptr, mxnest
+    use amr_module, only: timeValout, timeValoutCPU, tvoll, tvollCPU, rvoll
+    use amr_module, only: timeTick, tick_clock_start, t0
 
-c     # GeoClaw specific output....  add eta to q array before printing
-c
-c     # Write the results to the file fort.q<iframe>
-c     # Use format required by matlab script  plotclaw2.m or Python tools
-c
-c     # set outaux = .true. to also output the aux arrays to fort.a<iframe>
+    use storm_module, only: storm_type, output_storm_location
 
-      logical outaux
-      integer output_aux_num 
-      real(kind=8) :: h, hu, hv, eta
-      real(kind=8), allocatable :: qeta(:)
+#ifdef HDF5
+    use hdf5
+#endif
 
-      integer :: clock_start, clock_finish, clock_rate
+    implicit none
 
-      iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
-      iaddaux(iaux,i,j) = locaux + iaux-1 + naux*(i-1) +
-     .                                      naux*mitot*(j-1)
-      iaddqeta(ivar,i,j)  = 1 + ivar - 1 + 4*((j-1)*mitot+i-1)
-c
-      call system_clock(clock_start,clock_rate)
+    ! Input
+    integer, intent(in) :: level_begin, level_end, num_eqn, num_aux
+    real(kind=8), intent(in) :: time
 
+    ! Locals
+    integer, parameter :: out_unit = 50
+    integer :: i, j, m, level, output_aux_num, num_stop, digit, num_dim
+    integer :: grid_ptr, num_cells(2), num_grids, q_loc, aux_loc
+    real(kind=8) :: lower_corner(2), delta(2)
+    logical :: out_aux
+    character(len=11) :: file_name(5)
 
-      if (nvar /= 3) then
-          write(6,*) '*** Error: valout assumes nvar==3 for geoclaw'
-          stop
-          endif
+    real(kind=8) :: h, hu, hv, eta
+    real(kind=8), allocatable :: qeta(:)
 
-c     # how many aux components requested?
-      output_aux_num = 0
-      do i=1,naux
-         output_aux_num = output_aux_num + output_aux_components(i)
-         enddo
-        
-c     # Currently outputs all aux components if any are requested!
-      outaux = ((output_aux_num > 0) .and. 
-     .         ((.not. output_aux_onlyonce) .or. (time==t0)))
+#ifdef HDF5
+    ! HDF writing
+    integer :: hdf_error
+    integer(hid_t) :: hdf_file, data_space, data_set
+    integer(hsize_t) :: dims(2)
+#endif
 
-c     open(unit=77,file='fort.b',status='unknown',access='stream')
+    ! Timing
+    integer :: clock_start, clock_finish, clock_rate
+    integer    tick_clock_finish, tick_clock_rate, timeTick_int
+    real(kind=8) :: cpu_start, cpu_finish, t_CPU_overall, timeTick_overall
+    character(len=256) :: timing_line, timing_substr
+    character(len=*), parameter :: timing_file_name = "timing.csv"
 
-c     Output storm track if needed
-      if (storm_type > 0) then
+    character(len=*), parameter :: header_format_1d =                          &
+                                    "(i6,'                 grid_number',/," // &
+                                     "i6,'                 AMR_level',/,"   // &
+                                     "i6,'                 mx',/,"          // &
+                                     "e26.16,'    xlow', /, "               // &
+                                     "e26.16,'    dx',/)"
+    character(len=*), parameter :: header_format_2d =                          &
+                                    "(i6,'                 grid_number',/," // &
+                                     "i6,'                 AMR_level',/,"   // &
+                                     "i6,'                 mx',/,"          // &
+                                     "i6,'                 my',/"           // &
+                                     "e26.16,'    xlow', /, "               // &
+                                     "e26.16,'    ylow', /,"                // &
+                                     "e26.16,'    dx', /,"                  // &
+                                     "e26.16,'    dy',/)"
+    character(len=*), parameter :: t_file_format = "(e18.8,'    time', /,"  // &
+                                           "i6,'                 meqn'/,"   // &
+                                           "i6,'                 ngrids'/," // &
+                                           "i6,'                 naux'/,"   // &
+                                           "i6,'                 ndim'/,"   // &
+                                           "i6,'                 nghost'/,/)"
+    character(len=*), parameter :: timing_header_format =                      &
+                                                  "(' wall time (', i2,')," // &
+                                                  " CPU time (', i2,'), "   // &
+                                                  "cells updated (', i2,'),')"
+    character(len=*), parameter :: console_format = &
+             "('AMRCLAW: Frame ',i4,' output files done at time t = ', d13.6,/)"
+
+    ! Output timing
+    call system_clock(clock_start,clock_rate)
+    call cpu_time(cpu_start)
+
+    ! Count how many aux components requested
+    output_aux_num = 0
+    do i=1, num_aux
+        output_aux_num = output_aux_num + output_aux_components(i)
+    end do
+
+    ! Note:  Currently outputs all aux components if any are requested
+    out_aux = ((output_aux_num > 0) .and.               &
+              ((.not. output_aux_onlyonce) .or. (abs(time - t0) < 1d-90)))
+                
+    ! Output storm track if needed
+    if (storm_type > 0) then
         call output_storm_location(time)
-      end if
+    end if
 
-c     ### Python graphics output
-c
+    ! Construct file names
+    file_name(1) = 'fort.qxxxx'
+    file_name(2) = 'fort.txxxx'
+    file_name(3) = 'fort.axxxx'
+    file_name(4) = 'fort.bxxxx'
+    num_stop = frame
+    do i = 10, 7, -1
+        digit = mod(num_stop, 10)
+        do j = 1, 4
+            file_name(j)(i:i) = char(ichar('0') + digit)
+        end do
+        num_stop = num_stop / 10
+    end do
+    ! Slightly modified for HDF file output
+    file_name(5) = 'clawxxxx.h5'
+    num_stop = frame
+    do i = 8, 5, -1
+        digit = mod(num_stop, 10)
+        file_name(5)(i:i) = char(ichar('0') + digit)
+        num_stop = num_stop / 10
+    end do
 
-c        ###  make the file names and open output files
-         fname1 = 'fort.qxxxx'
-         fname2 = 'fort.txxxx'
-         fname3 = 'fort.axxxx'
-         fname4 = 'fort.bxxxx'
-         matunit1 = 50
-         matunit2 = 60
-         matunit3 = 70
-         matunit4 = 71
-         nstp     = matlabu
-         do 55 ipos = 10, 7, -1
-            idigit = mod(nstp,10)
-            fname1(ipos:ipos) = char(ichar('0') + idigit)
-            fname2(ipos:ipos) = char(ichar('0') + idigit)
-            fname3(ipos:ipos) = char(ichar('0') + idigit)
-            fname4(ipos:ipos) = char(ichar('0') + idigit)
-            nstp = nstp / 10
- 55      continue
+    ! ==========================================================================
+    ! Write out fort.q file (and fort.bXXXX and clawxxxx.h5 files if necessary)
+    ! Here we let fort.q be out_unit and the the other two be out_unit + 1
+    open(unit=out_unit, file=file_name(1), status='unknown', form='formatted')
+    if (output_format == 3) then
+        open(unit=out_unit + 1, file=file_name(4), status="unknown",    &
+             access='stream')
+    else if (output_format == 4) then
+#ifdef HDF5
+        ! Note that we will use this file for both q and aux data
+        call h5create_f(file_name(5), H5F_ACC_TRUNC_F, hdf_file, hdf_error)
 
-         open(unit=matunit1,file=fname1,status='unknown',
-     .       form='formatted')
+        ! Create group for q
+        call h5gcreate_f(hdf_file, "/q", q_group, hdf_error)
+#endif
+    end if
+    num_grids = 0
 
-         if (output_format == 3) then
-c            # binary output          
-             open(unit=matunit4,file=fname4,status='unknown',
-     &               access='stream')
-             endif
+    ! Loop over levels
+    do level = level_begin, level_end
+        grid_ptr = lstart(level)
+        delta = [hxposs(level), hyposs(level)]
 
-         level = lst
-         ngrids = 0
-c65      if (level .gt. lfine) go to 90
- 65      if (level .gt. lend) go to 90
-            mptr = lstart(level)
- 70         if (mptr .eq. 0) go to 80
-              ngrids  = ngrids + 1
-              nx      = node(ndihi,mptr) - node(ndilo,mptr) + 1
-              ny      = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
-              loc     = node(store1, mptr)
-              locaux  = node(storeaux,mptr)
-              mitot   = nx + 2*nghost
-              mjtot   = ny + 2*nghost
-              if (ny.gt.1) then
-                  write(matunit1,1001) mptr, level, nx, ny
-                else
-c                 # output in 1d format if ny=1:
-                  write(matunit1,1003) mptr, level, nx
-                endif
- 1001 format(i6,'                 grid_number',/,
-     &       i6,'                 AMR_level',/,
-     &       i6,'                 mx',/,
-     &       i6,'                 my')
- 1003 format(i6,'                 grid_number',/,
-     &       i6,'                 AMR_level',/,
-     &       i6,'                 mx')
+        ! Loop over grids on each level
+        do while (grid_ptr /= 0)
+            ! Extract grid data
+            num_grids = num_grids + 1
+            num_cells(1) = node(ndihi, grid_ptr) - node(ndilo, grid_ptr) + 1
+            num_cells(2) = node(ndjhi, grid_ptr) - node(ndjlo, grid_ptr) + 1
+            q_loc = node(store1, grid_ptr)
+            aux_loc = node(storeaux, grid_ptr)
+            lower_corner = [rnode(cornxlo, grid_ptr), rnode(cornylo, grid_ptr)]
 
+            ! Write out header data                 
+            if (num_dim == 1) then
+                write(out_unit, header_format_1d) grid_ptr, level,             &
+                                                  num_cells(1),                &
+                                                  lower_corner(1),             &
+                                                  delta(1)
+            else
+                write(out_unit, header_format_2d) grid_ptr, level,             &
+                                                  num_cells(1),                &
+                                                  num_cells(2),                &
+                                                  lower_corner(1),             &
+                                                  lower_corner(2),             &
+                                                  delta(1), delta(2)
+            end if
 
-              xlow = rnode(cornxlo,mptr)
-              ylow = rnode(cornylo,mptr)
-              if (ny.gt.1) then
-                  write(matunit1,1002)
-     &              xlow,ylow,hxposs(level),hyposs(level)
-                else
-                  write(matunit1,1004)
-     &              xlow,hxposs(level)
-                endif
- 1002 format(e18.8,'    xlow', /,
-     &       e18.8,'    ylow', /,
-     &       e18.8,'    dx', /,
-     &       e18.8,'    dy',/)
- 1004 format(e18.8,'    xlow', /,
-     &       e18.8,'    dx', /)
+            ! Output grids
+            select case(output_format)
+                ! ASCII output
+                case(1)
+                    ! Round off if nearly zero
+                    forall (m = 1:num_eqn,                              &
+                            i=num_ghost + 1:num_cells(1) + num_ghost,   &
+                            j=num_ghost + 1:num_cells(2) + num_ghost,   &
+                            abs(alloc(iadd(m, i, j))) < 1d-90)
 
+                        alloc(iadd(m, i, j)) = 0.d0
+                    end forall
 
+                    do j = num_ghost + 1, num_cells(2) + num_ghost
+                        do i = num_ghost + 1, num_cells(1) + num_ghost
+
+                            ! Extract depth and momenta
+                            h = alloc(iadd(1, i, j))
+                            hu = alloc(iadd(2, i, j))
+                            hv = alloc(iadd(3, i, j))
+
+                            ! Calculate sufaces
+                            if (abs(eta) < 1d-99) then
+                                eta = 0.d0
+                            end if
+
+                            write(out_unit, "(50e26.16)") h, hu, hv, eta
+                        end do
+                        write(out_unit, *) ' '
+                    end do
+
+                ! What is case 2?
+                case(2)
+                    stop "Unknown format."
+
+                ! Binary output
+                case(3)
+                    ! Need to add eta to the output data
+                    allocate(qeta((num_eqn + 1) * num_cells(1) * num_cells(2)))
+                    do j = 1, num_cells(2)
+                        do i = 1, num_cells(1)
+                            do m = 1, num_eqn
+                                qeta(iaddqeta(m, i, j)) = alloc(iadd(m, i, j))
+                            end do
+                        end do
+                        eta = alloc(iadd(1, i, j)) + alloc(iaddaux(1, i ,j))
+                        qeta(iaddqeta(num_eqn + 1, i, j)) = eta
+                    end do
+
+                    ! Note: We are writing out ghost cell data also
+                    i = (iadd(num_eqn, num_cells(1) + 2 * num_ghost, &
+                                       num_cells(2) + 2 * num_ghost))
+                    write(out_unit + 1) qeta
+
+                    deallocate(qeta)
+
+                ! HDF5 output
+                case(4)
+#ifdef HDF5
+                ! Create data space - handles dimensions of the corresponding 
+                ! data set - annoyingling need to stick grid size into other
+                ! data type
+                dims = (/ num_eqn, num_cells(1) + 2 * num_ghost,               &
+                                   num_cells(2) + 2 * num_ghost /)
+                call h5screate_simple_f(2, dims, data_space, hdf_error)
+
+                ! Create new dataset for this grid
+                call h5dcreate_f(hdf_file, data_set, H5T_IEEE_F64LE,           &
+                                 data_space, data_set, hdf_error)
+
+                ! Write q into file
+                i = (iadd(num_eqn, num_cells(1) + 2 * num_ghost,               &
+                                   num_cells(2) + 2 * num_ghost))
+                call h5dwrite_f(data_set, H5T_NATIVE_DOUBLE,                   &
+                                alloc(iadd(1, 1, 1):i), hdf_error)
+                call h5dclose_f(data_set, hdf_error)
+                call h5sclose_f(data_space, hdf_error)
+#endif
+                case default
+                    print *, "Unsupported output format", output_format,"."
+                    stop 
+
+            end select
+            grid_ptr = node(levelptr, grid_ptr)
+        end do
+    end do
+    close(out_unit)
+#ifdef HDF5
+    if (output_format == 4) then
+        call h5gclose_f(q_group, hdf_error)
+    end if
+#endif
+
+    ! ==========================================================================
+    ! Write out fort.a file
+    if (out_aux) then
         if (output_format == 1) then
-             do j = nghost+1, mjtot-nghost
-                do i = nghost+1, mitot-nghost
-                   do ivar=1,nvar
-                      if (abs(alloc(iadd(ivar,i,j))) < 1d-90) then
-                         alloc(iadd(ivar,i,j)) = 0.d0
-                      endif
-                   enddo
+            open(unit=out_unit, file=file_name(3), status='unknown',        &
+                 form='formatted')
+        else if (output_format == 3) then
+            open(unit=out_unit, file=file_name(3), status='unknown',        &
+                 access='stream')
+        else if (output_format == 4) then
+#ifdef HDF5
+        ! Create group for aux
+        call h5gcreate_f(hdf_file, "/aux", aux_group, hdf_error)
+#endif            
+        end if
 
-                   ! Extract depth and momenta
-                   h = alloc(iadd(1,i,j)) 
-                   hu = alloc(iadd(2,i,j))
-                   hv = alloc(iadd(3,i,j))
+        do level = level_begin, level_end
+            grid_ptr = lstart(level)
+            delta = [hxposs(level), hyposs(level)]
 
-                   ! Calculate surfaces
-                   eta = h + alloc(iaddaux(1,i,j))
-                   if (abs(eta) < 1d-90) then
-                      eta = 0.d0
-                   end if
+            ! Loop over grids on each level
+            do while (grid_ptr /= 0)
+                ! Extract grid data
+                num_cells(1) = node(ndihi, grid_ptr) - node(ndilo, grid_ptr) + 1
+                num_cells(2) = node(ndjhi, grid_ptr) - node(ndjlo, grid_ptr) + 1
+                aux_loc = node(storeaux, grid_ptr)
+                lower_corner = [rnode(cornxlo, grid_ptr),           &
+                                rnode(cornylo, grid_ptr)]
 
-                   write(matunit1,109) h,hu,hv,eta
-                enddo
-                write(matunit1,*) ' '
-             enddo
-  109        format(50e26.16)
-         endif
+                ! Output grids
+                select case(output_format)
+                    ! ASCII output
+                    case(1)
 
-         if (output_format == 3) then
-c            # binary output          
-c            i1 = iadd(1,1,1)
-c            i2 = iadd(nvar,mitot,mjtot)
-c            # Need to augment q with eta:
-             allocate(qeta(4*mitot*mjtot))
-             do j=1,mjtot
-                 do i=1,mitot
-                    do m=1,3
-                        qeta(iaddqeta(m,i,j)) = alloc(iadd(m,i,j))
-                    enddo
-                    eta = alloc(iadd(1,i,j)) + alloc(iaddaux(1,i,j))
-                    qeta(iaddqeta(4,i,j)) = eta
-                 enddo
-             enddo
+                        ! We only output header info for aux data if writing 
+                        ! ASCII data
+                        if (num_dim == 1) then
+                            write(out_unit, header_format_1d) grid_ptr, level, &
+                                                              num_cells(1),    &
+                                                              lower_corner(1), &
+                                                              delta(1)
+                        else
+                            write(out_unit, header_format_2d) grid_ptr, level, &
+                                                              num_cells(1),    &
+                                                              num_cells(2),    &
+                                                              lower_corner(1), &
+                                                              lower_corner(2), &
+                                                              delta(1), delta(2)
+                        end if
 
-c            # NOTE: we are writing out ghost cell data also, unlike ascii
-             write(matunit4) qeta
+                        ! Round off if nearly zero
+                        forall (m = 1:num_aux,                              &
+                                i=num_ghost + 1:num_cells(1) + num_ghost,   &
+                                j=num_ghost + 1:num_cells(2) + num_ghost,   &
+                                abs(alloc(iaddaux(m, i, j))) < 1d-90)
 
-             deallocate(qeta)
-             endif
+                            alloc(iaddaux(m, i, j)) = 0.d0
+                        end forall
 
-            mptr = node(levelptr, mptr)
-            go to 70
- 80      level = level + 1
-         go to 65
+                        do j = num_ghost + 1, num_cells(2) + num_ghost
+                            do i = num_ghost + 1, num_cells(1) + num_ghost
+                                write(out_unit, "(50e26.16)")                   &
+                                         (alloc(iaddaux(m, i, j)), m=1, num_aux)
+                            end do
+                            write(out_unit, *) ' '
+                        end do
 
- 90     continue
+                    ! What is case 2?
+                    case(2)
+                        stop "Unknown format."
 
-c       -------------------
-c       # output aux arrays
-c       -------------------
+                    ! Binary output
+                    case(3)
+                        ! Note: We are writing out ghost cell data also
+                        i = (iaddaux(num_aux, num_cells(1) + 2 * num_ghost, &
+                                              num_cells(2) + 2 * num_ghost))
+                        write(out_unit) alloc(iaddaux(1, 1, 1):i)
 
-        if (outaux) then
-c        # output aux array to fort.aXXXX
+                    ! HDF5 output
+                    case(4)
+#ifdef HDF5
+                ! Create data space - handles dimensions of the corresponding 
+                ! data set - annoyingling need to stick grid size into other
+                ! data type
+                dims = (/ num_aux, num_cells(1) + 2 * num_ghost,               &
+                                   num_cells(2) + 2 * num_ghost /)
+                call h5screate_simple_f(2, dims, data_space, hdf_error)
 
-         level = lst
- 165     if (level .gt. lend) go to 190
-            mptr = lstart(level)
- 170        if (mptr .eq. 0) go to 180
-              nx      = node(ndihi,mptr) - node(ndilo,mptr) + 1
-              ny      = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
-              locaux  = node(storeaux,mptr)
-              mitot   = nx + 2*nghost
-              mjtot   = ny + 2*nghost
+                ! Create new dataset for this grid
+                call h5dcreate_f(hdf_file, data_set, H5T_IEEE_F64LE,           &
+                                 data_space, data_set, hdf_error)
 
+                call h5dcreate_f(hdf_file, data_set, H5T_IEEE_F64LE,           &
+                                 data_space, data_set, hdf_error)
 
-          if (output_format == 1) then
-             open(unit=matunit3,file=fname3,status='unknown',
-     .            form='formatted')
-              if (ny.gt.1) then
-                  write(matunit3,1001) mptr, level, nx, ny
-                else
-c                 # output in 1d format if ny=1:
-                  write(matunit3,1003) mptr, level, nx
-                endif
-              xlow = rnode(cornxlo,mptr)
-              ylow = rnode(cornylo,mptr)
-              if (ny.gt.1) then
-                  write(matunit3,1002)
-     &              xlow,ylow,hxposs(level),hyposs(level)
-                else
-                  write(matunit3,1004)
-     &              xlow,hxposs(level)
-                endif
+                ! Write q into file
+                i = (iadd_aux(num_aux, num_cells(1) + 2 * num_ghost,           &
+                                       num_cells(2) + 2 * num_ghost))
+                call h5dwrite_f(data_set, H5T_NATIVE_DOUBLE,                   &
+                                alloc(iadd_aux(1, 1, 1):i), hdf_error)
+                call h5dclose_f(data_set, hdf_error)
+                call h5sclose_f(data_space, hdf_error)
+#endif
+                    case default
+                        print *, "Unsupported output format", output_format,"."
+                        stop 
 
-             do j = nghost+1, mjtot-nghost
-                do i = nghost+1, mitot-nghost
-                   do ivar=1,naux
-                      if (abs(alloc(iaddaux(ivar,i,j))) .lt. 1d-90) 
-     &                   alloc(iaddaux(ivar,i,j)) = 0.d0
-                   enddo
-                   write(matunit3,109) (alloc(iaddaux(ivar,i,j)), 
-     &                              ivar=1,naux)
-                enddo
-                write(matunit3,*) ' '
-             enddo
-            endif
-            
-         if (output_format == 3) then
-c            # binary output          
-             open(unit=matunit3,file=fname3,status='unknown',
-     &               access='stream')
-             i1 = iaddaux(1,1,1)
-             i2 = iaddaux(naux,mitot,mjtot)
-c            # NOTE: we are writing out ghost cell data also, unlike ascii
-             write(matunit3) alloc(i1:i2)
-             endif
-
-
-            mptr = node(levelptr, mptr)
-            go to 170
- 180     level = level + 1
-         go to 165
-
- 190    continue
-        close(unit=matunit3)
-        endif !# end outputting aux array
+                end select
+                grid_ptr = node(levelptr, grid_ptr)
+            end do
+        end do
+    end if
+#ifdef HDF5
+    if (out_aux) then
+        call h5gclose_f(aux_group, hdf_error)
+    end if
+    call h5fclose_f(hdf_file, hdf_error)
+#endif
 
 
-c     --------------
-c     # fort.t file:
-c     --------------
+    ! ==========================================================================
+    ! Write fort.t file
+    open(unit=out_unit, file=file_name(2), status='unknown', form='formatted')
 
-      open(unit=matunit2,file=fname2,status='unknown',
-     .       form='formatted')
-      if (ny.gt.1) then 
-          ndim = 2
-        else
-c         # special case where 2d AMR is used for a 1d problem
-c         # and we want to use 1d plotting routines
-          ndim = 1
-        endif
+    ! Handle special case of using 2D AMR to do 1D AMR
+    if (num_cells(2) > 1) then
+        num_dim = 2
+    else
+        num_dim = 1
+    end if
 
-c     # NOTE: we need to print out nghost too in order to strip
-c     #       ghost cells from q when reading in pyclaw.io.binary
-c     # Print meqn = nvar+1 because eta added.
-      write(matunit2,1000) time,nvar+1,ngrids,naux,ndim,nghost
- 1000 format(e18.8,'    time', /,
-     &       i6,'                 meqn'/,
-     &       i6,'                 ngrids'/,
-     &       i6,'                 naux'/,
-     &       i6,'                 ndim'/,
-     &       i6,'                 nghost'/,/)
-c
+    ! Note:  We need to print out num_ghost too in order to strip ghost cells
+    !        from q array when reading in pyclaw.io.binary
+    write(out_unit, t_file_format) time, num_eqn, num_grids, num_aux, num_dim, &
+                                   num_ghost
+    close(out_unit)
 
-      write(6,601) matlabu,time
-  601 format('AMRCLAW: Frame ',i4,
-     &       ' output files done at time t = ', d13.6,/)
+    ! ==========================================================================
+    ! Write out timing stats
+    ! Assume that this has been started some where
+    if (frame == 0) then
+        ! Write header out and continue
+        open(unit=out_unit, file=timing_file_name, form='formatted',         &
+             status='unknown', action='write')
+        ! Construct header string
+        timing_line = 'output_time,total_wall_time,total_cpu_time,'
+        timing_substr = ""
+        do level=1, mxnest
+            write(timing_substr, timing_header_format) level, level, level
+            timing_line = trim(timing_line) // trim(timing_substr)
+        end do
+        write(out_unit, "(a)") timing_line
+    else
+        open(unit=out_unit, file=timing_file_name, form='formatted',         &
+             status='old', action='write', position='append')
+    end if
+    
+    timing_line = "(e16.6, ', ', e16.6, ', ', e16.6,"
+    do level=1, mxnest
+        timing_substr = "', ', e16.6, ', ', e16.6, ', ', e16.6"
+        timing_line = trim(timing_line) // timing_substr
+    end do
+    timing_line = trim(timing_line) // ")"
 
-      matlabu = matlabu + 1
+    if (time == t0) then
+        t_CPU_overall = 0.d0
+        timeTick_overall = 0.d0
+      else
+        call cpu_time(t_CPU_overall)
+        call system_clock(tick_clock_finish,tick_clock_rate)
+        timeTick_int = timeTick + tick_clock_finish - tick_clock_start
+        timeTick_overall = real(timeTick_int, kind=8)/real(clock_rate,kind=8)
+      endif
 
-      close(unit=matunit1)
-      close(unit=matunit2)
-      if (output_format == 3) then
-          close(unit=matunit4)
-          endif
+    write(out_unit, timing_line) time, timeTick_overall, t_CPU_overall, &
+        (real(tvoll(i), kind=8) / real(clock_rate, kind=8), &
+         tvollCPU(i), rvoll(i), i=1,mxnest)
+    
+    close(out_unit)
 
-       call system_clock(clock_finish,clock_rate)
-       timeValout = timeValout + clock_finish - clock_start
+    ! ==========================================================================
+    ! Print output info
+    print console_format, frame, time
 
-      return
-      end
+    ! Increment frame counter
+    frame = frame + 1
+
+    ! Ouptut timing
+    call system_clock(clock_finish,clock_rate)
+    call cpu_time(cpu_finish)
+    timeValout = timeValout + clock_finish - clock_start
+    timeValoutCPU = timeValoutCPU + cpu_finish - cpu_start
+    
+
+contains
+
+    ! Index into q array
+    pure integer function iadd(m, i, j)
+        implicit none
+        integer, intent(in) :: m, i, j
+        iadd = q_loc + m - 1 + num_eqn * ((j - 1) * (num_cells(1) + 2 * num_ghost) + i - 1)
+    end function iadd
+
+    ! Index into aux array
+    pure integer function iaddaux(m, i, j)
+        implicit none
+        integer, intent(in) :: m, i, j
+        iaddaux = aux_loc + m - 1 + num_aux * (i - 1) + num_aux * (num_cells(1) + 2 * num_ghost) * (j - 1)
+    end function iaddaux
+
+    ! Index into qeta for binary output
+    ! Note that this implicitly assumes that we are outputting only h, hu, hv
+    ! and will not output more (change num_eqn parameter above)
+    pure integer function iaddqeta(m, i, j)
+        implicit none
+        integer, intent(in) :: m, i, j
+        iaddqeta = 1 + m - 1 + (num_eqn + 1) * ((j - 1) * num_cells(1) + i - 1)
+    end function iaddqeta
+
+end subroutine valout
