@@ -1552,9 +1552,8 @@ class SubFault(object):
 
             x0 = numpy.array(self.corners)
             x = x0.copy()
-            x = numpy.array(x0)
             
-            x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative(lazy)
+            x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative
 
             if 0:
                 # old coordinate transform
@@ -1581,6 +1580,7 @@ class SubFault(object):
             normal = cross(v1,v2)
             if normal[2] < 0:
                 normal = -normal
+                self._corners.reverse()
             strikev = cross(normal,e3)   # vector in strike direction
 
             a = normal[0]
