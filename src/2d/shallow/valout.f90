@@ -401,9 +401,10 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
 
     ! ==========================================================================
     ! Write out timing stats
-    ! Assume that this has been started some where
+    ! Create a new file if frame is set to 0 or if it does not exist yet
+    ! Note that this does not currently really handle restarts.
     inquire(file=timing_file_name, exist=timing_file_exists)
-    if (.not. timing_file_exists) then
+    if (frame == 0 .or. (.not.timing_file_exists)) then
         ! Write header out and continue
         open(unit=out_unit, file=timing_file_name, form='formatted',         &
              status='unknown', action='write')
