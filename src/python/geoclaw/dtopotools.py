@@ -1316,6 +1316,7 @@ class SubFault(object):
         self._corners = None
         self._gauss_pts = None
         self.n_gauss_pts = 4
+        self._fix_orientation = False
 
 
     def convert_to_standard_units(self, input_units, verbose=False):
@@ -1523,7 +1524,7 @@ class SubFault(object):
                                             self._centers[0][1] 
                                                                  - up_strike[1])
 
-    def calculate_geometry_triangles(self,rake=90.):
+    def calculate_geometry_triangles(self):
         r"""
         Calculate geometry for triangular subfaults
 
@@ -1580,7 +1581,7 @@ class SubFault(object):
             normal = cross(v1,v2)
             if normal[2] < 0:
                 normal = -normal
-                self._corners.reverse()
+                self._fix_orientation = True
             strikev = cross(normal,e3)   # vector in strike direction
 
             a = normal[0]
@@ -1616,7 +1617,6 @@ class SubFault(object):
 
             self.strike = strike_deg
             self.dip = dip_deg
-            self.rake = rake     # set default rake to 90 degrees
 
             # find the center line
             xx = numpy.zeros((3,3))
@@ -1649,10 +1649,14 @@ class SubFault(object):
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
 
-    def set_corners(self,corners,rake=90.,projection_zone=None):
+    def set_corners(self,corners,rake,projection_zone=None):
         r"""
-            set three corners for a triangular fault.
-            Input *corners* should be iterable of length 3.
+        Set three corners for a triangular fault.
+        :Inputs: 
+            
+        - *corners* should be iterable of length 3.
+        - *rake* should be between -180. and 180.
+        
         """
 
         if len(corners) == 3:
@@ -1660,7 +1664,8 @@ class SubFault(object):
                 [corners[0],corners[1],corners[2]]
             self._projection_zone = projection_zone
             self.coordinate_specification = 'triangular'
-            self.calculate_geometry_triangles(rake=rake)
+            self.rake = rake
+            self.calculate_geometry_triangles()
         else:
             raise ValueError("Expected input of length 3")
 
@@ -1873,9 +1878,13 @@ class SubFault(object):
                     Odepth = abs(O2_list[k][2])
 
                 if reverse_list[k]:
-                    sgn = (-1.)**(floor(j/3)+1)
+                    sgn = (-1.)**(floor(j/3))
                 else:
-                    sgn = (-1.)**floor(j/3)
+                    sgn = (-1.)**floor(j/3+1)
+                
+                # fix orientation 
+                if self._fix_orientation:
+                    sgn *= -1.
 
                 Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3 = \
                 self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
@@ -1906,7 +1915,7 @@ class SubFault(object):
             dZ = -v31*burgersv[0] - v32*burgersv[1] + v33*burgersv[2]
 
             dtopo = DTopography()
-            dtopo.X = X1    # DR: X1, X2 varname confusing?
+            dtopo.X = X1    
             dtopo.Y = X2
             dtopo.dX = numpy.array(dX, ndmin=3)
             dtopo.dY = numpy.array(dY, ndmin=3)
@@ -1940,7 +1949,7 @@ class SubFault(object):
         y[:,1] = LAT2METER * x[:,1]
         y[:,2] = - numpy.abs(x[:,2])    # force sign
 
-        v_list = [y[1,:] - y[0,:], y[2,:] - y[1,:], y[0,:] - y[2,:]]
+        v_list = [y[0,:] - y[1,:], y[1,:] - y[2,:], y[2,:] - y[0,:]]
 
         e3 = numpy.array([0.,0.,-1.])
 
@@ -1961,10 +1970,8 @@ class SubFault(object):
                 l = j
                 reverse_list[j] = True
 
-            O1 = x[k,:].tolist()     # set origin for the vector v
-            O2 = x[l,:].tolist()     # set dest.  for the vector v
-            O1_list.append(O1)
-            O2_list.append(O2)
+            O1_list.append(x[k,:].copy())  # set origin for the vector v
+            O2_list.append(x[l,:].copy())  # set dest.  for the vector v
 
             alpha = numpy.arctan2(vn[0],vn[1])
             alpha_list.append(alpha)
