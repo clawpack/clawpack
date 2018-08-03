@@ -15,6 +15,8 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     use amr_module, only: timeTick, tick_clock_start, t0
 
     use storm_module, only: storm_type, output_storm_location
+    use geoclaw_module, only: rho
+    use multilayer_module, only: num_layers
 
 #ifdef HDF5
     use hdf5
@@ -29,14 +31,14 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     ! Locals
     logical :: timing_file_exists
     integer, parameter :: out_unit = 50
-    integer, parameter :: binary_unit = 51
-    integer :: i, j, m, level, output_aux_num, num_stop, digit
-    integer :: grid_ptr, num_cells(2), num_grids, q_loc, aux_loc
+    integer :: i, j, k, m, level, output_aux_num, num_stop, digit
+    integer :: index, grid_ptr, num_cells(2), num_grids, q_loc, aux_loc
     real(kind=8) :: lower_corner(2), delta(2)
     logical :: out_aux
     character(len=11) :: file_name(5)
 
-    real(kind=8) :: h, hu, hv, eta
+    real(kind=8) :: h(num_layers), hu(num_layers), hv(num_layers)
+    real(kind=8) :: eta(num_layers)
     real(kind=8), allocatable :: qeta(:)
 
 #ifdef HDF5
@@ -121,11 +123,10 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     ! Here we let fort.q be out_unit and the the other two be out_unit + 1
     open(unit=out_unit, file=file_name(1), status='unknown', form='formatted')
     if (output_format == 3) then
-        open(unit=binary_unit, file=file_name(4), status="unknown",    &
+        open(unit=out_unit + 1, file=file_name(4), status="unknown",    &
              access='stream')
-#ifdef HDF5
     else if (output_format == 4) then
-
+#ifdef HDF5
         ! Note that we will use this file for both q and aux data
         call h5create_f(file_name(5), H5F_ACC_TRUNC_F, hdf_file, hdf_error)
 
@@ -175,16 +176,26 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
                         do i = num_ghost + 1, num_cells(1) + num_ghost
 
                             ! Extract depth and momenta
-                            h = alloc(iadd(1, i, j))
-                            hu = alloc(iadd(2, i, j))
-                            hv = alloc(iadd(3, i, j))
+                            do k=1, num_layers
+                                index = 3 * (k - 1)
+                                h(k) = alloc(iadd(index + 1, i, j)) / rho(k)
+                                hu(k) = alloc(iadd(index + 2, i, j)) / rho(k)
+                                hv(k) = alloc(iadd(index + 3, i, j)) / rho(k)
+                            end do
 
                             ! Calculate sufaces
-                            if (abs(eta) < 1d-99) then
-                                eta = 0.d0
-                            end if
+                            eta(num_layers) = h(num_layers)         &
+                                                + alloc(iaddaux(1, i, j))
+                            do k=num_layers - 1, 1, -1
+                                eta(k) = h(k) + eta(k + 1)
+                                if (abs(eta(k)) < 1d-99) then
+                                    eta(k) = 0.d0
+                                end if
+                            end do
 
-                            write(out_unit, "(50e26.16)") h, hu, hv, eta
+                            write(out_unit, "(50e26.16)")                   &
+                                (h(k), hu(k), hv(k), k=1, num_layers),      &
+                                (eta(k), k=1, num_layers)
                         end do
                         write(out_unit, *) ' '
                     end do
@@ -196,21 +207,40 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
                 ! Binary output
                 case(3)
                     ! Need to add eta to the output data
-                    allocate(qeta((num_eqn + 1)                         &
+                    allocate(qeta((num_eqn + num_layers)                &
                              * (num_cells(1) + 2 * num_ghost)           &
                              * (num_cells(2) + 2 * num_ghost)))
                     do j = 1, num_cells(2) + 2 * num_ghost
                         do i = 1, num_cells(1) + 2 * num_ghost
-                            do m = 1, num_eqn
-                                qeta(iaddqeta(m, i, j)) = alloc(iadd(m, i, j))
+
+                            ! Extract depth and momenta
+                            do k=1,num_layers
+                                 index = 3 * (k - 1)
+                                 h(k) = alloc(iadd(index + 1,i,j)) / rho(k)
+                                 hu(k)= alloc(iadd(index + 2,i,j)) / rho(k)
+                                 hv(k) = alloc(iadd(index + 3,i,j)) / rho(k)
                             end do
-                            eta = alloc(iadd(1, i, j)) + alloc(iaddaux(1, i ,j))
-                            qeta(iaddqeta(num_eqn + 1, i, j)) = eta
+
+                            ! Calculate surfaces
+                            eta(num_layers) = h(num_layers)         &
+                                                + alloc(iaddaux(1,i,j))
+                            do k=num_layers-1,1,-1
+                                eta(k) = h(k) + eta(k+1)
+                            enddo
+
+                            do m=1,num_layers
+                                index = 3*(m - 1)
+                                qeta(iaddqeta(index+1,i,j)) = h(m)
+                                qeta(iaddqeta(index+2,i,j)) = hu(m)
+                                qeta(iaddqeta(index+3,i,j)) = hv(m)
+                                qeta(iaddqeta(3*num_layers+m,i,j)) = eta(m)
+                            end do
+
                         end do
                     end do
 
                     ! Note: We are writing out ghost cell data also
-                    write(binary_unit) qeta
+                    write(out_unit + 1) qeta
 
                     deallocate(qeta)
 
@@ -245,14 +275,11 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
         end do
     end do
     close(out_unit)
-
-    if (output_format == 3) then
-        close(binary_unit)
 #ifdef HDF5
-    else if (output_format == 4) then
+    if (output_format == 4) then
         call h5gclose_f(q_group, hdf_error)
-#endif
     end if
+#endif
 
     ! ==========================================================================
     ! Write out fort.a file
@@ -263,10 +290,10 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
         else if (output_format == 3) then
             open(unit=out_unit, file=file_name(3), status='unknown',        &
                  access='stream')
-#ifdef HDF5
         else if (output_format == 4) then
-            ! Create group for aux
-            call h5gcreate_f(hdf_file, "/aux", aux_group, hdf_error)
+#ifdef HDF5
+        ! Create group for aux
+        call h5gcreate_f(hdf_file, "/aux", aux_group, hdf_error)
 #endif            
         end if
 
@@ -359,7 +386,6 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
             end do
         end do
     end if
-    close(out_unit)
 #ifdef HDF5
     if (out_aux) then
         call h5gclose_f(aux_group, hdf_error)
@@ -374,8 +400,8 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
 
     ! Note:  We need to print out num_ghost too in order to strip ghost cells
     !        from q array when reading in pyclaw.io.binary
-    write(out_unit, t_file_format) time, num_eqn + 1, num_grids, num_aux,   &
-                                   2, num_ghost
+    write(out_unit, t_file_format) time, num_eqn + num_layers, num_grids, &
+                                   num_aux, 2, num_ghost
     close(out_unit)
 
     ! ==========================================================================
@@ -407,15 +433,15 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     end do
     timing_line = trim(timing_line) // ")"
 
-    if (abs(time - t0) < 1d-15) then
+    if (time == t0) then
         t_CPU_overall = 0.d0
         timeTick_overall = 0.d0
-    else
+      else
         call cpu_time(t_CPU_overall)
         call system_clock(tick_clock_finish,tick_clock_rate)
         timeTick_int = timeTick + tick_clock_finish - tick_clock_start
         timeTick_overall = real(timeTick_int, kind=8)/real(clock_rate,kind=8)
-    endif
+      endif
 
     write(out_unit, timing_line) time, timeTick_overall, t_CPU_overall, &
         (real(tvoll(i), kind=8) / real(clock_rate, kind=8), &
@@ -459,7 +485,7 @@ contains
     pure integer function iaddqeta(m, i, j)
         implicit none
         integer, intent(in) :: m, i, j
-        iaddqeta = 1 + m - 1 + (num_eqn + 1) * ((j - 1) * (num_cells(1) + 2 * num_ghost) + i - 1)
+        iaddqeta = 1 + m - 1 + (num_eqn + num_layers) * ((j - 1) * (num_cells(1) + 2 * num_ghost) + i - 1) 
     end function iaddqeta
 
 end subroutine valout

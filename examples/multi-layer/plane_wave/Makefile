@@ -83,7 +83,7 @@ SOURCES = \
   $(GEOLIB)/multilayer/b4step2.f90 \
   $(GEOLIB)/multilayer/getmaxspeed.f90 \
   $(GEOLIB)/multilayer/stepgrid.f \
-  $(GEOLIB)/multilayer/valout.f \
+  $(GEOLIB)/multilayer/valout.f90 \
   $(GEOLIB)/multilayer/src2.f90 \
   $(GEOLIB)/multilayer/filpatch.f90 \
   $(GEOLIB)/multilayer/filval.f90 \
