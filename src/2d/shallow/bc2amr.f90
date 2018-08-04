@@ -22,7 +22,7 @@
 !!                   by reflecting the data about the boundary and then
 !!                   negating the 2'nd (for k=1,2) or 3'rd (for k=3,4)
 !!                   component of q.
-!!  * 5  for sphere bcs (left half maps to right half of same side, and vice versa), as if domain folded in half
+!!  * 4  for sphere bcs (left half maps to right half of same side, and vice versa), as if domain folded in half
 !!
 !!  The corners of the grid patch are at 
 !!     (xlo_patch,ylo_patch)  --  lower left corner
