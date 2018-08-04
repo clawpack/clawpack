@@ -21,9 +21,9 @@
 !
 ! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
-                       tolsp,q,aux,amrflags,DONTFLAG,DOFLAG)
+                       tolsp,q,aux,amrflags)
 
-    use amr_module, only: mxnest, t0
+    use amr_module, only: mxnest, t0, DONTFLAG, DOFLAG, UNSET
     use geoclaw_module, only: sea_level, rho
     use geoclaw_module, only: spherical_distance, coordinate_system
 
@@ -55,8 +55,6 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
 
     ! Flagging
     real(kind=8), intent(in out) :: amrflags(1-mbuff:mx+mbuff,1-mbuff:my+mbuff)
-    real(kind=8), intent(in) :: DONTFLAG
-    real(kind=8), intent(in) :: DOFLAG
 
     logical :: allowflag
     external allowflag
@@ -69,8 +67,9 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     ! Storm specific variables
     real(kind=8) :: R_eye(2), wind_speed
 
-    ! Initialize flags
-    amrflags = DONTFLAG
+    ! Don't initialize flags, since they were already
+    ! flagged by flagregions2
+    ! amrflags = DONTFLAG
 
     ! Loop over interior points on this grid
     ! (i,j) grid cell is [x_low,x_hi] x [y_low,y_hi], cell center at (x_c,y_c)
@@ -99,7 +98,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                         ds = sqrt((x_c - R_eye(1))**2 + (y_c - R_eye(2))**2)
                     end if
                     
-                    if ( ds < R_refine(m) .and. level <= m ) then
+                    if ( ds < R_refine(m) .and. level <= m .and. amrflags(i,j) == UNSET) then
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
                     endif
@@ -109,7 +108,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                 if (wind_forcing) then
                     wind_speed = sqrt(aux(wind_index,i,j)**2 + aux(wind_index+1,i,j)**2)
                     do m=1,size(wind_refine,1)
-                        if ((wind_speed > wind_refine(m)) .and. (level <= m)) then
+                        if ((wind_speed > wind_refine(m)) .and. (level <= m) &
+                              .and. amrflags(i,j) == UNSET) then
                             amrflags(i,j) = DOFLAG
                             cycle x_loop
                         endif
@@ -122,20 +122,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             do m=1,mtopofiles
                 if (level < minleveltopo(m) .and. t >= tlowtopo(m) .and. t <= thitopo(m)) then
                     if (  x_hi > xlowtopo(m) .and. x_low < xhitopo(m) .and. &
-                          y_hi > ylowtopo(m) .and. y_low < yhitopo(m) ) then
-
-                        amrflags(i,j) = DOFLAG
-                        cycle x_loop
-                    endif
-                endif
-            enddo
-
-            ! Check to see if refinement is forced in any other region:
-            do m=1,num_regions
-                if (level < regions(m)%min_level .and. &
-                    t >= regions(m)%t_low .and. t <= regions(m)%t_hi) then
-                    if (x_hi > regions(m)%x_low .and. x_low < regions(m)%x_hi .and. &
-                        y_hi > regions(m)%y_low .and. y_low < regions(m)%y_hi ) then
+                          y_hi > ylowtopo(m) .and. y_low < yhitopo(m) &
+                           .and. amrflags(i,j) == UNSET) then
 
                         amrflags(i,j) = DOFLAG
                         cycle x_loop
@@ -149,7 +137,8 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
                 if (level < minleveldtopo(m).and. &
                     t <= tfdtopo(m) .and. & !t.ge.t0dtopo(m).and.
                     x_hi > xlowdtopo(m) .and. x_low < xhidtopo(m).and. &
-                    y_hi > ylowdtopo(m) .and. y_low < yhidtopo(m)) then
+                    y_hi > ylowdtopo(m) .and. y_low < yhidtopo(m) &
+                     .and. amrflags(i,j) == UNSET) then
 
                     amrflags(i,j) = DOFLAG
                     cycle x_loop
@@ -160,7 +149,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! specified and need to force refinement:
             ! This assumes that t0 = 0.d0, should really be t0 but we do
             ! not have access to that parameter in this routine
-            if (qinit_type > 0 .and. t == t0) then
+            if (qinit_type > 0 .and. t == t0 .and. amrflags(i,j) == UNSET) then
                 if (level < min_level_qinit .and. &
                     x_hi > x_low_qinit .and. x_low < x_hi_qinit .and. &
                     y_hi > y_low_qinit .and. y_low < y_hi_qinit) then
@@ -173,7 +162,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! -----------------------------------------------------------------
             ! Refinement not forced, so check if it is allowed and if so,
             ! check if there is a reason to flag this point:
-            if (allowflag(x_c,y_c,t,level)) then
+            if (allowflag(x_c,y_c,t,level) .and. amrflags(i,j) == UNSET) then
                 b = aux(1,i,j)
                 do layer = num_layers, 1, -1
                     if (q(3*layer-2,i,j) / rho(layer) > dry_tolerance(layer)) then
