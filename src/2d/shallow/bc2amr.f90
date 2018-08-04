@@ -249,7 +249,7 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
         nyt = int((yhi_patch - yupper + hymarg) / hy)
         jbeg = max(ncol - nyt + 1, 1)
 
-        select case(mthbc(3))
+        select case(mthbc(4))
             case(0) ! User defined boundary condition
                 ! Replace this code with a user defined boundary condition
                 stop "A user defined boundary condition was not provided."
