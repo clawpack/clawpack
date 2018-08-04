@@ -135,6 +135,9 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                     end do
                 end do
 
+            case(4) ! Spherical domain
+                continue
+
             case default
                 print *, "Invalid boundary condition requested."
                 stop
@@ -178,6 +181,9 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                         val(2, i, j) = -val(2, i, j)
                     end do
                 end do
+
+            case(4) ! Spherical domain
+                continue
 
             case default
                 print *, "Invalid boundary condition requested."
@@ -224,6 +230,9 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                     end do
                 end do
 
+            case(4) ! Spherical domain
+                continue
+
             case default
                 print *, "Invalid boundary condition requested."
                 stop
@@ -269,6 +278,9 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                         val(3, i, j) = -val(3, i, j)
                     end do
                 end do
+
+            case(4) ! Spherical domain
+                continue
 
             case default
                 print *, "Invalid boundary condition requested."
