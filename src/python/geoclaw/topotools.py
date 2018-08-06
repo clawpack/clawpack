@@ -92,9 +92,8 @@ def create_topo_func(loc,verbose=False):
      - *loc* (list) - Create a topography file with the profile denoted by the
        tuples inside of loc.  A sample set of points are shown below.  Note 
        that the first value of the list is the x location and the second is 
-       the height of the topography.
+       the height of the topography. ::
 
-       **This figure doesn't show up properly in Sphinx docs...**
 
         z (m)
         ^                                                  o loc[5]  o
@@ -271,6 +270,11 @@ class Topography(object):
     A class representing a single topography file.
 
     :Properties:
+    
+    Note: Modified to check the `grid_registration` when reading or writing
+    topo files and properly deal with `llcorner` registration in which case
+    the x,y data should be offset by dx/2, dy/2 from the lower left corner 
+    specified in the header of a DEM file.
 
     :Initialization:
          - 
@@ -278,7 +282,8 @@ class Topography(object):
     :Examples:
 
         >>> import clawpack.geoclaw.topotools as topo
-        >>> topo_file = topo.Topography('./topo.tt3')
+        >>> topo_file = topo.Topography()
+        >>> topo_file.read('./topo.tt3', topo_type=3)
         >>> topo_file.plot()
 
     """
@@ -466,7 +471,11 @@ class Topography(object):
                 # RJL: why do we expect 1d z?
                 if self._z is None:
                 # Try to read the data, may not have done this yet
-                    self.read(path=self.path, mask=mask)
+                    if self.topo_type is None:
+                        self.topo_type = determine_topo_type(self.path)
+                    if self.topo_type is None:
+                        raise ValueError("topo_type must be specified")
+                    self.read(path=self.path, topo_type=self.topo_type, mask=mask)
                     if self._Z is not None:
                         # We are done, the read function did our work
                         return
@@ -595,7 +604,8 @@ class Topography(object):
                 # Try to look at suffix for type
                 self.topo_type = determine_topo_type(self.path)
                 if self.topo_type is None:
-                    self.topo_type = 3
+                    #self.topo_type = 3
+                    raise ValueError("topo_type must be specified")
 
         if self.unstructured:
             # Read in the data as series of tuples
@@ -647,8 +657,8 @@ class Topography(object):
             elif abs(self.topo_type) in [2,3]:
                 # Get header information
                 N = self.read_header()  # note this also sets self._extent
-                self._x = numpy.linspace(self.extent[0], self.extent[1], N[0])
-                self._y = numpy.linspace(self.extent[2], self.extent[3], N[1])
+                                        # self._x, self._y, self._delta, 
+                                        # and  self.grid_registration
 
                 if abs(self.topo_type) == 2:
                     # Data is read in as a single column, reshape it
@@ -757,12 +767,30 @@ class Topography(object):
                     # Assume the header is flipped from what we expect
                     num_cells[0] = int(first_line.split()[-1])
                     value_index = -1
+                    label_index = 0
                 else:
                     value_index = 0
+                    label_index = -1
 
                 num_cells[1] = int(topo_file.readline().split()[value_index])
-                self._extent[0] = float(topo_file.readline().split()[value_index])
-                self._extent[2] = float(topo_file.readline().split()[value_index])
+
+                xline = topo_file.readline().split()
+                xll = float(xline[value_index])
+                # drop 'x' character and convert remaining string to lower case:
+                x_registration = xline[label_index][1:].lower()
+
+                yline = topo_file.readline().split()
+                yll = float(yline[value_index])
+                # drop 'y' character and convert remaining string to lower case:
+                y_registration = yline[label_index][1:].lower()
+                
+                if x_registration == y_registration:
+                    self.grid_registration = x_registration
+                    # expect registration in ['llcorner', 'llcenter', 'lower']
+                else:
+                    raise IOError("x_registration and y_registration don't " \
+                        + "match: %s,%s" % (x_registration, y_registration))
+
                 # parse line allowing possibility of dx and dy (or just dx=dy)
                 line = topo_file.readline()
                 tokens = line.split() 
@@ -773,20 +801,42 @@ class Topography(object):
                         values.append(v)
                     except:
                         pass
+                dx = values[0]
                 if len(values) == 1:
-                    self._delta = (values[0], values[0]) # if only dx given
+                    dy = dx   # only dx given
                 elif len(values) == 2:
+                    dy = values[1]
                     self._delta = (values[0], values[1])  # if dx,dy on line
                 else:
                     raise IOError("Cannot parse dx,dy line: %s" % line)
+                self._delta = (dx, dy)
                     
                         
                 self.no_data_value = float(topo_file.readline().split()[value_index])
+
+                x = numpy.linspace(xll, xll+(num_cells[0]-1)*dx, num_cells[0])
+                y = numpy.linspace(yll, yll+(num_cells[1]-1)*dy, num_cells[1])
+                if self.grid_registration in ['lower', 'llcenter']:
+                    # x,y are cell center / data locations:
+                    self._x = x
+                    self._y = y
+                elif self.grid_registration == 'llcorner':
+                    # x,y are lower left corners:
+                    # data points are offset by dx/2, dy/2
+                    self._x = x + dx/2.
+                    self._y = y + dy/2.
+                    print('*** Note: since grid registration is llcorner,')
+                    print('    will shift x,y values by (dx/2, dy/2) to cell centers')
+                else:
+                    # assume that x,y are cell center / data locations:
+                    self._x = x
+                    self._y = y
+                    print('*** Warning: Unrecognized grid_registration: %s' \
+                                    % self.grid_registration)
+                    print('    Assuming x,y at grid points')
                 
-                self._extent[1] = self._extent[0] + \
-                                    (num_cells[0]-1)*self._delta[0]
-                self._extent[3] = self._extent[2] + \
-                                    (num_cells[1]-1)*self._delta[1]
+                # set extent based on data locations (not lower corner for 'llcorner')
+                self._extent = [self._x[0],self._x[-1],self._y[0],self._y[-1]]
 
         else:
             raise IOError("Cannot read header for topo_type %s" % self.topo_type)
@@ -794,7 +844,7 @@ class Topography(object):
         return num_cells
 
     def write(self, path, topo_type=None, no_data_value=None, masked=True, 
-                header_style='geoclaw', Z_format="%15.7e"):
+                header_style='geoclaw', Z_format="%15.7e", grid_registration=None):
         r"""Write out a topography file to path of type *topo_type*.
 
         Writes out a topography file of topo type specified with *topo_type* or
@@ -812,8 +862,11 @@ class Topography(object):
          - *masked* (bool) - unused??
          - *header_style* (str) - indicates format of header lines
              'geoclaw' or 'default'  ==> write value then label 
+                                     with grid_registration == 'lower' as default
              'arcgis' or 'asc' ==> write label then value  
-                        (needed for .asc files in ArcGIS)
+                                   with grid_registration == 'llcorner' as default
+                                   (needed for .asc files in ArcGIS)
+
          - *Z_format* (str) - string format to use for Z values
            The default format "%15.7e" gives at least millimeter precision
            for topography with abs(Z) < 10000 and results in
@@ -823,6 +876,8 @@ class Topography(object):
            etopo1 data is integers and so has a resolution of 1 meter.
            In this case a cropped or coarsened version might be written
            with `Z_format = "%7i"`, for example.
+         - *grid_registration* (str) - 'lower', 'llcorner', 'llcenter' 
+                or None for defaults described above.
 
         """
 
@@ -870,13 +925,34 @@ class Topography(object):
                         outfile.write("%s %s %s\n" % (longitude, latitude, self.Z[j,i]))
 
         elif topo_type == 2 or topo_type == 3:
+
+            if grid_registration is None:
+                if header_style in ['geoclaw','default']:
+                    grid_registration = 'lower'
+                elif header_style in ['arcgis','asc']:
+                    grid_registration = 'llcorner'
+                else:
+                    raise ValueError("*** Unrecognized header_style")
+
+            if grid_registration in ['lower','llcenter']:
+                xlower = self.x[0]
+                ylower = self.y[0]
+            elif grid_registration == 'llcorner':
+                xlower = self.x[0] - self.delta[0]/2.
+                ylower = self.y[0] - self.delta[1]/2.
+            else:
+                raise ValueError('Unrecognized grid_registration: %s' \
+                                % grid_registration)
+            xlabel = 'x' + grid_registration
+            ylabel = 'y' + grid_registration
+
             with open(path, 'w') as outfile:
                 # Write out header
                 if header_style in ['geoclaw','default']:
                     outfile.write('%6i                              ncols\n' % self.Z.shape[1])
                     outfile.write('%6i                              nrows\n' % self.Z.shape[0])
-                    outfile.write('%22.15e              xlower\n' % self.extent[0])
-                    outfile.write('%22.15e              ylower\n' % self.extent[2])
+                    outfile.write('%22.15e              %s\n' % (xlower,xlabel))
+                    outfile.write('%22.15e              %s\n' % (ylower,ylabel))
                     if abs(self.delta[0] - self.delta[1])/self.delta[0] < 1e-8:
                         # write only dx in usual case:
                         outfile.write('%22.15e              cellsize\n' \
@@ -889,8 +965,8 @@ class Topography(object):
                 elif header_style in ['arcgis','asc']:
                     outfile.write('ncols  %6i\n' % self.Z.shape[1])
                     outfile.write('nrows  %6i\n' % self.Z.shape[0]) 
-                    outfile.write('xllcorner %22.15e\n' % self.extent[0])
-                    outfile.write('yllcorner %22.15e\n' % self.extent[2])
+                    outfile.write('%s  %22.15e\n' % (xlabel,xlower))
+                    outfile.write('%s  %22.15e\n' % (ylabel,ylower))
                     outfile.write('cellsize %22.15e\n'  % self.delta[0])
                     outfile.write('nodata_value  %10i\n' % no_data_value)
                 else:
@@ -1580,7 +1656,6 @@ def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True,
     
     from clawpack.geoclaw import topotools
     from numpy import array
-    from matplotlib.mlab import find
     import netCDF4
     if return_xarray:
         import xarray
@@ -1621,10 +1696,13 @@ def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True,
         Zs = f.variables[zvar][::coarsen,::coarsen]
     else:
         x1,x2,y1,y2 = extent
-        i1 = find(x>=x1).min()
-        i2 = find(x<=x2).max() + 1
-        j1 = find(y>=y1).min()
-        j2 = find(y<=y2).max() + 1
+        # find indices of x,y arrays for points lying within extent:
+        iindex = [i for i,xi in enumerate(x) if (x1 <= xi <= x2)]
+        jindex = [j for j,yj in enumerate(y) if (y1 <= yj <= y2)]
+        i1 = iindex[0]
+        i2 = iindex[-1] + 1
+        j1 = jindex[0]
+        j2 = jindex[-1] + 1
 
         # create new xarray object with this (possibly coarsened) subset:
 

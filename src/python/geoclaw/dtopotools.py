@@ -147,7 +147,8 @@ def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
 
 
 def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
-                   add_colorbar=True, verbose=False, fig_kwargs={}):
+                   add_colorbar=True, verbose=False, 
+                   colorbar_labelsize=10, colorbar_ticksize=10, fig_kwargs={}):
     r"""
     Plot sea floor deformation dZ as colormap with contours
     """
@@ -171,10 +172,11 @@ def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
     extent = [x.min(), x.max(), y.min(), y.max()]
     im = axes.imshow(dZ, extent=extent, cmap=cmap, origin='lower')
     im.set_clim(-cmax_dZ,cmax_dZ)
+
     if add_colorbar:
         cbar = plt.colorbar(im, ax=axes)
-        cbar.set_label("Deformation (m)")
-    
+        cbar.set_label("Deformation (m)",fontsize=colorbar_labelsize)
+        cbar.ax.tick_params(labelsize=colorbar_ticksize)
 
     if dZ_interval is None:
         dZ_interval = cmax_dZ/10.
@@ -241,43 +243,77 @@ def strike_direction(x1, y1, x2, y2):
     return s
 
 
-def rise_fraction(t, t0, t_rise, t_rise_ending=None):
+def rise_fraction(t, rupture_time, rise_time, rise_time_starting=None, 
+                  rise_shape='quadratic'):
     """
-    A continuously differentiable piecewise quadratic function of t that is 
+    A continuous piecewise quadratic or linear function of t that is 
 
-     *  0 for t <= t0, 
-     *  1 for t >= t0 + t_rise + t_rise_ending 
+     *  0 for t <= rupture_time, 
+     *  1 for t >= rupture_time + rise_time 
 
-    with maximum slope at t0 + t_rise.
-    For specifying dynamic fault ruptures:  Subfault files often contain these
-    parameters for each subfault for an earthquake event.
-
-    *t* can be a scalar or a numpy array of times and the returned result
-    will have the same type.  A list or tuple of times returns a numpy array.
+    :Inputs:
+    
+    - *t* (scalar, list, or np.array): times at which to evaluate the 
+      rise function.
+    - *rupture_time* (float): time (seconds) when rupture starts.
+    - *rise_time* (float): duration of rupture (seconds).
+    - *rise_time_starting* (float or None): If None, it is internally set to 
+      `rise_time/2`. 
+    - *rise_shape* (str): 
+      If `rise_shape == "quadratic"`, the rise time function is piecewise quadratic,
+      continuously differentiable, with maximum slope at 
+      `t = rupture_time + rise_time_starting`
+      and zero slope at `t = rupture_time` and `t = rupture_time + rise_time`.
+      If `rise_shape == "linear"`, the rise time function is piecewise linear,
+      with value 0.5 at 
+      `t = rupture_time + rise_time_starting`.
+    
+    :Outputs:
+    
+    *rf* (float or np.array): The rise time function evaluated at `t`.
+    If the input is a list or tuple of times, returns a numpy array.
+    
     """
 
     scalar = (type(t) in [float,int])
     t = numpy.array(t)
-
-    if t_rise_ending is None: 
-        t_rise_ending = t_rise
-
-    t1 = t0+t_rise
-    t2 = t1+t_rise_ending
-
+    
+    t0 = rupture_time
     rf = numpy.where(t<=t0, 0., 1.)
-    if t2 != t0:
+    if rise_time==0:
+        return rf
+            
+    if rise_time_starting is None:
+        rise_time_starting = rise_time / 2.
+        
+    if (rise_time_starting <= 0) or (rise_time_starting >=rise_time):
+        raise ValueError("*** Require 0 < rise_time_starting < rise_time\n" \
+                         + "***  rise_time_starting = %s" % rise_time_starting \
+                         + "*** rise_time = %s" % rise_time)
 
-        t20 = float(t2-t0)
-        t10 = float(t1-t0)
-        t21 = float(t2-t1)
+    rise_time_ending = rise_time - rise_time_starting
 
+    t1 = t0+rise_time_starting
+    t2 = t1+rise_time_ending
+
+    t20 = float(t2-t0)
+    t10 = float(t1-t0)
+    t21 = float(t2-t1)
+    
+    if rise_shape == 'quadratic':
         c1 = t21 / (t20*t10*t21) 
         c2 = t10 / (t20*t10*t21) 
-
         rf = numpy.where((t>t0) & (t<=t1), c1*(t-t0)**2, rf)
         rf = numpy.where((t>t1) & (t<=t2), 1. - c2*(t-t2)**2, rf)
-
+        
+    elif rise_shape == 'linear':
+        s1 = 0.5 / t10
+        s2 = 0.5 / t21
+        rf = numpy.where((t>t0) & (t<=t1), s1*(t-t0), rf)
+        rf = numpy.where((t>t1) & (t<=t2), 0.5+s2*(t-t1), rf)
+    else:
+        raise ValueError("*** rise_shape must be 'quadratic' or 'linear'")
+        
     if scalar:
         rf = float(rf)   # return a scalar if input t is scalar
 
@@ -529,7 +565,7 @@ class DTopography(object):
         elif t >= self.times[-1]:
             return self.dZ[-1,:,:]
         else:
-            n = max(find(self.times <= t))
+            n = max(find(numpy.array(self.times) <= t))
             t1 = self.times[n]
             t2 = self.times[n+1]
             dz = (t2-t)/(t2-t1) * self.dZ[n,:,:] + \
@@ -547,6 +583,7 @@ class DTopography(object):
 
 
     def plot_dZ_colors(self, t, axes=None, cmax_dZ=None, dZ_interval=None, 
+                       colorbar_ticksize=10,colorbar_labelsize=10,
                                 fig_kwargs={}):
         """
         Interpolate self.dZ to specified time t and then call module function
@@ -554,6 +591,8 @@ class DTopography(object):
         """
         axes = plot_dZ_colors(self.X, self.Y, self.dZ_at_t(t), axes=axes,
                               cmax_dZ=cmax_dZ, dZ_interval=dZ_interval,
+                              colorbar_ticksize=colorbar_ticksize,
+                              colorbar_labelsize=colorbar_labelsize,
                               fig_kwargs=fig_kwargs)
         return axes
 
@@ -596,7 +635,7 @@ class Fault(object):
         """
 
         # Parameters for subfault specification
-        self.rupture_type = 'static' # 'static' or 'dynamic'
+        self.rupture_type = 'static' # 'static' or 'kinematic'
         #self.times = numpy.array([0., 1.])   # or just [0.] ??
         self.dtopo = None
 
@@ -641,7 +680,7 @@ class Fault(object):
             subfault that corresponds to the (longitude,latitude) and depth 
             of the subfault.  See the documentation for 
             *SubFault.calculate_geometry*.
-          - *rupture_type* (str) either "static" or "dynamic"
+          - *rupture_type* (str) either "static" or "kinematic"
           - *skiprows* (int) number of header lines to skip before data
           - *delimiter* (str) e.g. ',' for csv files
           - *input_units* (dict) indicating units for length, width, slip, depth,
@@ -834,13 +873,17 @@ class Fault(object):
             dZ = None
             for t in times:
                 for k,subfault in enumerate(self.subfaults):
-                    t0 = getattr(subfault,'rupture_time',0)
-                    t1 = getattr(subfault,'rise_time',0.5)
-                    t2 = getattr(subfault,'rise_time_ending',None)
-                    rf = rise_fraction([t_prev,t],t0,t1,t2)
+
+                    rf = rise_fraction([t_prev,t],
+                                       subfault.rupture_time,
+                                       subfault.rise_time,
+                                       subfault.rise_time_starting,
+                                       subfault.rise_shape)
+
                     dfrac = rf[1] - rf[0]
                     if dfrac > 0.:
                         dzt = dzt + dfrac * subfault.dtopo.dZ[0,:,:]
+                        
                 dzt = numpy.array(dzt, ndmin=3)  # convert to 3d array
                 if dZ is None:
                     dZ = dzt.copy()
@@ -862,7 +905,8 @@ class Fault(object):
     def plot_subfaults(self, axes=None, plot_centerline=False, slip_color=False,
                              cmap_slip=None, cmin_slip=None, cmax_slip=None,
                              slip_time=None, plot_rake=False, xylim=None, 
-                             plot_box=True, colorbar_shrink=1, verbose=False):
+                             plot_box=True, colorbar_shrink=1, verbose=False,
+                             colorbar_labelsize=10,colorbar_ticksize=10):
         """
         Plot each subfault projected onto the surface.
 
@@ -925,22 +969,55 @@ class Fault(object):
         y_ave = 0.
         for subfault in self.subfaults:
 
-            x_top = subfault.centers[0][0]
-            y_top = subfault.centers[0][1]
-            x_centroid = subfault.centers[1][0]
-            y_centroid = subfault.centers[1][1]
-            x_corners = [subfault.corners[2][0],
-                         subfault.corners[3][0],
-                         subfault.corners[0][0],
-                         subfault.corners[1][0],
-                         subfault.corners[2][0]]
-            y_corners = [subfault.corners[2][1],
-                         subfault.corners[3][1],
-                         subfault.corners[0][1],
-                         subfault.corners[1][1],
-                         subfault.corners[2][1]]
+            if subfault.coordinate_specification == 'triangular':
+
+                x_centroid = (subfault.corners[0][0] \
+                            + subfault.corners[1][0] \
+                            + subfault.corners[2][0]) / 3.
+                y_centroid = (subfault.corners[0][1] \
+                            + subfault.corners[1][1] \
+                            + subfault.corners[2][1]) / 3.
+                
+                #x_top = subfault.centers[0][0]
+                #y_top = subfault.centers[0][1]
+                # rake direction is wrong...
+                gamma = (subfault.strike + 90.)*numpy.pi/180. 
+
+                x_top = x_centroid + numpy.cos(gamma)
+                y_top = y_centroid + numpy.sin(gamma)
+
+                x_corners = [subfault.corners[2][0],
+                             subfault.corners[0][0],
+                             subfault.corners[1][0],
+                             subfault.corners[2][0]]
+
+                y_corners = [subfault.corners[2][1],
+                             subfault.corners[0][1],
+                             subfault.corners[1][1],
+                             subfault.corners[2][1]]
     
-            y_ave += y_centroid
+                y_ave += y_centroid
+
+            else:
+                x_top = subfault.centers[0][0]
+                y_top = subfault.centers[0][1]
+
+                x_centroid = subfault.centers[1][0]
+                y_centroid = subfault.centers[1][1]
+
+                x_corners = [subfault.corners[2][0],
+                             subfault.corners[3][0],
+                             subfault.corners[0][0],
+                             subfault.corners[1][0],
+                             subfault.corners[2][0]]
+
+                y_corners = [subfault.corners[2][1],
+                             subfault.corners[3][1],
+                             subfault.corners[0][1],
+                             subfault.corners[1][1],
+                             subfault.corners[2][1]]
+    
+                y_ave += y_centroid
     
     
             # Plot projection of planes to x-y surface:
@@ -993,7 +1070,8 @@ class Fault(object):
                      shrink=colorbar_shrink)
             norm = matplotlib.colors.Normalize(vmin=cmin_slip,vmax=cmax_slip)
             cb1 = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap_slip, norm=norm)
-            cb1.set_label("Slip (m)")
+            cb1.set_label("Slip (m)",fontsize=colorbar_labelsize)
+            cb1.ax.tick_params(labelsize=colorbar_ticksize)
         plt.sca(slipax) # reset the current axis to the main figure
 
         return slipax
@@ -1016,12 +1094,20 @@ class Fault(object):
     
         for subfault in self.subfaults:
 
-            x_top = subfault.centers[0][0]
-            y_top = subfault.centers[0][1]
-            depth_top = subfault.centers[0][2]
-            x_bottom = subfault.centers[2][0]
-            y_bottom = subfault.centers[2][1]
-            depth_bottom = subfault.centers[2][2]
+            if subfault.coordinate_specification == 'triangular':
+                x_top = subfault.centers[0][0]
+                y_top = subfault.centers[0][1]
+                depth_top = subfault.centers[0][2]
+                x_bottom = subfault.centers[1][0]
+                y_bottom = subfault.centers[1][1]
+                depth_bottom = subfault.centers[1][2]
+            else:
+                x_top = subfault.centers[0][0]
+                y_top = subfault.centers[0][1]
+                depth_top = subfault.centers[0][2]
+                x_bottom = subfault.centers[2][0]
+                y_bottom = subfault.centers[2][1]
+                depth_bottom = subfault.centers[2][2]
     
             # Plot planes in x-z and y-z to see depths:
             axes[0].plot([x_top, x_bottom], [-depth_top, -depth_bottom])
@@ -1131,26 +1217,26 @@ class SubFault(object):
       Each will be a tuple *(x, y, depth)*.
 
     *corners[0,1,2,3]* refer to the points labeled a,b,c,d resp. below.
-      Each will be a tuple *(x, y, depth)*.
-    
-
-    Top edge    Bottom edge
-      a ----------- b          ^ 
-      |             |          |         ^
-      |             |          |         |
-      |             |          |         | along-strike direction
-      |             |          |         |
-      0------1------2          | length  |
-      |             |          |
-      |             |          |
-      |             |          |
-      |             |          |
-      d ----------- c          v
-      <------------->
-           width
-
-      <-- up dip direction
-
+      Each will be a tuple *(x, y, depth)*. ::
+         
+     
+         Top edge    Bottom edge
+           a ----------- b          ^ 
+           |             |          |         ^
+           |             |          |         |
+           |             |          |         | along-strike direction
+           |             |          |         |
+           0------1------2          | length  |
+           |             |          |
+           |             |          |
+           |             |          |
+           |             |          |
+           d ----------- c          v
+           <------------->
+                width
+     
+           <-- up dip direction
+     
 
 
     """
@@ -1168,6 +1254,13 @@ class SubFault(object):
         if self._centers is None:
             self.calculate_geometry()
         return self._centers
+
+    @property
+    def gauss_pts(self):
+        r"""Coordinates along the center-line of the fault plane."""
+        if self._gauss_pts is None:
+            self._gauss_pts = self._get_gauss_pts(self.n_gauss_pts)
+        return self._gauss_pts
 
     def __init__(self):
         r"""SubFault initialization routine.
@@ -1204,9 +1297,25 @@ class SubFault(object):
         # Multiply by 10 to get dyne/cm^2 value.
         self.mu = 4e10
         r"""Rigidity (== shear modulus) in Pascals."""
+        
+        self.rupture_type = 'static'
+        r"""Either 'static' or 'kinematic'"""
+        
+        # For kinematic ruptures:
+        self.rupture_time = 0.
+        r"""Time subfault starts to rupture (sec)"""
+        self.rise_time = 1.
+        r"""Total rise time of subfault (sec)"""
+        self.rise_time_starting = None
+        r"""Optional time of first part of rise, before break in pw smooth rise"""
+        self.rise_shape = 'quadratic'
+        r"""Shape of rise, 'linear' or 'quadratic' (piecewise)"""
 
+        self._projection_zone = None
         self._centers = None
         self._corners = None
+        self._gauss_pts = None
+        self.n_gauss_pts = 4
 
 
     def convert_to_standard_units(self, input_units, verbose=False):
@@ -1414,6 +1523,214 @@ class SubFault(object):
                                             self._centers[0][1] 
                                                                  - up_strike[1])
 
+    def calculate_geometry_triangles(self,rake=90.):
+        r"""
+        Calculate geometry for triangular subfaults
+
+        - Uses *corners* to calculate *centers*, *longitude*, *latitude*,
+          *depth*, *strike*, *dip*, *rake*, *length*, *width*.
+
+        - sets *coordinate_specification* as "triangular"
+
+        - Note that calculate_geometry() computes 
+          long/lat/strik/dip/rake/length/width to calculate centers/corners
+        
+        """
+
+        if self.coordinate_specification == 'triangular':
+
+            cos = numpy.cos
+            sin = numpy.sin
+            atan = numpy.arctan
+            atan2 = numpy.arctan2
+            divide = numpy.divide
+            sqrt = numpy.sqrt
+            cross = numpy.cross
+            norm = numpy.linalg.norm
+            rad2deg = numpy.rad2deg
+            deg2rad = numpy.deg2rad
+
+            x0 = numpy.array(self.corners)
+            x = x0.copy()
+            x = numpy.array(x0)
+            
+            x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative(lazy)
+
+            if 0:
+                # old coordinate transform
+
+                # compute strike and dip direction
+                # e3: vertical 
+                # v1,v2: tangents from x0
+                e3 = numpy.array([0.,0.,1.])
+                v1 = x[1,:] - x[0,:]
+                v2 = x[2,:] - x[0,:]
+
+                v1[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
+                v2[0] *= LAT2METER * cos( DEG2RAD*x[0,1] ) 
+                v1[1] *= LAT2METER 
+                v2[1] *= LAT2METER 
+
+            x[:,0],x[:,1] = self._llz2utm(x[:,0],x[:,1],\
+                    projection_zone=self._projection_zone)
+
+            v1 = x[1,:] - x[0,:]
+            v2 = x[2,:] - x[0,:]
+
+            e3 = numpy.array([0.,0.,1.])
+            normal = cross(v1,v2)
+            if normal[2] < 0:
+                normal = -normal
+            strikev = cross(normal,e3)   # vector in strike direction
+
+            a = normal[0]
+            b = normal[1]
+            c = normal[2]
+            
+            #Compute strike
+            strike_deg = rad2deg(numpy.arctan(-b/a))
+            print('+++ initial strike_deg = %g' % strike_deg)
+            
+            #Compute dip
+            beta = deg2rad(strike_deg + 90)
+            m = numpy.array([sin(beta),cos(beta),0]) #Points in dip direction
+            n = numpy.array([a,b,c]) #Normal to the plane
+            #dip_deg = abs(rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n)))))
+
+            if abs(c) < 1e-8:
+                dip_deg = 90.   # vertical fault
+            else:
+                dip_deg = rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n))))
+            print('+++ initial dip_deg = %g' % dip_deg)
+            
+            # dip should be between 0 and 90. If negative, reverse strike:
+            if dip_deg < 0:
+                strike_deg = strike_deg - 180.
+                dip_deg = -dip_deg
+            assert 0 <= dip_deg <= 90, '*** dip_deg = %g' % dip_deg
+
+            # keep strike_deg positive
+            if strike_deg < 0.:
+                strike_deg = 360 + strike_deg
+            assert 0 <= strike_deg <= 360, '*** strike_deg = %g' % strike_deg
+
+            self.strike = strike_deg
+            self.dip = dip_deg
+            self.rake = rake     # set default rake to 90 degrees
+
+            # find the center line
+            xx = numpy.zeros((3,3))
+            xx[0,:] = (x0[1,:] + x0[2,:]) / 2. # midpt opposite a
+            xx[1,:] = (x0[0,:] + x0[2,:]) / 2. # midpt opposite b
+            xx[2,:] = (x0[0,:] + x0[1,:]) / 2. # midpt opposite c
+
+            i = numpy.argmin(xx[2,:])
+
+            self._centers = [x[:,i].tolist(),\
+                             xx[:,i].tolist()]
+
+            if x[2,i] <= xx[2,i]:
+                self._centers.reverse()
+
+            xcenter = numpy.mean(xx, axis=0)
+            self.longitude = xcenter[0]
+            self.latitude = xcenter[1]
+            self.depth = xcenter[2]
+
+            # length and width are set to sqrt(area): 
+            # this is set temporarily so that Fault.Mw() can be computed
+
+            area = norm(normal) / 2.
+            self.length = sqrt(area)
+            self.width = sqrt(area)
+
+
+        else:
+            raise ValueError("Invalid coordinate specification %s." \
+                                                % self.coordinate_specification)
+
+    def set_corners(self,corners,rake=90.,projection_zone=None):
+        r"""
+            set three corners for a triangular fault.
+            Input *corners* should be iterable of length 3.
+        """
+
+        if len(corners) == 3:
+            self._corners =\
+                [corners[0],corners[1],corners[2]]
+            self._projection_zone = projection_zone
+            self.coordinate_specification = 'triangular'
+            self.calculate_geometry_triangles(rake=rake)
+        else:
+            raise ValueError("Expected input of length 3")
+
+
+    def _get_unit_slip_vector(self):
+        """
+        compute a unit vector in the slip-direction (rake-direction)
+        for a triangular fault
+
+        """
+
+        strike = numpy.deg2rad(self.strike)
+        dip = numpy.deg2rad(self.dip)
+        rake = numpy.deg2rad(self.rake)
+
+        sin = numpy.sin
+        cos = numpy.cos
+
+        e1 = numpy.array([1.,0.,0.])
+        e2 = numpy.array([0.,1.,0.])
+        e3 = numpy.array([0.,0.,-1.])
+
+        u = sin(strike)*e1 + cos(strike)*e2
+        v = cos(strike)*e1 - sin(strike)*e2
+
+        w = sin(dip)*e3 + cos(dip)*v
+        z = sin(-rake)*w + cos(-rake)*u
+
+        return z
+
+
+    def _llz2utm(self,lon,lat,projection_zone=None):
+        '''
+        Convert lat,lon to UTM
+
+        originally written by Diego Melgar (Univ of Oregon)
+
+        '''
+        from numpy import zeros,where,chararray
+        import utm
+        from pyproj import Proj
+        from scipy.stats import mode
+
+        array_dims = lon.shape
+    
+        lon = lon.flatten()
+        lat = lat.flatten()
+        
+        x=zeros(lon.shape)
+        y=zeros(lon.shape)
+        zone=zeros(lon.shape)
+        #b=chararray(lon.shape) # gives byte error
+        b=len(lon)*['A']  # list of characters, modified in loop below
+        if projection_zone == None:
+            #Determine most suitable UTM zone
+            for k in range(len(lon)):
+                x,y,zone[k],b[k]=utm.from_latlon(lat[k],lon[k])
+            zone_mode=mode(zone)
+            i=where(zone==zone_mode)[0]
+            letter=b[i[0]]
+            z=str(int(zone[0]))+letter
+        else:
+            z=projection_zone
+        p0 = Proj(proj='utm',zone=z,ellps='WGS84')
+        x,y=p0(lon,lat)
+        
+        x = x.reshape(array_dims)
+        y = y.reshape(array_dims)
+        return x,y
+
     
     def okada(self, x, y):
         r"""
@@ -1446,70 +1763,761 @@ class SubFault(object):
 
         """
 
-        # Okada model assumes x,y are at bottom center:
-        x_bottom = self.centers[2][0]
-        y_bottom = self.centers[2][1]
-        depth_bottom = self.centers[2][2]
+        if self.coordinate_specification != 'triangular':
+            # Okada model assumes x,y are at bottom center:
+            x_bottom = self.centers[2][0]
+            y_bottom = self.centers[2][1]
+            depth_bottom = self.centers[2][2]
 
-        length = self.length
-        width = self.width
-        depth = self.depth
-        slip = self.slip
+            length = self.length
+            width = self.width
+            depth = self.depth
+            slip = self.slip
 
-        halfL = 0.5*length
-        w  =  width
+            halfL = 0.5*length
+            w  =  width
 
-        # convert angles to radians:
-        ang_dip = DEG2RAD * self.dip
-        ang_rake = DEG2RAD * self.rake
-        ang_strike = DEG2RAD * self.strike
+            # convert angles to radians:
+            ang_dip = DEG2RAD * self.dip
+            ang_rake = DEG2RAD * self.rake
+            ang_strike = DEG2RAD * self.strike
     
-        X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
+            X,Y = numpy.meshgrid(x, y)   # use convention of upper case for 2d
     
-        # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
-        # meters:
-        xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_bottom)   
-        yy = LAT2METER * (Y - y_bottom)
+            # Convert distance from (X,Y) to (x_bottom,y_bottom) from degrees to
+            # meters:
+            xx = LAT2METER * numpy.cos(DEG2RAD * Y) * (X - x_bottom)   
+            yy = LAT2METER * (Y - y_bottom)
     
     
-        # Convert to distance along strike (x1) and dip (x2):
-        x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
-        x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike) 
+            # Convert to distance along strike (x1) and dip (x2):
+            x1 = xx * numpy.sin(ang_strike) + yy * numpy.cos(ang_strike) 
+            x2 = xx * numpy.cos(ang_strike) - yy * numpy.sin(ang_strike) 
     
-        # In Okada's paper, x2 is distance up the fault plane, not down dip:
-        x2 = -x2
+            # In Okada's paper, x2 is distance up the fault plane, not down dip:
+            x2 = -x2
     
-        p = x2 * numpy.cos(ang_dip) + depth_bottom * numpy.sin(ang_dip)
-        q = x2 * numpy.sin(ang_dip) - depth_bottom * numpy.cos(ang_dip)
+            p = x2 * numpy.cos(ang_dip) + depth_bottom * numpy.sin(ang_dip)
+            q = x2 * numpy.sin(ang_dip) - depth_bottom * numpy.cos(ang_dip)
     
-        f1 = self._strike_slip(x1 + halfL, p,     ang_dip, q)
-        f2 = self._strike_slip(x1 + halfL, p - w, ang_dip, q)
-        f3 = self._strike_slip(x1 - halfL, p,     ang_dip, q)
-        f4 = self._strike_slip(x1 - halfL, p - w, ang_dip, q)
+            f1 = self._strike_slip(x1 + halfL, p,     ang_dip, q)
+            f2 = self._strike_slip(x1 + halfL, p - w, ang_dip, q)
+            f3 = self._strike_slip(x1 - halfL, p,     ang_dip, q)
+            f4 = self._strike_slip(x1 - halfL, p - w, ang_dip, q)
     
-        g1=self._dip_slip(x1 + halfL, p,     ang_dip, q)
-        g2=self._dip_slip(x1 + halfL, p - w, ang_dip, q)
-        g3=self._dip_slip(x1 - halfL, p,     ang_dip, q)
-        g4=self._dip_slip(x1 - halfL, p - w, ang_dip, q)
+            g1=self._dip_slip(x1 + halfL, p,     ang_dip, q)
+            g2=self._dip_slip(x1 + halfL, p - w, ang_dip, q)
+            g3=self._dip_slip(x1 - halfL, p,     ang_dip, q)
+            g4=self._dip_slip(x1 - halfL, p - w, ang_dip, q)
     
-        # Displacement in direction of strike and dip:
-        ds = slip * numpy.cos(ang_rake)
-        dd = slip * numpy.sin(ang_rake)
+            # Displacement in direction of strike and dip:
+            ds = slip * numpy.cos(ang_rake)
+            dd = slip * numpy.sin(ang_rake)
     
-        us = (f1 - f2 - f3 + f4) * ds
-        ud = (g1 - g2 - g3 + g4) * dd
+            us = (f1 - f2 - f3 + f4) * ds
+            ud = (g1 - g2 - g3 + g4) * dd
     
-        dz = (us+ud)
+            dz = (us+ud)
 
-        dtopo = DTopography()
-        dtopo.X = X
-        dtopo.Y = Y
-        dtopo.dZ = numpy.array(dz, ndmin=3)
-        dtopo.times = [0.]
-        self.dtopo = dtopo
+            dtopo = DTopography()
+            dtopo.X = X
+            dtopo.Y = Y
+            dtopo.dZ = numpy.array(dz, ndmin=3)
+            dtopo.times = [0.]
+            self.dtopo = dtopo
+
+        elif self.coordinate_specification == 'triangular':
+
+            cos = numpy.cos
+            sin = numpy.sin
+            floor = numpy.floor
+
+            X1,X2 = numpy.meshgrid(x, y)   # uppercase
+            X3 = numpy.zeros(X1.shape)   # depth zero
+
+    
+            # compute burgers vector
+            slipv = self._get_unit_slip_vector() 
+            burgersv = slipv*self.slip
+
+            # get beta angles
+            reverse_list,O1_list,O2_list,alpha_list,beta_list = \
+                    self._get_leg_angles()
+
+            #
+            v11 = numpy.zeros(X1.shape)
+            v21 = numpy.zeros(X1.shape)
+            v31 = numpy.zeros(X1.shape)
+
+            v12 = numpy.zeros(X1.shape)
+            v22 = numpy.zeros(X1.shape)
+            v32 = numpy.zeros(X1.shape)
+
+            v13 = numpy.zeros(X1.shape)
+            v23 = numpy.zeros(X1.shape)
+            v33 = numpy.zeros(X1.shape)
+
+            for j in range(6):
+                
+                k = j%3
+                alpha = alpha_list[k]
+                beta = beta_list[k]
+
+                if (floor(j/3) == 0):
+                    Olong = O1_list[k][0]
+                    Olat = O1_list[k][1]
+                    Odepth = abs(O1_list[k][2])
+                elif (floor(j/3) == 1):
+                    Olong = O2_list[k][0]
+                    Olat = O2_list[k][1]
+                    Odepth = abs(O2_list[k][2])
+
+                if reverse_list[k]:
+                    sgn = (-1.)**(floor(j/3)+1)
+                else:
+                    sgn = (-1.)**floor(j/3)
+
+                Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3 = \
+                self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
+                
+                w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
+                self._get_angular_dislocations_surface(Y1,Y2,Y3,beta,Odepth)
+                
+                w11,w12,w13,w21,w22,w23,w31,w32,w33 = \
+                self._coord_transform(w11,w12,w13,w21,w22,w23,w31,w32,w33,alpha)
+            
+                v11 += sgn*w11
+                v21 += sgn*w21
+                v31 += sgn*w31
+
+                v12 += sgn*w12
+                v22 += sgn*w22
+                v32 += sgn*w32
+
+                v13 += sgn*w13
+                v23 += sgn*w23
+                v33 += sgn*w33
+
+
+        
+            # linear combination for each component of Burgers vectors
+            dX = -v11*burgersv[0] - v12*burgersv[1] + v13*burgersv[2]
+            dY = -v21*burgersv[0] - v22*burgersv[1] + v23*burgersv[2]
+            dZ = -v31*burgersv[0] - v32*burgersv[1] + v33*burgersv[2]
+
+            dtopo = DTopography()
+            dtopo.X = X1    # DR: X1, X2 varname confusing?
+            dtopo.Y = X2
+            dtopo.dX = numpy.array(dX, ndmin=3)
+            dtopo.dY = numpy.array(dY, ndmin=3)
+            dtopo.dZ = numpy.array(dZ, ndmin=3)
+            dtopo.times = [0.]
+            self.dtopo = dtopo
+
         return dtopo
 
     # Utility functions for okada:
+
+    def _get_leg_angles(self):
+        """
+        compute beta in radians
+        (the angle between vertical depth axis and 
+        the tangent vector of side of the triangular subfault)
+
+        ordering: x2-x1, x3-x2, x1-x3
+
+        requires self.corners to have been computed.
+
+        """
+
+
+        # TODO: put in a coordinate_specification == 'triangular' check here
+        x = numpy.array(self.corners)
+        y = numpy.zeros(x.shape)
+
+        # convert to meters
+        y[:,0] = LAT2METER * numpy.cos( DEG2RAD*self.latitude )*x[:,0]
+        y[:,1] = LAT2METER * x[:,1]
+        y[:,2] = - numpy.abs(x[:,2])    # force sign
+
+        v_list = [y[1,:] - y[0,:], y[2,:] - y[1,:], y[0,:] - y[2,:]]
+
+        e3 = numpy.array([0.,0.,-1.])
+
+        O1_list = []
+        O2_list = []
+        alpha_list = []
+        beta_list = []
+        reverse_list = [False,False,False]
+
+        j = 0
+        for v in v_list:
+            vn = v/numpy.linalg.norm(v)
+            k = j
+            l = (j+1)%3
+            if vn[2] > 0.:
+                vn = -vn    # point vn in depth direction
+                k = (j+1)%3
+                l = j
+                reverse_list[j] = True
+
+            O1 = x[k,:].tolist()     # set origin for the vector v
+            O2 = x[l,:].tolist()     # set dest.  for the vector v
+            O1_list.append(O1)
+            O2_list.append(O2)
+
+            alpha = numpy.arctan2(vn[0],vn[1])
+            alpha_list.append(alpha)
+
+            beta = numpy.pi/2 \
+                 - numpy.arctan(\
+                     numpy.divide(abs(vn[2]),
+                     abs(numpy.sqrt(vn[0]**2 + vn[1]**2))))
+            beta_list.append(beta)
+
+            j = j+1
+
+        return reverse_list,O1_list,O2_list,alpha_list,beta_list
+
+        
+    def _get_angular_dislocations(self,Y1,Y2,Y3,Z1,Z2,Z3,\
+                                  Yb1,Yb2,Yb3,Zb1,Zb2,Zb3,beta,Odepth):
+                                  
+        """
+        compute angular dislocations at any internal points according to the 
+        paper
+
+        M. Comninou and J. Dundurs 
+        Journal of Elasticity, Vol. 5, Nos.3-4, Nov 1975
+
+        The specific equations used in the papers are (1-29). 
+        Note, this code is currently not used in computing the surface
+        deformations, see _get_angular_dislocations_surface
+        
+        :Input:
+            -  Y1, Y2, Y3
+               Z1, Z2, Z3
+              Yb1,Yb2,Yb3
+              Zb1,Zb2,Zb3   : coordinates in meters
+
+        :Output:
+            - v11,v12,v13
+              v21,v22,v23
+              v31,v32,v33   : dislocation vectors
+
+
+        For a more recent reference with comprehensive review see:
+
+        Brendan J. Meade
+        Computers & Geosciences, Vol. 33, Issue 8, pp 1064-1075
+
+        Initially written by Donsub Rim (dr2965@columbia.edu), 2018-06-25
+
+        """
+
+        # shorthand for some elementary functions from numpy
+        pi = numpy.pi
+        sin = numpy.sin
+        cos = numpy.cos
+        tan = numpy.tan
+        atan = numpy.arctan2
+        sqrt = numpy.sqrt
+        log = numpy.log
+
+        a = numpy.abs(Odepth)   # force sign
+
+        nu = 0.25        # .5 * lambda / (lambda + mu) poisson ratio
+
+        # some preliminary quantities
+        R = sqrt(Y1**2 + Y2**2 + Y3**2)
+        Rb = sqrt(Y1**2 + Y2**2 + Yb3**2)
+        
+        F =  - atan(Y2,Y1) + atan(Y2,Z1) \
+             + atan(Y2*R*sin(beta),(Y1*Z1 + Y2**2*cos(beta)))
+        Fb = - atan(Y2,Y1) + atan(Y2,Zb1) \
+             + atan(Y2*Rb*sin(beta),(Y1*Zb1 + Y2**2*cos(beta)))
+
+        phib = - Y2*Fb - Y1*log(Rb + Yb3) + Zb1*log(Rb + Zb3)
+        chib = - Y1*Fb + Y2*log(Rb + Yb3) - Y2*cos(beta)*log(Rb + Zb3)
+        psib =   Yb3*Fb + Y2*sin(beta)*log(Rb + Zb3)
+
+        # some recurring constants
+        infC = 1/(8*pi*(1 - nu))
+        cC = 1/(4*pi*(1 - nu))
+        
+        # Burgers vectors (1,0,0)
+
+        v11inf = infC*(\
+            2*(1 - nu)*(F + Fb) - Y1*Y2*(1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3)))
+          - Y2*cos(beta)*((R*sin(beta) - Y1)/(R*(R - Z3)) \
+                  + (Rb*sin(beta) - Y1)/(Rb*(Rb + Zb3))))
+
+        v21inf = infC*(\
+            (1 - 2*nu)*(log(R - Y3) + log(Rb + Yb3) \
+          - cos(beta)*(log(R - Z3) + log(Rb + Zb3)))
+          - Y2**2*(1/(R*(R-Y3)) + 1/(Rb*(Rb + Yb3)) \
+                  - cos(beta)*(1/(R*(R - Z3)) + 1/(Rb*(Rb + Zb3)))))
+
+        v31inf = infC*Y2*(\
+                1/R - 1/Rb - cos(beta)*(\
+                    (R*cos(beta) - Y3)/(R*(R - Z3)) \
+                  - (Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))))
+
+        v11c = cC*(\
+               - 2*(1 - nu)*(1 - 2*nu)*Fb/(tan(beta)**2)  \
+               + (1 - 2*nu)*Y2/(Rb + Yb3)\
+                *((1 - 2*nu - a/Rb)/tan(beta) - Y1/(Rb + Yb3)*(nu + a/Rb)) \
+               + (1-2*nu)*Y2*cos(beta)/tan(beta)/(Rb + Zb3)*(cos(beta) + a/Rb)\
+               + a*Y2*(Yb3 - a)/tan(beta)/(Rb**3)\
+                + Y2*(Yb3 - a)/(Rb*(Rb + Yb3))*(\
+                - (1 - 2*nu)/tan(beta) + Y1/(Rb + Yb3)*(2*nu + a/Rb) \
+                + a*Y1/(Rb**2)) \
+                + Y2*(Yb3 - a)/(Rb*(Rb + Zb3))*(\
+                        cos(beta)/(Rb + Zb3)*(\
+                (Rb*cos(beta) + Yb3)\
+                *((1 - 2*nu)*cos(beta) - a/Rb)/tan(beta) \
+                + 2*(1 - nu)*(Rb*sin(beta) - Y1)*cos(beta))\
+                - a*Yb3*cos(beta)/tan(beta)/(Rb**2))\
+                )
+
+
+        v21c = cC*(\
+              (1 - 2*nu)*((2*(1 - nu)/(tan(beta)**2) - nu)*log(Rb + Yb3)\
+              - (2*(1 - nu)/(tan(beta)**2) +1 -2*nu)*cos(beta)*log(Rb + Zb3)) \
+              - (1 - 2*nu)/(Rb + Yb3)*(\
+                    Y1/tan(beta)*(1 - 2*nu - a/Rb) \
+                  + nu*Yb3 - a + Y2**2/(Rb + Yb3)*(nu + a/Rb)) \
+              - (1 - 2*nu)*Zb1/tan(beta)/(Rb + Zb3)*(cos(beta) + a/Rb) \
+              - a*Y1*(Yb3 - a)/tan(beta)/(Rb**3) \
+              + (Yb3 - a)/(Rb + Yb3)*( \
+                    -2*nu + 1/Rb*((1 - 2*nu)*Y1/tan(beta) - a) \
+                   + Y2**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) + a*Y2**2/(Rb**3)) \
+              + (Yb3 - a)/(Rb + Zb3)*(\
+                    (cos(beta)**2) \
+                  - 1/Rb*((1 - 2*nu)*Zb1/tan(beta) + a*cos(beta)) \
+                  + a*Yb3*Zb1/tan(beta)/(Rb**3) \
+                  - 1/(Rb*(Rb + Zb3))*(\
+                        Y2**2*(cos(beta)**2) \
+                      - a*Zb1/tan(beta)/Rb*(Rb*cos(beta) + Yb3)))\
+              )
+            
+        v31c = cC*(\
+              2*(1 - nu)*( (1 - 2*nu)*Fb/tan(beta) \
+                + Y2/(Rb + Yb3)*(2*nu + a/Rb) \
+                - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
+                + Y2*(Yb3 - a)/Rb*(2*nu/(Rb + Yb3) + a/(Rb**2)) \
+                + Y2*(Yb3 - a)*cos(beta)/(Rb*(Rb + Zb3))*(\
+                    1 - 2*nu \
+                    - (Rb*cos(beta) + Yb3)/(Rb + Zb3)\
+                        *(cos(beta) + a/Rb) - a*Yb3/(Rb**2))\
+               )
+
+        v11 = v11inf + v11c
+        v21 = v21inf + v21c
+        v31 = v31inf + v31c
+
+        # Burgers vectors (0,1,0)
+
+        v12inf = infC*(\
+                - (1 - 2*nu)*(\
+                    log(R - Y3) + log(Rb + Yb3) \
+                  - cos(beta)*(log(R - Z3) + log(Rb + Zb3)))\
+                + Y1**2*( 1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3))) \
+                + Z1*(R*sin(beta) - Y1)/(R*(R - Z3)) \
+                + Zb1*(Rb*sin(beta) - Y1)/(Rb*(Rb + Zb3)) \
+                )
+
+        v22inf = infC*(\
+                2*(1 - nu)*(F + Fb) + Y1*Y2*(\
+                    1/(R*(R - Y3)) + 1/(Rb*(Rb + Yb3))) \
+                - Y2*( Z1/(R*(R - Z3)) + Zb1/(Rb*(Rb + Zb3)) ) \
+                )
+
+        v32inf = infC*(\
+                - (1 - 2*nu)*sin(beta)*(log(R - Z3) - log(Rb + Zb3)) \
+                - Y1*(1/R - 1/Rb) + Z1*(R*cos(beta) - Y3)/(R*(R - Z3)) \
+                        - Zb1*(Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3)) \
+                )
+
+        v12c = cC*(\
+              (1 - 2*nu)*( \
+                  (2*(1 - nu)/(tan(beta)**2) + nu)*log(Rb + Yb3)\
+                - (2*(1 - nu)/(tan(beta)**2) + 1)*cos(beta)*log(Rb + Zb3)) \
+            + (1 - 2*nu)/(Rb + Yb3)*(\
+                - (1 - 2*nu)*Y1/tan(beta) + nu*Yb3 \
+                - a + a*Y1/tan(beta)/Rb + Y1**2/(Rb + Yb3)*(nu + a/Rb) ) \
+            - (1 - 2*nu)/tan(beta)/(Rb + Zb3)*(\
+                 Zb1*cos(beta) - a*(Rb*sin(beta) - Y1)/(Rb * cos(beta)) ) \
+            - a*Y1*(Yb3 - a)/tan(beta)/(Rb**3) \
+            + (Yb3 - a)/(Rb + Yb3)*(\
+                2*nu + 1/Rb*((1 - 2*nu)*Y1/tan(beta) + a)\
+                - Y1**2/(Rb*(Rb + Yb3))*(2*nu + a/Rb) - a*Y1**2/(Rb**3))\
+            + (Yb3 - a)/tan(beta)/(Rb + Zb3)*(\
+                - cos(beta)*sin(beta)\
+                + a*Y1*Yb3/(Rb**3*cos(beta)) \
+                + (Rb*sin(beta) - Y1)/Rb*(\
+                    2*(1 - nu)*cos(beta) \
+                  - (Rb*cos(beta) + Yb3)/(Rb + Zb3)*(1 + a/(Rb*cos(beta)))))\
+            )
+        
+        v22c = cC*(\
+              2*(1 - nu)*(1 - 2*nu)*Fb/(tan(beta)**2) \
+            + (1 - 2*nu)*Y2/(Rb + Yb3)*(\
+                - (1 - 2*nu - a/R)/tan(beta) \
+                + Y1/(Rb + Yb3)*(nu + a/Rb)) \
+            - (1 - 2*nu)*Y2/tan(beta)/(Rb + Zb3)*(1 + a/(Rb*cos(beta)))\
+            - a*Y2*(Yb3 - a)/tan(beta)/(Rb**3) \
+            + Y2*(Yb3 - a)/(Rb*(Rb + Yb3))*(\
+                (1 - 2*nu)/tan(beta) \
+              - 2*nu*Y1/(Rb + Yb3) - a*Y1/Rb*(1/Rb + 1/(Rb + Yb3))) \
+            + Y2*(Yb3 - a)/tan(beta)/(Rb*(Rb + Zb3))*(\
+              - 2*(1 - nu)*cos(beta) \
+              + (Rb*cos(beta) + Yb3)/(Rb + Zb3)*(1 + a/(Rb * cos(beta))) \
+              + a*Yb3/(Rb**2*cos(beta)))\
+                )
+
+        v32c = cC*(\
+              -2*(1 - nu)*(1 - 2*nu)/tan(beta)\
+                *(log(Rb + Yb3) - cos(beta)*log(Rb + Zb3)) \
+              - 2*(1 - nu)*Y1/(Rb + Yb3)*(2*nu + a/Rb) \
+              + 2*(1 - nu)*Zb1/(Rb + Zb3)*(cos(beta) + a/Rb) \
+              + (Yb3 - a)/Rb*((1 - 2*nu)/tan(beta) - 2*nu*Y1/(Rb + Yb3) \
+                - a*Y1/(Rb**2)) \
+              - (Yb3 - a)/(Rb + Zb3)*(\
+                  cos(beta)*sin(beta) \
+                + (Rb*cos(beta) + Yb3)/tan(beta)/Rb*(\
+                    2*(1 - nu)*cos(beta) \
+                    - (Rb*cos(beta) + Yb3)/(Rb + Zb3))\
+                + a/Rb*(sin(beta) \
+                    - Yb3*Zb1/(Rb**2) \
+                    - Zb1*(Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))))\
+               )
+
+        v12 = v12inf + v12c
+        v22 = v22inf + v22c
+        v32 = v32inf + v32c
+
+        # Burgers vectors (0,0,1)
+
+        v13inf = infC*(\
+                  Y2*sin(beta)*(\
+                      (R*sin(beta) - Y1)/(R*(R - Z3)) \
+                    + (Rb*sin(beta) - Y1)/(Rb*(Rb + Zb3)))\
+                    )
+
+        v23inf = infC*(\
+                   (1 - 2*nu)*sin(beta)*(log(R - Z3) + log(Rb + Zb3)) \
+                 - Y2**2*sin(beta)*(1/(R*(R - Z3)) + 1/(Rb*(Rb + Zb3)))\
+                 )
+
+        v33inf = infC*(\
+                   2*(1 - nu)*(F - Fb) \
+                 + Y2*sin(beta)*(\
+                    (R*cos(beta) - Y3)/(R*(R - Z3)) \
+                  - (Rb*cos(beta) + Yb3)/(Rb*(Rb + Zb3))) \
+                )
+
+        v13c = cC*(\
+                (1 - 2*nu)*(\
+                      Y2/(Rb + Yb3)*(1 + a/Rb) \
+                    - Y2*cos(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
+                - Y2*(Yb3 - a)/Rb*(a / (Rb**2) + 1/(Rb + Yb3)) \
+                + Y2*(Yb3 - a)*cos(beta)/(Rb*(Rb + Zb3))*( \
+                (Rb*cos(beta) + Yb3)/(Rb + Zb3)*(cos(beta) + a/Rb)\
+                + a*Yb3/(Rb**2))\
+                    )
+
+        v23c = cC*(\
+                (1 - 2*nu)*(\
+                    - sin(beta)*log(Rb + Zb3) \
+                    - Y1/(Rb + Yb3)*(1 + a/Rb) \
+                    + Zb1/(Rb + Zb3)*(cos(beta) + a/Rb)) \
+                + Y1*(Yb3 - a)/Rb*(a/(Rb**2) + 1/(Rb + Yb3)) \
+                - (Yb3 - a)/(Rb + Zb3)*( \
+                     sin(beta)*(cos(beta) - a/Rb) \
+                   + Zb1/Rb*(1 + a*Yb3/(Rb**2)) \
+                - 1/(Rb*(Rb + Zb3))*(\
+                    Y2**2*cos(beta)*sin(beta)\
+                  - a*Zb1/(Rb)*(Rb*cos(beta) + Yb3))) \
+                )
+
+        v33c = cC*(\
+                2*(1 - nu)*(\
+                    Fb + Y2*sin(beta)/(Rb + Zb3)*(cos(beta) + a/Rb))\
+                + Y2*(Yb3 - a)*sin(beta)/(Rb*(Rb + Zb3))*(\
+                    1 + (Rb*cos(beta) + Yb3)/(Rb + Zb3)*(cos(beta) + a/Rb)\
+                    + a*Yb3/(Rb**2))\
+                )
+
+        v13 = v13inf + v13c
+        v23 = v23inf + v23c
+        v33 = v33inf + v33c
+
+        return v11,v12,v13,v21,v22,v23,v31,v32,v33
+
+    def _get_angular_dislocations_surface(self,Y1,Y2,Y3,beta,Odepth):
+        """
+        compute angular dislocations at the *free surface* of the half space, 
+        according to the paper
+
+        M. Comninou and J. Dundurs 
+        Journal of Elasticity, Vol. 5, Nos.3-4, Nov 1975
+
+        The specific equations used in the papers are (1-29). 
+        
+        :Input:
+            -  Y1, Y2, Y3
+               Z1, Z2, Z3
+              Yb1,Yb2,Yb3
+              Zb1,Zb2,Zb3   : coordinates in meters
+
+        :Output:
+            - v11,v12,v13
+              v21,v22,v23
+              v31,v32,v33   : dislocation vectors
+
+
+        For a more recent reference with comprehensive review see:
+
+        Brendan J. Meade
+        Computers & Geosciences, Vol. 33, Issue 8, pp 1064-1075
+
+        """
+
+
+
+        # shorthand for some elementary functions from numpy
+        pi = numpy.pi
+        sin = numpy.sin
+        cos = numpy.cos
+        tan = numpy.tan
+        atan = numpy.arctan2
+        sqrt = numpy.sqrt
+        log = numpy.log
+        divide = numpy.divide
+
+        a = numpy.abs(Odepth)   #lazy
+
+        nu = 0.25        # .5 * lambda / (lambda + mu) poisson ratio
+
+        C = (2*pi)
+
+        Z1 = cos(beta)*Y1 + a*sin(beta)
+        Z3 = sin(beta)*Y1 - a*cos(beta)
+        R = sqrt(Y1**2 + Y2**2 + a**2)
+
+        F =  - atan(Y2,Y1) \
+             + atan(Y2*R*sin(beta),Y1*Z1 + Y2**2*cos(beta)) \
+             + atan(Y2,Z1) 
+        
+        # Burgers vector (1,0,0)
+
+        v11 = 1/C*(\
+             (1 - (1 - 2*nu)/(tan(beta)**2))*F \
+             + Y2/(R + a)*(\
+                (1 - 2*nu)*(1/tan(beta) + Y1/(2*(R + a))) - Y1/R) \
+             - (Y2/R)*((R*sin(beta) - Y1)*cos(beta)/(R - Z3)))
+
+        v21 = 1/C*(\
+                (1 - 2*nu)*(\
+                    (.5 + 1/(tan(beta)**2))*log(R + a)\
+                    - 1/tan(beta)/sin(beta)*log(R - Z3)) \
+              - 1/(R + a)*(\
+                    (1 - 2*nu)*(Y1/tan(beta) - .5*a - (Y2/(2*(R + a)))*Y2)) \
+              - (Y2/R)*(Y2/(R+a))
+              + (Y2/R)*cos(beta)*(Y2/(R - Z3)))
+
+        v31 = 1/C*(\
+                (1 - 2*nu)*F/tan(beta) \
+                + Y2/(R + a)*(2*nu + a/R) \
+                - (Y2/(R - Z3))*cos(beta)*(cos(beta) + a/R))
+                
+
+        # Burgers vector (0,1,0)
+
+        v12 = 1/C*(\
+                -(1 - 2*nu)*(\
+                (.5 - 1/(tan(beta)**2))*log(R + a) \
+                + cos(beta)/(tan(beta)**2)*log(R - Z3)) \
+                - 1/(R + a)*((1 - 2*nu)*(\
+                    Y1/tan(beta) + .5*a + (Y1/(2*(R+a)))*Y1) - (Y1/R)*Y1)\
+                + (Z1/R)*((R*sin(beta) - Y1)/(R - Z3)))
+
+        v22 = 1/C*(\
+                (1 + (1 - 2*nu)/(tan(beta)**2))*F \
+                - Y2/(R + a)*(\
+                    (1 - 2*nu)*(1/tan(beta) + Y1/(2*(R+a))) - Y1/R) \
+                - (Y2/R)*(Z1/(R - Z3)))
+
+        v32 = 1/C*(\
+                -(1 - 2*nu)/tan(beta)*(log(R + a) - cos(beta)*log(R - Z3))\
+                - Y1/(R + a)*(2*nu + a/R) \
+                + Z1/(R - Z3)*(cos(beta) + a/R))
+
+        # Burgers vectors (0,0,1)
+
+        v13 = 1/C*(Y2*(R*sin(beta) - Y1)*sin(beta)/(R*(R-Z3)))
+        v23 = 1/C*(-Y2**2*sin(beta))/(R*(R - Z3))
+        v33 = 1/C*(F + Y2*(R*cos(beta) + a)*sin(beta)/(R*(R - Z3)))
+        
+
+        return v11,v12,v13,v21,v22,v23,v31,v32,v33
+
+
+    def _coord_transform(self,v11,v12,v13,v21,v22,v23,v31,v32,v33,alpha):
+        """
+        compute coordinate transforms by computing 
+
+         [sin  cos   0] [v11 v12 v13] [sin  cos   0]
+         |cos -sin   0| |v21 v22 v23| |cos -sin   0|
+         [  0    0   1] [v31 v32 v33] [  0    0   1]
+
+        """
+
+
+
+
+        cos = numpy.cos
+        sin = numpy.sin
+
+        w11 = sin(alpha)*v11 + cos(alpha)*v12
+        w12 = cos(alpha)*v11 - sin(alpha)*v12
+        w13 = v13
+        
+        w21 = sin(alpha)*v21 + cos(alpha)*v22
+        w22 = cos(alpha)*v21 - sin(alpha)*v22
+        w23 = v23
+        
+        w31 = sin(alpha)*v31 + cos(alpha)*v32
+        w32 = cos(alpha)*v31 - sin(alpha)*v32
+        w33 = v33
+
+        v11 = sin(alpha)*w11 + cos(alpha)*w21
+        v12 = sin(alpha)*w12 + cos(alpha)*w22
+        v13 = sin(alpha)*w13 + cos(alpha)*w23
+        
+        v21 = cos(alpha)*w11 - sin(alpha)*w21
+        v22 = cos(alpha)*w12 - sin(alpha)*w22
+        v23 = cos(alpha)*w13 - sin(alpha)*w23
+        
+        v31 = w31
+        v32 = w32
+        v33 = w33
+
+        return v11,v12,v13,v21,v22,v23,v31,v32,v33
+
+
+    def _get_halfspace_coords(self,X1,X2,X3,alpha,beta,Olong,Olat,Odepth):
+        """
+        compute coordinates
+
+        :Input:
+            - X1,X2,X3: longitude,latitude,depth
+            - alpha: angle of the vertical hyperplane
+                    (measured from north-direction, =strike)
+            - beta: angle of the angular dislocation 
+                    (angle between two inf lines, 
+                     measured from depth-direction)
+            - Olong,Olat,Odepth: longitude,latitude,depth of 
+                                 origin of y1-y2-y3 coordinates
+
+        :Output:
+
+            - tuple (y,z,ybar,zbar)
+            - each numpy array of same shape as x
+              containing *angular* coordinates as well as its mirrored image
+
+        """
+
+        dims = X1.shape
+        Odepth = numpy.abs(Odepth)
+        
+        # convert lat/long to meters
+        X1 = LAT2METER * numpy.cos( DEG2RAD*self.latitude ) * (X1 - Olong)
+        X2 = LAT2METER * (X2 - Olat)
+
+        Y1 = numpy.zeros(dims)       # yi-coordinates
+        Y2 = numpy.zeros(dims)       # yi-coordinates
+        Y3 = numpy.zeros(dims)       # yi-coordinates
+
+        Z1 = numpy.zeros(dims)       # yi coordinates rot. by beta
+        Z2 = numpy.zeros(dims)       # yi coordinates rot. by beta
+        Z3 = numpy.zeros(dims)       # yi coordinates rot. by beta
+        
+        Yb1 = numpy.zeros(dims)    # mirrored yi-coordinates
+        Yb2 = numpy.zeros(dims)    # mirrored yi-coordinates
+        Yb3 = numpy.zeros(dims)    # mirrored yi-coordinates
+
+        Zb1 = numpy.zeros(dims)    # mirrored yi-coordinates rot. by beta
+        Zb2 = numpy.zeros(dims)    # mirrored yi-coordinates rot. by beta
+        Zb3 = numpy.zeros(dims)    # mirrored yi-coordinates rot. by beta
+
+        # rotate by -alpha in long/lat plane
+        Y1 = numpy.sin(alpha)*X1 + numpy.cos(alpha)*X2
+        Y2 = numpy.cos(alpha)*X1 - numpy.sin(alpha)*X2
+        Y3 = X3 - numpy.abs(Odepth)
+        
+        Z1 = numpy.cos(beta)*Y1 - numpy.sin(beta)*Y3
+        Z2 = Y2
+        Z3 = numpy.sin(beta)*Y1 + numpy.cos(beta)*Y3
+
+        Yb1 = Y1
+        Yb2 = Y2
+        Yb3 = X3 + numpy.abs(Odepth)
+
+        Zb1 =  numpy.cos(beta)*Y1 + numpy.sin(beta)*Yb3
+        Zb2 =  Y2
+        Zb3 = -numpy.sin(beta)*Y1 + numpy.cos(beta)*Yb3
+
+        
+        return Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3
+
+
+    def _get_gauss_pts(self,n):
+        """
+        returns points and weights using Stroud Conical Product Rule
+
+        :Input:
+            - n is the number of points in 1D direction
+        :Output:
+            - (x,w)
+            - x is the array of Gaussian points
+            - w is the array of quadrature weights
+
+        """
+
+        gamma = numpy.linspace(1,n-1,n-1) / \
+             numpy.sqrt(4. * numpy.linspace(1,n-1,n-1) ** 2 - numpy.ones(n-1))
+        A = numpy.diag(gamma,1) + numpy.diag(gamma,-1)
+        r,V = numpy.linalg.eigh(A)
+        a = 2. * V[0,:] ** 2
+
+        delta = -1. / (4. * numpy.linspace(1,n,n) ** 2 - numpy.ones(n))
+        gamma = numpy.sqrt(numpy.linspace(2,n,n-1)*numpy.linspace(1,n-1,n-1)) \
+                / (2.*numpy.linspace(2,n,n-1) - numpy.ones(n-1))
+        A = numpy.diag(delta) + numpy.diag(gamma,1) + numpy.diag(gamma,-1)
+        s,V = numpy.linalg.eigh(A)
+        b = 2. * V[0,:] ** 2
+
+        r = .5*r + .5
+        a = .5 * a
+
+        s = .5*s + .5
+        b = .25 * b
+
+        M = r.size
+        N = s.size
+        x = numpy.zeros((n**2,2))
+        for j in range(n):
+            for k in range(n):
+               x[j + n*k,0] = s[k] 
+               x[n*k + j,1] = r[j] * (1 - s[k])
+
+        w = numpy.outer(a,b)
+        w = w.flatten(order='F')
+
+        return (x,w) 
+
 
     def _strike_slip(self, y1, y2, ang_dip, q):
         """
@@ -1522,7 +2530,7 @@ class SubFault(object):
         r = numpy.sqrt(y1**2 + y2**2 + q**2)
         xx = numpy.sqrt(y1**2 + q**2)
         a4 = 2.0*poisson/cs*(numpy.log(r+d_bar) - sn*numpy.log(r+y2))
-        f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*3.14159)
+        f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*numpy.pi)
     
         return f
     
@@ -1539,11 +2547,71 @@ class SubFault(object):
         r = numpy.sqrt(y1**2 + y2**2 + q**2)
         xx = numpy.sqrt(y1**2 + q**2)
         a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)
-        f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*3.14159)
+        f = -(d_bar*q/r/(r+y1) + sn*numpy.arctan(y1*y2/q/r) - a5*sn*cs)/(2.0*numpy.pi)
     
         return f
 
+    def _strike_pt_slip(self, x, y, ang_dip, d):
+        """
+        surface deformation due to point source
+
+        """
+        
+        p = y*numpy.cos(ang_dip) + d*numpy.sin(ang_dip)
+        q = y*numpy.sin(ang_dip) - d*numpy.cos(ang_dip)
+
+        R = numpy.sqrt(x**2 + p**2 + q**2)
+
+        I1 = 2.*poisson*y*(1/(R*(R + d)**2) \
+                - x**2 * (3*R + d) / (R**3 * (R + d)**3))
+        I2 = 2.*poisson*x*(1/(R*(R + d)**2) \
+                - y**2 * (3*R + d) / (R**3 * (R + d)**3))
+        I4 = 2.*poisson*(x/(R**3) - x*y*(2*R + d)/(R**3*(R+d)**2))
+
+        dX = - 1./(2.*numpy.pi)*(3.*(x**2)*q/(R**5) + I1*numpy.sin(ang_dip))
+        dY = - 1./(2.*numpy.pi)*(3.*x*y*q/(R**5) + I2*numpy.sin(ang_dip))
+        dZ = - 1./(2.*numpy.pi)*(3.*x*d*q/(R**5) + I4*numpy.sin(ang_dip))
+
+        return (dX,dY,dZ)
+
+
+
+    def _dip_pt_slip(self, x, y, ang_dip, d):
+        """
+        compute surface deformation due to point source.
+
+        - x, y: where to evaluate on the surface
+        - ang_dip: angle of the dip
+        - d: depth of the source
+
+        """
+        p = y*numpy.cos(ang_dip) + d*numpy.sin(ang_dip)
+        q = y*numpy.sin(ang_dip) - d*numpy.cos(ang_dip)
+
+        R = numpy.sqrt(x**2 + p**2 + q**2)
+
+        I1 = 2.*poisson*y*(1./(R*(R+d)**2) \
+                - x**2 * (3*R + d)/(R**3*(R+d)**3))
+
+        I2 = 2.*poisson*x*(1./(R*(R+d)**2) \
+                - y**2 * (3*R+d)/(R**3*(R+d)**3))
+
+        I3 = 2.*poisson*(x/R**3) - I2
+
+        I5 = 2.*poisson*(1./(R*(R+d)) - x**2*(2*R+d)/(R**3*(R+d)**2))
+
+        dX = - 1./ (2.*numpy.pi)*( 3.*x*p*q / (R**5) \
+                - I3*numpy.sin(ang_dip)*numpy.cos(ang_dip) )
+
+        dY = - 1./ (2.*numpy.pi)*( 3.*y*p*q / (R**5) \
+                - I1*numpy.sin(ang_dip)*numpy.cos(ang_dip) )
+
+        dZ = - 1./ (2.*numpy.pi)*( 3.*d*p*q / (R**5) \
+                - I5*numpy.sin(ang_dip)*numpy.cos(ang_dip) )
+
+        return (dX,dY,dZ)
     
+
     def dynamic_slip(self, t):
         r"""
         For a dynamic fault, compute the slip at time t.
@@ -1551,19 +2619,18 @@ class SubFault(object):
 
           - *rupture_time*
           - *rise_time*
-          - *rise_time_ending*: optional, defaults to *rise_time*
+          - *rise_time_starting*: optional, defaults to *rise_time/2*
+          - *rise_shape*: optional, defaults to *quadratic*        
 
         """
         if (self.rupture_time is None) or (self.rise_time is None):
             raise ValueError("Computing a dynamic slip only works for dynamic ",
-                             "rupture types")
+                             "rupture types", 
+                             "/n    need to specify rupture_time, rise_time")
 
-        t0 = self.rupture_time
-        t1 = self.rise_time
-        t2 = getattr(self,'rise_time_ending',None)
-        rf = rise_fraction(t,t0,t1,t2)
+        rf = rise_fraction(t, self.rupture_time, self.rise_time,
+                           self.rise_time_starting. self.rise_shape)
         return rf * self.slip
-            
 
 
 
@@ -1605,7 +2672,8 @@ class UCSBFault(Fault):
         *path*.
 
         Subfault format contains info for dynamic rupture, so can specify 
-        rupture_type = 'static' or 'dynamic'
+        rupture_type = 'static' or 'kinematic' (or 'dynamic' for backward 
+        compatibility).
 
         """
 
@@ -1694,7 +2762,7 @@ class UCSBFault(Fault):
 
         column_map = {"latitude":0, "longitude":1, "depth":2, "slip":3,
                        "rake":4, "strike":5, "dip":6, "rupture_time":7,
-                       "rise_time":8, "rise_time_ending":9, "mu":10}
+                       "rise_time_starting":8, "rise_time_ending":9, "mu":10}
         defaults = {"length":dx, "width":dy}
         input_units = {"slip":"cm", "depth":"km", 'mu':"dyne/cm^2",
                                    "length":"km", "width":"km"}
@@ -1703,7 +2771,8 @@ class UCSBFault(Fault):
                                 coordinate_specification="centroid",
                                 input_units=input_units, defaults=defaults)
 
-
+        for s in self.subfaults:
+            s.rise_time = s.rise_time_starting + s.rise_time_ending
 
 # ==============================================================================
 #  CSV sub-class of Fault
@@ -1725,7 +2794,7 @@ class CSVFault(Fault):
         """
 
         possible_column_names = """longitude latitude length width depth strike dip
-                          rake slip mu rupture_time rise_time rise_time_ending""".split()
+                          rake slip mu rupture_time rise_time rise_time_ending rise_time_starting""".split()
         param = {}
         for n in possible_column_names:
             param[n] = n
