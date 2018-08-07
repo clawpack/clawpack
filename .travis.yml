@@ -6,7 +6,7 @@ before_install:
   # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print(numpy.__version__)"
   - sudo apt-get update -qq
-  - sudo apt-get install -qq gfortran liblapack-pic
+  - sudo apt-get install gfortran liblapack-pic liblapack-dev
   - pip install matplotlib
   - pip install yolk3k
   
@@ -34,6 +34,9 @@ script:
   - nosetests
   - cd $CLAW/geoclaw
   - nosetests
+
+after_failure:
+ - for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
   
 notifications:
   email: false
