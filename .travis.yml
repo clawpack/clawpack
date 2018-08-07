@@ -7,7 +7,7 @@ env:
   
 before_install:
   - sudo apt-get update
-  - sudo apt-get install gfortran liblapack-dev
+  - sudo apt-get install gfortran liblapack-pic liblapack-dev
   # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print(numpy.__version__)"
   # - pip install matplotlib
