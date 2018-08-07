@@ -1529,12 +1529,12 @@ class SubFault(object):
         Calculate geometry for triangular subfaults
 
         - Uses *corners* to calculate *centers*, *longitude*, *latitude*,
-          *depth*, *strike*, *dip*, *rake*, *length*, *width*.
+          *depth*, *strike*, *dip*, *length*, *width*.
 
         - sets *coordinate_specification* as "triangular"
 
         - Note that calculate_geometry() computes 
-          long/lat/strik/dip/rake/length/width to calculate centers/corners
+          long/lat/strike/dip/length/width to calculate centers/corners
         
         """
 
@@ -1649,7 +1649,7 @@ class SubFault(object):
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
 
-    def set_corners(self,corners,rake,projection_zone=None):
+    def set_corners(self,corners,projection_zone=None):
         r"""
         Set three corners for a triangular fault.
         :Inputs: 
@@ -1664,7 +1664,6 @@ class SubFault(object):
                 [corners[0],corners[1],corners[2]]
             self._projection_zone = projection_zone
             self.coordinate_specification = 'triangular'
-            self.rake = rake
             self.calculate_geometry_triangles()
         else:
             raise ValueError("Expected input of length 3")
