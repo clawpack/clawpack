@@ -9,8 +9,9 @@ c
      2                 naux,auxcrse)
 
       use amr_module, only: rnode,node,hxposs,hyposs,possk,tol,nghost
-      use amr_module, only: iorder,cornylo,cornxlo,edebug,eprint,goodpt
-      use amr_module, only: outunit,timemult,badpt,nestlevel,mcapa
+      use amr_module, only: iorder,cornylo,cornxlo,edebug,eprint
+      use amr_module, only: outunit,timemult,nestlevel,mcapa
+      use amr_module, only: DONTFLAG,DOFLAG,UNSET
       use refinement_module, only: wave_tolerance
       use geoclaw_module, only:dry_tolerance, sea_level
       implicit none
@@ -94,7 +95,20 @@ c
           ifine = nghost+1
 c
           do 30  i  = nghost+1, mi2tot-nghost
-              rflag = goodpt
+              rflag = DONTFLAG
+
+! Only check errors if flag hasn't been set yet.
+! If flag == DONTFLAG then refinement is forbidden by a region,
+! if flag == DOFLAG checking is not needed
+
+c Note: here rctcrse is being used as a temporary flag
+c the fine grid amrflags array is stored in rctflg, and will be
+c updated based on rctcrse at the end of this routine
+           if(rctflg(ifine,jfine) == UNSET 
+     .        .or. rctflg(ifine+1,jfine) == UNSET 
+     .        .or. rctflg(ifine,jfine+1) == UNSET 
+     .        .or. rctflg(ifine+1,jfine+1) == UNSET) then
+
               xofi  = xleft + (dble(ifine) - .5d0)*hx
 
               herr  = 0.d0
@@ -196,12 +210,14 @@ c               # Finding errors
 
 c             Flag point if error is large enough
               if (etaerr .ge. tol) then
-                  rflag  = badpt
+                  rflag  = DOFLAG
               endif
 
-              rctcrse(1,i,j) = rflag
+            endif
 
-              ifine = ifine + 2
+            rctcrse(1,i,j) = rflag
+
+            ifine = ifine + 2
  30       continue
 
           jfine = jfine + 2
@@ -234,14 +250,14 @@ c
       do 70 j = nghost+1, mj2tot-nghost
           ifine   = nghost+1
           do 60 i = nghost+1, mi2tot-nghost
-             if (rctcrse(1,i,j) .eq. goodpt) go to 55
-c                ## never set rctflg to good, since flag2refine may
-c                ## have previously set it to bad
-c                ## can only add bad pts in this routine
-                 rctflg(ifine,jfine)    = badpt
-                 rctflg(ifine+1,jfine)  = badpt
-                 rctflg(ifine,jfine+1)  = badpt
-                 rctflg(ifine+1,jfine+1)= badpt
+             if (rctcrse(1,i,j) .eq. DOFLAG) go to 55
+c                ## never set rctflg to DONTFLAG, since flag2refine or
+c                ## flag2refine may have previously set it to DOFLAG
+c                ## can only add DOFLAG pts in this routine
+                 rctflg(ifine,jfine)    = DOFLAG
+                 rctflg(ifine+1,jfine)  = DOFLAG
+                 rctflg(ifine,jfine+1)  = DOFLAG
+                 rctflg(ifine+1,jfine+1)= DOFLAG
 
  55           ifine   = ifine + 2
  60        continue

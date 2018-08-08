@@ -250,8 +250,8 @@ contains
              totnum_adjoints, adjoints, trange_start, trange_final, &
              levtol, eptr, errors, grid_num, select_snapshots
       use amr_module, only: rnode,node,hxposs,hyposs,possk,tol,nghost
-      use amr_module, only: iorder,cornylo,cornxlo,edebug,eprint,goodpt
-      use amr_module, only: outunit,timemult,badpt,nestlevel,mcapa
+      use amr_module, only: iorder,cornylo,cornxlo,edebug,eprint,DONTFLAG
+      use amr_module, only: outunit,timemult,DOFLAG,nestlevel,mcapa,UNSET
       use amr_module, only: t0,tfinal,numcells
       use refinement_module, only: wave_tolerance
       use geoclaw_module, only:dry_tolerance, sea_level
@@ -274,7 +274,7 @@ contains
       integer :: i, j, ifine, jfine, jj, ii, levm, m, k
       integer :: ico, jco, nwet, jg, nx, ny
       real(kind=8) :: errmax, err2, order
-      real(kind=8) :: hx, hy, dt, rflag, time
+      real(kind=8) :: hx, hy, dt, time
       real(kind=8) :: xofi, ybot, xleft, yofj, capa, capacrse
       real(kind=8) :: hcrse, hucrse, hvcrse, etacrse
       real(kind=8) :: bcrse(mitot,mjtot)
@@ -354,7 +354,15 @@ contains
           ifine = nghost+1
 
           do  i  = nghost+1, mi2tot-nghost
-              rflag = goodpt
+
+! Only check errors if flag hasn't been set yet.
+! If flag == DONTFLAG then refinement is forbidden by a region,
+! if flag == DOFLAG checking is not needed
+           if(rctflg(ifine,jfine) == UNSET &
+              .or. rctflg(ifine+1,jfine) == UNSET &
+              .or. rctflg(ifine,jfine+1) == UNSET &
+              .or. rctflg(ifine+1,jfine+1) == UNSET) then
+
               xofi  = xleft + (dble(ifine) - .5d0)*hx
 
               herr  = 0.d0
@@ -470,7 +478,9 @@ contains
                 enddo
               endif
 
-              ifine = ifine + 2
+            endif
+
+            ifine = ifine + 2
           enddo
 
           jfine = jfine + 2
@@ -489,10 +499,10 @@ contains
       do i  = 1, nx
         do j  = 1, ny
           if (auxfine(innerprod_index,i,j) .ge. tol) then
-!                     ## never set rctflg to good, since flag2refine may
-!                     ## have previously set it to bad
+!                     ## never set rctflg to good, since flag2refine or 
+!                     ## flagregions2 may have previously set it to bad
 !                     ## can only add bad pts in this routine
-              rctflg(i,j)    = badpt
+              rctflg(i,j)    = DOFLAG
           endif
 
         enddo
