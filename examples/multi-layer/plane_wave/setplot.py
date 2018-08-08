@@ -76,6 +76,7 @@ def setplot(plotdata=None, bathy_location=0.15, bathy_angle=0.0,
 
     plotdata.clearfigures()
     plotdata.save_frames = False
+    plotdata.format = 'ascii'
 
     # ========================================================================
     #  Generic helper functions
