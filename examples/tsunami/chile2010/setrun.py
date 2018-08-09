@@ -334,7 +334,7 @@ def setrun(claw_pkg='geoclaw'):
     rundata.regiondata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    rundata.regiondata.regions.append([3, 3, 0., 10000., -85,-72,-38,-25])
+    rundata.regiondata.regions.append([3, 3, 0., 1e9, -85.123456789,-72,-38,-25])
     rundata.regiondata.regions.append([3, 3, 8000., 26000., -90,-80,-30,-15])
 
     # ---------------
@@ -423,6 +423,8 @@ def setgeo(rundata):
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
     import sys
+    from clawpack.geoclaw import kmltools
     rundata = setrun(*sys.argv[1:])
     rundata.write()
 
+    kmltools.make_input_data_kmls(rundata)

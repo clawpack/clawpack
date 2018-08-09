@@ -30,6 +30,16 @@ the full 8 digits if you want it transparent).
 from __future__ import absolute_import
 from __future__ import print_function
 from six.moves import range
+
+def f2s(x, n=8):
+    r"""
+    Convert float to string in fixed point notation with at most
+    n digits of precision and trailing zeros removed, for printing
+    nicely in kml description boxes.
+    """
+    format = '%' + '.%sf' % n
+    return (format % x).rstrip('0')
+    
 def deg2dms(dy):
     r"""
     Convert decimal degrees to tuple (degrees, minutes, seconds)
@@ -98,8 +108,8 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True,combined=True):
     clawdata = rundata.clawdata
     x1,y1 = clawdata.lower[0:]
     x2,y2 = clawdata.upper[0:]
-    description = "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g\n" % (y1,y2)
+    description = "  x1 = %s, x2 = %s\n" % (f2s(x1),f2s(x2)) \
+            + "  y1 = %s, y2 = %s\n" % (f2s(y1),f2s(y2))
 
     mx,my = clawdata.num_cells[0:]
     dx = (x2-x1)/float(mx)
@@ -189,7 +199,7 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True,combined=True):
                     % (rnum,x1,x2,y1,y2))
             print("           minlevel = %i,  maxlevel = %i" \
                     % (minlevel,maxlevel) \
-                    + "  t1 = %10.1f,  t2 = %10.1f" % (t1,t2))
+                    + "  t1 = %s,  t2 = %s" % (f2s(t1),f2s(t2)))
         mapping = {}
         mapping['minlevel'] = minlevel
         mapping['maxlevel'] = maxlevel
@@ -202,9 +212,9 @@ def regions2kml(rundata=None,fname='regions.kml',verbose=True,combined=True):
         mapping['elev'] = elev
         mapping['name'] = 'Region %i' % rnum
         description = "minlevel = %i, maxlevel = %i\n" % (minlevel,maxlevel) \
-            + "  t1 = %g, t2 = %g\n" % (t1,t2) \
-            + "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g\n\n" % (y1,y2)
+            + "  t1 = %s, t2 = %s\n" % (f2s(t1),f2s(t2)) \
+            + "  x1 = %s, x2 = %s\n" % (f2s(x1),f2s(x2)) \
+            + "  y1 = %s, y2 = %s\n\n" % (f2s(y1),f2s(y2))
         if len(dy_levels) >= minlevel:
             dy = dy_levels[minlevel-1]
             dy_deg,dy_min,dy_sec = deg2dms(dy)
@@ -571,21 +581,21 @@ def kml_region(mapping, vertex_text=None):
         if 'x3' in mapping:
             # quadrilateral with 4 corners specified
             vertex_text = """
-{x1:10.4f},{y1:10.4f},{elev:10.4f}
-{x2:10.4f},{y2:10.4f},{elev:10.4f}
-{x3:10.4f},{y3:10.4f},{elev:10.4f}
-{x4:10.4f},{y4:10.4f},{elev:10.4f}
-{x1:10.4f},{y1:10.4f},{elev:10.4f}
+{x1:.7f},{y1:.7f},{elev:.7f}
+{x2:.7f},{y2:.7f},{elev:.7f}
+{x3:.7f},{y3:.7f},{elev:.7f}
+{x4:.7f},{y4:.7f},{elev:.7f}
+{x1:.7f},{y1:.7f},{elev:.7f}
 """.format(**mapping).replace(' ','')
 
         else:
             # rectangle with 2 corners specified
             vertex_text = """
-{x1:10.4f},{y1:10.4f},{elev:10.4f}
-{x2:10.4f},{y1:10.4f},{elev:10.4f}
-{x2:10.4f},{y2:10.4f},{elev:10.4f}
-{x1:10.4f},{y2:10.4f},{elev:10.4f}
-{x1:10.4f},{y1:10.4f},{elev:10.4f}
+{x1:.7f},{y1:.7f},{elev:.7f}
+{x2:.7f},{y1:.7f},{elev:.7f}
+{x2:.7f},{y2:.7f},{elev:.7f}
+{x1:.7f},{y2:.7f},{elev:.7f}
+{x1:.7f},{y1:.7f},{elev:.7f}
 """.format(**mapping).replace(' ','')
 
     mapping['vertices'] = vertex_text
