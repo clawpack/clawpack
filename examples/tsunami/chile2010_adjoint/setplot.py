@@ -93,9 +93,8 @@ def setplot(plotdata=None):
     plotitem.pcolor_cmin = -0.2
     plotitem.pcolor_cmax = 0.2
     plotitem.add_colorbar = False
-    plotitem.colorbar_shrink = 0.75
     plotitem.amr_celledges_show = [0,0,0]
-    plotitem.patchedges_show = [0,1,1]
+    plotitem.patchedges_show = 1
 
     # Land
     plotitem = plotaxes.new_plotitem(plot_type='2d_pcolor')
@@ -154,8 +153,8 @@ def setplot(plotdata=None):
 
     plotitem.add_colorbar = False   # doesn't work when adjoint all masked
     plotitem.colorbar_shrink = 0.75
-    plotitem.amr_celledges_show = [0]
-    plotitem.amr_data_show = [1,1,1,0] # inner product not computed on finest level
+    plotitem.amr_celledges_show = [0,0,0]
+    plotitem.amr_data_show = [1,1,0] # inner product not computed on finest level
     plotitem.patchedges_show = 0
 
     # Land
