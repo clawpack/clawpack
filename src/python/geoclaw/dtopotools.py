@@ -1590,19 +1590,16 @@ class SubFault(object):
             
             #Compute strike
             strike_deg = rad2deg(numpy.arctan(-b/a))
-            print('+++ initial strike_deg = %g' % strike_deg)
             
             #Compute dip
             beta = deg2rad(strike_deg + 90)
             m = numpy.array([sin(beta),cos(beta),0]) #Points in dip direction
             n = numpy.array([a,b,c]) #Normal to the plane
-            #dip_deg = abs(rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n)))))
 
             if abs(c) < 1e-8:
                 dip_deg = 90.   # vertical fault
             else:
                 dip_deg = rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n))))
-            print('+++ initial dip_deg = %g' % dip_deg)
             
             # dip should be between 0 and 90. If negative, reverse strike:
             if dip_deg < 0:
