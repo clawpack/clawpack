@@ -31,14 +31,15 @@ from __future__ import absolute_import
 from __future__ import print_function
 from six.moves import range
 
-def f2s(x, n=8):
+def f2s(x, num_digits=6):
     r"""
     Convert float to string in fixed point notation with at most
     n digits of precision and trailing zeros removed, for printing
     nicely in kml description boxes.
     """
-    format = '%' + '.%sf' % n
-    return (format % x).rstrip('0')
+    format = '%' + '.%sf' % num_digits
+    s = (format % x).rstrip('0')
+    return s
     
 def deg2dms(dy):
     r"""
@@ -288,8 +289,8 @@ def line2kml(xy,fname='line.kml',name='line',color='00FFFF',width=3,
     mapping['y2'] = y2
     mapping['elev'] = elev
     mapping['name'] = name
-    mapping['desc'] = "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g" % (y1,y2)
+    mapping['desc'] = "  x1 = %s, x2 = %s\n" % (f2s(x1),f2s(x2)) \
+            + "  y1 = %s, y2 = %s" % (f2s(y1),f2s(y2))
     mapping['color'] = color
     mapping['width'] = width
 
@@ -341,8 +342,8 @@ def box2kml(xy,fname=None,name='box',color='FF0000',width=3,verbose=True):
     mapping['y2'] = y2
     mapping['elev'] = elev
     mapping['name'] = name
-    mapping['desc'] = "  x1 = %g, x2 = %g\n" % (x1,x2) \
-            + "  y1 = %g, y2 = %g" % (y1,y2)
+    mapping['desc'] = "  x1 = %s, x2 = %s\n" % (f2s(x1),f2s(x2)) \
+            + "  y1 = %s, y2 = %s" % (f2s(y1),f2s(y2))
     mapping['color'] = color
     mapping['width'] = width
 
@@ -401,10 +402,10 @@ def quad2kml(xy,fname=None,name='quad',color='FF0000',width=3,verbose=True):
     mapping['y4'] = y4
     mapping['elev'] = elev
     mapping['name'] = name
-    mapping['desc'] = "  x1 = %g, y1 = %g\n" % (x1,y1) \
-            + "  x2 = %g, y2 = %g" % (x2,y2) \
-            + "  x3 = %g, y3 = %g" % (x3,y3) \
-            + "  x4 = %g, y4 = %g" % (x4,y4)
+    mapping['desc'] = "  x1 = %s, y1 = %s\n" % (f2s(x1),f2s(y1)) \
+            + "  x2 = %s, y2 = %s" % (f2s(x2),f2s(y2)) \
+            + "  x3 = %s, y3 = %s" % (f2s(x3),f2s(y3)) \
+            + "  x4 = %s, y4 = %s" % (f2s(x4),f2s(y4))
     mapping['color'] = color
     mapping['width'] = 3
 
@@ -452,22 +453,22 @@ def poly2kml(xy,fname=None,name='poly',color='00FF00', width=3,
     mapping['y'] = y
     mapping['elev'] = elev
     mapping['name'] = name
-    d = "  x[0] = %g, y[0] = %g\n" % (x[0],y[0]) 
+    d = "  x[0] = %s, y[0] = %s\n" % (x[0],y[0]) 
     for j in range(1,len(x)):
-        d = d + "  x[%i] = %g, y[%i] = %g" % (j,x[j],j,y[j])
+        d = d + "  x[%i] = %s, y[%i] = %s" % (j,f2s(x[j]),j,f2s(y[j]))
     mapping['desc'] = d
     mapping['color'] = color
     mapping['width'] = width
 
     v = "\n"
     for j in range(len(x)):
-        v = v + "%g,%g,%g\n" % (x[j],y[j],elev)
-    v = v + "%g,%g,%g\n" % (x[0],y[0],elev)
+        v = v + "%s,%s,%s\n" % (f2s(x[j]),f2s(y[j]),f2s(elev))
+    v = v + "%s,%s,%s\n" % (f2s(x[0]),f2s(y[0]),f2s(elev))
     v.replace(' ','')
     
     region_text = kml_region(mapping, v)
     for j in range(1,len(x)):
-        d = d + "  x[%i] = %g, y[%i] = %g" % (j,x[j],j,y[j])
+        d = d + "  x[%i] = %s, y[%i] = %s" % (j,f2s(x[j]),j,f2s(y[j]))
 
     kml_text = kml_text + region_text + kml_footer()
     kml_file = open(fname,'w')
@@ -535,8 +536,8 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
         x1,y1 = gauge[1:3]
         gaugeno = gauge[0]
         if verbose:
-            print("Gauge %i: %10.6f  %10.6f  \n" % (gaugeno,x1,y1) \
-                    + "  t1 = %10.1f,  t2 = %10.1f" % (t1,t2))
+            print("Gauge %i: %s, %s  \n" % (gaugeno,f2s(x1),f2s(y1)) \
+                    + "  t1 = %s,  t2 = %s" % (f2s(t1),f2s(t2)))
         mapping = {}
         mapping['gaugeno'] = gaugeno
         mapping['t1'] = t1
@@ -545,8 +546,8 @@ def gauges2kml(rundata=None, fname='gauges.kml', verbose=True):
         mapping['y1'] = y1
         mapping['elev'] = elev
         mapping['name'] = 'Gauge %i' % rnum
-        description = "  t1 = %g, t2 = %g\n" % (t1,t2) \
-            + "  x1 = %g, y1 = %g\n" % (x1,y1)
+        description = "  t1 = %s, t2 = %s\n" % (f2s(t1),f2s(t2)) \
+            + "  x1 = %s, y1 = %s\n" % (f2s(x1),f2s(y1))
         mapping['desc'] = description
 
         gauge_text = kml_gauge(mapping)
@@ -581,21 +582,21 @@ def kml_region(mapping, vertex_text=None):
         if 'x3' in mapping:
             # quadrilateral with 4 corners specified
             vertex_text = """
-{x1:.7f},{y1:.7f},{elev:.7f}
-{x2:.7f},{y2:.7f},{elev:.7f}
-{x3:.7f},{y3:.7f},{elev:.7f}
-{x4:.7f},{y4:.7f},{elev:.7f}
-{x1:.7f},{y1:.7f},{elev:.7f}
+{x1:.9f},{y1:.9f},{elev:.9f}
+{x2:.9f},{y2:.9f},{elev:.9f}
+{x3:.9f},{y3:.9f},{elev:.9f}
+{x4:.9f},{y4:.9f},{elev:.9f}
+{x1:.9f},{y1:.9f},{elev:.9f}
 """.format(**mapping).replace(' ','')
 
         else:
             # rectangle with 2 corners specified
             vertex_text = """
-{x1:.7f},{y1:.7f},{elev:.7f}
-{x2:.7f},{y1:.7f},{elev:.7f}
-{x2:.7f},{y2:.7f},{elev:.7f}
-{x1:.7f},{y2:.7f},{elev:.7f}
-{x1:.7f},{y1:.7f},{elev:.7f}
+{x1:.9f},{y1:.9f},{elev:.9f}
+{x2:.9f},{y1:.9f},{elev:.9f}
+{x2:.9f},{y2:.9f},{elev:.9f}
+{x1:.9f},{y2:.9f},{elev:.9f}
+{x1:.9f},{y1:.9f},{elev:.9f}
 """.format(**mapping).replace(' ','')
 
     mapping['vertices'] = vertex_text
@@ -628,8 +629,8 @@ def kml_line(mapping):
         mapping['color'] = 'FF' + mapping['color']
 
         line_text = """
-{x1:10.4f},{y1:10.4f},{elev:10.4f}
-{x2:10.4f},{y2:10.4f},{elev:10.4f}
+{x1:.9f},{y1:.9f},{elev:.9f}
+{x2:.9f},{y2:.9f},{elev:.9f}
 """.format(**mapping).replace(' ','')
 
     mapping['line'] = line_text
@@ -654,7 +655,7 @@ def kml_line(mapping):
     return kml_text
 
 def kml_gauge(mapping):
-    gauge_text = "{x1:10.4f},{y1:10.4f},{elev:10.4f}".format(**mapping).replace(' ','')
+    gauge_text = "{x1:.9f},{y1:.9f},{elev:.9f}".format(**mapping).replace(' ','')
 
     mapping['gauge'] = gauge_text
 
