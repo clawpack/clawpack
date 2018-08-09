@@ -180,6 +180,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
                             hv = alloc(iadd(3, i, j))
 
                             ! Calculate sufaces
+                            eta = h + alloc(iaddaux(1,i,j))
                             if (abs(eta) < 1d-99) then
                                 eta = 0.d0
                             end if
