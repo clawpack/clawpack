@@ -546,7 +546,7 @@ contains
                         enddo
                 end select
 
-                ! Write a warning if we found and missing values
+                ! Write a warning if we found any missing values
                 if (missing > 0)  then
                     print *, '   WARNING...some missing data values this file'
                     print *, '       ',missing,' missing data values'
@@ -631,7 +631,16 @@ contains
                             endif
                         enddo
                     enddo
+                    ! Write a warning if we found any missing values
+                    if (missing > 0)  then
+                        print *, '   WARNING...some missing data values this file'
+                        print *, '       ',missing,' missing data values'
+                        print *, '   These values have arbitrarily been set to ',&
+                            topo_missing
+                        print *, '   See read_topo_file in topo_module.f90'
+                    endif
                 endif
+
 
                 ! do j=1, my
                 !     i = i - 1
