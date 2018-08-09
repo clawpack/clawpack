@@ -222,7 +222,7 @@ contains
                         topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
 
                     ! set topo0save(i) = 1 if this topo file intersects any
-                    ! dtopo file.  This approach to setting topo0save is changed from 
+                    ! dtopo file.  This approach to setting topo0save is changed from
                     ! v5.4.1, where it only checked if some dtopo point lies within the
                     ! topo grid, which might not happen for small scale topo
                     do j=mtopofiles - num_dtopo + 1, mtopofiles
@@ -460,11 +460,12 @@ contains
         character(len=10) :: direction
         ! character(len=1) :: axis_string
         real(kind=8), allocatable :: nc_buffer(:, :)
-        
+
         integer(kind=4) :: ios, nc_file, num_values
         integer(kind=4) :: dim_ids(2), num_dims, var_type, var_ids(2), num_vars
         character(len=10) :: z_var_name, var_name
-        integer(kind=4) :: z_var_id, row_index
+        integer(kind=4) :: z_var_id, z_var_type, row_index
+        integer :: z_no_fill
 
         print *, ' '
         print *, 'Reading topography file  ', fname
@@ -494,7 +495,7 @@ contains
                         topo(i) = topo_temp
                     endif
                 enddo
-                
+
                 close(unit=iunit)
 
             ! ================================================================
@@ -509,7 +510,7 @@ contains
                 do i=1,5
                     read(iunit,*)
                 enddo
-                
+
                 read(iunit,'(a)') str
                 call parse_values(str, n, values)
                 no_data_value = values(1)
@@ -555,13 +556,13 @@ contains
                 endif
 
                 close(unit=iunit)
-            
+
             ! NetCDF
             case(4)
 #ifdef NETCDF
-                ! Open file    
+                ! Open file
                 call check_netcdf_error(nf90_open(fname, nf90_nowrite, nc_file))
-                
+
                 ! Again assume that the topography is the only variable that has
                 ! two dimensions
                 call check_netcdf_error(nf90_inq_varids(nc_file, num_vars, var_ids))
@@ -572,6 +573,7 @@ contains
 
                     if (num_dims == 2) then
                         z_var_name = var_name
+                        z_var_type = var_type
                         call check_netcdf_error(nf90_inq_varid(nc_file, z_var_name, z_var_id))
                     end if
 
@@ -600,6 +602,37 @@ contains
                     topo(j * mx + 1:(j + 1) * mx) = nc_buffer(:, my - j)
                 end do
                 deallocate(nc_buffer)
+
+                ! Fix missing values based on _FillValue attribute
+                ! first get the attribute based on datatype of variable
+                if (z_var_type == nf90_short) then
+                    call get_fill_val_short(nc_file, z_var_id, z_no_fill, no_data_value)
+                else if (z_var_type == nf90_int) then
+                    call get_fill_val_int(nc_file, z_var_id, z_no_fill, no_data_value)
+                else if (z_var_type == nf90_float) then
+                    call get_fill_val_float(nc_file, z_var_id, z_no_fill, no_data_value)
+                else if (z_var_type == nf90_double) then
+                    call get_fill_val_double(nc_file, z_var_id, z_no_fill, no_data_value)
+                end if
+
+                ! second, replace missing vals with topo_missing
+                if (z_no_fill /= 1) then
+                    missing=0
+                    do j=1,my
+                        do i=1,mx
+                            if (topo((j-1)*mx + i) == no_data_value) then
+                                missing = missing + 1
+                                topo((j-1)*mx + i) = topo_missing
+                                ! uncomment next line to print row j
+                                ! and element i that are missing.
+                                ! write(6,602) i,j
+602                                   format('*** missing data, i = ',i6, &
+                                       '  j = ',i6)
+                            endif
+                        enddo
+                    enddo
+                endif
+
                 ! do j=1, my
                 !     i = i - 1
                 !     topo((i - 1) * mx + 1:)
@@ -821,23 +854,23 @@ contains
                     xll = xll + 0.5d0*dx
                     write(6,*) '*** in file: ',trim(fname)
                     write(6,*) '    Shifting xllcorner by 0.5*dx to cell center'
-                    endif 
+                    endif
 
                 if (yll_registered) then
                     yll = yll + 0.5d0*dy
                     write(6,*) '*** in file: ',trim(fname)
                     write(6,*) '    Shifting yllcorner by 0.5*dy to cell center'
-                    endif 
+                    endif
 
 
                 xhi = xll + (mx-1)*dx
                 yhi = yll + (my-1)*dy
-                
+
             ! NetCDF
             case(4)
 #ifdef NETCDF
 
-                ! Open file    
+                ! Open file
                 call check_netcdf_error(nf90_open(fname, nf90_nowrite, nc_file))
 
                 ! NetCDF4 GEBCO topography, should conform to CF metadata
@@ -923,7 +956,7 @@ contains
                 call check_netcdf_error(nf90_get_var(nc_file, y_var_id, yhi, start=(/ my /)))
 
                 call check_netcdf_error(nf90_close(nc_file))
-                
+
                 dx = (xhi - xll) / (mx - 1)
                 dy = (yhi - yll) / (my - 1)
 
@@ -1063,7 +1096,7 @@ contains
             mdtopo(i) = mxdtopo(i) * mydtopo(i) * mtdtopo(i)
         enddo
 
-        read(iunit,*) dt_max_dtopo  
+        read(iunit,*) dt_max_dtopo
         !  largest allowable dt while dtopo is moving
 
 
@@ -1277,12 +1310,12 @@ contains
     end subroutine read_dtopo_header
 
 
-    
+
 
 recursive subroutine topoarea(x1,x2,y1,y2,m,area)
 
     ! Compute the area of overlap of topo with the rectangle (x1,x2) x (y1,y2)
-    ! using topo arrays indexed mtopoorder(mtopofiles) through mtopoorder(m) 
+    ! using topo arrays indexed mtopoorder(mtopofiles) through mtopoorder(m)
     ! (coarse to fine).
 
     ! The main call to this subroutine has corners of a physical domain for
@@ -1290,16 +1323,16 @@ recursive subroutine topoarea(x1,x2,y1,y2,m,area)
     ! domain by all topo arrays.  Used to check inputs and insure topo
     ! covers domain.
 
-    ! The recursive strategy is to first compute the area using only topo 
-    ! arrays mtopoorder(mtopofiles) to mtopoorder(m+1), 
+    ! The recursive strategy is to first compute the area using only topo
+    ! arrays mtopoorder(mtopofiles) to mtopoorder(m+1),
     ! and then apply corrections due to adding topo array mtopoorder(m).
-     
+
     ! Corrections are needed if the new topo array intersects the grid cell.
     ! Let the intersection be (x1m,x2m) x (y1m,y2m).
     ! Two corrections are needed, first to subtract out the area over
     ! the rectangle (x1m,x2m) x (y1m,y2m) computed using
     ! topo arrays mtopoorder(mtopofiles) to mtopoorder(m+1),
-    ! and then adding in the area over this same region using 
+    ! and then adding in the area over this same region using
     ! topo array mtopoorder(m).
 
     ! Based on the recursive routine rectintegral that integrates
@@ -1316,7 +1349,7 @@ recursive subroutine topoarea(x1,x2,y1,y2,m,area)
     real(kind=8) :: xmlo,xmhi,ymlo,ymhi,x1m,x2m, &
         y1m,y2m, area1,area2,area_m
     integer :: mfid, indicator, i0
-    real(kind=8), external :: topointegral  
+    real(kind=8), external :: topointegral
 
 
     mfid = mtopoorder(m)
@@ -1338,12 +1371,12 @@ recursive subroutine topoarea(x1,x2,y1,y2,m,area)
              y1m,y2m, x1,x2,y1,y2, &
              xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
 
-        
+
         if (area_m > 0) then
-        
+
             ! correction to subtract out from previous set of topo grids:
             call topoarea(x1m,x2m,y1m,y2m,m+1,area2)
-    
+
             ! adjust integral due to corrections for new topo grid:
             area = area1 - area2 + area_m
         else
@@ -1353,31 +1386,31 @@ recursive subroutine topoarea(x1,x2,y1,y2,m,area)
 
 end subroutine topoarea
 
-    
+
 
 recursive subroutine rectintegral(x1,x2,y1,y2,m,integral)
 
     ! Compute the integral of topo over the rectangle (x1,x2) x (y1,y2)
-    ! using topo arrays indexed mtopoorder(mtopofiles) through mtopoorder(m) 
+    ! using topo arrays indexed mtopoorder(mtopofiles) through mtopoorder(m)
     ! (coarse to fine).
 
-    ! The main call to this subroutine has corners of a grid cell for the 
-    ! rectangle and m = 1 in order to compute the integral over the cell 
+    ! The main call to this subroutine has corners of a grid cell for the
+    ! rectangle and m = 1 in order to compute the integral over the cell
     ! using all topo arrays.
 
-    ! The recursive strategy is to first compute the integral using only topo 
-    ! arrays mtopoorder(mtopofiles) to mtopoorder(m+1), 
+    ! The recursive strategy is to first compute the integral using only topo
+    ! arrays mtopoorder(mtopofiles) to mtopoorder(m+1),
     ! and then apply corrections due to adding topo array mtopoorder(m).
-     
+
     ! Corrections are needed if the new topo array intersects the grid cell.
     ! Let the intersection be (x1m,x2m) x (y1m,y2m).
     ! Two corrections are needed, first to subtract out the integral over
     ! the rectangle (x1m,x2m) x (y1m,y2m) computed using
     ! topo arrays mtopoorder(mtopofiles) to mtopoorder(m+1),
-    ! and then adding in the integral over this same region using 
+    ! and then adding in the integral over this same region using
     ! topo array mtopoorder(m).
 
-    ! Note that the function topointegral returns the integral over the 
+    ! Note that the function topointegral returns the integral over the
     ! rectangle based on a single topo array, and that routine calls
     ! bilinearintegral.
 
@@ -1393,7 +1426,7 @@ recursive subroutine rectintegral(x1,x2,y1,y2,m,integral)
     real(kind=8) :: xmlo,xmhi,ymlo,ymhi,area,x1m,x2m, &
         y1m,y2m, int1,int2,int3
     integer :: mfid, indicator, mp1fid, i0
-    real(kind=8), external :: topointegral  
+    real(kind=8), external :: topointegral
 
 
     mfid = mtopoorder(m)
@@ -1425,17 +1458,17 @@ recursive subroutine rectintegral(x1,x2,y1,y2,m,integral)
              y1m,y2m, x1,x2,y1,y2, &
              xlowtopo(mfid),xhitopo(mfid),ylowtopo(mfid),yhitopo(mfid))
 
-        
+
         if (area > 0) then
-        
+
             ! correction to subtract out from previous set of topo grids:
             call rectintegral(x1m,x2m,y1m,y2m,m+1,int2)
-    
+
             ! correction to add in for new topo grid:
             int3 = topointegral(x1m,x2m, y1m,y2m, &
                         xlowtopo(mfid),ylowtopo(mfid),dxtopo(mfid), &
                         dytopo(mfid),mxtopo(mfid),mytopo(mfid),topowork(i0),1)
-    
+
             ! adjust integral due to corrections for new topo grid:
             integral = int1 - int2 + int3
         else
@@ -1445,7 +1478,7 @@ recursive subroutine rectintegral(x1,x2,y1,y2,m,integral)
 
 end subroutine rectintegral
 
-    
+
 
 subroutine intersection(indicator,area,xintlo,xinthi, &
            yintlo,yinthi,x1lo,x1hi,y1lo,y1hi,x2lo,x2hi,y2lo,y2hi)
@@ -1478,6 +1511,50 @@ subroutine intersection(indicator,area,xintlo,xinthi, &
 end subroutine intersection
 
 #ifdef NETCDF
+    ! subroutines to get fill value depending on dtype of netcdf elevation var
+    subroutine get_fill_val_short(nid,vid,no_fill,fill_val)
+      use netcdf
+      implicit none
+      integer, intent(out) :: no_fill
+      integer(kind=4), intent(in) :: nid,vid
+      integer(kind=2) :: fill_val_temp
+      real(kind=8), intent(out) :: fill_val
+      call check_netcdf_error(nf90_inq_var_fill(nid,vid,no_fill,fill_val_temp))
+      fill_val = real(fill_val_temp,8)
+    end subroutine get_fill_val_short
+
+    subroutine get_fill_val_int(nid,vid,no_fill,fill_val)
+      use netcdf
+      implicit none
+      integer, intent(out) :: no_fill
+      integer(kind=4), intent(in) :: nid,vid
+      integer(kind=4) :: fill_val_temp
+      real(kind=8), intent(out) :: fill_val
+      call check_netcdf_error(nf90_inq_var_fill(nid,vid,no_fill,fill_val_temp))
+      fill_val = real(fill_val_temp,8)
+    end subroutine get_fill_val_int
+
+    subroutine get_fill_val_float(nid,vid,no_fill,fill_val)
+      use netcdf
+      implicit none
+      integer, intent(out) :: no_fill
+      integer(kind=4), intent(in) :: nid,vid
+      real(kind=4) :: fill_val_temp
+      real(kind=8), intent(out) :: fill_val
+      call check_netcdf_error(nf90_inq_var_fill(nid,vid,no_fill,fill_val_temp))
+      fill_val = real(fill_val_temp,8)
+    end subroutine get_fill_val_float
+
+    subroutine get_fill_val_double(nid,vid,no_fill,fill_val)
+      use netcdf
+      implicit none
+      integer(kind=4), intent(in) :: nid,vid
+      integer, intent(out) :: no_fill
+      real(kind=8), intent(out) :: fill_val
+      nfout_error =  nf90_inq_var_fill(nid,vid,no_fill,fill_val)
+    end subroutine get_fill_val_double
+
+
     subroutine check_netcdf_error(ios)
 
         use netcdf
