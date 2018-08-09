@@ -250,7 +250,7 @@ c
       do 70 j = nghost+1, mj2tot-nghost
           ifine   = nghost+1
           do 60 i = nghost+1, mi2tot-nghost
-             if (rctcrse(1,i,j) .eq. DOFLAG) go to 55
+             if (rctcrse(1,i,j) .eq. DOFLAG) then
 c                ## never set rctflg to DONTFLAG, since flag2refine or
 c                ## flag2refine may have previously set it to DOFLAG
 c                ## can only add DOFLAG pts in this routine
@@ -258,8 +258,9 @@ c                ## can only add DOFLAG pts in this routine
                  rctflg(ifine+1,jfine)  = DOFLAG
                  rctflg(ifine,jfine+1)  = DOFLAG
                  rctflg(ifine+1,jfine+1)= DOFLAG
+             endif
 
- 55           ifine   = ifine + 2
+             ifine   = ifine + 2
  60        continue
 
            jfine   = jfine + 2
