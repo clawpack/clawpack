@@ -368,11 +368,11 @@ def setrun(claw_pkg='geoclaw'):
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
 
-    # all 4 levels anywhere, based on flagging:
-    rundata.regiondata.regions.append([1, 4, 0., 1e9, -220,0,-90,90])
+    # all 3 levels anywhere, based on flagging:
+    rundata.regiondata.regions.append([1, 3, 0., 1e9, -220,0,-90,90])
 
     # earthquake source region - force refinement initially:
-    rundata.regiondata.regions.append([4, 4, 0., 100., -85,-72,-38,-25])
+    rundata.regiondata.regions.append([3, 3, 0., 200., -85,-70,-38,-25])
 
     # ---------------
     # Gauges:
