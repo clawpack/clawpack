@@ -34,8 +34,8 @@ from six.moves import range
 def f2s(x, num_digits=6):
     r"""
     Convert float to string in fixed point notation with at most
-    n digits of precision and trailing zeros removed, for printing
-    nicely in kml description boxes.
+    *num_digits* digits of precision and trailing zeros removed, 
+    for printing nicely in kml description boxes.
     """
     format = '%' + '.%sf' % num_digits
     s = (format % x).rstrip('0')
