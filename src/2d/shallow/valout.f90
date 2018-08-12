@@ -68,10 +68,6 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
                                            "i6,'                 naux'/,"   // &
                                            "i6,'                 ndim'/,"   // &
                                            "i6,'                 nghost'/,/)"
-    character(len=*), parameter :: timing_header_format =                      &
-                                                  "(' wall time (', i2,')," // &
-                                                  " CPU time (', i2,'), "   // &
-                                                  "cells updated (', i2,'),')"
     character(len=*), parameter :: console_format = &
              "('AMRCLAW: Frame ',i4,' output files done at time t = ', d13.6,/)"
 
