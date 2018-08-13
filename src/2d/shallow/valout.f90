@@ -52,6 +52,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     integer :: clock_start, clock_finish, clock_rate
     integer    tick_clock_finish, tick_clock_rate, timeTick_int
     real(kind=8) :: cpu_start, cpu_finish, t_CPU_overall, timeTick_overall
+    character(len=128) :: console_format
     character(len=256) :: timing_line, timing_substr
     character(len=*), parameter :: timing_file_name = "timing.csv"
 
@@ -70,7 +71,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
                                            "i6,'                 naux'/,"   // &
                                            "i6,'                 ndim'/,"   // &
                                            "i6,'                 nghost'/,/)"
-    character(len=*) :: console_format
+    
 
     ! Output timing
     call system_clock(clock_start,clock_rate)
