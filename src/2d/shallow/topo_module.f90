@@ -1560,7 +1560,7 @@ end subroutine intersection
       integer(kind=4), intent(in) :: nid,vid
       integer, intent(out) :: no_fill
       real(kind=8), intent(out) :: fill_val
-      check_netcdf_error(nf90_inq_var_fill(nid,vid,no_fill,fill_val))
+      call check_netcdf_error(nf90_inq_var_fill(nid,vid,no_fill,fill_val))
     end subroutine get_fill_val_double
 
 
