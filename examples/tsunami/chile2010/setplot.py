@@ -41,6 +41,7 @@ def setplot(plotdata=None):
 
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
+    plotdata.format = 'ascii'    # 'ascii' or 'binary' to match setrun.py
 
 
     # To plot gauge locations on pcolor or contour plot, use this as
