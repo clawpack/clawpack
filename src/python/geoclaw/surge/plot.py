@@ -120,7 +120,6 @@ def surge_afteraxes(current_data, track, land_fall=0.0, plot_direction=False,
     Includes changing the title to something relative to landfall and plotting
     the location of the storm eye according to the track object.
     """
-
     track_data = track.get_track(current_data.frameno)
 
     if track_data[0] is not None and track_data[1] is not None:

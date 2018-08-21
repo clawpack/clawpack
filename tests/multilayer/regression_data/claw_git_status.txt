@@ -1,93 +1,118 @@
 Clawpack Git Status 
-Diffs can be found in /Users/rjl/git/clawpack/geoclaw/tests/multilayer/regression_data/claw_git_diffs.txt
+Diffs can be found in /Users/mandli/src/clawpack/geoclaw/tests/multilayer/regression_data/claw_git_diffs.txt
 
-Tue, 20 Dec 2016 22:06:32 PST
-$CLAW = /Users/rjl/git/clawpack
+Sun, 08 Apr 2018 20:47:31 EDT
+$CLAW = /Users/mandli/src/clawpack
 $FC = gfortran
 
 
 ===========
 classic
 ===========
-/Users/rjl/git/clawpack/classic
+/Users/mandli/src/clawpack/classic
 
 --- last commit ---
-8e6d0c2 make plotdata an optional argument in setplot
+8c4ef32 Merge pull request #79 from rjleveque/restart_None
 
 --- branch and status ---
-## setplot_fixes
+## master...clawpack/master
+ M examples/acoustics_1d_example1/qinit.f90
 
 
 ===========
 amrclaw
 ===========
-/Users/rjl/git/clawpack/amrclaw
+/Users/mandli/src/clawpack/amrclaw
 
 --- last commit ---
-5c81870 set xlimits and ylimits in quadrants example
+469833f Type bug fixed
 
 --- branch and status ---
-## setplot_fixes
+## bad-pt-moment-fix...mandli/bad-pt-moment-fix
+ M examples/acoustics_1d_heterogeneous/setrun.py
+ M examples/advection_2d_swirl/Makefile
+ M examples/advection_2d_swirl/setplot.py
+ M examples/advection_2d_swirl/setrun.py
 
 
 ===========
 clawutil
 ===========
-/Users/rjl/git/clawpack/clawutil
+/Users/mandli/src/clawpack/clawutil
 
 --- last commit ---
-c3950d1 Fix call to StringIO to match new way it is imported
+5c6bd99 Merge pull request #122 from rjleveque/convert_readme_string
 
 --- branch and status ---
-## claw_git_status_StringIO
+## master...clawpack/master
+MM src/python/clawutil/data.py
 
 
 ===========
 pyclaw
 ===========
-/Users/rjl/git/clawpack/pyclaw
+/Users/mandli/src/clawpack/pyclaw
 
 --- last commit ---
-695af06 Merge pull request #550 from clawpack/python3
+3fd86fad Remove pdb break poitn
 
 --- branch and status ---
-## master...origin/master
+## fix-gauges-funcs...clawpack/master [ahead 3]
 
 
 ===========
 visclaw
 ===========
-/Users/rjl/git/clawpack/visclaw
+/Users/mandli/src/clawpack/visclaw
 
 --- last commit ---
-6833be6 Merge pull request #190 from clawpack/python3
+33713bb Change to new structure for current pobj
 
 --- branch and status ---
-## master...origin/master
+## set-pobj...clawpack/master [ahead 1]
 
 
 ===========
 riemann
 ===========
-/Users/rjl/git/clawpack/riemann
+/Users/mandli/src/clawpack/riemann
 
 --- last commit ---
-b68d73d Merge pull request #111 from rjleveque/geoclaw_riemann_utils_update
+dcee832 Merge pull request #131 from chaulio/patch-1
 
 --- branch and status ---
-## master...origin/master
+## master...clawpack/master
 
 
 ===========
 geoclaw
 ===========
-/Users/rjl/git/clawpack/geoclaw
+/Users/mandli/src/clawpack/geoclaw
 
 --- last commit ---
-e29ead0 updated regression data for new Riemann solver from clawpack/riemann#111
+b1daad5 Turn off debugging info
 
 --- branch and status ---
-## regression_data_update_riemann
- M examples/tsunami/bowl-radial/setplot.py
- M tests/multilayer/regression_data/claw_git_diffs.txt
+## new-storm-module...mandli/new-storm-module [ahead 1]
+ M tests/multilayer/qinit_module.f90
  M tests/multilayer/regression_data/claw_git_status.txt
+ M tests/multilayer/regression_data/gauge00000.txt
+ M tests/multilayer/regression_data/gauge00001.txt
+ M tests/multilayer/regression_data/gauge00002.txt
+ M tests/multilayer/regression_data/gauge00003.txt
+ M tests/multilayer/regression_data/gauge00004.txt
+ M tests/multilayer/setplot.py
+ M tests/multilayer/setrun.py
+D  tests/multilayer_amr/Makefile
+D  tests/multilayer_amr/__init__.py
+D  tests/multilayer_amr/qinit.f90
+D  tests/multilayer_amr/qinit_module.f90
+D  tests/multilayer_amr/regression_data/claw_git_status.txt
+D  tests/multilayer_amr/regression_data/gauge00000.txt
+D  tests/multilayer_amr/regression_data/gauge00001.txt
+D  tests/multilayer_amr/regression_data/gauge00002.txt
+D  tests/multilayer_amr/regression_data/gauge00003.txt
+D  tests/multilayer_amr/regression_data/gauge00004.txt
+D  tests/multilayer_amr/regression_tests.py
+D  tests/multilayer_amr/setplot.py
+D  tests/multilayer_amr/setrun.py

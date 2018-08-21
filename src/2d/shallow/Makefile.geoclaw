@@ -18,9 +18,8 @@ COMMON_MODULES += \
  $(GEOLIB)/refinement_module.f90 \
  $(GEOLIB)/fixedgrids_module.f90 \
  $(GEOLIB)/fgmax_module.f90 \
- $(GEOLIB)/surge/holland_storm_module.f90 \
- $(GEOLIB)/surge/stommel_storm_module.f90 \
- $(GEOLIB)/surge/constant_storm_module.f90 \
+ $(GEOLIB)/surge/model_storm_module.f90 \
+ $(GEOLIB)/surge/data_storm_module.f90 \
  $(GEOLIB)/surge/storm_module.f90 \
  $(GEOLIB)/multilayer/multilayer_module.f90 \
  $(GEOLIB)/friction_module.f90
@@ -132,7 +131,7 @@ COMMON_SOURCES += \
   $(GEOLIB)/valout.f90 \
   $(GEOLIB)/filval.f90 \
   $(GEOLIB)/filpatch.f90 \
-  $(GEOLIB)/bc2amr.f \
+  $(GEOLIB)/bc2amr.f90 \
   $(GEOLIB)/update.f90 \
   $(GEOLIB)/setaux.f90 \
   $(GEOLIB)/flag2refine2.f90  \

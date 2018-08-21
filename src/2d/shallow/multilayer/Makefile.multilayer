@@ -41,9 +41,8 @@ COMMON_MODULES += \
 COMMON_MODULES += \
   $(GEOLIB)/utility_module.f90 \
   $(GEOLIB)/geoclaw_module.f90 \
-  $(GEOLIB)/surge/holland_storm_module.f90 \
-  $(GEOLIB)/surge/stommel_storm_module.f90 \
-  $(GEOLIB)/surge/constant_storm_module.f90 \
+  $(GEOLIB)/surge/model_storm_module.f90 \
+  $(GEOLIB)/surge/data_storm_module.f90 \
   $(GEOLIB)/surge/storm_module.f90 \
   $(GEOLIB)/multilayer/multilayer_module.f90 \
   $(GEOLIB)/multilayer/gauges_module.f90 \

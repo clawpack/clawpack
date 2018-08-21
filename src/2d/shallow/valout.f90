@@ -14,7 +14,9 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     use amr_module, only: timeValout, timeValoutCPU, tvoll, tvollCPU, rvoll
     use amr_module, only: timeTick, tick_clock_start, t0
 
-    use storm_module, only: storm_type, output_storm_location
+    use storm_module, only: storm_specification_type, output_storm_location
+    use storm_module, only: output_storm_location
+    use storm_module, only: landfall, display_landfall_time
 
 #ifdef HDF5
     use hdf5
@@ -50,6 +52,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     integer :: clock_start, clock_finish, clock_rate
     integer    tick_clock_finish, tick_clock_rate, timeTick_int
     real(kind=8) :: cpu_start, cpu_finish, t_CPU_overall, timeTick_overall
+    character(len=128) :: console_format
     character(len=256) :: timing_line, timing_substr
     character(len=*), parameter :: timing_file_name = "timing.csv"
 
@@ -68,8 +71,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
                                            "i6,'                 naux'/,"   // &
                                            "i6,'                 ndim'/,"   // &
                                            "i6,'                 nghost'/,/)"
-    character(len=*), parameter :: console_format = &
-             "('AMRCLAW: Frame ',i4,' output files done at time t = ', d13.6,/)"
+    
 
     ! Output timing
     call system_clock(clock_start,clock_rate)
@@ -86,7 +88,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
               ((.not. output_aux_onlyonce) .or. (abs(time - t0) < 1d-90)))
                 
     ! Output storm track if needed
-    if (storm_type > 0) then
+    if (storm_specification_type /= 0) then
         call output_storm_location(time)
     end if
 
@@ -405,7 +407,16 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
 
     ! ==========================================================================
     ! Print output info
-    print console_format, frame, time
+    if (display_landfall_time) then
+        ! Convert time to days relative to landfall
+        console_format = "('AMRCLAW: Frame ',i4,' output files done at " // &
+                         "time t = ', f5.2,/)"
+        print console_format, frame, time / (3.3d3 * 24.d0)
+    else
+        console_format = "('AMRCLAW: Frame ',i4,' output files done at " // &
+                         "time t = ', d13.6,/)"
+        print console_format, frame, time
+    end if
 
     ! Increment frame counter
     frame = frame + 1
