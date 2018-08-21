@@ -97,7 +97,7 @@ def test_storm_IO(save=False):
                 try:
                     import pandas
                     import xarray
-                except ModuleNotFoundError as e:
+                except ImportError as e:
                     print("Skipping IBTrACS IO test, missing pandas and xarray.")
                     continue
 
