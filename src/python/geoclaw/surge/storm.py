@@ -477,7 +477,7 @@ class Storm(object):
         try:
             import xarray as xr
             from pandas import to_datetime
-        except ModuleNotFoundError as e:
+        except ImportError as e:
             print("IBTrACS currently requires xarray and pandas to work.")
             raise e
 
