@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 r"""
-Module defines a class and routines for managing storm best-track type input and 
-testing reconstructed wind and pressure fields.  Additionally some support for 
+Module defines a class and routines for managing storm best-track type input and
+testing reconstructed wind and pressure fields.  Additionally some support for
 ensembles of storms from various providers is also included.
 
 The primary class of interest in the module is the `Storm` class that
@@ -18,7 +18,7 @@ workflow in a `setrun.py` file would do the following:
 
     storm.write("my_geoclaw_storm.txt", file_format="geoclaw")
 
-3. Specify the path to the GeoClaw formatted storm file, in this case 
+3. Specify the path to the GeoClaw formatted storm file, in this case
    "my_geoclaw_storm.txt".
 
 :Formats Supported:
@@ -227,8 +227,8 @@ class Storm(object):
         # If a path is not provided then we can try and find the relevant
         # database and download it
         if path is None:
-            data_str = ("Currently automatic download of storm databases is ", 
-                        "not implemented.  Please refer to the URLs below for", 
+            data_str = ("Currently automatic download of storm databases is ",
+                        "not implemented.  Please refer to the URLs below for",
                         "references as to where you can download storm data",
                         "files:",
                         " - ATCF - http://ftp.nhc.noaa.gov/atcf/archive/",
@@ -350,7 +350,7 @@ class Storm(object):
             self.max_wind_speed[i] = units.convert(float(data[8]), 'knots', 'm/s')
             self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
 
-            # Mark if this is a shortened line - does not contain max wind 
+            # Mark if this is a shortened line - does not contain max wind
             # radius and outer storm radius - set those to -1 to mark them as
             # missing
             if len(data) < 19:
@@ -365,7 +365,7 @@ class Storm(object):
 
         This is the current version of HURDAT data available (HURDAT 2).  Note
         that this assumes there is only one storm in the file (includes the
-        header information though).  Future features will be added that will allow for 
+        header information though).  Future features will be added that will allow for
         a file to be read with multiple storms defined.
 
         For more details on the HURDAT format and getting data see
@@ -384,7 +384,7 @@ class Storm(object):
 
         with open(path, 'r') as hurdat_file:
             # Extract header
-            data = [value.strip() for value in 
+            data = [value.strip() for value in
                     hurdat_file.readline().split(',')]
             self.basin = data[0][:2]
             self.name = data[1]
@@ -392,7 +392,7 @@ class Storm(object):
 
             # Store rest of data
             data_block = hurdat_file.readlines()
-        
+
         num_lines = len(data_block)
 
         # Parse data block
@@ -455,7 +455,7 @@ class Storm(object):
         version becomes an operational release.
 
         NOTE: Thus far, only the reading of hurdat/atcf-based best tracks (i.e. USA
-        tracks) is supported. 
+        tracks) is supported.
 
         TODO: account for data formats from other reporting agencies
 
@@ -492,7 +492,7 @@ class Storm(object):
             ds.iso_time.values = dts
             year_match = (ds.iso_time.dt.year == year).any(dim='time')
             ds = ds.sel(storm=(year_match & storm_match)).squeeze()
-            # make sure 
+            # make sure
             if ('storm' in ds.dims.keys()) and (ds.storm.shape[0] == 0):
                 raise ValueError('Storm/year not found in provided file')
 
@@ -530,12 +530,12 @@ class Storm(object):
             # TODO: add more detailed info for storms that have it
             self.max_wind_speed = units.convert(ds.wmo_wind,'knots','m/s').values
             self.central_pressure = units.convert(ds.wmo_pres,'mbar','Pa').values
-            self.max_wind_radius = units.convert(ds.usa_rmw,'nmi','m').where(
-                    ds.usa_rmw >= 0,-1).values
-            self.storm_radius = units.convert(ds.usa_roci,'nmi','m').where(
-                    ds.usa_roci >= 0,-1).values
+            self.max_wind_radius = numpy.where(ds.usa_rmw >= 0,
+                units.convert(ds.usa_rmw,'nmi','m'),-1)
+            self.storm_radius = numpy.where(ds.usa_roci >=0,
+                units.convert(ds.usa_roci.values,'nmi','m'),-1)
 
-            
+
     def read_jma(self, path, verbose=False):
         r"""Read in JMA formatted storm file
 
@@ -594,7 +594,7 @@ class Storm(object):
             self.eye_location[i, 1] = float(data[3]) / 10.0
 
             # Intensity information - current the radii are not directly given
-            # Available data includes max/min of radius of winds of 50 and 
+            # Available data includes max/min of radius of winds of 50 and
             # 30 kts instead
             self.central_pressure[i] = units.convert(float(data[5]), 'hPa', 'Pa')
             self.max_wind_speed[i] = units.convert(float(data[6]), 'knots', 'm/s')
@@ -649,7 +649,7 @@ class Storm(object):
         self.central_pressure = numpy.empty(num_lines)
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
-         
+
         for (i, data) in enumerate(data_block):
             # End at an empty lines - skips lines at the bottom of a file
             if len(data) == 0:
@@ -659,13 +659,13 @@ class Storm(object):
             if i == 0:
                 self.basin = TCVitals_Basins[data[1][2:]]
                 self.ID = int(data[1][:2])
-                   
+
             # Create time
             self.t.append(datetime.datetime(int(data[3][0:4]),
                                             int(data[3][4:6]),
                                             int(data[3][6:]),
                                             int(data[4][:2])))
-            
+
             # Parse eye location - longitude/latitude order
             if data[5][-1] == 'N':
                 self.eye_location[i, 1] = float(data[5][0:-1])/10.0
@@ -717,19 +717,19 @@ class Storm(object):
          - *path* (string) Path to the file to be written.
          - *verbose* (bool) Print out additional information when writing.
          - *max_wind_radius_fill* (func) Function that can be used to fill in
-           missing data for `max_wind_radius` values.  This defaults to simply 
+           missing data for `max_wind_radius` values.  This defaults to simply
            setting the value to -1.  The function signature should be
            `max_wind_radius(t, storm)` where t is the time of the forecast and
-           `storm` is the storm object.  Note that if this or `storm_radius` 
-           field remains -1 that this data line will be assumed to be redundant 
+           `storm` is the storm object.  Note that if this or `storm_radius`
+           field remains -1 that this data line will be assumed to be redundant
            and not be written out.
          - *storm_radius_fill* (func) Function that can be used to fill in
-           missing data for `storm_radius` values.  This defaults to simply 
+           missing data for `storm_radius` values.  This defaults to simply
            setting the value to -1.  The function signature should be
            `storm_radius(t, storm)` where t is the time of the forecast and
-           `storm` is the storm object.  Note that if this or `max_wind_radius` 
-           field remains -1 that this data line will be assumed to be redundant 
-           and not be written 
+           `storm` is the storm object.  Note that if this or `max_wind_radius`
+           field remains -1 that this data line will be assumed to be redundant
+           and not be written
         """
 
         if max_wind_radius_fill is None:
@@ -758,7 +758,7 @@ class Storm(object):
             data.append(self.eye_location[n, 0])
             data.append(self.eye_location[n, 1])
             data.append(self.max_wind_speed[n])
-            # Allow custom function to set max wind radius if not 
+            # Allow custom function to set max wind radius if not
             # available
             if self.max_wind_radius[n] == -1:
                 new_wind_radius = max_wind_radius_fill(self.t[n], self)
@@ -768,9 +768,9 @@ class Storm(object):
                     data.append(new_wind_radius)
             else:
                 data.append(self.max_wind_radius[n])
-            
+
             data.append(self.central_pressure[n])
-            
+
             # Allow custom function to set storm radius if not available
             if self.storm_radius[n] == -1:
                 new_storm_radius = storm_radius_fill(self.t[n], self)
