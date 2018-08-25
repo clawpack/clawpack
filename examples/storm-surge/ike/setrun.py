@@ -100,7 +100,6 @@ def setrun(claw_pkg='geoclaw'):
     # Initial time:
     # -------------
     clawdata.t0 = -days2seconds(3)
-    # clawdata.t0 = days2seconds(landfall.days - 1) + landfall.seconds
 
     # Restart from checkpoint file of a previous run?
     # If restarting, t0 above should be from original run, and the
@@ -122,8 +121,7 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style == 1:
         # Output nout frames at equally spaced times up to tfinal:
-        # clawdata.tfinal = days2seconds(date2days('2008091400'))
-        clawdata.tfinal = days2seconds(1.0)
+        clawdata.tfinal = days2seconds(1)
         recurrence = 4
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) *
                                         recurrence / (60**2 * 24))
@@ -152,7 +150,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 1
+    clawdata.verbosity = 0
 
     # --------------
     # Time stepping:
