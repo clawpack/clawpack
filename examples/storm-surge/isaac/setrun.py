@@ -9,15 +9,16 @@ that will be read in by the Fortran code.
 
 from __future__ import absolute_import
 from __future__ import print_function
+
 import os
 import datetime
+import shutil
+import gzip
 
 import numpy as np
 
-# Calculate landfall time
-# Landfall for Ike in Houston was September 13th, at ~ 7:00:00 UTC
-landfall = datetime.datetime(2012, 8, 28, 18) - \
-           datetime.datetime(2012, 1, 1, 0)
+import clawpack.clawutil as clawutil
+from clawpack.geoclaw.surge.storm import Storm
 
 # Time Conversions
 def days2seconds(days):
@@ -44,12 +45,10 @@ def setrun(claw_pkg='geoclaw'):
 
     """
 
-    from clawpack.clawutil import data
-
     assert claw_pkg.lower() == 'geoclaw',  "Expected claw_pkg = 'geoclaw'"
 
     num_dim = 2
-    rundata = data.ClawRunData(claw_pkg, num_dim)
+    rundata = clawutil.data.ClawRunData(claw_pkg, num_dim)
 
     # ------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
@@ -99,8 +98,7 @@ def setrun(claw_pkg='geoclaw'):
     # -------------
     # Initial time:
     # -------------
-    clawdata.t0 = days2seconds(landfall.days - 3) + landfall.seconds
-    # clawdata.t0 = days2seconds(landfall.days - 1) + landfall.seconds
+    clawdata.t0 = -days2seconds(2)
 
     # Restart from checkpoint file of a previous run?
     # If restarting, t0 above should be from original run, and the
@@ -123,8 +121,7 @@ def setrun(claw_pkg='geoclaw'):
     if clawdata.output_style == 1:
         # Output nout frames at equally spaced times up to tfinal:
         # clawdata.tfinal = days2seconds(date2days('2008091400'))
-        clawdata.tfinal = days2seconds(landfall.days + 1.0) + \
-                                       landfall.seconds
+        clawdata.tfinal = days2seconds(1.5)
         recurrence = 4
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) *
                                         recurrence / (60**2 * 24))
@@ -153,7 +150,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 1
+    clawdata.verbosity = 0
 
     # --------------
     # Time stepping:
@@ -386,6 +383,8 @@ def setgeo(rundata):
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     # See regions for control over these regions, need better bathy data for
     # the smaller domains
+    clawutil.data.get_remote_file(
+           "http://www.columbia.edu/~ktm2132/bathy/gulf_caribbean.tt3.tar.bz2")
     topo_path = os.path.join(scratch_dir, 'gulf_caribbean.tt3')
     topo_data.topofiles.append([3, 1, 5, rundata.clawdata.t0,
                                 rundata.clawdata.tfinal,
@@ -407,18 +406,35 @@ def setgeo(rundata):
     data.drag_law = 1
     data.pressure_forcing = True
 
+    data.display_landfall_time = True
+
     # AMR parameters, m/s and m respectively
     data.wind_refine = [20.0, 40.0, 60.0]
     data.R_refine = [60.0e3, 40e3, 20e3]
 
     # Storm parameters - Parameterized storm (Holland 1980)
-    data.storm_type = 1
-    data.landfall = days2seconds(landfall.days) + landfall.seconds
-    data.display_landfall_time = True
-
-    # Storm type 2 - Idealized storm track
+    data.storm_specification_type = 'holland80'  # (type 1)
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),
                                          'isaac.storm'))
+
+    # Convert ATCF data to GeoClaw format
+    clawutil.data.get_remote_file(
+                   "http://ftp.nhc.noaa.gov/atcf/archive/2012/bal092012.dat.gz")
+    atcf_path = os.path.join(scratch_dir, "bal092012.dat")
+    # Note that the get_remote_file function does not support gzip files which
+    # are not also tar files.  The following code handles this
+    with gzip.open(".".join((atcf_path, 'gz')), 'rb') as atcf_file,    \
+            open(atcf_path, 'w') as atcf_unzipped_file:
+        atcf_unzipped_file.write(atcf_file.read().decode('ascii'))
+
+    # Uncomment/comment out to use the old version of the Ike storm file
+    isaac = Storm(path=atcf_path, file_format="ATCF")
+
+    # Calculate landfall time - Need to specify as the file above does not
+    # include this info (~2345 UTC - 6:45 p.m. CDT - on August 28)
+    isaac.time_offset = datetime.datetime(2012, 8, 29, 0)
+
+    isaac.write(data.storm_file, file_format='geoclaw')
 
     # =======================
     #  Set Variable Friction

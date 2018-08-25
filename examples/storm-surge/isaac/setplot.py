@@ -47,16 +47,10 @@ def setplot(plotdata=None):
     # Load storm track
     track = surgeplot.track_data(os.path.join(plotdata.outdir, 'fort.track'))
 
-    # Calculate landfall time
-    # Landfall for Ike in Houston was September 13th, at 7 UTC
-    landfall_dt = datetime.datetime(2012, 8, 28, 18) - \
-                  datetime.datetime(2012, 1, 1,  0)
-    landfall = landfall_dt.days * 24.0 * 60**2 + landfall_dt.seconds
-
     # Set afteraxes function
     def surge_afteraxes(cd):
-        surgeplot.surge_afteraxes(cd, track, landfall, plot_direction=False,
-                                  kwargs={"markersize": 4})
+        surgeplot.surge_afteraxes(cd, track, plot_direction=False,
+                                             kwargs={"markersize": 4})
 
     # Color limits
     surface_limits = [physics.sea_level - 5.0, physics.sea_level + 5.0]
@@ -94,11 +88,11 @@ def setplot(plotdata=None):
     regions = {"Gulf": {"xlimits": (clawdata.lower[0], clawdata.upper[0]),
                         "ylimits": (clawdata.lower[1], clawdata.upper[1]),
                         "figsize": (6.4, 4.8)},
-               "LaTex Shelf": {"xlimits": (-97.5, -88.5),
+                "Louisiana": {"xlimits": (-92, -83),
                                "ylimits": (27.5, 30.5),
                                "figsize": (8, 2.7)}}
 
-    for (name, region_dict) in regions.iteritems():
+    for (name, region_dict) in regions.items():
 
         # Surface Figure
         plotfigure = plotdata.new_plotfigure(name="Surface - %s" % name)
@@ -214,32 +208,6 @@ def setplot(plotdata=None):
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
     plotitem.plot_var = 3
     plotitem.plotstyle = 'b-'
-
-    #
-    #  Gauge Location Plot
-    #
-    def gauge_location_afteraxes(cd):
-        plt.subplots_adjust(left=0.12, bottom=0.06, right=0.97, top=0.97)
-        surge_afteraxes(cd)
-        gaugetools.plot_gauge_locations(cd.plotdata, gaugenos='all',
-                                        format_string='ko', add_labels=True)
-
-    plotfigure = plotdata.new_plotfigure(name="Gauge Locations")
-    plotfigure.show = True
-
-    # Set up for axes in this figure:
-    plotaxes = plotfigure.new_plotaxes()
-    plotaxes.title = 'Gauge Locations'
-    plotaxes.scaled = True
-    plotaxes.xlimits = [-95.5, -94]
-    plotaxes.ylimits = [29.0, 30.0]
-    plotaxes.afteraxes = gauge_location_afteraxes
-    surgeplot.add_surface_elevation(plotaxes, bounds=surface_limits)
-    add_custom_colorbar_ticks_to_axes(plotaxes, 'surface', surface_ticks,
-                                      surface_labels)
-    surgeplot.add_land(plotaxes)
-    plotaxes.plotitem_dict['surface'].amr_patchedges_show = [0] * 10
-    plotaxes.plotitem_dict['land'].amr_patchedges_show = [0] * 10
 
     # -----------------------------------------
     # Parameters used only when creating html and/or latex hardcopy

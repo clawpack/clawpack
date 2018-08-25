@@ -411,7 +411,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
         ! Convert time to days relative to landfall
         console_format = "('AMRCLAW: Frame ',i4,' output files done at " // &
                          "time t = ', f5.2,/)"
-        print console_format, frame, time / (3.3d3 * 24.d0)
+        print console_format, frame, time / (24.d0 * 60d0**2)
     else
         console_format = "('AMRCLAW: Frame ',i4,' output files done at " // &
                          "time t = ', d13.6,/)"

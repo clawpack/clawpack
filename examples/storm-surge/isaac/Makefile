@@ -58,15 +58,9 @@ include $(CLAWMAKE)
 
 
 # Construct the topography data
-.PHONY: topo all
-
-gulf_caribbean.tt3:
-	python get_bathy.py
-
-topo: gulf_caribbean.tt3
+.PHONY: all
 
 all:
-	$(MAKE) topo
 	$(MAKE) .plots
 	$(MAKE) .htmls
 
