@@ -92,8 +92,8 @@ Operating System :: MacOS
 """  
 
 MAJOR               = 5
-MINOR               = 4
-MICRO               = 1
+MINOR               = 5
+MICRO               = 0
 TYPE                = ''
 VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
 
