@@ -498,7 +498,14 @@ class Storm(object):
 
             # include only valid time points for this storm
             # i.e. when we have max wind values
-            ds = ds.sel(time=(ds.wmo_wind>=0))
+            # try using wmo_wind first, then usa_wind
+            if ds.wmo_wind.max().values >= 0:
+                valid = ds.wmo_wind >= 0
+            elif ds.usa_wind.max().values >= 0:
+                valid = ds.usa_wind >= 0
+            else:
+                raise ValueError('No valid wind speeds found for this storm.')
+            ds = ds.sel(time=valid)
 
 
             ## CONVERT TO GEOCLAW FORMAT
