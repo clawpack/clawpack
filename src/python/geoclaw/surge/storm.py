@@ -525,8 +525,13 @@ class Storm(object):
             ## events
             self.event = ds.usa_record.values.astype(str)
 
-            # time offset
-            self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+            ## time offset
+            if (self.event=='L') > 0:
+                # if landfall, use last landfall
+                self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+            else:
+                #if no landfall, use last time of storm
+                self.time_offset = self.t[-1]
 
             # Classification, note that this is not the category of the storm
             self.classification = ds.usa_status.values
