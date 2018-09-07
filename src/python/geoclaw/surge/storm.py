@@ -498,7 +498,14 @@ class Storm(object):
 
             # include only valid time points for this storm
             # i.e. when we have max wind values
-            ds = ds.sel(time=(ds.wmo_wind>=0))
+            # try using wmo_wind first
+            if ds.wmo_wind.max().values >= 0:
+                valid = ds.wmo_wind >= 0
+            elif ds.usa_wind.max().values >= 0:
+                valid = ds.usa_wind >= 0
+            else:
+                raise ValueError('No valid wind speeds found for this storm.')
+            ds = ds.sel(time=valid)
 
 
             ## CONVERT TO GEOCLAW FORMAT
@@ -519,7 +526,10 @@ class Storm(object):
             self.event = ds.usa_record.values.astype(str)
 
             # time offset
-            self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+            if (self.event=='L').any():
+                self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+            else:
+                self.time_offset = self.t[-1]
 
             # Classification, note that this is not the category of the storm
             self.classification = ds.usa_status.values
