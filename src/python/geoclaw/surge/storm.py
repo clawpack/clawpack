@@ -498,7 +498,8 @@ class Storm(object):
 
             # include only valid time points for this storm
             # i.e. when we have max wind values
-            # try using wmo_wind first
+
+            # try using wmo_wind first, then usa_wind
             if ds.wmo_wind.max().values >= 0:
                 valid = ds.wmo_wind >= 0
             elif ds.usa_wind.max().values >= 0:
@@ -525,10 +526,12 @@ class Storm(object):
             ## events
             self.event = ds.usa_record.values.astype(str)
 
-            # time offset
+            ## time offset
             if (self.event=='L').any():
+                # if landfall, use last landfall
                 self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
             else:
+                #if no landfall, use last time of storm
                 self.time_offset = self.t[-1]
 
             # Classification, note that this is not the category of the storm
