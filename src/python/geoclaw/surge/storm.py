@@ -26,6 +26,7 @@ workflow in a `setrun.py` file would do the following:
     - ATCF (reading only)
     - HURDAT (reading only)
     - IBTrACS (reading only)
+    - Kerry Emanuel (reading only)
     - JMA (reading only)
     - IMD (planned)
     - tcvitals (reading only)
@@ -164,6 +165,7 @@ class Storm(object):
                           "atcf": ["ATCF", "http://www.nrlmry.navy.mil/atcf_web/docs/database/new/database.html"],
                           "hurdat": ["HURDAT", "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"],
                           "ibtracs": ["IBTrACS", "ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"],
+                          "emanuel":["Kerry Emanuel", "Email Correspondence"],
                           "jma": ["JMA", "http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html"],
                           "imd": ["IMD", "http://www.rsmcnewdelhi.imd.gov.in/index.php"],
                           "tcvitals": ["TC-Vitals", "http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm"]}
