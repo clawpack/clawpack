@@ -502,8 +502,12 @@ class Storm(object):
             # try using wmo_wind first, then usa_wind
             if ds.wmo_wind.max().values >= 0:
                 valid = ds.wmo_wind >= 0
+                wind_src = 'wmo_wind'
+                pres_src = 'wmo_pres'
             elif ds.usa_wind.max().values >= 0:
                 valid = ds.usa_wind >= 0
+                wind_src = 'usa_wind'
+                pres_src = 'usa_pres'
             else:
                 raise ValueError('No valid wind speeds found for this storm.')
             ds = ds.sel(time=valid)
@@ -541,8 +545,8 @@ class Storm(object):
             # Intensity information - for now, including only common, basic intensity
             # info.
             # TODO: add more detailed info for storms that have it
-            self.max_wind_speed = units.convert(ds.wmo_wind,'knots','m/s').values
-            self.central_pressure = units.convert(ds.wmo_pres,'mbar','Pa').values
+            self.max_wind_speed = units.convert(ds[wind_src],'knots','m/s').values
+            self.central_pressure = units.convert(ds[pres_src],'mbar','Pa').values
             self.max_wind_radius = numpy.where(ds.usa_rmw >= 0,
                 units.convert(ds.usa_rmw,'nmi','m'),-1)
             self.storm_radius = numpy.where(ds.usa_roci >=0,
