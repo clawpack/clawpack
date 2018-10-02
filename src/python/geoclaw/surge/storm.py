@@ -233,7 +233,7 @@ class Storm(object):
                         "files:",
                         " - ATCF - http://ftp.nhc.noaa.gov/atcf/archive/",
                         " - HURDAT - http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html",
-                        " - IBTrACS - ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"
+                        " - IBTrACS - ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional",
                         " - JMA - http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/besttrack.html",
                         " - IMD - http://www.rsmcnewdelhi.imd.gov.in/index.php",
                         " - TCVITALS - http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm")
@@ -551,6 +551,8 @@ class Storm(object):
                 units.convert(ds.usa_rmw,'nmi','m'),-1)
             self.storm_radius = numpy.where(ds.usa_roci >=0,
                 units.convert(ds.usa_roci.values,'nmi','m'),-1)
+            if (self.max_wind_radius.max()) == -1 or (self.storm_radius.max() == -1):
+                warnings.warn(warnings.warn(missing_data_warning_str))
 
 
     def read_jma(self, path, verbose=False):
