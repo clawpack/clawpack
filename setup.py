@@ -299,7 +299,7 @@ if __name__ == '__main__':
         description = DOCLINES[0],
         long_description = "\n".join(DOCLINES[2:]),
         url = "http://www.clawpack.org",
-        download_url = "git+git://github.com/clawpack/clawpack.git#egg=clawpack-dev", 
+        download_url = "https://github.com/clawpack/clawpack.git#egg=clawpack-dev",
         license = 'BSD',
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms = ["Linux", "Solaris", "Mac OS-X", "Unix"],
@@ -321,6 +321,7 @@ if __name__ == '__main__':
                                 ],                            
             extras_require = {'petclaw': ['petsc4py >= 1.2'],
                               'euler'  : ['scipy >= 0.10.0']},
+            version = VERSION,
             )
         setup_dict.update(setuptools_dict)
         setup(**setup_dict)
