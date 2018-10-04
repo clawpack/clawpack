@@ -724,7 +724,7 @@ class Storm(object):
         if file_format.lower() not in self._supported_formats.keys():
             raise ValueError("File format %s not available." % file_format)
 
-        getattr(self, 'write_%s' % file_format.lower())(path)
+        getattr(self, 'write_%s' % file_format.lower())(path, **kwargs)
 
     def write_geoclaw(self, path, verbose=False, max_wind_radius_fill=None,
                             storm_radius_fill=None):
