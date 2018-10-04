@@ -552,7 +552,7 @@ class Storm(object):
             self.storm_radius = numpy.where(ds.usa_roci >=0,
                 units.convert(ds.usa_roci.values,'nmi','m'),-1)
             if (self.max_wind_radius.max()) == -1 or (self.storm_radius.max() == -1):
-                warnings.warn(warnings.warn(missing_data_warning_str))
+                warnings.warn(missing_data_warning_str)
 
 
     def read_jma(self, path, verbose=False):
