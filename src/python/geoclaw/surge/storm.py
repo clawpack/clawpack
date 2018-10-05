@@ -555,15 +555,15 @@ class Storm(object):
         This reads in the netcdf-formatted tracks from Kerry Emanuel.
         Correspondence September 2018. Original storms have been converted
         from matlab to netcdf format by mlimb@rhg.com and are at
-        /gcs/../coastal/storm_tracks/emmanuel_projections_2018-09-12/netcdf_added_velocity/. 
-        
+        /gcs/../coastal/storm_tracks/emmanuel_projections_2018-09-12/netcdf_added_velocity/.
+
         :Input:
         - *path* (string) Path to the file to be read.
         - *storm_name* (string) storm name containing information about
         model, scenario, time period, and storm index within the file.
             ex. ccsm4_rcp85_2007_2025_0, hadgem5_rcp45_2035_2045_10
             model_scenario_period is equivalent to filename.
-            
+
         Assume these attributes exist in Emanuel dataset:
            datetime
            longstore
@@ -574,7 +574,7 @@ class Storm(object):
            bas (attribute)
 
         :Raises:
-        - ImportError if xarray not found 
+        - ImportError if xarray not found
         - KeyError if provided storm name is not found in
         given path (assumes path is correct)
         """
@@ -593,9 +593,9 @@ class Storm(object):
             day = day_hour[0:2]
             hour = day_hour[3:5]
             return datetime.datetime(int(year), int(month), int(day), int(hour))
-       
+
         storm_index = int(storm_name.split('_')[-1])
-        
+
         with xr.open_dataset(path, drop_variables=['time']) as ds:
             try:
                 storm = (ds.sel(storm=storm_index)
@@ -605,7 +605,7 @@ class Storm(object):
                 print("Provided storm name/index not found in "
                       "the file.")
                 raise e
- 
+
             # set time
             # convert from numpy to python datetime
             # self.t is a list, as opposed to numpy array
@@ -619,10 +619,8 @@ class Storm(object):
             # array of single value
             self.max_wind_speed = storm.v_total_max_ms.values
 
-            # max wind radius (radius at which max wind speed occurs)
-            # 'The radius (km) of maximum circular wind of 2-hour points
+            # 'The radius (km) of maximum circular wind
             # along each track' -> convert to m
-            # TODO: confirm max circular wind is OK
             self.max_wind_radius= units.convert(storm.rmstore, 'km', 'm').values
 
             # central pressure (Pascal)
@@ -643,23 +641,23 @@ class Storm(object):
 
             # ID (depends on format)
             self.ID = str(storm_index)
-            
+
             # attributes not available
             #############
             # proper way is to use shapely / us shapefile to find
-            # at which timesteps given storm makes landfall ('L' event) 
+            # the timesteps at which given storm makes landfall ('L' event)
             # this is not necessary for geoclaw. so instead we are
-            # populating event with list of empty string of storm.datetime
-            # length 
+            # populating event with array of empty strings
+            # length
             num_timesteps = len(storm['datetime'])
             self.event = numpy.empty(num_timesteps, dtype=str)
             self.classification = numpy.empty(num_timesteps, dtype=str)
-            
+
             # use last timestep (recommended by IB)
             self.time_offset = self.t[-1]
             self.storm_radius = numpy.empty(num_timesteps)
             self.storm_radius.fill(numpy.nan)
-            
+
 
     def read_jma(self, path, verbose=False):
         r"""Read in JMA formatted storm file
