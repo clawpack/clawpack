@@ -564,11 +564,11 @@ class Storm(object):
             ex. ccsm4_rcp85_2007_2025_0, hadgem5_rcp45_2035_2045_10
             model_scenario_period is equivalent to filename.
 
-        Assume these attributes exist in Emanuel dataset:
+        Assumes these variables exist in Emanuel dataset:
            datetime
            longstore
            latstore
-           rmstrore
+           rmstore (central max wind radius)
            pstore (central pressure)
            v_total_max_ms
            bas (attribute)
@@ -576,7 +576,7 @@ class Storm(object):
         :Raises:
         - ImportError if xarray not found
         - KeyError if provided storm name is not found in
-        given path (assumes path is correct)
+        given file (assumes path is correct)
         """
         # try/except copied from read_ibtracs
         # imports that you don't need for other read functions
@@ -612,8 +612,8 @@ class Storm(object):
             self.t = [_convert_to_python_datetime(d) for d in storm['datetime']]
 
             # eye location (n by n)
-            self.eye_location = numpy.array([ds.longstore,
-                                             ds.latstore]).T
+            self.eye_location =  numpy.vstack([
+                storm.longstore.values, storm.latstore.values]).T
 
             # max wind speed (m/s)
             # array of single value
