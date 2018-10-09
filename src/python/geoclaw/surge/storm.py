@@ -108,7 +108,9 @@ hurdat_special_entries = {"L": "landfall",
 missing_data_warning_str = """*** Cannot yet automatically determine the
     maximum wind radius.  Will write out GeoClaw
     formats but note that these will not work
-    when running GeoClaw currently."""
+    when running GeoClaw currently without a custom
+    `max_wind_radius_fill` function passed as argument
+    to the `write` function."""
 
 
 # =============================================================================
