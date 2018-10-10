@@ -207,7 +207,11 @@ class Storm(object):
         return output
 
     def __repr__(self):
-        return "None"
+        return '<{}.{} "{}" at {}>'.format(
+	    self.__class__.__module__,
+	    self.__class__.__name__,
+	    self.__dict__.get('name', 'name not given'),
+	    hex(id(sample_gc_storm)))
 
     # ==========================================================================
     # Read Routines
