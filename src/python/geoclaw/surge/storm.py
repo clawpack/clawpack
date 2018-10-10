@@ -486,15 +486,13 @@ class Storm(object):
             raise e
 
         storm_name = storm_name.upper()
-        with xr.open_dataset(path,drop_variables=['time']) as ds:
+        with xr.open_dataset(path) as ds:
 
             ## SLICE IBTRACS DATASET
 
             # match on storm-name and year
             storm_match = (ds.name == storm_name.encode())
-            dts = xr.DataArray.from_series(to_datetime(ds.iso_time.astype(str).to_series())).values
-            ds.iso_time.values = dts
-            year_match = (ds.iso_time.dt.year == year).any(dim='time')
+            year_match = (ds.time.dt.year == year).any(dim='date_time')
             ds = ds.sel(storm=(year_match & storm_match)).squeeze()
             # make sure
             if ('storm' in ds.dims.keys()) and (ds.storm.shape[0] == 0):
@@ -514,7 +512,7 @@ class Storm(object):
                 pres_src = 'usa_pres'
             else:
                 raise ValueError('No valid wind speeds found for this storm.')
-            ds = ds.sel(time=valid)
+            ds = ds.sel(date_time=valid)
 
             ## CONVERT TO GEOCLAW FORMAT
 
@@ -526,7 +524,7 @@ class Storm(object):
 
             # convert datetime64 to datetime.datetime
             self.t = []
-            for d in ds.iso_time:
+            for d in ds.time:
                 t = d.dt
                 self.t.append(datetime.datetime(t.year,t.month,t.day,t.hour,t.minute,t.second))
 
