@@ -108,7 +108,9 @@ hurdat_special_entries = {"L": "landfall",
 missing_data_warning_str = """*** Cannot yet automatically determine the
     maximum wind radius.  Will write out GeoClaw
     formats but note that these will not work
-    when running GeoClaw currently."""
+    when running GeoClaw currently without a custom
+    `max_wind_radius_fill` function passed as argument
+    to the `write` function."""
 
 
 # =============================================================================
@@ -233,7 +235,7 @@ class Storm(object):
                         "files:",
                         " - ATCF - http://ftp.nhc.noaa.gov/atcf/archive/",
                         " - HURDAT - http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html",
-                        " - IBTrACS - ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"
+                        " - IBTrACS - ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional",
                         " - JMA - http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/besttrack.html",
                         " - IMD - http://www.rsmcnewdelhi.imd.gov.in/index.php",
                         " - TCVITALS - http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm")
@@ -449,10 +451,10 @@ class Storm(object):
     def read_ibtracs(self, path, storm_name, year):
         r"""Read in IBTrACS formatted storm file
 
-        This reads in the netcdf-formatted IBTrACS v4 BETA data. The .nc
-        file passed as *path* must contain a storm matching *storm_name*
-        and *year*. This function will be updated, if needed, once the BETA
-        version becomes an operational release.
+        This reads in the netcdf-formatted IBTrACS v4 BETA data (current release
+        as of 10/8/2018). The .nc file passed as *path* must contain a storm 
+        matching *storm_name* and *year*. This function will be updated,
+        if needed, once the BETA version becomes an operational release.
 
         NOTE: Thus far, only the reading of hurdat/atcf-based best tracks (i.e. USA
         tracks) is supported.
@@ -482,15 +484,13 @@ class Storm(object):
             raise e
 
         storm_name = storm_name.upper()
-        with xr.open_dataset(path,drop_variables=['time']) as ds:
+        with xr.open_dataset(path) as ds:
 
             ## SLICE IBTRACS DATASET
 
             # match on storm-name and year
             storm_match = (ds.name == storm_name.encode())
-            dts = xr.DataArray.from_series(to_datetime(ds.iso_time.astype(str).to_series())).values
-            ds.iso_time.values = dts
-            year_match = (ds.iso_time.dt.year == year).any(dim='time')
+            year_match = (ds.time.dt.year == year).any(dim='date_time')
             ds = ds.sel(storm=(year_match & storm_match)).squeeze()
             # make sure
             if ('storm' in ds.dims.keys()) and (ds.storm.shape[0] == 0):
@@ -498,7 +498,19 @@ class Storm(object):
 
             # include only valid time points for this storm
             # i.e. when we have max wind values
-            ds = ds.sel(time=(ds.wmo_wind>=0))
+
+            # try using wmo_wind first, then usa_wind
+            if ds.wmo_wind.max().values >= 0:
+                valid = ds.wmo_wind >= 0
+                wind_src = 'wmo_wind'
+                pres_src = 'wmo_pres'
+            elif ds.usa_wind.max().values >= 0:
+                valid = ds.usa_wind >= 0
+                wind_src = 'usa_wind'
+                pres_src = 'usa_pres'
+            else:
+                raise ValueError('No valid wind speeds found for this storm.')
+            ds = ds.sel(date_time=valid)
 
 
             ## CONVERT TO GEOCLAW FORMAT
@@ -511,15 +523,20 @@ class Storm(object):
 
             # convert datetime64 to datetime.datetime
             self.t = []
-            for d in ds.iso_time:
+            for d in ds.time:
                 t = d.dt
                 self.t.append(datetime.datetime(t.year,t.month,t.day,t.hour,t.minute,t.second))
 
             ## events
             self.event = ds.usa_record.values.astype(str)
 
-            # time offset
-            self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+            ## time offset
+            if (self.event=='L').any():
+                # if landfall, use last landfall
+                self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+            else:
+                #if no landfall, use last time of storm
+                self.time_offset = self.t[-1]
 
             # Classification, note that this is not the category of the storm
             self.classification = ds.usa_status.values
@@ -528,12 +545,14 @@ class Storm(object):
             # Intensity information - for now, including only common, basic intensity
             # info.
             # TODO: add more detailed info for storms that have it
-            self.max_wind_speed = units.convert(ds.wmo_wind,'knots','m/s').values
-            self.central_pressure = units.convert(ds.wmo_pres,'mbar','Pa').values
+            self.max_wind_speed = units.convert(ds[wind_src],'knots','m/s').values
+            self.central_pressure = units.convert(ds[pres_src],'mbar','Pa').values
             self.max_wind_radius = numpy.where(ds.usa_rmw >= 0,
                 units.convert(ds.usa_rmw,'nmi','m'),-1)
             self.storm_radius = numpy.where(ds.usa_roci >=0,
                 units.convert(ds.usa_roci.values,'nmi','m'),-1)
+            if (self.max_wind_radius.max()) == -1 or (self.storm_radius.max() == -1):
+                warnings.warn(missing_data_warning_str)
 
 
     def read_jma(self, path, verbose=False):
@@ -705,7 +724,7 @@ class Storm(object):
         if file_format.lower() not in self._supported_formats.keys():
             raise ValueError("File format %s not available." % file_format)
 
-        getattr(self, 'write_%s' % file_format.lower())(path)
+        getattr(self, 'write_%s' % file_format.lower())(path, **kwargs)
 
     def write_geoclaw(self, path, verbose=False, max_wind_radius_fill=None,
                             storm_radius_fill=None):
