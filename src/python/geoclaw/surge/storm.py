@@ -457,10 +457,10 @@ class Storm(object):
     def read_ibtracs(self, path, storm_name, year):
         r"""Read in IBTrACS formatted storm file
 
-        This reads in the netcdf-formatted IBTrACS v4 BETA data. The .nc
-        file passed as *path* must contain a storm matching *storm_name*
-        and *year*. This function will be updated, if needed, once the BETA
-        version becomes an operational release.
+        This reads in the netcdf-formatted IBTrACS v4 BETA data (current release
+        as of 10/8/2018). The .nc file passed as *path* must contain a storm 
+        matching *storm_name* and *year*. This function will be updated,
+        if needed, once the BETA version becomes an operational release.
 
         NOTE: Thus far, only the reading of hurdat/atcf-based best tracks (i.e. USA
         tracks) is supported.
