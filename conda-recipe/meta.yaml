@@ -1,6 +1,6 @@
 package:
   name: clawpack
-  version: 5.4.1
+  version: 5.5.0
 
 source:
   path: ..
@@ -8,6 +8,10 @@ source:
 
 requirements:
   build:
+    - {{ compiler('c') }}
+    - {{ compiler('fortran') }}
+
+  host:
     - python
     - numpy
 
