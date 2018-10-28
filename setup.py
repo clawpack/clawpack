@@ -30,47 +30,12 @@ from contextlib import contextmanager
 join = os.path.join
 
 # Specify top-level subpackages in SUBPACKAGES.  SUBPACKAGES is a
-# dictionary specifying which packages you would like installed.  By
+# list specifying which packages you would like installed.  By
 # default, the installer will download all of these packages for you.
 # You can disable packages by deleting from the dictionary, but you
 # will probably need at least pyclaw, visclaw, clawutil, and riemann.
 
-# ADVICE TO DEVELOPERS:
-# The 'python_src_dir' dictionary specifies the symlink directory
-# structure provided to enable the clawpack.xxx namespace.
-# For example, the pyclaw Python package lives in pyclaw/src/pyclaw.
-# It is made available in clawpack/pyclaw by creating a symlink
-# specified by 'src' (the package name is implicit at the beginning
-# and end).  Getting the pyclaw/examples directory requires a small feat
-# of gymnastics, see the code in dev_setup() if you would like to
-# refactor this.
-
-SUBPACKAGES = {
-    'amrclaw': {
-        'python_src_dir': [('amrclaw', join('src', 'python'))]
-    },
-    'clawutil': {
-        'python_src_dir': [('clawutil', join('src', 'python'))]
-    },                
-    'geoclaw': {
-        'python_src_dir': [('geoclaw', join('src', 'python'))]
-    },                
-    'classic': {
-        'python_src_dir': [('classic', join('src', 'python'))]
-    },
-    'pyclaw': {
-        'python_src_dir': [('pyclaw', 'src'),
-                           ('petclaw', 'src'),
-                           ('forestclaw', 'src'),
-                           (join('pyclaw','examples'), '..')]
-    },
-    'riemann': {
-        'python_src_dir': [(None,'src')]
-    },
-    'visclaw': {
-        'python_src_dir': [('visclaw', join('src', 'python'))]
-    },            
-}
+SUBPACKAGES = ['amrclaw', 'clawutil', 'geoclaw', 'classic', 'pyclaw', 'riemann', 'visclaw']
 
 #########################
 ### BEGIN BOILERPLATE ### 
@@ -171,27 +136,6 @@ git_revision = '%(git_revision)s'
 ###  END BOILERPLATE  ### 
 #########################
     
-def symlink(src, target):
-    """ symlinks src to target if target does not already exist
-
-    Both paths may be relative (they are parsed through os.path.abspath)
-    """
-    src = os.path.abspath(src)
-    target = os.path.abspath(target)
-
-    if not os.path.exists(src):
-        raise IOError("trying to symlink %s: which does not exist" % (src))
-    
-    if not os.path.exists(target):
-        os.symlink(os.path.abspath(src), target)
-
-def unsymlink(target):
-    """ unsymlinks target if it exists
-    """
-
-    if os.path.exists(target):
-        os.unlink(target)
-    
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
 
@@ -207,7 +151,7 @@ def configuration(parent_package='',top_path=None):
     return config
 
 
-def dev_setup(subpackages):
+def initialize_submodules(subpackages):
     """clawpack developer environment setup 
     
 user has a .git subdirectory, assume they want us to set up submodules for them.
@@ -217,16 +161,13 @@ if the package directory does not exist or is empty, calls:
     git submodule init <package> 
     git submodule update <package> 
 
-with timeouts for update, which may be over a fickle remote connection
-
-After each package is checked out, build symbolic links to ./clawpack/package
-which allows for a consistent clawpack.package namespace.
+with timeouts for update, which may be over a fickle remote connection.
 """
     if not os.path.exists('.git'):
         raise Exception("Developer setup requested but top-level clawpack" + \
                         " is not a git repository")
 
-    for package, package_dict in subpackages.items():
+    for package in subpackages:
         if not os.path.exists(package) or not (os.listdir(package)):
             subprocess.check_call(['git', 'submodule', 'init', package])
 
@@ -240,17 +181,6 @@ which allows for a consistent clawpack.package namespace.
 
         print("Git development environment initialized for:", package)
 
-
-def make_symlinks(subpackages):
-    for package, package_dict in subpackages.items():
-        for subpackage, src_dir in package_dict['python_src_dir']:
-            if subpackage:
-                symlink(os.path.join(package, src_dir, subpackage),
-                        os.path.join('clawpack', subpackage))
-            else:
-                symlink(os.path.join(package, src_dir),
-                        os.path.join('clawpack', package))
-                
 
 @contextmanager
 def stdout_redirected(new_stdout='install.log'):
@@ -270,25 +200,16 @@ def stdout_redirected(new_stdout='install.log'):
         os.close(old)
 
 
-def setup_package(setup_dict, subpackages, symlink_only=False):
+def setup_package(setup_dict, subpackages):
     from numpy.distutils.core import setup
 
     # Rewrite the version file every time we install
     write_version_py()
 
     with stdout_redirected(): # Don't print f2py warnings to screen
-
-        # we may end up mucking with symbolic path links for the install 
-        # to support a consistent clawpack.package namespace
-        # the finally clause here undoes a potentially dangerous 
-        # recursive symbolic link that is needed for the numpy.distutils
-        # machinery to properly understand some Fortran source paths
         if os.path.exists('.git'):
-            dev_setup(subpackages)
-        make_symlinks(subpackages)
-        if not symlink_only:
-            setup(configuration=configuration,
-                  **setup_dict)
+            initialize_submodules(subpackages)
+        setup(configuration=configuration, **setup_dict)
 
 
 if __name__ == '__main__':
@@ -308,8 +229,7 @@ if __name__ == '__main__':
     # python setup.py git-dev sets up subpackages
     if 'git-dev' in sys.argv:
         # not a real install
-        dev_setup(SUBPACKAGES)
-        make_symlinks(SUBPACKAGES)
+        initialize_submodules(SUBPACKAGES)
     # egg_info requests only provide install requirements
     # this is how "pip install clawpack" installs numpy correctly.
     elif 'egg_info' in sys.argv:
@@ -325,8 +245,4 @@ if __name__ == '__main__':
         setup_dict.update(setuptools_dict)
         setup(**setup_dict)
     else:
-        # okay, real install
-        if 'symlink-only' in sys.argv:
-            setup_package(setup_dict, SUBPACKAGES, symlink_only=True) 
-        else:
-            setup_package(setup_dict, SUBPACKAGES) 
+        setup_package(setup_dict, SUBPACKAGES)
