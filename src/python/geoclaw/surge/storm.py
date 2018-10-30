@@ -665,8 +665,10 @@ class Storm(object):
 
             # use last timestep (recommended by IB)
             self.time_offset = self.t[-1]
+            
+            # set storm radius to geoclaw's missing data val (-1)
             self.storm_radius = numpy.empty(num_timesteps)
-            self.storm_radius.fill(numpy.nan)
+            self.storm_radius.fill(-1)
 
 
     def read_jma(self, path, verbose=False):
