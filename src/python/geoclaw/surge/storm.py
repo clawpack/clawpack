@@ -627,7 +627,7 @@ class Storm(object):
 
             # max wind speed (m/s)
             # array of single value
-            self.max_wind_speed = storm.v_total_max_ms.values
+            self.max_wind_speed = storm.v_total_ms.values
 
             # 'The radius (km) of maximum circular wind
             # along each track' -> convert to m
