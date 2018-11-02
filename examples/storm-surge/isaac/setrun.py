@@ -274,7 +274,7 @@ def setrun(claw_pkg='geoclaw'):
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
     amrdata.aux_type = ['center', 'capacity', 'yleft', 'center', 'center',
-                        'center', 'center', 'center', 'center']
+                        'center', 'center']
 
     # Flag using refinement routine flag2refine rather than richardson error
     amrdata.flag_richardson = False    # use Richardson?
