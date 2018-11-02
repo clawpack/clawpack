@@ -454,7 +454,7 @@ class Storm(object):
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
-    def read_ibtracs(self, path, storm_name, year):
+    def read_ibtracs(self, path, storm_name, year, start_date=None):
         r"""Read in IBTrACS formatted storm file
 
         This reads in the netcdf-formatted IBTrACS v4 BETA data (current release
@@ -475,6 +475,8 @@ class Storm(object):
          - *path* (string) Path to the file to be read.
          - *storm_name* (string) name of storm of interest (NAME field in IBTrACS).
          - *year* (int) year of storm of interest
+         - *start_date* (:py:class:`datetime.datetime`) If storm is not named, will
+             find closest unnamed storm to this start date
 
         :Raises:
          - *ValueError* If the method cannot find the name/year matching the
@@ -490,6 +492,11 @@ class Storm(object):
             raise e
 
         storm_name = storm_name.upper()
+        
+        # in case storm is unnamed
+        if storm_name in ['NOT_NAMED','UNNAMED','NO-NAME']:
+            storm_name = 'NOT_NAMED'
+            
         with xr.open_dataset(path) as ds:
 
             ## SLICE IBTRACS DATASET
@@ -498,9 +505,22 @@ class Storm(object):
             storm_match = (ds.name == storm_name.encode())
             year_match = (ds.time.dt.year == year).any(dim='date_time')
             ds = ds.sel(storm=(year_match & storm_match)).squeeze()
+            
             # make sure
-            if ('storm' in ds.dims.keys()) and (ds.storm.shape[0] == 0):
-                raise ValueError('Storm/year not found in provided file')
+            if 'storm' in ds.dims.keys():
+                if ds.storm.shape[0] == 0:
+                    raise ValueError('Storm/year not found in provided file')
+                else:
+                    # see if a date was provided for multiple unnamed storms
+                    assert start_date is not None, ValueError('Multiple storms identified and no start_date specified.')
+                    
+                    start_times = ds.time.isel(date_time=0)
+                    start_date = numpy.datetime64(start_date)
+                    
+                    # find storm with start date closest to provided
+                    storm_ix = abs(start_times - start_date).argmin()
+                    ds = ds.isel(storm=storm_ix).squeeze()
+                    assert 'storm' not in ds.dims.keys()
 
             # include only valid time points for this storm
             # i.e. when we have max wind values
