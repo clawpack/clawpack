@@ -24,7 +24,7 @@ RESTART = False
 
 # Compiler flags can be specified here or set as an environment variable
 FFLAGS += -DNETCDF -lnetcdf -I$(NETCDF4_DIR)/include
-LFLAGS += -lnetcdff
+LFLAGS += $(FFLAGS) -lnetcdff
 
 
 # ---------------------------------

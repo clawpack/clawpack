@@ -4,9 +4,9 @@
 r"""
 GeoClaw dtopotools Module  `$CLAW/geoclaw/src/python/geoclaw/dtopotools.py`
 
-Module provides several functions for dealing with changes to topography (usually
-due to earthquakes) including reading sub-fault specifications, writing out 
-dtopo files, and calculating Okada based deformations.
+Module provides several functions for dealing with changes to topography
+(usually due to earthquakes) including reading sub-fault specifications,
+writing out dtopo files, and calculating Okada based deformations.
 
 :Classes:
 
@@ -17,9 +17,8 @@ dtopo files, and calculating Okada based deformations.
   - CSVFault
   - SiftFault
   - SegmentedPlaneFault
-    
+
 :Functions:
-  - convert_units
   - plot_dz_contours
   - plot_dz_colors
   - Mw
@@ -30,6 +29,10 @@ dtopo files, and calculating Okada based deformations.
 
 from __future__ import absolute_import
 from __future__ import print_function
+
+import six
+from six.moves import range
+
 import os
 import sys
 import re
@@ -38,15 +41,14 @@ import numpy
 
 import clawpack.geoclaw.topotools as topotools
 import clawpack.geoclaw.util as util
+import clawpack.geoclaw.units as units
 
 # ==============================================================================
 #  Constants
 # ==============================================================================
 from clawpack.geoclaw.data import DEG2RAD, LAT2METER
-import six
-from six.moves import range
 
-# Poisson ratio for Okada 
+# Poisson ratio for Okada
 poisson = 0.25
 
 # ==============================================================================
@@ -65,65 +67,9 @@ standard_units['depth'] = 'm'
 standard_units['slip'] = 'm'
 standard_units['mu'] = 'Pa'
 
-# Dictionary for converting input_units specified by user to or from
-# standard units used internally:
-# (Conversion is performed by the module function *convert_units*, which
-# is called by *SubFault.convert_to_standard_units*)
-
-unit_conversion_factor = {}  
-# for length, width, depth, slip:  (standard units = 'm')
-unit_conversion_factor['m'] = 1.
-unit_conversion_factor['cm'] = 0.01
-unit_conversion_factor['km'] = 1000.
-unit_conversion_factor['nm'] = 1852.0  # nautical miles
-# for rigidity (shear modulus) mu:  (standard units = 'Pa')
-unit_conversion_factor['Pa'] = 1.
-unit_conversion_factor['GPa'] = 1.e9
-unit_conversion_factor['dyne/cm^2'] = 0.1
-unit_conversion_factor['dyne/m^2'] = 1.e-5
-# for seismic moment Mo:  (standard units = 'N-m', Newton-meters)
-unit_conversion_factor['N-m'] = 1.
-unit_conversion_factor['dyne-cm'] = 1.e-7
-
-# Check that these are consistent:
-check = [unit_conversion_factor[standard_units[param]] == 1. for param in \
-         standard_units.keys()]
-if not numpy.alltrue(check):
-    raise ValueError("Conversion factors should be 1 for all standard_units")
-
-
-# ==============================================================================
-#  General utility functions
-# ==============================================================================
-def convert_units(value, io_units, direction=1, verbose=False):
-    r"""
-    convert *value* to standard units from *io_units* or vice versa.
-    *io_units* (str) refers to the units used in the subfault file read or to be
-    written.  The standard units are those used internally in this module.
-    See the comments below for the standard units.
-    If *direction==1*, *value* is in *io_units* and convert to standard.
-    If *direction==2*, *value* is in standard units and convert to *io_units*.
-
-    """
-    try:
-        factor = unit_conversion_factor[io_units]
-    except:
-        factor = 1.
-        print("*** Warning: unrecoginized units in convert_units, not converting")
-        #raise ValueError("Unrecognized io_units %s, must be one of %s" \
-        #      % (io_units, unit_conversion_factor.keys()))
-    if direction == 1:
-        converted_value = value * factor
-    elif direction == 2:
-        converted_value = value / factor
-    else:
-        raise ValueError("Unrecognized direction, must be 1 or 2")
-
-    return converted_value
-
 
 def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
-                               fig_kwargs={}):
+                     fig_kwargs={}):
     r"""For plotting seafloor deformation dZ"""
     import matplotlib.pyplot as plt
 
@@ -138,9 +84,9 @@ def plot_dZ_contours(x, y, dZ, axes=None, dZ_interval=0.5, verbose=False,
 
     if len(clines) > 0:
         if verbose:
-            print("Plotting contour lines at: ",clines)
+            print("Plotting contour lines at: ", clines)
         axes.contour(x, y, dZ, clines, colors='k')
-    else:   
+    else:
         print("No contours to plot")
 
     return axes
@@ -791,17 +737,16 @@ class Fault(object):
             for subfault in self.subfaults:
                 s = ""
                 for param in column_list:
-                    value = getattr(subfault,param)
+                    value = getattr(subfault, param)
                     if param in output_units:
-                        converted_value = convert_units(value, 
-                                    self.output_units[param], direction=2)
-                    s = s + format[param] % value + delimiter 
+                        converted_value = units.convert(value,
+                                                    standard_units[param],
+                                                    self.output_units[param])
+                    s = s + format[param] % value + delimiter
                 data_file.write(s + '\n')
-                
-
 
     def Mo(self):
-        r""" 
+        r"""
         Calculate the seismic moment for a fault composed of subfaults,
         in units N-m.
         """
@@ -811,12 +756,10 @@ class Fault(object):
             total_Mo += subfault.Mo()
         return total_Mo
 
-
     def Mw(self):
         r"""Calculate the moment magnitude for a fault composed of subfaults."""
         return Mw(self.Mo())
 
-    
     def create_dtopography(self, x, y, times=[0., 1.], verbose=False):
         r"""Compute change in topography and construct a dtopography object.
 
@@ -831,7 +774,7 @@ class Fault(object):
         dtopo = DTopography()
         dtopo.x = x
         dtopo.y = y
-        X, Y = numpy.meshgrid(x,y)
+        X, Y = numpy.meshgrid(x, y)
         dtopo.X = X
         dtopo.Y = Y
         dtopo.times = times
@@ -1316,7 +1259,7 @@ class SubFault(object):
         self._corners = None
         self._gauss_pts = None
         self.n_gauss_pts = 4
-
+        self._fix_orientation = False
 
     def convert_to_standard_units(self, input_units, verbose=False):
         r"""
@@ -1326,12 +1269,13 @@ class SubFault(object):
         params = list(input_units.keys())
         for param in params:
             value = getattr(self, param)
-            converted_value = convert_units(value, input_units[param], 1)
-            setattr(self,param,converted_value)
+            converted_value = units.convert(value, input_units[param],
+                                                  standard_units[param])
+            setattr(self, param, converted_value)
             if verbose:
-                print("%s %s %s converted to %s %s" \
-                    % (param, value, input_units[param], converted_value, \
-                       standard_units[param]))
+                print("%s %s %s converted to %s %s"
+                      % (param, value, input_units[param], converted_value,
+                         standard_units[param]))
 
 
     def Mo(self):
@@ -1523,17 +1467,17 @@ class SubFault(object):
                                             self._centers[0][1] 
                                                                  - up_strike[1])
 
-    def calculate_geometry_triangles(self,rake=90.):
+    def calculate_geometry_triangles(self):
         r"""
         Calculate geometry for triangular subfaults
 
         - Uses *corners* to calculate *centers*, *longitude*, *latitude*,
-          *depth*, *strike*, *dip*, *rake*, *length*, *width*.
+          *depth*, *strike*, *dip*, *length*, *width*.
 
         - sets *coordinate_specification* as "triangular"
 
         - Note that calculate_geometry() computes 
-          long/lat/strik/dip/rake/length/width to calculate centers/corners
+          long/lat/strike/dip/length/width to calculate centers/corners
         
         """
 
@@ -1552,9 +1496,8 @@ class SubFault(object):
 
             x0 = numpy.array(self.corners)
             x = x0.copy()
-            x = numpy.array(x0)
             
-            x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative(lazy)
+            x[:,2] = - numpy.abs(x[:,2]) # set depth to be always negative
 
             if 0:
                 # old coordinate transform
@@ -1581,6 +1524,7 @@ class SubFault(object):
             normal = cross(v1,v2)
             if normal[2] < 0:
                 normal = -normal
+                self._fix_orientation = True
             strikev = cross(normal,e3)   # vector in strike direction
 
             a = normal[0]
@@ -1589,19 +1533,16 @@ class SubFault(object):
             
             #Compute strike
             strike_deg = rad2deg(numpy.arctan(-b/a))
-            print('+++ initial strike_deg = %g' % strike_deg)
             
             #Compute dip
             beta = deg2rad(strike_deg + 90)
             m = numpy.array([sin(beta),cos(beta),0]) #Points in dip direction
             n = numpy.array([a,b,c]) #Normal to the plane
-            #dip_deg = abs(rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n)))))
 
             if abs(c) < 1e-8:
                 dip_deg = 90.   # vertical fault
             else:
                 dip_deg = rad2deg(numpy.arcsin(m.dot(n)/(norm(m)*norm(n))))
-            print('+++ initial dip_deg = %g' % dip_deg)
             
             # dip should be between 0 and 90. If negative, reverse strike:
             if dip_deg < 0:
@@ -1616,7 +1557,6 @@ class SubFault(object):
 
             self.strike = strike_deg
             self.dip = dip_deg
-            self.rake = rake     # set default rake to 90 degrees
 
             # find the center line
             xx = numpy.zeros((3,3))
@@ -1649,10 +1589,14 @@ class SubFault(object):
             raise ValueError("Invalid coordinate specification %s." \
                                                 % self.coordinate_specification)
 
-    def set_corners(self,corners,rake=90.,projection_zone=None):
+    def set_corners(self,corners,projection_zone=None):
         r"""
-            set three corners for a triangular fault.
-            Input *corners* should be iterable of length 3.
+        Set three corners for a triangular fault.
+        :Inputs: 
+            
+        - *corners* should be iterable of length 3.
+        - *rake* should be between -180. and 180.
+        
         """
 
         if len(corners) == 3:
@@ -1660,7 +1604,7 @@ class SubFault(object):
                 [corners[0],corners[1],corners[2]]
             self._projection_zone = projection_zone
             self.coordinate_specification = 'triangular'
-            self.calculate_geometry_triangles(rake=rake)
+            self.calculate_geometry_triangles()
         else:
             raise ValueError("Expected input of length 3")
 
@@ -1873,9 +1817,13 @@ class SubFault(object):
                     Odepth = abs(O2_list[k][2])
 
                 if reverse_list[k]:
-                    sgn = (-1.)**(floor(j/3)+1)
+                    sgn = (-1.)**(floor(j/3))
                 else:
-                    sgn = (-1.)**floor(j/3)
+                    sgn = (-1.)**floor(j/3+1)
+                
+                # fix orientation 
+                if self._fix_orientation:
+                    sgn *= -1.
 
                 Y1,Y2,Y3,Z1,Z2,Z3,Yb1,Yb2,Yb3,Zb1,Zb2,Zb3 = \
                 self._get_halfspace_coords(X1,X2,X3,alpha,beta,Olong,Olat,Odepth)
@@ -1906,7 +1854,7 @@ class SubFault(object):
             dZ = -v31*burgersv[0] - v32*burgersv[1] + v33*burgersv[2]
 
             dtopo = DTopography()
-            dtopo.X = X1    # DR: X1, X2 varname confusing?
+            dtopo.X = X1    
             dtopo.Y = X2
             dtopo.dX = numpy.array(dX, ndmin=3)
             dtopo.dY = numpy.array(dY, ndmin=3)
@@ -1940,7 +1888,7 @@ class SubFault(object):
         y[:,1] = LAT2METER * x[:,1]
         y[:,2] = - numpy.abs(x[:,2])    # force sign
 
-        v_list = [y[1,:] - y[0,:], y[2,:] - y[1,:], y[0,:] - y[2,:]]
+        v_list = [y[0,:] - y[1,:], y[1,:] - y[2,:], y[2,:] - y[0,:]]
 
         e3 = numpy.array([0.,0.,-1.])
 
@@ -1961,10 +1909,8 @@ class SubFault(object):
                 l = j
                 reverse_list[j] = True
 
-            O1 = x[k,:].tolist()     # set origin for the vector v
-            O2 = x[l,:].tolist()     # set dest.  for the vector v
-            O1_list.append(O1)
-            O2_list.append(O2)
+            O1_list.append(x[k,:].copy())  # set origin for the vector v
+            O2_list.append(x[l,:].copy())  # set dest.  for the vector v
 
             alpha = numpy.arctan2(vn[0],vn[1])
             alpha_list.append(alpha)
@@ -2533,8 +2479,7 @@ class SubFault(object):
         f = -(d_bar*q/r/(r+y2) + q*sn/(r+y2) + a4*sn)/(2.0*numpy.pi)
     
         return f
-    
-    
+
     def _dip_slip(self, y1, y2, ang_dip, q):
         """
         Based on Okada's paper (1985)
@@ -2542,8 +2487,8 @@ class SubFault(object):
         """
         sn = numpy.sin(ang_dip)
         cs = numpy.cos(ang_dip)
-    
-        d_bar = y2*sn - q*cs;
+
+        d_bar = y2*sn - q*cs
         r = numpy.sqrt(y1**2 + y2**2 + q**2)
         xx = numpy.sqrt(y1**2 + q**2)
         a5 = 4.*poisson/cs*numpy.arctan((y2*(xx+q*cs)+xx*(r+xx)*sn)/y1/(r+xx)/cs)

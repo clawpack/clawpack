@@ -66,7 +66,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         endif
     endif
 
-
     ! If using a variable friction field initialize the coefficients to 0
     if (variable_friction) then
         aux(friction_index,:,:) = 0.d0

@@ -9,22 +9,22 @@ that will be read in by the Fortran code.
 
 from __future__ import absolute_import
 from __future__ import print_function
+
 import os
 import datetime
+import shutil
+import gzip
 
 import numpy as np
 
-# Calculate landfall time
-# Landfall for Ike in Houston was September 13th, at ~ 7:00:00 UTC
-landfall = datetime.datetime(2008, 9, 13, 7) - \
-           datetime.datetime(2008, 1, 1, 0)
+from clawpack.geoclaw.surge.storm import Storm
+import clawpack.clawutil as clawutil
+
 
 # Time Conversions
 def days2seconds(days):
     return days * 60.0**2 * 24.0
 
-def seconds2days(seconds):
-    return seconds / (60.0**2 * 24.0)
 
 # Scratch directory for storing topo and dtopo files:
 scratch_dir = os.path.join(os.environ["CLAW"], 'geoclaw', 'scratch')
@@ -75,11 +75,11 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.upper[1] = 32.0      # north latitude
 
     # Number of grid cells:
-    degree_factor = 4 # (0.25º,0.25º) ~ (25237.5 m, 27693.2 m) resolution
-    clawdata.num_cells[0] = int(clawdata.upper[0] - clawdata.lower[0]) *      \
-                                degree_factor
-    clawdata.num_cells[1] = int(clawdata.upper[1] - clawdata.lower[1]) *      \
-                                degree_factor
+    degree_factor = 4  # (0.25º,0.25º) ~ (25237.5 m, 27693.2 m) resolution
+    clawdata.num_cells[0] = int(clawdata.upper[0] - clawdata.lower[0]) \
+        * degree_factor
+    clawdata.num_cells[1] = int(clawdata.upper[1] - clawdata.lower[1]) \
+        * degree_factor
 
     # ---------------
     # Size of system:
@@ -99,8 +99,7 @@ def setrun(claw_pkg='geoclaw'):
     # -------------
     # Initial time:
     # -------------
-    clawdata.t0 = days2seconds(landfall.days - 3) + landfall.seconds
-    # clawdata.t0 = days2seconds(landfall.days - 1) + landfall.seconds
+    clawdata.t0 = -days2seconds(3)
 
     # Restart from checkpoint file of a previous run?
     # If restarting, t0 above should be from original run, and the
@@ -122,9 +121,7 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style == 1:
         # Output nout frames at equally spaced times up to tfinal:
-        # clawdata.tfinal = days2seconds(date2days('2008091400'))
-        clawdata.tfinal = days2seconds(landfall.days + 1.0) + \
-                                       landfall.seconds
+        clawdata.tfinal = days2seconds(1)
         recurrence = 4
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) *
                                         recurrence / (60**2 * 24))
@@ -153,7 +150,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 1
+    clawdata.verbosity = 0
 
     # --------------
     # Time stepping:
@@ -330,6 +327,9 @@ def setrun(claw_pkg='geoclaw'):
                                      rundata.clawdata.t0,
                                      rundata.clawdata.tfinal])
 
+    # Force the gauges to also record the wind and pressure fields
+    rundata.gaugedata.aux_out_fields = [4, 5, 6]
+
     # ------------------------------------------------------------------
     # GeoClaw specific parameters:
     # ------------------------------------------------------------------
@@ -347,11 +347,7 @@ def setgeo(rundata):
     For documentation see ....
     """
 
-    try:
-        geo_data = rundata.geo_data
-    except:
-        print("*** Error, this rundata has no geo_data attribute")
-        raise AttributeError("Missing geo_data attribute")
+    geo_data = rundata.geo_data
 
     # == Physics ==
     geo_data.gravity = 9.81
@@ -386,6 +382,8 @@ def setgeo(rundata):
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
     # See regions for control over these regions, need better bathy data for
     # the smaller domains
+    clawutil.data.get_remote_file(
+           "http://www.columbia.edu/~ktm2132/bathy/gulf_caribbean.tt3.tar.bz2")
     topo_path = os.path.join(scratch_dir, 'gulf_caribbean.tt3')
     topo_data.topofiles.append([3, 1, 5, rundata.clawdata.t0,
                                 rundata.clawdata.tfinal,
@@ -402,23 +400,41 @@ def setgeo(rundata):
     # ================
     data = rundata.surge_data
 
-    # Source term controls - These are currently not respected
+    # Source term controls
     data.wind_forcing = True
     data.drag_law = 1
     data.pressure_forcing = True
+
+    data.display_landfall_time = True
 
     # AMR parameters, m/s and m respectively
     data.wind_refine = [20.0, 40.0, 60.0]
     data.R_refine = [60.0e3, 40e3, 20e3]
 
     # Storm parameters - Parameterized storm (Holland 1980)
-    data.storm_type = 1
-    data.landfall = days2seconds(landfall.days) + landfall.seconds
-    data.display_landfall_time = True
-
-    # Storm type 2 - Idealized storm track
+    data.storm_specification_type = 'holland80'  # (type 1)
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),
                                          'ike.storm'))
+
+    # Convert ATCF data to GeoClaw format
+    clawutil.data.get_remote_file(
+                   "http://ftp.nhc.noaa.gov/atcf/archive/2008/bal092008.dat.gz")
+    atcf_path = os.path.join(scratch_dir, "bal092008.dat")
+    # Note that the get_remote_file function does not support gzip files which
+    # are not also tar files.  The following code handles this
+    with gzip.open(".".join((atcf_path, 'gz')), 'rb') as atcf_file,    \
+            open(atcf_path, 'w') as atcf_unzipped_file:
+        atcf_unzipped_file.write(atcf_file.read().decode('ascii'))
+
+    # Uncomment/comment out to use the old version of the Ike storm file
+    # ike = Storm(path="old_ike.storm", file_format="ATCF")
+    ike = Storm(path=atcf_path, file_format="ATCF")
+
+    # Calculate landfall time - Need to specify as the file above does not
+    # include this info (9/13/2008 ~ 7 UTC)
+    ike.time_offset = datetime.datetime(2008, 9, 13, 7)
+
+    ike.write(data.storm_file, file_format='geoclaw')
 
     # =======================
     #  Set Variable Friction

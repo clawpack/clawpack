@@ -47,16 +47,10 @@ def setplot(plotdata=None):
     # Load storm track
     track = surgeplot.track_data(os.path.join(plotdata.outdir, 'fort.track'))
 
-    # Calculate landfall time
-    # Landfall for Ike in Houston was September 13th, at 7 UTC
-    landfall_dt = datetime.datetime(2008, 9, 13, 7) - \
-                  datetime.datetime(2008, 1, 1,  0)
-    landfall = landfall_dt.days * 24.0 * 60**2 + landfall_dt.seconds
-
     # Set afteraxes function
     def surge_afteraxes(cd):
-        surgeplot.surge_afteraxes(cd, track, landfall, plot_direction=False,
-                                  kwargs={"markersize": 4})
+        surgeplot.surge_afteraxes(cd, track, plot_direction=False,
+                                             kwargs={"markersize": 4})
 
     # Color limits
     surface_limits = [-5.0, 5.0]
@@ -65,18 +59,8 @@ def setplot(plotdata=None):
     pressure_limits = [935, 1013]
     friction_bounds = [0.01, 0.04]
 
-    def gulf_after_axes(cd):
-        # plt.subplots_adjust(left=0.08, bottom=0.04, right=0.97, top=0.96)
-        surge_afteraxes(cd)
-
-    def latex_after_axes(cd):
-        # plt.subplot_adjust()
-        surge_afteraxes(cd)
-
     def friction_after_axes(cd):
-        # plt.subplots_adjust(left=0.08, bottom=0.04, right=0.97, top=0.96)
         plt.title(r"Manning's $n$ Coefficient")
-        # surge_afteraxes(cd)
 
     # ==========================================================================
     #   Plot specifications
@@ -88,7 +72,7 @@ def setplot(plotdata=None):
                                "ylimits": (27.5, 30.5),
                                "figsize": (8, 2.7)}}
 
-    for (name, region_dict) in regions.iteritems():
+    for (name, region_dict) in regions.items():
 
         # Surface Figure
         plotfigure = plotdata.new_plotfigure(name="Surface - %s" % name)
@@ -182,7 +166,7 @@ def setplot(plotdata=None):
     def gauge_afteraxes(cd):
 
         axes = plt.gca()
-        surgeplot.plot_landfall_gauge(cd.gaugesoln, axes, landfall=landfall)
+        surgeplot.plot_landfall_gauge(cd.gaugesoln, axes)
 
         # Fix up plot - in particular fix time labels
         axes.set_title('Station %s' % cd.gaugeno)
@@ -197,8 +181,8 @@ def setplot(plotdata=None):
 
     # Plot surface as blue curve:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
-    plotitem.plot_var = 3
-    plotitem.plotstyle = 'b-'
+    # plotitem.plot_var = 3
+    # plotitem.plotstyle = 'b-'
 
     #
     #  Gauge Location Plot

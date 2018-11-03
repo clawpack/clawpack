@@ -56,19 +56,4 @@ SOURCES = \
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
 
-
-# Construct the topography data
-.PHONY: topo all
-
-gulf_caribbean.tt3:
-	python get_bathy.py
-
-topo: gulf_caribbean.tt3
-
--all:
-	$(MAKE) topo
-	$(MAKE) .plots
-	$(MAKE) .htmls
-
-
 ### DO NOT remove this line - make depends on it ###

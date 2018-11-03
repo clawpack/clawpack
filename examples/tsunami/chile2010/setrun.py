@@ -143,7 +143,7 @@ def setrun(claw_pkg='geoclaw'):
         clawdata.output_t0 = True
         
 
-    clawdata.output_format = 'ascii'      # 'ascii' or 'netcdf' 
+    clawdata.output_format = 'ascii'      # 'ascii' or 'binary' 
 
     clawdata.output_q_components = 'all'   # need all
     clawdata.output_aux_components = 'none'  # eta=h+B is in q
@@ -424,6 +424,9 @@ def setgeo(rundata):
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
     import sys
+    from clawpack.geoclaw import kmltools
+
     rundata = setrun(*sys.argv[1:])
     rundata.write()
 
+    kmltools.make_input_data_kmls(rundata)
