@@ -12,7 +12,6 @@ before_install:
   
 install:
   - pip install -e .
-  - export PYTHONPATH=${PWD}:$PYTHONPATH
   - export CLAW=${PWD}
   - export FC=gfortran
   
