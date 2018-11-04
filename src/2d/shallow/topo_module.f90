@@ -731,7 +731,7 @@ contains
         ! ! integer :: dim_ids(2), z_type
         ! real(kind=8) :: convention_version(10), buffer(10)
 
-        verbose = .true.
+        verbose = .false.
 
         inquire(file=fname, exist=found_file)
         if (.not. found_file) then
