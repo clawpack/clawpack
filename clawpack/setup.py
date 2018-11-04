@@ -3,7 +3,7 @@ def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration('clawpack',parent_package,top_path)
     config.add_subpackage('clawutil',  subpackage_path='clawutil/src/python/clawutil')
-    config.add_subpackage('riemann', subpackage_path='riemann/src')
+    config.add_subpackage('riemann', subpackage_path='riemann/riemann')
     config.add_subpackage('visclaw',  subpackage_path='visclaw/src/python/visclaw')
     config.add_subpackage('pyclaw', subpackage_path='pyclaw/src/pyclaw')
     config.add_subpackage('petclaw', subpackage_path='pyclaw/src/petclaw')
