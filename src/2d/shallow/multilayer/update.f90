@@ -149,7 +149,8 @@ subroutine update (level, nvar, naux)
                                     huf= alloc(iaddf(3*layer-1,iff+ico-1,jff+jco-1,locf,mi))*capa 
                                     hvf= alloc(iaddf(3*layer,iff+ico-1,jff+jco-1,locf,mi))*capa 
 
-                                    if (hf > dry_tolerance(layer)) then
+                                    if ( alloc(iaddf(3*layer-2,iff+ico-1,jff+jco-1,locf,mi))/rho(layer) &
+                                        > dry_tolerance(layer)) then
                                         etaf = hf + bf
                                         nwet(layer) = nwet(layer) + 1
                                     else

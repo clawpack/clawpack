@@ -25,15 +25,26 @@ A single gauge captures the sea surface elevation at the location of
 
 **Creating kml files to view on Google Earth**
 
+By default `make data` will create kml files showing the computational
+domain, the extents of the topofiles and dtopofiles used and the
+AMR regions specified, and the gauge location.  These can be viewed
+using Google Earth or other platforms supporting `kml`.  These are
+created by the line in `setrun.py` invoking
+`kmltools.make_input_data_kmls(rundata)`.
+
+Note that clicking on a rectangle or gauge in Google Earth displays
+information about it.  You may need to unselect some of the kml files under
+Places in order to click on ones underneath.
+
 `setplot_kml.py` is a version of the setplot file that produces `kml` files
-suitable for viewing on Google Earth or other platforms supporting `kml`.
+from the GeoClaw output for viewing the tsunami propagation.
 
 To use::
 
     make .output
     make plots SETPLOT_FILE=setplot_kml.py
 
-and then open `_output/Chile_2010.kmz` from Google Earth.  Note that this is
+and then open `_plots/Chile_2010.kmz` from Google Earth.  Note that this is
 a zipped directory containing a number of `kml` files and opening this way
 should open them all.  You can then select which ones to view (e.g. the
 simultion, the grid patches, regions specified in `setrun.py`, and/or gauges).

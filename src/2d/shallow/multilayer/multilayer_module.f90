@@ -52,7 +52,7 @@ contains
 
         use geoclaw_module, only: GEO_PARM_UNIT, rho
         use geoclaw_module, only: geo_dry_tolerance => dry_tolerance
-        use storm_module, only: storm_type
+        use storm_module, only: storm_specification_type
 
         implicit none
         character(len=*), optional, intent(in) :: data_file
@@ -98,6 +98,7 @@ contains
             endif
             read(IOUNIT, *) eta_init
             read(IOUNIT, *) wave_tolerance
+            read(IOUNIT, *) aux_layer_index
             read(IOUNIT, *)
 
             ! Algorithmic parameters
@@ -107,13 +108,6 @@ contains
             read(IOUNIT, "(i1)") inundation_method
             
             close(IOUNIT) 
-
-            ! Set layer index - depends on whether a storm surge is being modeled
-            if (storm_type == 0) then
-                aux_layer_index = 5
-            else
-                aux_layer_index = 8
-            end if
 
             ! Currently just set dry_tolerance(:) = dry_tolerance
             dry_tolerance = geo_dry_tolerance
