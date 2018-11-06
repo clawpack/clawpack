@@ -1,13 +1,17 @@
 ! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ! ::::::     Support module for the adjoint_module.
 ! :::::: This module contains subroutines that are specific
-! :::::: to AMRClaw, and is mirrored by a similar module that
-! :::::: is specific to GeoClaw.
+! :::::: to GeoClaw, and is modified from a similar module that
+! :::::: is specific to AMRClaw.
 ! ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 module adjointsup_module
 
 contains
+
+! ========================================================================
+!  Routine to calculate inner product
+! ========================================================================
 
     subroutine calculate_innerproduct(q,k,mx_f,my_f,xlower_f, &
                ylower_f,dx_f,dy_f,meqn_f,mbc_f,aux1,innerprod)
@@ -22,7 +26,7 @@ contains
         real(kind=8), intent(in) :: q(meqn_f,1-mbc_f:mx_f+mbc_f,1-mbc_f:my_f+mbc_f)
 
         integer :: mx_a, my_a, mptr_a, mbc_a
-        integer :: i, j, i1, i2, j1, j2, level, loc, z, m
+        integer :: i, j, i1, i2, j1, j2, level, loc, z
         real(kind=8) :: dx_a, xlower_a, xupper_a, xupper_f
         real(kind=8) :: dy_a, ylower_a, yupper_a, yupper_f
         real(kind=8) :: x1, x2, y1, y2
@@ -30,6 +34,8 @@ contains
         real(kind=8), intent(inout) :: innerprod(mx_f,my_f)
         real(kind=8) :: q_innerprod(mx_f,my_f)
         logical :: mask_forward(mx_f,my_f)
+        ! q_interp depends on the number of euqations for the adjoint,
+        ! so that eta is taken into account
         real(kind=8) :: q_interp(adjoints(k)%meqn,mx_f,my_f), eta
         real(kind=8) :: aux1(1-mbc_f:mx_f+mbc_f,1-mbc_f:my_f+mbc_f)
 
@@ -106,6 +112,8 @@ contains
                 q_innerprod = 0.d0
 
                 ! Checking wet and dry states
+                ! Needed for geoclaw so we don't interpolate 
+                ! between wet and dry cells
                 forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
                     mask_forward(i,j) = (mask_forward(i,j) .and. &
                           (aux1(i,j) < 0.d0) .and. &
@@ -113,6 +121,9 @@ contains
                 end forall
 
                 ! For each valid point, calculate inner product
+
+                ! Note, in geoclaw the inner product uses eta
+                ! rather than q(1,i,j)
                 if (flag_gradient) then
                   forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
                       q_innerprod(i,j) = abs( &
@@ -122,6 +133,8 @@ contains
                   end forall
                 endif
 
+                ! When using richardson error, q contains the error 
+                ! in each term. q(1,i,j) contains the error in eta.
                 if (flag_richardson) then
                   forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
                     q_innerprod(i,j) = abs( &
@@ -167,11 +180,11 @@ contains
       integer, intent(in) :: mx_f, my_f, mptr_a
       real(kind=8), intent(in) :: dx_f, dx_a, dy_f, dy_a
 
-      integer :: z,k, iz, jk, mitot
+      integer :: z, k, iz, jk, mitot
       integer :: ivar, i, j, iadd, loc
       real(kind=8) :: q_interp(nvar,mx_f,my_f), denom
       real(kind=8) :: x, xhigh_a, y, yhigh_a
-      real(kind=8) :: dxz,dxzp,dyk,dykp, a, b, getaux
+      real(kind=8) :: dxz, dxzp, dyk, dykp, a, b, getaux
       logical :: mask_forward(mx_f,my_f)
 
       iadd(ivar,i,j)  = loc + ivar - 1 + nvar*((j-1)*mitot+i-1)
@@ -232,7 +245,7 @@ contains
 
 ! ========================================================================
 !  Routine to compute error in forward solution for the adjoint method
-!  Editted from errf1.f in amrclaw to use aux arrays
+!  Editted from errf1a.f in amrclaw to use aux arrays
 !  and correctly account for wet/dry cells.
 !  Differences:
 !   (i) Computes error for all of the terms in q
@@ -241,51 +254,36 @@ contains
 !        why this is not included into the AMRClaw errf1.f file. If plotting
 !        of the inner product is never wanted, this could be simplified
 !        and included into the AMRClaw errf1.f file.
-! ========================================================================
+!
+!        WARNING: Richardson error adjoint-flagging is not fully 
+!        implemented in GeoClaw. This code may not work as expected. ========================================================================
     subroutine errf1a(rctfine,nvar,rctcrse,mptr,mi2tot,mj2tot, &
                       mitot,mjtot,rctflg,mibuff,mjbuff,auxfine, &
                       naux,auxcrse)
 
+      use amr_module
       use adjoint_module, only: innerprod_index, &
              totnum_adjoints, adjoints, trange_start, trange_final, &
              levtol, eptr, errors, grid_num, select_snapshots
-      use amr_module, only: rnode,node,hxposs,hyposs,possk,tol,nghost
-      use amr_module, only: iorder,cornylo,cornxlo,edebug,eprint,DONTFLAG
-      use amr_module, only: outunit,timemult,DOFLAG,nestlevel,mcapa,UNSET
-      use amr_module, only: t0,tfinal,numcells
       use refinement_module, only: wave_tolerance
       use geoclaw_module, only:dry_tolerance, sea_level
-      implicit none
 
-      integer, intent(in) :: nvar, mptr, mi2tot, mj2tot
-      integer, intent(in) :: mitot, mjtot,mibuff,mjbuff, naux
-      real(kind=8), intent(in) :: rctfine(nvar,mitot,mjtot)
-      real(kind=8), intent(inout) :: rctcrse(nvar,mi2tot,mj2tot)
-      real(kind=8), intent(inout) :: auxfine(naux,mitot,mjtot)
-      real(kind=8), intent(in) :: auxcrse(naux,mi2tot,mj2tot)
-      real(kind=8), intent(inout) :: rctflg(mibuff,mjbuff)
-      real(kind=8) :: est(nvar,mitot,mjtot)
-      logical :: mask_selecta(totnum_adjoints)
+      implicit double precision (a-h,o-z)
 
-      logical :: allowflag
-      external allowflag
+      dimension  rctfine(nvar,mitot,mjtot)
+      dimension  rctcrse(nvar,mi2tot,mj2tot)
+      dimension  rctflg(mibuff,mjbuff)
+      dimension  err_crse(nvar,mi2tot,mj2tot)
+      dimension  est(nvar,mitot,mjtot)
+      dimension  bcrse(mitot,mjtot)
+      dimension  auxfine(naux,mitot,mjtot)
+      dimension  auxcrse(naux,mi2tot,mj2tot)
 
-!     Local variables
-      integer :: i, j, ifine, jfine, jj, ii, levm, m, k
-      integer :: ico, jco, nwet, jg, nx, ny
-      real(kind=8) :: errmax, err2, order
-      real(kind=8) :: hx, hy, dt, time
-      real(kind=8) :: xofi, ybot, xleft, yofj, capa, capacrse
-      real(kind=8) :: hcrse, hucrse, hvcrse, etacrse
-      real(kind=8) :: bcrse(mitot,mjtot)
-      real(kind=8) :: hf, huf, hvf, etaf, bf, etac1
-      real(kind=8) :: hc, huc, hvc, etac, hav, etaav, bav
-      real(kind=8) :: etasum, hsum, husum, hvsum, bsum
-      real(kind=8) :: etaerr, herr, huerr, hverr, innerprod
-      real(kind=8) :: tol_exact
+      logical mask_selecta(totnum_adjoints)
+      double precision  ip_temp(mi2tot,mj2tot)
 !
 !
-! ::::::::::::::::::::::::::::: ERRF1 ::::::::::::::::::::::::::::::::
+! ::::::::::::::::::::::: Modified from ERRF1 ::::::::::::::::::::::::
 !
 !  Richardson error estimator:  Used when flag_richardson is .true.
 !  Compare error estimates in rctfine, rctcrse,
@@ -316,9 +314,10 @@ contains
  
       errmax = 0.0d0
       err2   = 0.0d0
-      order  = dble(2**(iorder+1) - 2)
-
       auxfine(innerprod_index,:,:) = 0.0d0
+      ip_temp(:,:) = 0.0d0
+
+      order  = dble(2**(iorder+1) - 2)
 
 !     Calculating correct tol for this level
 !     --------------------
@@ -330,9 +329,10 @@ contains
       tol_exact = tol_exact/(numcells(levm)*hx*hy)
 
       if (t0+possk(levm) .eq. time) levtol(levm) = tol_exact
+
 !
-! Main loop: flag points and set extra aux values
-!
+! Setting up bathymetry 
+! 
       jfine = nghost+1
       do j = nghost+1,mj2tot-nghost
           ifine = nghost+1
@@ -348,6 +348,9 @@ contains
           jfine = jfine + 2
       enddo
 
+!
+! Main loop: calculate errors in forward problem
+!
       jfine = nghost+1
       do  j = nghost+1, mj2tot-nghost
           yofj  = ybot + (dble(jfine) - .5d0)*hy
@@ -358,6 +361,14 @@ contains
 ! Only check errors if flag hasn't been set yet.
 ! If flag == DONTFLAG then refinement is forbidden by a region,
 ! if flag == DOFLAG checking is not needed
+
+! Note: here rctcrse is being used as a temporary flag
+! the fine grid amrflags array is stored in rctflg, and will be
+! updated based on rctcrse at the end of this routine
+
+! Note: here, in contrast to errf1a for amrclaw, the error 
+! estimates are being stored in a fine grid vector est  
+! (a coarse grid vector err_crse is used in amrclaw)
            if(rctflg(ifine,jfine) == UNSET &
               .or. rctflg(ifine+1,jfine) == UNSET &
               .or. rctflg(ifine,jfine+1) == UNSET &
@@ -486,6 +497,12 @@ contains
           jfine = jfine + 2
       enddo
 
+!     Loop over adjoint snapshots
+
+! Note: here the call to calculate_innerproduct varies from 
+! the one in errf1a for amrclaw, due to the fact that our error is 
+! stored in a fine grid vector
+
       do k = 1,totnum_adjoints
 !         ! Consider only snapshots that are within the desired time range
           if (mask_selecta(k)) then
@@ -495,6 +512,9 @@ contains
                  auxfine(innerprod_index,1:nx,1:ny))
           endif
       enddo
+
+!     TODO: save calculated errors to adjoint_module to be used 
+!         for calculating tolerance in subsequent time steps
 
       do i  = 1, nx
         do j  = 1, ny

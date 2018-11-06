@@ -86,8 +86,9 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             ! Consider only snapshots that are within the desired time range
             if (mask_selecta(r)) then
                 ! Calculate inner product with current snapshot
-                call calculate_innerproduct(q,r,mx,my,xlower,ylower,dx, &
-                        dy,meqn,mbc,aux(1,:,:),aux(innerprod_index,1:mx,1:my))
+                call calculate_innerproduct(q,r,mx,my,xlower,   &
+                        ylower,dx,dy,meqn,mbc,aux(1,:,:),       &
+                        aux(innerprod_index,1:mx,1:my))
             endif
 
         enddo aloop
