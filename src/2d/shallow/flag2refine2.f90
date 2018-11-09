@@ -87,8 +87,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             if (mask_selecta(r)) then
                 ! Calculate inner product with current snapshot
                 call calculate_innerproduct(q,r,mx,my,xlower,   &
-                        ylower,dx,dy,meqn,mbc,aux(1,:,:),       &
-                        aux(innerprod_index,1:mx,1:my))
+                        ylower,dx,dy,meqn,mbc,maux,aux)
             endif
 
         enddo aloop

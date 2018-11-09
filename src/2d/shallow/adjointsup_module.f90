@@ -14,7 +14,7 @@ contains
 ! ========================================================================
 
     subroutine calculate_innerproduct(q,k,mx_f,my_f,xlower_f, &
-               ylower_f,dx_f,dy_f,meqn_f,mbc_f,aux1,innerprod)
+               ylower_f,dx_f,dy_f,meqn_f,mbc_f,maux_f,aux)
 
         use adjoint_module
         use amr_module, only : flag_richardson, flag_gradient
@@ -22,7 +22,7 @@ contains
         implicit none
 
         real(kind=8), intent(in) :: xlower_f,ylower_f,dx_f,dy_f
-        integer :: k,mx_f,my_f,meqn_f,mbc_f
+        integer :: k,mx_f,my_f,meqn_f,mbc_f,maux_f
         real(kind=8), intent(in) :: q(meqn_f,1-mbc_f:mx_f+mbc_f,1-mbc_f:my_f+mbc_f)
 
         integer :: mx_a, my_a, mptr_a, mbc_a
@@ -31,13 +31,12 @@ contains
         real(kind=8) :: dy_a, ylower_a, yupper_a, yupper_f
         real(kind=8) :: x1, x2, y1, y2
 
-        real(kind=8), intent(inout) :: innerprod(mx_f,my_f)
         real(kind=8) :: q_innerprod(mx_f,my_f)
         logical :: mask_forward(mx_f,my_f)
         ! q_interp depends on the number of euqations for the adjoint,
         ! so that eta is taken into account
         real(kind=8) :: q_interp(adjoints(k)%meqn,mx_f,my_f), eta
-        real(kind=8) :: aux1(1-mbc_f:mx_f+mbc_f,1-mbc_f:my_f+mbc_f)
+        real(kind=8), intent(inout) :: aux(maux_f,1-mbc_f:mx_f+mbc_f,1-mbc_f:my_f+mbc_f)
 
         logical, allocatable :: mask_adjoint(:,:)
 
@@ -116,7 +115,7 @@ contains
                 ! between wet and dry cells
                 forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
                     mask_forward(i,j) = (mask_forward(i,j) .and. &
-                          (aux1(i,j) < 0.d0) .and. &
+                          (aux(1,i,j) < 0.d0) .and. &
                           (q_interp(4,i,j) - q_interp(1,i,j) < 0.d0))
                 end forall
 
@@ -127,7 +126,7 @@ contains
                 if (flag_gradient) then
                   forall(i = 1:mx_f, j = 1:my_f, mask_forward(i,j))
                       q_innerprod(i,j) = abs( &
-                        (q(1,i,j) + aux1(i,j)) * q_interp(4,i,j) &
+                        (q(1,i,j) + aux(1,i,j)) * q_interp(4,i,j) &
                         + q(2,i,j) * q_interp(2,i,j) &
                         + q(3,i,j) * q_interp(3,i,j))
                   end forall
@@ -147,8 +146,8 @@ contains
 
                 do i=1,mx_f
                     do j=1,my_f
-                        if (q_innerprod(i,j) > innerprod(i,j)) then
-                            innerprod(i,j) = q_innerprod(i,j)
+                        if (q_innerprod(i,j) > aux(innerprod_index,i,j)) then
+                            aux(innerprod_index,i,j) = q_innerprod(i,j)
                         endif
                     enddo
                 enddo
@@ -280,7 +279,6 @@ contains
       dimension  auxcrse(naux,mi2tot,mj2tot)
 
       logical mask_selecta(totnum_adjoints)
-      double precision  ip_temp(mi2tot,mj2tot)
 !
 !
 ! ::::::::::::::::::::::: Modified from ERRF1 ::::::::::::::::::::::::
@@ -315,7 +313,7 @@ contains
       errmax = 0.0d0
       err2   = 0.0d0
       auxfine(innerprod_index,:,:) = 0.0d0
-      ip_temp(:,:) = 0.0d0
+      auxcrse(innerprod_index,:,:) = 0.0d0
 
       order  = dble(2**(iorder+1) - 2)
 
@@ -508,8 +506,7 @@ contains
           if (mask_selecta(k)) then
 !             set innerproduct for fine grid
               call calculate_innerproduct(est,k,nx,ny, &
-                 xleft,ybot,hx,hy,nvar,nghost,bcrse, &
-                 auxfine(innerprod_index,1:nx,1:ny))
+                 xleft,ybot,hx,hy,nvar,nghost,naux,auxfine)
           endif
       enddo
 
