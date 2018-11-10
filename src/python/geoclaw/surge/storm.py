@@ -206,10 +206,10 @@ class Storm(object):
 
     def __repr__(self):
         return '<{}.{} "{}" at {}>'.format(
-	    self.__class__.__module__,
-	    self.__class__.__name__,
-	    self.__dict__.get('name', 'name not given'),
-	    hex(id(sample_gc_storm)))
+            self.__class__.__module__,
+            self.__class__.__name__,
+            self.__dict__.get('name', 'name not given'),
+            hex(id(self)))
 
     # ==========================================================================
     # Read Routines
