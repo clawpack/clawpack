@@ -20,6 +20,7 @@ import matplotlib.colors as colors
 import clawpack.visclaw.colormaps as colormaps
 import clawpack.visclaw.gaugetools as gaugetools
 import clawpack.geoclaw.geoplot as geoplot
+import clawpack.geoclaw.data as geodata
 
 # TODO:  Assign these absed on data files
 bathy_index = 0
@@ -36,6 +37,7 @@ wind_cmap = plt.get_cmap('PuBu')
 pressure_cmap = plt.get_cmap('PuBu')
 land_cmap = geoplot.land_colors
 
+surge_data = geodata.SurgeData()
 
 class track_data(object):
     """Read in storm track data from run output"""
@@ -376,7 +378,7 @@ def add_pressure(plotaxes, bounds=None, plot_type='pcolor', shrink=1.0):
         pass
 
 
-def add_land(plotaxes, plot_type='pcolor', bounds=[-10, 10]):
+def add_land(plotaxes, plot_type='pcolor', bounds=None):
     """Add plotitem for land"""
 
     if plot_type == 'pcolor':
@@ -384,8 +386,9 @@ def add_land(plotaxes, plot_type='pcolor', bounds=[-10, 10]):
         plotitem.show = True
         plotitem.plot_var = geoplot.land
         plotitem.pcolor_cmap = land_cmap
-        plotitem.pcolor_cmin = bounds[0]
-        plotitem.pcolor_cmax = bounds[1]
+        if bounds is not None:
+            plotitem.pcolor_cmin = bounds[0]
+            plotitem.pcolor_cmax = bounds[1]
         plotitem.add_colorbar = False
         plotitem.amr_celledges_show = [0] * 10
         plotitem.amr_patchedges_show = [1, 1, 1, 1, 1, 0, 0]
@@ -405,7 +408,7 @@ def add_land(plotaxes, plot_type='pcolor', bounds=[-10, 10]):
 def add_bathy_contours(plotaxes, contour_levels=None, color='k'):
     """Add plotitem to plot contours of the topography"""
 
-    plotitem = plotaxes.new_plotitem(plot_type='2d_contour')
+    plotitem = plotaxes.new_plotitem(name='bathy', plot_type='2d_contour')
     plotitem.plot_var = geoplot.topo
     if contour_levels is None:
         contour_levels = [0.0]
