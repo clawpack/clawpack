@@ -16,7 +16,7 @@ before_install:
   - pip install xarray
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
-  - python setup.py symlink-only
+  - python setup.py git-dev
   - rm -rf geoclaw
   - ln -s ../ geoclaw
   
