@@ -578,31 +578,33 @@ class Storm(object):
                 warnings.warn(missing_data_warning_str)
 
 
-    def read_jma(self, path, verbose=False):
+    def read_jma(self, path, rho_air, ambient_pressure, verbose=False):
         r"""Read in JMA formatted storm file
-
-        Note that only files that contain one storm are currently supported.
-
-        For more details on the JMA format and getting data see
-
-        http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html
-
-        :Input:
-         - *path* (string) Path to the file to be read.
-         - *verbose* (bool) Output more info regarding reading.
-
-        :Raises:
-         - *ValueError* If the method cannot find the name/year matching the
-           storm or they are not provided when *single_storm == False* then a
-           value error is risen.
-        """
-
+            
+            Note that only files that contain one storm are currently supported.
+            
+            For more details on the JMA format and getting data see
+            
+            http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html
+            
+            :Input:
+            - *path* (string) Path to the file to be read.
+            - *rho_air* (float) Air density.
+            - *ambient_pressure* (float) Ambient pressure.
+            - *verbose* (bool) Output more info regarding reading.
+            
+            :Raises:
+            - *ValueError* If the method cannot find the name/year matching the
+            storm or they are not provided when *single_storm == False* then a
+            value error is risen.
+            """
+        
         data_block = []
         with open(path, 'r') as JMA_file:
             # Extract header
             data = JMA_file.readline()
             self.ID = data[6:10]
-            num_lines = int(data[12:14])
+            num_lines = int(data[13:15])
             self.name = data[30:51].strip()
 
             data_block = JMA_file.readlines()
@@ -615,6 +617,8 @@ class Storm(object):
         self.eye_location = numpy.empty((num_lines, 2))
         self.max_wind_speed = numpy.empty(num_lines)
         self.central_pressure = numpy.empty(num_lines)
+        self.radius_50kts = numpy.empty(num_lines)
+        self.radius_30kts = numpy.empty(num_lines)
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
         for (i, line) in enumerate(data_block):
@@ -627,7 +631,8 @@ class Storm(object):
                                             int(data[0][2:4]),
                                             int(data[0][4:6]),
                                             int(data[0][6:])))
-
+            
+                                            
             # Classification, note that this is not the category of the storm
             self.classification[i] = int(data[1])
 
@@ -635,13 +640,35 @@ class Storm(object):
             self.eye_location[i, 0] = float(data[4]) / 10.0
             self.eye_location[i, 1] = float(data[3]) / 10.0
 
-            # Intensity information - current the radii are not directly given
-            # Available data includes max/min of radius of winds of 50 and
-            # 30 kts instead
+            # Intensity information
             self.central_pressure[i] = units.convert(float(data[5]), 'hPa', 'Pa')
             self.max_wind_speed[i] = units.convert(float(data[6]), 'knots', 'm/s')
+            
+            # Mark if this is a shortened line - does not contain 30 and 50 kts
+            # wind radius - set those to -1 to mark them as missing
+            if len(data) < 8:
+                self.max_wind_radius[i] = -1
+            else:
+                data[7] = int(data[7]) - int(int(data[7])/10000)*10000
+                data[9] = int(data[9]) - int(int(data[9])/10000)*10000
+                #data[8] = (data[7] + int(data[8]))/2
+                #data[10] = (data[9] + int(data[10]))/2
+                self.radius_30kts[i] = units.convert(float(data[9]), 'nmi', 'km')
+                self.radius_50kts[i] = units.convert(float(data[7]), 'nmi', 'km')
+                self.max_wind_radius[i] = calculate_radius_max_wind(rho_air,
+                                        self.eye_location[i, 1], self.max_wind_speed[i],
+                                        self.central_pressure[i], ambient_pressure,
+                                        self.radius_30kts[i], self.radius_50kts[i])
+                self.max_wind_radius[i] = units.convert(self.max_wind_radius[i],
+                                                        'km', 'm')
+            # Warning for formats that have yet to have a default way to determine crticial
+            # storm radius from the input data
+            missing_data_warning_str = """*** Cannot yet automatically determine the storm radius.
+                Will write out GeoClaw formats but note that these will
+                not work when running GeoClaw currently."""
             warnings.warn(missing_data_warning_str)
-            self.max_wind_radius[i] = -1
+            
+            # Current storm radius is not given
             self.storm_radius[i] = -1
 
 
