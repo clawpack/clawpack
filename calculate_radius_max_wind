@@ -1,0 +1,60 @@
+def calculate_radius_max_wind(rho_air, latitude, max_wind_speed, central_pressure,
+                              ambient_pressure, radius_30kts, radius_50kts):
+    """
+    INPUT:
+    - *rho_air* (float) Air density.
+    - *ambient_pressure* (float) Ambient pressure.
+    - *latitude* (flloat) Latitude of center of storm.
+    - *max_wind_speed* (float) Speed of maximum wind.
+    - *central_pressure* (float) Central pressure of storm.
+    - *radius_30kts* (float) Maximum radius of 30 kts wind.
+    - *radius_50kts* (float) Maximum radius of 50 kts wind.
+
+    
+    OUTPUT:
+    - *radius* (float) Radius of maximum wind.
+    """
+    
+    # Required parameters in calculation
+    # w - the average angular velocity of Earth’s rotation
+    w = 7.292e-5
+    
+    # f - Coriolis Parameter
+    f = 2*w*math.sin(latitude*math.pi/180)
+    
+    # Convert 30kts to m/s
+    v30 = units.convert(float(30), 'knots', 'm/s')
+    
+    # Convert 50kts to m/s
+    v50 = units.convert(float(50), 'knots', 'm/s')
+    
+    # Calculate Parameter_B
+    Parameter_B = float(float(math.pow(max_wind_speed,2)*math.exp(1.00)*rho_air)
+                        /float((ambient_pressure - central_pressure)))
+    if int(Parameter_B) >= 0 & int(Parameter_B) <= 4:
+        
+        # Calculate numerator of Parameter_A
+        A_up_11 = pow(v50 + radius_50kts*f/2,2) - pow(radius_50kts*f,2)/4
+        A_up_12 = pow(v30 + radius_30kts*f/2,2) - pow(radius_30kts*f,2)/4
+        A_up_2 = pow(float(radius_50kts)/float(radius_30kts),Parameter_B)
+        if int((A_up_11*A_up_2)/A_up_12) >= 0:
+            A_up = math.log((A_up_11*A_up_2)/A_up_12,math.exp(1.00))
+            
+            # Calculate denominator of Parameter_A
+            A_down_1 = float(1)/float(math.pow(radius_30kts,Parameter_B))
+            A_down_2 = float(1)/float(math.pow(radius_50kts,Parameter_B))
+            
+            # Calculate Parameter_A
+            Parameter_A = A_up / (A_down_1-A_down_2)
+            if Parameter_A > 0:
+                
+                # Calculate radius of maxiumum wind
+                radius = math.pow(Parameter_A, float(1)/Parameter_B)
+            else:
+                radius = 0
+        else:
+            radius = 0
+    else:
+        radius = 0
+
+    return radius
