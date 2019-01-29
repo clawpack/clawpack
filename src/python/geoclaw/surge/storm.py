@@ -226,6 +226,10 @@ class Storm(object):
        meters/second.
      - *max_wind_radius* (ndarray(:)) Radius at which the maximum wind speed
        occurs.  Default units are meters.
+     - *radius_30kts* (ndarray(:)) Radius of 30kts wind. Default units are
+       kilometers.
+     - *radius_50kts* (ndarray(:)) Radius of 50kts wind. Default units are
+       kilometers.
      - *central_pressure* (ndarray(:)) Central pressure of storm.  Default
        units are Pascals.
      - *storm_radius* (ndarray(:)) Radius of storm, often defined as the last
@@ -267,8 +271,8 @@ class Storm(object):
         self.eye_location = None
         self.max_wind_speed = None
         self.max_wind_radius = None
-	self.radius_50kts = None
-        self.radius_30kts = None
+	self.radius_30kts = None
+        self.radius_50kts = None
         self.central_pressure = None
         self.storm_radius = None
 
@@ -703,8 +707,8 @@ class Storm(object):
         self.eye_location = numpy.empty((num_lines, 2))
         self.max_wind_speed = numpy.empty(num_lines)
         self.central_pressure = numpy.empty(num_lines)
-        self.radius_50kts = numpy.empty(num_lines)
         self.radius_30kts = numpy.empty(num_lines)
+        self.radius_50kts = numpy.empty(num_lines)
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
         for (i, line) in enumerate(data_block):
