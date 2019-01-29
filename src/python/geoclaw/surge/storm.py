@@ -108,71 +108,95 @@ hurdat_special_entries = {"L": "landfall",
 missing_data_warning_str = """*** Cannot yet automatically determine the
     maximum wind radius.  Will write out GeoClaw
     formats but note that these will not work
-    when running GeoClaw currently without a custom
-    `max_wind_radius_fill` function passed as argument
-    to the `write` function."""
+    when running GeoClaw currently."""
 
-# Function to calculate radius of maximum wind for jma files
-def calculate_radius_max_wind(rho_air, latitude, max_wind_speed, central_pressure,
-                              ambient_pressure, radius_30kts, radius_50kts):
+def calculate_max_wind_radius(storm, rho_air, ambient_pressure):
     """
-    INPUT:
+    Based on equations in the paper [1] values of parameter A and parameter
+    B are calculated by using speed of maximum wind, longest radius of 30
+    and 50 kts wind data. Meanwhile, radius of maxium wind is obtained as well.
+        
+    :Input:
+    - *storm* (object) Storm.
     - *rho_air* (float) Air density.
-    - *ambient_pressure* (float) Ambient pressure.
-    - *latitude* (flloat) Latitude of center of storm.
-    - *max_wind_speed* (float) Speed of maximum wind.
-    - *central_pressure* (float) Central pressure of storm.
-    - *radius_30kts* (float) Maximum radius of 30 kts wind.
-    - *radius_50kts* (float) Maximum radius of 50 kts wind.
-
-    
-    OUTPUT:
-    - *radius* (float) Radius of maximum wind.
+    - *ambient_pressure* (float) Ambient pressure. Default units are Pascals.
+        
+        
+    :Output:
+    - *A* (ndarray(:)) Required parameter to calculate radius of maximum wind.
+    - *B* (ndarray(:)) Required parameter to calculate radius of maximum wind.
+        
+    1. Holland, G. J. An Analytic Model of the Wind and Pressure Profiles in
+    Hurricanes. Monthly Weather Review 108, 1212-1218 (1980).
     """
     
     # Required parameters in calculation
     # w - the average angular velocity of Earth’s rotation
     w = 7.292e-5
     
-    # f - Coriolis Parameter
-    f = 2*w*math.sin(latitude*math.pi/180)
-    
     # Convert 30kts to m/s
     v30 = units.convert(float(30), 'knots', 'm/s')
     
     # Convert 50kts to m/s
     v50 = units.convert(float(50), 'knots', 'm/s')
-    
-    # Calculate Parameter_B
-    Parameter_B = float(float(math.pow(max_wind_speed,2)*math.exp(1.00)*rho_air)
-                        /float((ambient_pressure - central_pressure)))
-    if int(Parameter_B) >= 0 & int(Parameter_B) <= 4:
-        
-        # Calculate numerator of Parameter_A
-        A_up_11 = pow(v50 + radius_50kts*f/2,2) - pow(radius_50kts*f,2)/4
-        A_up_12 = pow(v30 + radius_30kts*f/2,2) - pow(radius_30kts*f,2)/4
-        A_up_2 = pow(float(radius_50kts)/float(radius_30kts),Parameter_B)
-        if int((A_up_11*A_up_2)/A_up_12) >= 0:
-            A_up = math.log((A_up_11*A_up_2)/A_up_12,math.exp(1.00))
-            
-            # Calculate denominator of Parameter_A
-            A_down_1 = float(1)/float(math.pow(radius_30kts,Parameter_B))
-            A_down_2 = float(1)/float(math.pow(radius_50kts,Parameter_B))
-            
-            # Calculate Parameter_A
-            Parameter_A = A_up / (A_down_1-A_down_2)
-            if Parameter_A > 0:
-                
-                # Calculate radius of maxiumum wind
-                radius = math.pow(Parameter_A, float(1)/Parameter_B)
-            else:
-                radius = 0
-        else:
-            radius = 0
-    else:
-        radius = 0
 
-    return radius
+    # Number of data lines in storm object
+    n = len(storm.max_wind_speed)
+    
+    A = numpy.empty(n)
+    B = numpy.empty(n)
+    
+    # Function to calculate B
+    f_B = lambda vm, pn, pc, rho: vm**2 * numpy.exp(1.0) * rho / (pn - pc)
+    
+    A_up_log = lambda r30, r50, v30, v50, f, B: ((v50 + r50 * f / 2.0)**2 -
+                     (r50 * f / 2.0)**2) / ((v30 + r30 * f / 2.0)**2
+                     - (r30 * f / 2.0)**2) * (r50 / r30)**B
+    f_A_down = lambda r30, r50, B: 1.0 / r30**B - 1.0 / r50**B
+    
+    for i in range(n):
+
+        # f - Coriolis Parameter
+        f = 2 * w * numpy.sin(storm.eye_location[i, 1] * numpy.pi / 180.0)
+        
+        # Calculate B
+        B[i] = f_B(vm=storm.max_wind_speed[i], pn=ambient_pressure,
+                pc=storm.central_pressure[i], rho=rho_air)
+        
+        # Calculate A
+        A_up_log1 = A_up_log(r30=storm.radius_30kts[i], r50=storm.radius_50kts[i],
+                             v30=v30, v50=v50, f=f, B=B[i])
+        
+        if int(A_up_log1) >= 0:
+            A_up = numpy.log(A_up_log1)
+            A_down = f_A_down(r30=storm.radius_30kts[i], r50=storm.radius_50kts[i], B=B[i])
+            A[i] = A_up / A_down
+            if int(A[i]) >= 0:
+                
+                # Calculate radius of maximum wind
+                storm.max_wind_radius[i] = units.convert(A[i]**(1.0 / B[i]), 'km', 'm')
+            else:
+                
+                # Warning for formats that have yet to to determine crticial maximum wind
+                # radius from the input data.
+                missing_data_warning_str2 = """*** Cannot yet determine the maximum wind radius.
+                Will write out GeoClaw formats but note that these will not work when running
+                GeoClaw currently."""
+
+                warnings.warn(missing_data_warning_str2)
+                storm.max_wind_radius[i] = -1
+        else:
+            
+            # Warning for formats that have yet to to determine crticial maximum wind
+            # radius from the input data.
+            missing_data_warning_str3 = """*** Cannot yet determine the maximum wind radius.
+            Will write out GeoClaw formats but note that these will not work when running
+            GeoClaw currently."""
+            
+            warnings.warn(missing_data_warning_str3)
+            storm.max_wind_radius[i] = -1
+                                                        
+    return A, B
 
 
 # =============================================================================
@@ -243,6 +267,8 @@ class Storm(object):
         self.eye_location = None
         self.max_wind_speed = None
         self.max_wind_radius = None
+	self.radius_50kts = None
+        self.radius_30kts = None
         self.central_pressure = None
         self.storm_radius = None
 
@@ -640,7 +666,7 @@ class Storm(object):
                 warnings.warn(missing_data_warning_str)
 
 
-    def read_jma(self, path, rho_air, ambient_pressure, verbose=False):
+    def read_jma(self, path, verbose=False):
         r"""Read in JMA formatted storm file
             
             Note that only files that contain one storm are currently supported.
@@ -651,8 +677,6 @@ class Storm(object):
             
             :Input:
             - *path* (string) Path to the file to be read.
-            - *rho_air* (float) Air density.
-            - *ambient_pressure* (float) Ambient pressure.
             - *verbose* (bool) Output more info regarding reading.
             
             :Raises:
@@ -671,7 +695,7 @@ class Storm(object):
 
             data_block = JMA_file.readlines()
         assert(num_lines == len(data_block))
-
+        
         # Parse data block
         self.t = []
         self.event = numpy.empty(num_lines, dtype=str)
@@ -693,8 +717,8 @@ class Storm(object):
                                             int(data[0][2:4]),
                                             int(data[0][4:6]),
                                             int(data[0][6:])))
-            
-                                            
+
+
             # Classification, note that this is not the category of the storm
             self.classification[i] = int(data[1])
 
@@ -709,26 +733,31 @@ class Storm(object):
             # Mark if this is a shortened line - does not contain 30 and 50 kts
             # wind radius - set those to -1 to mark them as missing
             if len(data) < 8:
-                self.max_wind_radius[i] = -1
+                self.radius_30kts[i] = -1
+                self.radius_50kts[i] = -1
             else:
-                data[7] = int(data[7]) - int(int(data[7])/10000)*10000
-                data[9] = int(data[9]) - int(int(data[9])/10000)*10000
-                #data[8] = (data[7] + int(data[8]))/2
-                #data[10] = (data[9] + int(data[10]))/2
+                data[7] = int(data[7]) - int(int(data[7]) / 10000) * 10000
+                data[9] = int(data[9]) - int(int(data[9]) / 10000) * 10000
                 self.radius_30kts[i] = units.convert(float(data[9]), 'nmi', 'km')
                 self.radius_50kts[i] = units.convert(float(data[7]), 'nmi', 'km')
-                self.max_wind_radius[i] = calculate_radius_max_wind(rho_air,
-                                        self.eye_location[i, 1], self.max_wind_speed[i],
-                                        self.central_pressure[i], ambient_pressure,
-                                        self.radius_30kts[i], self.radius_50kts[i])
-                self.max_wind_radius[i] = units.convert(self.max_wind_radius[i],
-                                                        'km', 'm')
+            
+            # Warning for formats that have yet to have a default way to determine crticial
+            # maximum wind radius from the input data. But here is a help function which
+            # can get that values
+            missing_data_warning_str1 = """*** Cannot yet automatically determine the storm radius.
+            Here is a function calculate_max_wind_radius which can be used to obtain radius of
+            maximum wind"""
+            
+            warnings.warn(missing_data_warning_str1)
+            self.max_wind_radius[i] = -1
+            
             # Warning for formats that have yet to have a default way to determine crticial
             # storm radius from the input data
-            missing_data_warning_str = """*** Cannot yet automatically determine the storm radius.
-                Will write out GeoClaw formats but note that these will
-                not work when running GeoClaw currently."""
-            warnings.warn(missing_data_warning_str)
+            missing_data_warning_str2 = """*** Cannot yet automatically determine the storm radius.
+            Will write out GeoClaw formats but note that these will not work when running GeoClaw
+            currently."""
+            
+            warnings.warn(missing_data_warning_str2)
             
             # Current storm radius is not given
             self.storm_radius[i] = -1
