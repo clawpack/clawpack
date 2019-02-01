@@ -110,6 +110,7 @@ missing_data_warning_str = """*** Cannot yet automatically determine the
     formats but note that these will not work
     when running GeoClaw currently."""
 
+# Function to calculate maximum wind radius
 def calculate_max_wind_radius(storm, rho_air, ambient_pressure):
     """
     Based on equations in the paper [1] values of parameter A and parameter
@@ -271,7 +272,7 @@ class Storm(object):
         self.eye_location = None
         self.max_wind_speed = None
         self.max_wind_radius = None
-	self.radius_30kts = None
+        self.radius_30kts = None
         self.radius_50kts = None
         self.central_pressure = None
         self.storm_radius = None
@@ -725,11 +726,11 @@ class Storm(object):
 
             # Classification, note that this is not the category of the storm
             self.classification[i] = int(data[1])
-
+            
             # Parse eye location - Always N latitude and E longitude
             self.eye_location[i, 0] = float(data[4]) / 10.0
             self.eye_location[i, 1] = float(data[3]) / 10.0
-
+            
             # Intensity information
             self.central_pressure[i] = units.convert(float(data[5]), 'hPa', 'Pa')
             self.max_wind_speed[i] = units.convert(float(data[6]), 'knots', 'm/s')
