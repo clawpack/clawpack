@@ -91,7 +91,7 @@ c     ### they contain allocatable arrays
       do ifg = 1, FG_num_fgrids
         fg => FG_fgrids(ifg)
           write(chkunit) fg%levelmax
-          write(chkunit) fg%auxdone
+          write(chkunit) fg%auxdone(1:mxnest)
           write(chkunit) fg%x,fg%y,fg%valuemax,fg%tmax,
      &          fg%arrival_time,fg%aux,fg%t_last_updated
       end do

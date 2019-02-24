@@ -6,7 +6,7 @@ that will be read in by the Fortran code.
 
 from __future__ import absolute_import
 from __future__ import print_function
-import numpy as numpy
+import numpy
 
 import clawpack.geoclaw.data
 import clawpack.geoclaw.topotools as tt
@@ -300,15 +300,15 @@ def setrun(claw_pkg='geoclaw'):
         # Do not checkpoint at all
         pass
 
-    elif clawdata.checkpt_style == 1:
+    elif numpy.abs(clawdata.checkpt_style) == 1:
         # Checkpoint only at tfinal.
         pass
 
-    elif clawdata.checkpt_style == 2:
+    elif numpy.abs(clawdata.checkpt_style) == 2:
         # Specify a list of checkpoint times.  
         clawdata.checkpt_times = [0.1,0.15]
 
-    elif clawdata.checkpt_style == 3:
+    elif numpy.abs(clawdata.checkpt_style) == 3:
         # Checkpoint every checkpt_interval timesteps (on Level 1)
         # and at the final time.
         clawdata.checkpt_interval = 5

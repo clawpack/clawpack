@@ -2574,7 +2574,7 @@ class SubFault(object):
                              "/n    need to specify rupture_time, rise_time")
 
         rf = rise_fraction(t, self.rupture_time, self.rise_time,
-                           self.rise_time_starting. self.rise_shape)
+                           self.rise_time_starting, self.rise_shape)
         return rf * self.slip
 
 
