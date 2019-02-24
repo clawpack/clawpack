@@ -15,7 +15,7 @@ import warnings
 
 w = """
 *** WARNING: clawpack.geoclaw.geoplot is deprecated
-             Use clawpack.geoclaw.geoplot instead"""
+             Use clawpack.visclaw.geoplot instead"""
 
 warnings.warn(w, UserWarning)
 
