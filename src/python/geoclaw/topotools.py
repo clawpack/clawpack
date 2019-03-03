@@ -690,12 +690,14 @@ class Topography(object):
                                 z_var = key
 
                     if x_var is None or y_var is None or z_var is None:
-                        raise IOError("Could not automatically determine ",
-                                      "variable ids.  Please check if the file",
-                                      " has the 'axis' attribute attached to",
-                                      " the appropriate x and y variables or ",
-                                      "specify the variables directly via the",
-                                      " *nc_params* dictionary.")
+                        err_string = "".join(
+                                      ("Could not automatically determine ",
+                                       "variable ids.  Please check if the ",
+                                       "file has the 'axis' attribute attached",
+                                       " to the appropriate x and y variables ",
+                                       "or specify the variables directly via",
+                                       " the *nc_params* dictionary."))
+                        raise IOError(err_string)
 
 
                     self._x = nc_file.variables[x_var][::stride[0]]
@@ -1667,6 +1669,9 @@ def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True,
     if verbose:
         print("Will read netCDF data from \n    %s" % path)
 
+    assert (type(coarsen) is int) and (coarsen >= 1), \
+        '*** coarsen must be a positive integer'
+
     if return_xarray:
         f = xarray.open_dataset(path)
     else: 
@@ -1691,9 +1696,14 @@ def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True,
             raise ValueError("*** Unrecognized zvar in netCDF file")
 
     if extent == 'all':
-        xs = x[::coarsen]
-        ys = y[::coarsen]
-        Zs = f.variables[zvar][::coarsen,::coarsen]
+        if coarsen==1:
+            xs = x
+            ys = y
+            Zs = f.variables[zvar]
+        else:
+            xs = x[::coarsen]
+            ys = y[::coarsen]
+            Zs = f.variables[zvar][::coarsen,::coarsen]
     else:
         x1,x2,y1,y2 = extent
         # find indices of x,y arrays for points lying within extent:
@@ -1706,9 +1716,14 @@ def read_netcdf(path, zvar=None, extent='all', coarsen=1, return_topo=True,
 
         # create new xarray object with this (possibly coarsened) subset:
 
-        xs = x[i1:i2:coarsen]
-        ys = y[j1:j2:coarsen]
-        Zs = f.variables[zvar][j1:j2:coarsen, i1:i2:coarsen]
+        if coarsen==1:
+            xs = x[i1:i2]
+            ys = y[j1:j2]
+            Zs = f.variables[zvar][j1:j2,i1:i2]
+        else:
+            xs = x[i1:i2:coarsen]
+            ys = y[j1:j2:coarsen]
+            Zs = f.variables[zvar][j1:j2:coarsen, i1:i2:coarsen]
 
     if verbose:
         print('Returning a DEM with shape = %s' \

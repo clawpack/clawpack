@@ -86,9 +86,6 @@ module storm_module
     procedure(set_model_fields_def), pointer :: set_model_fields
     procedure(set_data_fields_def), pointer :: set_data_fields
 
-    ! Wind drag maximum limit
-    real(kind=8), parameter :: WIND_DRAG_LIMIT = 2.d-3
-
     ! Display times in days relative to landfall
     logical :: display_landfall_time = .false.
 
@@ -250,82 +247,78 @@ contains
     !      Atmospheric Administration (NOAA) Joint Hurricane Testbed (JHT) 
     !      Program.” 26 pp.
     !
-    real(kind=8) pure function powell_wind_drag(wind_speed, theta)      &
+    real(kind=8) pure function powell_wind_drag(wind_speed, theta)     &
                                          result(wind_drag)
-    
+
         implicit none
-        
+
         ! Input
         real(kind=8), intent(in) :: wind_speed, theta
 
         ! Locals
-        real(kind=8) :: weight, left_drag, right_drag, rear_drag, drag(2)
+        real(kind=8) :: weight(3), drag(3)
 
-        ! Calculate sector drags
-        if (wind_speed <= 15.708d0) then
-            left_drag = 7.5d-4 + 6.6845d-05 * wind_speed
-            right_drag = left_drag
-            rear_drag = left_drag
-        else if (15.708d0 < wind_speed .and. wind_speed <= 18.7d0) then
-            left_drag = 1.8d-3
-            right_drag = 7.5d-4 + 6.6845d-05 * wind_speed
-            rear_drag = right_drag
-        else if (18.7d0 < wind_speed .and. wind_speed <= 25.d0) then
-            left_drag = 1.8d-3
-            right_drag = 2.0d-3
-            rear_drag = right_drag
-        else if (25.0d0 < wind_speed .and. wind_speed <= 30.d0) then
-            left_drag = 1.8d-3 + 5.4d-3 * (wind_speed - 25.d0)
-            right_drag = 2.0d-3
-            rear_drag = right_drag
-        else if (30.0d0 < wind_speed .and. wind_speed <= 35.d0) then
-            left_drag = 4.5d-3 - 2.33333d-4 * (wind_speed - 30.d0)
-            right_drag = 2.0d-3
-            rear_drag = right_drag
-        else if (35.0d0 < wind_speed .and. wind_speed <= 45.d0) then
-            left_drag = 4.5d-3 - 2.33333d-4 * (wind_speed - 30.d0)
-            right_drag = 2.d-3 + 1.d-4 * (wind_speed - 35.d0)
-            rear_drag = 2.d-3 - 1.d-4 * (wind_speed - 35.d0)
-        else
-            left_drag = 1.0d-3
-            right_drag = 3.0d-3
-            rear_drag = left_drag
+        weight = 0.d0
+        drag = garret_wind_drag_limit(wind_speed, 3.5d-3)
+
+        ! Calculate sector weights
+        if (0.d0 <= theta .and. theta <= 40.d0) then
+            ! Transition from left (3) to right (1)
+            weight(3) = 1.d0 - theta / 40.d0
+            weight(1) = theta / 40.d0
+        else if (40.d0 <= theta .and. theta <= 130.d0) then
+            ! Right (1)
+            weight(1) = 1.d0
+        else if (130.d0 <= theta .and. theta <= 170.d0) then
+            ! Transition from right (1) to rear (2)
+            weight(1) = 1.d0 - (theta - 130.d0) / 40.d0
+            weight(2) = (theta - 130.d0) / 40.d0
+        else if (170.d0 <= theta .and. theta <= 220.d0) then
+            ! Rear (2)
+            weight(2) = 1.d0
+        else if (220.d0 <= theta .and. theta <= 260.d0) then
+            ! Transition from rear (2) to left (3)
+            weight(2) = 1.d0 - (theta - 220.d0) / 40.d0
+            weight(3) = (theta - 220.d0) / 40.d0
+        else if (260.d0 <= theta .and. theta <= 360.d0) then
+            ! Left (3)
+            weight(3) = 1.d0
         endif
 
-        ! Calculate weights
-        ! Left sector =  [240.d0,  20.d0] - Center = 310
-        ! Left Right sector = [310, 85] - Width = 145
-        ! Right sector = [ 20.d0, 150.d0] - Center = 85
-        ! Right Rear sector = [85, 195] - Width = 
-        ! Rear sector =  [150.d0, 240.d0] - 195
-        ! Rear-Left sector = [85, 195] - Width = 
-
-        ! Left - Right sector
-        if (310.d0 < theta .and. theta <= 360.d0) then
-            weight = (theta - 310.d0) / 135.d0
-            drag = [left_drag, right_drag]
-
-        ! Left - Right sector
-        else if (0.d0 < theta .and. theta <= 85.d0) then
-            weight = (theta + 50.d0) / 135.d0
-            drag = [left_drag, right_drag]
-
-        ! Right - Rear sector
-        else if (85.d0 < theta .and. theta <= 195.d0) then
-            weight = (theta - 85.d0) / 110.d0
-            drag = [right_drag, rear_drag]
-
-        ! Rear - Left sector
-        else if (195.d0 < theta .and. theta <= 310.d0) then
-            weight = (theta - 195.d0) / 115.d0
-            drag = [rear_drag, left_drag]
+        ! Calculate wind drag for sector 1 (right)
+        if (wind_speed <= 35.d0) then
+            drag(1) = min(2.d-3, drag(1))
+        else if (35.d0 <= wind_speed .and. wind_speed <= 45.d0) then
+            drag(1) = 2.d-3 + 1.d-3 * (wind_speed - 35.d0) / 10.d0
+        else if (45.d0 <= wind_speed) then
+            drag(1) = 3.d-3
         endif
 
-        wind_drag = drag(1) * (1.d0 - weight) + drag(2) * weight
+        ! Calculate wind drag for sector 2 (rear)
+        if (wind_speed <= 35.d0) then
+            drag(2) = min(2.d-3, drag(2))
+        else if (35.d0 <= wind_speed .and. wind_speed <= 45.d0) then
+            drag(2) = 2.d-3 - 1.d-3 * (wind_speed - 35.d0) / 10.d0
+        else if (45.d0 <= wind_speed) then
+            drag(2) = 1.d-3
+        endif
 
-        ! Apply wind drag limit - May want to do this...
-        ! wind_drag = min(WIND_DRAG_LIMIT, wind_drag)
-    
+        ! Calculate wind drag for sector 3 (left)
+        if (drag(3) > 1.8d-3) then
+            if (wind_speed <= 25.d0) then
+                drag(3) = 1.8d-3
+            else if (25.d0 <= wind_speed .and. wind_speed <= 30.d0) then
+                drag(3) = 1.8d-3 + 2.7d-3 * (wind_speed - 25.d0) / 5.d0
+            else if (30.d0 <= wind_speed .and. wind_speed <= 45.d0) then
+                drag(3) = 4.5d-3 - 3.5d-3 * (wind_speed - 30.d0) / 15.d0
+            else if (45.d0 <= wind_speed) then
+                drag(3) = 1.d-3
+            endif
+        endif
+
+        ! Use weighted average
+        wind_drag = dot_product(weight, drag)
+
     end function powell_wind_drag
 
 
@@ -340,9 +333,27 @@ contains
         ! Input
         real(kind=8), intent(in) :: wind_speed, theta
   
-        wind_drag = min(WIND_DRAG_LIMIT, (0.75d0 + 0.067d0 * wind_speed) * 1d-3)      
+        wind_drag = garret_wind_drag_limit(wind_speed, 2.d-3)
     
     end function garret_wind_drag
+
+
+    ! ===================================
+    !  Helper for Garret Based Wind Drag
+    ! ===================================
+    real(kind=8) pure function garret_wind_drag_limit(wind_speed,      &
+                                                      wind_drag_limit) &
+                                               result(wind_drag)
+
+        implicit none
+
+        ! Input
+        real(kind=8), intent(in) :: wind_speed, wind_drag_limit
+
+        wind_drag = min(wind_drag_limit,                               &
+                        1.d-3 * (0.75d0 + 0.067d0 * wind_speed))
+
+    end function garret_wind_drag_limit
 
 
     ! ==================================================================
