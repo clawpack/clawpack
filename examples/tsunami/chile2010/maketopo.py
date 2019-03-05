@@ -28,7 +28,7 @@ def get_topo(makeplots=False):
     """
     from clawpack.geoclaw import topotools
     topo_fname = 'etopo10min120W60W60S0S.asc'
-    url = 'http://www.geoclaw.org/topo/etopo/' + topo_fname
+    url = 'http://depts.washington.edu/clawpack/geoclaw/topo/etopo/' + topo_fname
     clawpack.clawutil.data.get_remote_file(url, output_dir=scratch_dir, 
             file_name=topo_fname, verbose=True)
 
