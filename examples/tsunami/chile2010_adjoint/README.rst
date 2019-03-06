@@ -80,17 +80,19 @@ In `setrun.py`, the following flags are currently set (in various places)::
 
 Setting `adjointdata.use_adjoint` to `False` will go back to using standard
 flagging based on the magnitude of undivided differences or an estimate of
-the one-step error.
+the one-step error.  Flagging based on Richardson estimate of the 1-step
+error does not generally work well in GeoClaw (with or without the adjoint
+inner product), so using `flag2refine` is recommended.
 
 The refinement tolerance is set appropriate for the adjoint flagging. Note
 that waves are no longer refined after passing the DART gauge.
+The location of interest is specified in `adjoint/maketopo.py`, where
+the functional used as initial data (at the final time) in the adjoint
+problem is set to be a Gaussian hump centered at the DART gauge location.
 
 The time period of interest can be changed to some subset of the full run
 time.  Try changing this to see how the AMR adapts to only capture waves
 reaching the gauge over a shorter specified time period, e.g. try `t1 =
 3*3600.` and `t2 = 4.5*3600.` to capture only the leading wave at the gauge.
 
-Note that the location of interest is specified in `adjoint/maketopo.py`, where
-the functional used as initial data (at the final time) in the adjoint
-problem is set to be a Gaussian hump centered at the DART gauge location.
 
