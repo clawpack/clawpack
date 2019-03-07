@@ -12,35 +12,28 @@
 # The commands below check out the master branch of each repository
 # and pull any recent changes.
 
-git checkout master
-git pull
+CLAW=$PWD
+echo In directory $CLAW checking out master and pulling from origin
 
-cd pyclaw
-git checkout master
-git pull
+for repo in $CLAW pyclaw classic riemann amrclaw geoclaw clawutil visclaw
+do
+    cd $repo
+    echo "In repository $repo"
+    git checkout master
+    git pull origin master
+    cd $CLAW
+done
 
-cd ../classic
-git checkout master
-git pull
+# Create claw_git_status and claw_git_diff files to record what's checked out. 
+# Requires $CLAW set to this directory above to work properly:
 
-cd ../amrclaw
-git checkout master
-git pull
+python ./clawutil/src/python/clawutil/claw_git_status.py
+d=$(date +%Y-%m-%d)
+f1=${d}_claw_git_status.txt
+f2=${d}_claw_git_diff.txt
+mv claw_git_status.txt $f1
+mv claw_git_diffs.txt $f2
+echo "Current git status listed in files"
+echo "     $MYCLAW/$f1"
+echo "     $MYCLAW/$f2"
 
-cd ../geoclaw
-git checkout master
-git pull
-
-cd ../clawutil
-git checkout master
-git pull
-
-cd ../visclaw
-git checkout master
-git pull
-
-cd ../riemann
-git checkout master
-git pull
-
-cd ..
