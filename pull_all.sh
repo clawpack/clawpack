@@ -34,6 +34,6 @@ f2=${d}_claw_git_diff.txt
 mv claw_git_status.txt $f1
 mv claw_git_diffs.txt $f2
 echo "Current git status listed in files"
-echo "     $MYCLAW/$f1"
-echo "     $MYCLAW/$f2"
+echo "     ./$f1"
+echo "     ./$f2"
 
