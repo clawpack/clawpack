@@ -46,8 +46,9 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         # Running the adjoint problem
         os.chdir(adjointdir)
         os.system('make -s topo') # also make qinit for adjoint
+        os.system('make -s data')
         os.system('make -s new')
-        os.system('make .output > /dev/null')
+        os.system('make .output > output.txt')
         os.chdir(testdir)
 
 
