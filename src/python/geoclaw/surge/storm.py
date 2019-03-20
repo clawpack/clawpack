@@ -43,6 +43,7 @@ import datetime
 
 import numpy
 
+import matplotlib.pyplot as plt
 import clawpack.geoclaw.units as units
 import clawpack.clawutil.data
 
@@ -65,12 +66,12 @@ ATCF_basins = {"AL": "Atlantic",
 TCVitals_Basins = {"L": "North Atlantic",
                    "E": "North East Pacific",
                    "C": "North Central Pacific",
- 		   "W": "North West Pacific",
-		   "B": "Bay of Bengal (North Indian Ocean)",
-		   "A": "Arabian Sea (North Indian Ocean)",
-		   "Q": "South Atlantic",
-		   "P": "South Pacific",
-		   "S": "South Indian Ocean"}
+           "W": "North West Pacific",
+           "B": "Bay of Bengal (North Indian Ocean)",
+           "A": "Arabian Sea (North Indian Ocean)",
+           "Q": "South Atlantic",
+           "P": "South Pacific",
+           "S": "South Indian Ocean"}
 
 # Tropical Cyclone Designations
 # see https://www.nrlmry.navy.mil/atcf_web/docs/database/new/abrdeck.html
@@ -108,96 +109,9 @@ hurdat_special_entries = {"L": "landfall",
 missing_data_warning_str = """*** Cannot yet automatically determine the
     maximum wind radius.  Will write out GeoClaw
     formats but note that these will not work
-    when running GeoClaw currently."""
-
-# Function to calculate maximum wind radius
-def calculate_max_wind_radius(storm, rho_air, ambient_pressure):
-    """
-    Based on equations in the paper [1] values of parameter A and parameter
-    B are calculated by using speed of maximum wind, longest radius of 30
-    and 50 kts wind data. Meanwhile, radius of maxium wind is obtained as well.
-        
-    :Input:
-    - *storm* (object) Storm.
-    - *rho_air* (float) Air density.
-    - *ambient_pressure* (float) Ambient pressure. Default units are Pascals.
-        
-        
-    :Output:
-    - *A* (ndarray(:)) Required parameter to calculate radius of maximum wind.
-    - *B* (ndarray(:)) Required parameter to calculate radius of maximum wind.
-        
-    1. Holland, G. J. An Analytic Model of the Wind and Pressure Profiles in
-    Hurricanes. Monthly Weather Review 108, 1212-1218 (1980).
-    """
-    
-    # Required parameters in calculation
-    # w - the average angular velocity of Earth’s rotation
-    w = 7.292e-5
-    
-    # Convert 30kts to m/s
-    v30 = units.convert(float(30), 'knots', 'm/s')
-    
-    # Convert 50kts to m/s
-    v50 = units.convert(float(50), 'knots', 'm/s')
-
-    # Number of data lines in storm object
-    n = len(storm.max_wind_speed)
-    
-    A = numpy.empty(n)
-    B = numpy.empty(n)
-    
-    # Function to calculate B
-    f_B = lambda vm, pn, pc, rho: vm**2 * numpy.exp(1.0) * rho / (pn - pc)
-    
-    A_up_log = lambda r30, r50, v30, v50, f, B: ((v50 + r50 * f / 2.0)**2 -
-                     (r50 * f / 2.0)**2) / ((v30 + r30 * f / 2.0)**2
-                     - (r30 * f / 2.0)**2) * (r50 / r30)**B
-    f_A_down = lambda r30, r50, B: 1.0 / r30**B - 1.0 / r50**B
-    
-    for i in range(n):
-
-        # f - Coriolis Parameter
-        f = 2 * w * numpy.sin(storm.eye_location[i, 1] * numpy.pi / 180.0)
-        
-        # Calculate B
-        B[i] = f_B(vm=storm.max_wind_speed[i], pn=ambient_pressure,
-                pc=storm.central_pressure[i], rho=rho_air)
-        
-        # Calculate A
-        A_up_log1 = A_up_log(r30=storm.radius_30kts[i], r50=storm.radius_50kts[i],
-                             v30=v30, v50=v50, f=f, B=B[i])
-        
-        if int(A_up_log1) >= 0:
-            A_up = numpy.log(A_up_log1)
-            A_down = f_A_down(r30=storm.radius_30kts[i], r50=storm.radius_50kts[i], B=B[i])
-            A[i] = A_up / A_down
-            if int(A[i]) >= 0:
-                
-                # Calculate radius of maximum wind
-                storm.max_wind_radius[i] = units.convert(A[i]**(1.0 / B[i]), 'km', 'm')
-            else:
-                
-                # Warning for formats that have yet to to determine crticial maximum wind
-                # radius from the input data.
-                missing_data_warning_str2 = """*** Cannot yet determine the maximum wind radius.
-                Will write out GeoClaw formats but note that these will not work when running
-                GeoClaw currently."""
-
-                warnings.warn(missing_data_warning_str2)
-                storm.max_wind_radius[i] = -1
-        else:
-            
-            # Warning for formats that have yet to to determine crticial maximum wind
-            # radius from the input data.
-            missing_data_warning_str3 = """*** Cannot yet determine the maximum wind radius.
-            Will write out GeoClaw formats but note that these will not work when running
-            GeoClaw currently."""
-            
-            warnings.warn(missing_data_warning_str3)
-            storm.max_wind_radius[i] = -1
-                                                        
-    return A, B
+    when running GeoClaw currently without a custom
+    `max_wind_radius_fill` function passed as argument
+    to the `write` function."""
 
 
 # =============================================================================
@@ -227,10 +141,6 @@ class Storm(object):
        meters/second.
      - *max_wind_radius* (ndarray(:)) Radius at which the maximum wind speed
        occurs.  Default units are meters.
-     - *radius_30kts* (ndarray(:)) Radius of 30kts wind. Default units are
-       kilometers.
-     - *radius_50kts* (ndarray(:)) Radius of 50kts wind. Default units are
-       kilometers.
      - *central_pressure* (ndarray(:)) Central pressure of storm.  Default
        units are Pascals.
      - *storm_radius* (ndarray(:)) Radius of storm, often defined as the last
@@ -272,8 +182,6 @@ class Storm(object):
         self.eye_location = None
         self.max_wind_speed = None
         self.max_wind_radius = None
-        self.radius_30kts = None
-        self.radius_50kts = None
         self.central_pressure = None
         self.storm_radius = None
 
@@ -673,34 +581,34 @@ class Storm(object):
 
     def read_jma(self, path, verbose=False):
         r"""Read in JMA formatted storm file
-            
-            Note that only files that contain one storm are currently supported.
-            
-            For more details on the JMA format and getting data see
-            
-            http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html
-            
-            :Input:
-            - *path* (string) Path to the file to be read.
-            - *verbose* (bool) Output more info regarding reading.
-            
-            :Raises:
-            - *ValueError* If the method cannot find the name/year matching the
-            storm or they are not provided when *single_storm == False* then a
-            value error is risen.
-            """
-        
+
+        Note that only files that contain one storm are currently supported.
+
+        For more details on the JMA format and getting data see
+
+        http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html
+
+        :Input:
+         - *path* (string) Path to the file to be read.
+         - *verbose* (bool) Output more info regarding reading.
+
+        :Raises:
+         - *ValueError* If the method cannot find the name/year matching the
+           storm or they are not provided when *single_storm == False* then a
+           value error is risen.
+        """
+
         data_block = []
         with open(path, 'r') as JMA_file:
             # Extract header
             data = JMA_file.readline()
-            self.ID = data[6:10]
+            self.ID = data[7:10]
             num_lines = int(data[13:15])
-            self.name = data[30:51].strip()
+            self.name = data[31:50].strip()
 
             data_block = JMA_file.readlines()
         assert(num_lines == len(data_block))
-        
+
         # Parse data block
         self.t = []
         self.event = numpy.empty(num_lines, dtype=str)
@@ -708,8 +616,6 @@ class Storm(object):
         self.eye_location = numpy.empty((num_lines, 2))
         self.max_wind_speed = numpy.empty(num_lines)
         self.central_pressure = numpy.empty(num_lines)
-        self.radius_30kts = numpy.empty(num_lines)
-        self.radius_50kts = numpy.empty(num_lines)
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
         for (i, line) in enumerate(data_block):
@@ -723,48 +629,20 @@ class Storm(object):
                                             int(data[0][4:6]),
                                             int(data[0][6:])))
 
-
             # Classification, note that this is not the category of the storm
             self.classification[i] = int(data[1])
-            
+
             # Parse eye location - Always N latitude and E longitude
             self.eye_location[i, 0] = float(data[4]) / 10.0
             self.eye_location[i, 1] = float(data[3]) / 10.0
-            
-            # Intensity information
+
+            # Intensity information - current the radii are not directly given
+            # Available data includes max/min of radius of winds of 50 and
+            # 30 kts instead
             self.central_pressure[i] = units.convert(float(data[5]), 'hPa', 'Pa')
             self.max_wind_speed[i] = units.convert(float(data[6]), 'knots', 'm/s')
-            
-            # Mark if this is a shortened line - does not contain 30 and 50 kts
-            # wind radius - set those to -1 to mark them as missing
-            if len(data) < 8:
-                self.radius_30kts[i] = -1
-                self.radius_50kts[i] = -1
-            else:
-                data[7] = int(data[7]) - int(int(data[7]) / 10000) * 10000
-                data[9] = int(data[9]) - int(int(data[9]) / 10000) * 10000
-                self.radius_30kts[i] = units.convert(float(data[9]), 'nmi', 'km')
-                self.radius_50kts[i] = units.convert(float(data[7]), 'nmi', 'km')
-            
-            # Warning for formats that have yet to have a default way to determine crticial
-            # maximum wind radius from the input data. But here is a help function which
-            # can get that values
-            missing_data_warning_str1 = """*** Cannot yet automatically determine the storm radius.
-            Here is a function calculate_max_wind_radius which can be used to obtain radius of
-            maximum wind"""
-            
-            warnings.warn(missing_data_warning_str1)
+            warnings.warn(missing_data_warning_str)
             self.max_wind_radius[i] = -1
-            
-            # Warning for formats that have yet to have a default way to determine crticial
-            # storm radius from the input data
-            missing_data_warning_str2 = """*** Cannot yet automatically determine the storm radius.
-            Will write out GeoClaw formats but note that these will not work when running GeoClaw
-            currently."""
-            
-            warnings.warn(missing_data_warning_str2)
-            
-            # Current storm radius is not given
             self.storm_radius[i] = -1
 
 
@@ -1287,10 +1165,99 @@ def construct_fields(storm, r, t, model="holland_1980"):
 
 
 # Specific implementations
-def holland_1980(storm, r, t):
-    r""""""
-    raise NotImplementedError("Holland 1980 model has not been implemeted.")
-    return None, None
+def holland_1980(storm, r, t, Pn, rho_air):
+    r"""holland_1980 model combined with latitude, radius of maximum wind, speed 
+        of maximum wind, central pressure, and ambient pressure, wind and pressure 
+        profiles are obtained.
+        
+        :Input:
+        - *storm* (object) Storm.
+        - *r* (float) Radius. Default units are kilometers.
+        - *t* (float) Time of storm. Default units are days.
+        - *Pn* (float) Ambient pressure of storm. Default units are Pascals.
+        - *rho_air* (float) Air density.
+               
+        :Output:
+        - *Vr* (ndarray(:, :)) Wind Velocity at radius r at specific time
+          point.
+        - *Pr* (ndarray(:, :)) Pressure at radius r at specific time
+          point.
+        """
+    
+    # Number of data lines in storm object
+    num = len(storm.t)
+    
+    # Function definition of wind field
+    v = lambda r, rho_air, A, B, Pn, Pc, f: (A * B * (Pn - Pc) * numpy.exp(-A / r**B)
+        / (rho_air * r**B) + (r * f / 2.0 )**2)**(0.5) - r * f / 2.0
+        
+    # Function definition of pressure field
+    p = lambda r, A, B, Pn, Pc: (Pc + (Pn - Pc) * numpy.exp(-A / r**B)) / 100.0
+    
+    # Radius of maximum wind
+    rm = storm.max_wind_radius
+    
+    for i in range(num):
+        if i < num-1:
+            n1 = 1e10
+            n2 = -1e10
+            s = -1000
+            q = -1000
+            for j in range(i+1):
+                if rm[j] != -1:
+                    n1 = (storm.t[j] - storm.time_offset).total_seconds()
+                    s = j
+
+            for l in range(i+1, num):
+                if (storm.t[l] != storm.t[i]) & (rm[l] != -1):
+                    n2 = (storm.t[l] - storm.time_offset).total_seconds()
+                    q = l
+                    break
+        
+            # Covert input t to total seconds
+            m = t * 24.0 * 60.0**2
+            if (m >= n1) & (m <= n2):
+
+                # Radio of distance between t and t[s] and distance between t[s]
+                # and t[q]
+                l = (m - n1) / (n2 - n1)
+                
+                # Speed of Maximum Wind
+                vm1 = storm.max_wind_speed[s]
+                vm2 = storm.max_wind_speed[q]
+                vm = vm1 + (vm2 - vm1) * l
+                
+                # Convert latitude of center of the storm to radian
+                phi1 = storm.eye_location[s, 1] * numpy.pi / 180.0
+                phi2 = storm.eye_location[q, 1] * numpy.pi / 180.0
+                phi = phi1 + (phi2 - phi1) * l
+            
+                # Central pressure of the storm
+                Pc1 = storm.central_pressure[s]
+                Pc2 = storm.central_pressure[q]
+                Pc = Pc1 + (Pc2 - Pc1) * l
+                
+                # Radius of maximum wind
+                rmax1 = rm[s] / 1000.0
+                rmax2 = rm[q] / 1000.0
+                rmax = rmax1 + (rmax2 - rmax1) * l
+                
+                # The average angular velocity of Earth’s rotation
+                w1 = 7.292e-5
+                
+                # Coriolis parameter
+                f1 = 2.0 * w1 * numpy.sin(phi)
+                B1 = vm**2 * numpy.exp(1.0) * rho_air / (Pn - Pc)
+                A1 = rmax**B1
+                Vr = v(r, rho_air=rho_air, A=A1, B=B1, Pn=Pn, Pc=Pc, f=f1)
+                Pr = p(r, A=A1, B=B1, Pn=Pn, Pc=Pc)
+                break
+        else:
+            Vr = numpy.linspace(0, 0, len(r))
+            Pr = numpy.linspace(Pn / 100.0, Pn / 100.0, len(r))
+            
+    return Vr, Pr
+
 
 
 def holland_2010(storm, r, t):
@@ -1303,6 +1270,61 @@ def cle_2015(storm, r, t):
     r""""""
     raise NotImplementedError("CLE 2015 model has not been implemeted.")
     return None, None
+
+# =============================================================================
+# Plot wind profiles
+def wind_profile(storm, r, t, Pn, rho_air):
+    r"""Based on holland_1980 model, plot wind field for every specific
+        time point.
+    
+        :Input:
+        - *storm* (object) Storm.
+        - *t* (ndarray(:)) Dates compared with landfall time. Default
+          units are days.
+        - *rho_air* (float) Air density.
+        - *ambient_pressure* (float) Ambient pressure. Default units are
+          Pascals.
+        """
+
+    num = len(t)
+    for i in range(num):
+        a = holland_1980(storm, r, t[i], Pn, rho_air)
+        fig1 = plt.figure()
+        ax1 = fig1.gca()
+        ax1.plot(r, a[0], 'b')
+        ax1.set_ylim(0, 70)
+        ax1.set_xlabel('r km')
+        ax1.set_ylabel('v(r) m/s')
+        plt.title("Wind Profile at time %s" % t[i])
+        plt.savefig('Wind-Profile-%s.png' % (i + 1))
+    return None
+
+# Plot pressure profiles
+def pressure_profile(storm, r, t, Pn, rho_air):
+    r"""Based on holland_1980 model, plot pressure field for every specific
+        time point.
+        
+        :Input:
+        - *storm* (object) Storm.
+        - *t* (ndarray(:)) Dates compared with landfall time. Default
+          units are days.
+        - *rho_air* (float) Air density.
+        - *ambient_pressure* (float) Ambient pressure. Default units are
+          Pascals.
+        """
+
+    num = len(t)
+    for i in range(num):
+        a = holland_1980(storm, r, t[i], Pn, rho_air)
+        fig2 = plt.figure()
+        ax2 = fig2.gca()
+        ax2.plot(r, a[1], 'b')
+        ax2.set_ylim(900, 1020)
+        ax2.set_xlabel('r km')
+        ax2.set_ylabel('P(r) hpa')
+        plt.title("Pressure Profile at time %s" % t[i])
+        plt.savefig('Pressure-Profile-%s.png' % (i + 1))
+    return None
 
 
 # =============================================================================
