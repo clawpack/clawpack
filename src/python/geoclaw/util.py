@@ -219,8 +219,6 @@ def fetch_noaa_tide_data(station, begin_date, end_date, time_zone='GMT',
 
                 # if there were no errors, then cache response
                 save_to_cache(cache_path, text)
-                print(type(data))
-                print(data)
                 return parse(data, col_idx, col_types, header=False)
 
     def get_noaa_params(product):
