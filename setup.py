@@ -235,7 +235,7 @@ if __name__ == '__main__':
         # not a real install
         from setuptools import setup
         setuptools_dict = dict(
-            install_requires = ['numpy >= 1.6',
+            install_requires = ['numpy >= 1.14',
                                 'matplotlib >= 1.0.1',
                                 ],
             extras_require = {'petclaw': ['petsc4py >= 1.2'],
