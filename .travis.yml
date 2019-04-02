@@ -16,15 +16,14 @@ before_install:
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - git submodule init
-  - git submodule update
+  - git submodule update -j 6
   - rm -rf geoclaw
   - ln -s ../ geoclaw
   
 install:
-  - export PYTHONPATH=${PWD}:$PYTHONPATH
+  - pip install -e .
   - export CLAW=${PWD}
   - export FC=gfortran
-  - cd geoclaw
   
 before_script:
   # Print CPU info for debugging purposes:
