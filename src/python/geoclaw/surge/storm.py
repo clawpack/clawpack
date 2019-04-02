@@ -165,7 +165,7 @@ class Storm(object):
     _supported_formats = {"geoclaw": ["GeoClaw", "http://www.clawpack.org/storms"],
                           "atcf": ["ATCF", "http://www.nrlmry.navy.mil/atcf_web/docs/database/new/database.html"],
                           "hurdat": ["HURDAT", "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"],
-                          "ibtracs": ["IBTrACS", "ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"],
+                          "ibtracs": ["IBTrACS", "https://www.ncdc.noaa.gov/ibtracs/index.php?name=ib-v4-access"],
                           "jma": ["JMA", "http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html"],
                           "imd": ["IMD", "http://www.rsmcnewdelhi.imd.gov.in/index.php"],
                           "tcvitals": ["TC-Vitals", "http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm"]}
@@ -239,7 +239,7 @@ class Storm(object):
                         "files:",
                         " - ATCF - http://ftp.nhc.noaa.gov/atcf/archive/",
                         " - HURDAT - http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html",
-                        " - IBTrACS - ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional",
+                        " - IBTrACS - https://www.ncdc.noaa.gov/ibtracs/index.php?name=ib-v4-access",
                         " - JMA - http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/besttrack.html",
                         " - IMD - http://www.rsmcnewdelhi.imd.gov.in/index.php",
                         " - TCVITALS - http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm")
@@ -452,59 +452,66 @@ class Storm(object):
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
-    def read_ibtracs(self, path, storm_name, year, start_date=None):
+    def read_ibtracs(self, path, sid=None, storm_name=None, year=None, start_date=None):
         r"""Read in IBTrACS formatted storm file
 
-        This reads in the netcdf-formatted IBTrACS v4 BETA data (current release
-        as of 10/8/2018). The .nc file passed as *path* must contain a storm 
-        matching *storm_name* and *year*. This function will be updated,
-        if needed, once the BETA version becomes an operational release.
+        This reads in the netcdf-formatted IBTrACS v4 data. You must either pass 
+        the *sid* of the storm (a unique identifier supplied by IBTrACS) OR 
+        *storm_name* and *year*. The latter will not be unique for unnamed storms, 
+        so you may optionally pass *start_date* as well.
 
         NOTE: Thus far, only the reading of hurdat/atcf-based best tracks (i.e. USA
         tracks) is supported.
 
         TODO: account for data formats from other reporting agencies
 
-        For more details on the IBTrACS v4 BETA format and getting data see
-
-        ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional/
-
         :Input:
          - *path* (string) Path to the file to be read.
-         - *storm_name* (string) name of storm of interest (NAME field in IBTrACS).
-         - *year* (int) year of storm of interest.
-         - *start_date* (:py:class:`datetime.datetime`) If storm is not named, will
-             find closest unnamed storm to this start date.
+         - *sid* (string, optional) IBTrACS-supplied unique track identifier.
+             Either *sid* OR *storm_name* and *year* must not be None.
+         - *storm_name* (string, optional) name of storm of interest 
+             (NAME field in IBTrACS). Either *sid* OR *storm_name* and 
+             *year* must not be None.
+         - *year* (int, optional) year of storm of interest.
+             Either *sid* OR *storm_name* and *year* must not be None.
+         - *start_date* (:py:class:`datetime.datetime`, optional) If storm is not 
+             named, will find closest unnamed storm to this start date. Only 
+             used for unnamed storms when specifying *storm_name* and *year*
+             does not uniquely identify storm.
 
         :Raises:
-         - *ValueError* If the method cannot find the name/year matching the
-           storm then a value error is risen.
+         - *ValueError* If the method cannot find the matching storm then a 
+             value error is risen.
         """
 
         # imports that you don't need for other read functions
         try:
             import xarray as xr
-            from pandas import to_datetime
         except ImportError as e:
-            print("IBTrACS currently requires xarray and pandas to work.")
+            print("IBTrACS currently requires xarray to work.")
             raise e
 
-        storm_name = storm_name.upper()
-        
-        # in case storm is unnamed
-        if storm_name in ['NOT_NAMED','UNNAMED','NO-NAME']:
-            storm_name = 'NOT_NAMED'
+        # only allow one method for specifying storms
+        if (sid is not None) and ((storm_name is not None) or (year is not None)):
+            raise ValueError('Cannot specify both *sid* and *storm_name* or *year*.')
             
         with xr.open_dataset(path) as ds:
 
-            ## SLICE IBTRACS DATASET
-
-            # match on storm-name and year
-            storm_match = (ds.name == storm_name.encode())
-            year_match = (ds.time.dt.year == year).any(dim='date_time')
-            ds = ds.sel(storm=(year_match & storm_match)).squeeze()
+            # match on sid
+            if sid is not None:
+                match = ds.sid == sid.encode()
+            # or match on storm_name and year
+            else:
+                storm_name = storm_name.upper()
+                # in case storm is unnamed
+                if storm_name.upper() in ['UNNAMED','NO-NAME']:
+                    storm_name = 'NOT_NAMED'
+                storm_match = (ds.name == storm_name.encode())
+                year_match = (ds.time.dt.year == year).any(dim='date_time')
+                match = storm_match & year_match
+            ds = ds.sel(storm=match).squeeze()
             
-            # make sure
+            # occurs if we have 0 or >1 matching storms
             if 'storm' in ds.dims.keys():
                 if ds.storm.shape[0] == 0:
                     raise ValueError('Storm/year not found in provided file')
