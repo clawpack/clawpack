@@ -95,10 +95,9 @@ def test_storm_IO(save=False):
                 file_suffix = 'nc'
                 # Check here to see if we have xarray and pandas
                 try:
-                    import pandas
                     import xarray
                 except ImportError as e:
-                    print("Skipping IBTrACS IO test, missing pandas and xarray.")
+                    print("Skipping IBTrACS IO test, missing xarray.")
                     continue
 
             else:
@@ -111,8 +110,11 @@ def test_storm_IO(save=False):
             # Read in test data and write it back out in the GeoClaw format
             # for IBTrACS input, need storm/year info
             if file_format=='ibtracs':
-                kwargs = {'storm_name':'IKE',
-                         'year':2008}
+                # test for Ike using EITHER storm_name and year OR
+                # sid
+#                 kwargs = {'storm_name':'IKE',
+#                          'year':2008}
+                kwargs = {'sid': '2008245N17323'}
             else:
                 kwargs = {}
             test_storm = storm.Storm(input_path, file_format=file_format, **kwargs)
