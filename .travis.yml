@@ -16,6 +16,8 @@ before_install:
   - git submodule update -j 6
   - rm -rf geoclaw
   - ln -s ../ geoclaw
+  # Print NumPy version being used
+  - python -c "import numpy; print(numpy.__version__)"
   
 install:
   - pip install -e .
