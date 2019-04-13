@@ -452,35 +452,51 @@ class Storm(object):
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
-    def read_ibtracs(self, path, sid=None, storm_name=None, year=None, start_date=None):
+    def read_ibtracs(self, path, sid=None, storm_name=None, year=None, start_date=None,
+                     agency_pref = ['wmo',
+                                   'usa',
+                                   'tokyo',
+                                   'newdelhi',
+                                   'reunion',
+                                   'bom',
+                                   'nadi',
+                                   'wellington',
+                                   'cma',
+                                   'hko',
+                                   'ds824',
+                                   'td9636',
+                                   'td9635',
+                                   'neumann',
+                                   'mlc']):
         r"""Read in IBTrACS formatted storm file
 
-        This reads in the netcdf-formatted IBTrACS v4 data. You must either pass 
-        the *sid* of the storm (a unique identifier supplied by IBTrACS) OR 
-        *storm_name* and *year*. The latter will not be unique for unnamed storms, 
-        so you may optionally pass *start_date* as well.
-
-        NOTE: Thus far, only the reading of hurdat/atcf-based best tracks (i.e. USA
-        tracks) is supported.
-
-        TODO: account for data formats from other reporting agencies
+        This reads in the netcdf-formatted IBTrACS v4 data. You must either pass
+        the *sid* of the storm (a unique identifier supplied by IBTrACS) OR
+        *storm_name* and *year*. The latter will not be unique for unnamed storms,
+        so you may optionally pass *start_date* as well. The `wmo_\*` variable is
+        used when non-missing, with missing values filled in by the corresponding
+        variable of the agency specified in `wmo_agency` and/or `usa_agency`. If
+        still missing, the other agencies are checked in order of *agency_pref* to
+        see if any more non-missing values are available.
 
         :Input:
          - *path* (string) Path to the file to be read.
          - *sid* (string, optional) IBTrACS-supplied unique track identifier.
              Either *sid* OR *storm_name* and *year* must not be None.
-         - *storm_name* (string, optional) name of storm of interest 
-             (NAME field in IBTrACS). Either *sid* OR *storm_name* and 
+         - *storm_name* (string, optional) name of storm of interest
+             (NAME field in IBTrACS). Either *sid* OR *storm_name* and
              *year* must not be None.
          - *year* (int, optional) year of storm of interest.
              Either *sid* OR *storm_name* and *year* must not be None.
-         - *start_date* (:py:class:`datetime.datetime`, optional) If storm is not 
-             named, will find closest unnamed storm to this start date. Only 
+         - *start_date* (:py:class:`datetime.datetime`, optional) If storm is not
+             named, will find closest unnamed storm to this start date. Only
              used for unnamed storms when specifying *storm_name* and *year*
              does not uniquely identify storm.
+         - *agency_pref* (list, optional) Preference order to use if `wmo_\*` variable
+             is missing and `wmo_agency` and `usa_agency` are also missing.
 
         :Raises:
-         - *ValueError* If the method cannot find the matching storm then a 
+         - *ValueError* If the method cannot find the matching storm then a
              value error is risen.
         """
 
@@ -494,7 +510,7 @@ class Storm(object):
         # only allow one method for specifying storms
         if (sid is not None) and ((storm_name is not None) or (year is not None)):
             raise ValueError('Cannot specify both *sid* and *storm_name* or *year*.')
-            
+
         with xr.open_dataset(path) as ds:
 
             # match on sid
@@ -510,7 +526,7 @@ class Storm(object):
                 year_match = (ds.time.dt.year == year).any(dim='date_time')
                 match = storm_match & year_match
             ds = ds.sel(storm=match).squeeze()
-            
+
             # occurs if we have 0 or >1 matching storms
             if 'storm' in ds.dims.keys():
                 if ds.storm.shape[0] == 0:
@@ -518,37 +534,94 @@ class Storm(object):
                 else:
                     # see if a date was provided for multiple unnamed storms
                     assert start_date is not None, ValueError('Multiple storms identified and no start_date specified.')
-                    
+
                     start_times = ds.time.isel(date_time=0)
                     start_date = numpy.datetime64(start_date)
-                    
+
                     # find storm with start date closest to provided
                     storm_ix = abs(start_times - start_date).argmin()
                     ds = ds.isel(storm=storm_ix).squeeze()
                     assert 'storm' not in ds.dims.keys()
 
-            # include only valid time points for this storm
-            # i.e. when we have max wind values
-
-            # try using wmo_wind first, then usa_wind
-            if ds.wmo_wind.max().values >= 0:
-                valid = ds.wmo_wind >= 0
-                wind_src = 'wmo_wind'
-                pres_src = 'wmo_pres'
-            elif ds.usa_wind.max().values >= 0:
-                valid = ds.usa_wind >= 0
-                wind_src = 'usa_wind'
-                pres_src = 'usa_pres'
-            else:
+            # cut down dataset to only non-null times
+            valid_t = ds.time.notnull()
+            if valid_t.sum() == 0:
                 raise ValueError('No valid wind speeds found for this storm.')
+            ds = ds.sel(date_time=valid_t)
+
+
+            # list of the agencies that correspond to 'usa_*' variables
+            usa_agencies = [b'atcf', b'hurdat_atl', b'hurdat_epa', b'jtwc_ep',
+                           b'nhc_working_bt', b'tcvightals', b'tcvitals']
+
+
+            ## Create mapping from wmo_ or usa_agency
+            ## to the appropriate variable
+            agency_map = {b'':agency_pref.index('wmo')}
+            # account for multiple usa agencies
+            for a in usa_agencies:
+                agency_map[a] = agency_pref.index('usa')
+            # map all other agencies to themselves
+            for i in [a for a in agency_pref if a not in ['wmo','usa']]:
+                agency_map[i.encode('utf-8')] = agency_pref.index(i)
+
+            # fill in usa as provider if usa_agency is
+            # non-null when wmo_agency is null
+            provider = ds.wmo_agency.where(ds.wmo_agency!=b'',ds.usa_agency)
+
+            # get index into from agency that is wmo_provider
+            def map_val_to_ix(a):
+                func = lambda x: agency_map[x]
+                return xr.apply_ufunc(func,a, vectorize=True)
+            pref_agency_ix=map_val_to_ix(provider)
+
+            ## GET MAX WIND SPEED and PRES
+            pref_vals = {}
+            for v in ['wind','pres']:
+                all_vals = ds[['{}_{}'.format(i,v) for i in agency_pref]].to_array(dim='agency')
+
+                # get wmo value
+                val_pref = ds['wmo_'+v]
+
+                # fill this value in as a second-best
+                pref_2 = all_vals.isel(agency=pref_agency_ix)
+                val_pref = val_pref.fillna(pref_2)
+
+                # now use the agency_pref order to fill in
+                # any remaining values as third best
+                best_ix = all_vals.notnull().argmax(dim='agency')
+                pref_3 = all_vals.isel(agency=best_ix)
+                val_pref = val_pref.fillna(pref_3)
+
+                # add to dict
+                pref_vals[v] = val_pref
+
+
+            ## THESE CANNOT BE MISSING SO DROP
+            ## IF EITHER MISSING
+            valid = pref_vals['wind'].notnull() & pref_vals['pres'].notnull()
             ds = ds.sel(date_time=valid)
+            for i in ['wind','pres']:
+                pref_vals[i] = pref_vals[i].sel(date_time=valid)
+
+
+            ## GET RMW and ROCI
+            ## (these can be missing)
+            for r in ['rmw','roci']:
+                order = ['{}_{}'.format(i,r) for i in agency_pref if
+                                 '{}_{}'.format(i,r) in ds.data_vars.keys()]
+                vals = ds[order].to_array(dim='agency')
+                best_ix = vals.notnull().argmax(dim='agency')
+                val_pref = vals.isel(agency=best_ix)
+                pref_vals[r] = val_pref
+
 
             ## CONVERT TO GEOCLAW FORMAT
 
             # assign basin to be the basin where track originates
             # in case track moves across basins
             self.basin = ds.basin.values[0].astype(str)
-            self.name = storm_name
+            self.name = ds.name.astype(str)
             self.ID = ds.sid.astype(str).item()
 
             # convert datetime64 to datetime.datetime
@@ -575,12 +648,12 @@ class Storm(object):
             # Intensity information - for now, including only common, basic intensity
             # info.
             # TODO: add more detailed info for storms that have it
-            self.max_wind_speed = units.convert(ds[wind_src],'knots','m/s').values
-            self.central_pressure = units.convert(ds[pres_src],'mbar','Pa').values
-            self.max_wind_radius = numpy.where(ds.usa_rmw >= 0,
-                units.convert(ds.usa_rmw,'nmi','m'),-1)
-            self.storm_radius = numpy.where(ds.usa_roci >=0,
-                units.convert(ds.usa_roci.values,'nmi','m'),-1)
+            self.max_wind_speed = units.convert(pref_vals['wind'],'knots','m/s').where(pref_vals['wind'].notnull(),-1).values
+            self.central_pressure = units.convert(pref_vals['pres'],'mbar','Pa').where(pref_vals['pres'].notnull(),-1).values
+            self.max_wind_radius = units.convert(pref_vals['rmw'],'nmi','m').where(pref_vals['rmw'].notnull(),-1).values
+            self.storm_radius = units.convert(pref_vals['roci'],'nmi','m').where(pref_vals['roci'].notnull(),-1).values
+
+            # warn if you have missing vals for RMW or ROCI
             if (self.max_wind_radius.max()) == -1 or (self.storm_radius.max() == -1):
                 warnings.warn(missing_data_warning_str)
 
