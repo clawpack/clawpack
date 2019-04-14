@@ -115,8 +115,18 @@ def test_storm_IO(save=False):
 #                 kwargs = {'storm_name':'IKE',
 #                          'year':2008}
                 kwargs = {'sid': '2008245N17323'}
+                
+                # test the fill_radius_w_other_source func
+                atcf_path = os.path.join(testdir, "data", "storm", "atcf.txt")
+                storm_atcf = storm.Storm(atcf_path, file_format='ATCF')
+                def fill_mwr(t, this_storm):
+                    return storm.fill_rad_w_other_source(t, this_storm, storm_atcf, 'max_wind_radius')
+                def fill_rad(t, this_storm):
+                    return storm.fill_rad_w_other_source(t, this_storm, storm_atcf, 'storm_radius')
             else:
                 kwargs = {}
+                fill_mwr = None
+                fill_rad = None
             test_storm = storm.Storm(input_path, file_format=file_format, **kwargs)
             
             # Temporary testing thing to get around missing data in formats that
@@ -125,11 +135,15 @@ def test_storm_IO(save=False):
                 test_storm.max_wind_radius[:] = 0.0
                 test_storm.storm_radius[:] = 0.0
 
-            test_storm.write(out_path, file_format="geoclaw")
+            test_storm.write(out_path, file_format="geoclaw",
+                             max_wind_radius_fill = fill_mwr,
+                             storm_radius_fill = fill_rad)
 
             # Save new geoclaw test files into check_path if requested
             if save:
-                test_storm.write(check_path, file_format="geoclaw")
+                test_storm.write(check_path, file_format="geoclaw",
+                             max_wind_radius_fill = fill_mwr,
+                             storm_radius_fill = fill_rad)
 
             # Check geoclaw files
             check_geoclaw([out_path, check_path])
