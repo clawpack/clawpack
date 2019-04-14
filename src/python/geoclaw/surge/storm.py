@@ -623,7 +623,7 @@ class Storm(object):
             # assign basin to be the basin where track originates
             # in case track moves across basins
             self.basin = ds.basin.values[0].astype(str)
-            self.name = ds.name.astype(str)
+            self.name = ds.name.astype(str).item()
             self.ID = ds.sid.astype(str).item()
 
             # convert datetime64 to datetime.datetime
