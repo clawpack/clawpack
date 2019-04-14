@@ -26,7 +26,6 @@ workflow in a `setrun.py` file would do the following:
     - ATCF (reading only)
     - HURDAT (reading only)
     - IBTrACS (reading only)
-    - Kerry Emanuel (reading only)
     - JMA (reading only)
     - IMD (planned)
     - tcvitals (reading only)
@@ -167,7 +166,6 @@ class Storm(object):
                           "atcf": ["ATCF", "http://www.nrlmry.navy.mil/atcf_web/docs/database/new/database.html"],
                           "hurdat": ["HURDAT", "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"],
                           "ibtracs": ["IBTrACS", "https://www.ncdc.noaa.gov/ibtracs/index.php?name=ib-v4-access"],
-                          "emanuel":["Kerry Emanuel", "Email Correspondence"],
                           "jma": ["JMA", "http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html"],
                           "imd": ["IMD", "http://www.rsmcnewdelhi.imd.gov.in/index.php"],
                           "tcvitals": ["TC-Vitals", "http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm"]}
@@ -658,114 +656,6 @@ class Storm(object):
             # warn if you have missing vals for RMW or ROCI
             if (self.max_wind_radius.max()) == -1 or (self.storm_radius.max() == -1):
                 warnings.warn(missing_data_warning_str)
-
-
-    def read_emanuel(self, path, storm_name, verbose=False):
-        r"""Read in Kerry Emanuel's storm file
-        This reads in the netcdf-formatted tracks from Kerry Emanuel.
-        Correspondence September 2018. Original storms have been converted
-        from matlab to netcdf format by mlimb@rhg.com and are at
-        /gcs/../coastal/storm_tracks/emmanuel_projections_2018-09-12/netcdf_added_velocity/.
-        :Input:
-        - *path* (string) Path to the file to be read.
-        - *storm_name* (string) storm name containing information about
-        model, scenario, time period, and storm index within the file.
-            ex. ccsm4_rcp85_2007_2025_0, hadgem5_rcp45_2035_2045_10
-            model_scenario_period is equivalent to filename.
-        Assumes these variables exist in Emanuel dataset:
-           datetime
-           longstore
-           latstore
-           rmstore (central max wind radius)
-           pstore (central pressure)
-           v_total_max_ms
-           bas (attribute)
-        :Raises:
-        - ImportError if xarray not found
-        - KeyError if provided storm name is not found in
-        given file (assumes path is correct)
-        """
-        # try/except copied from read_ibtracs
-        # imports that you don't need for other read functions
-        try:
-            import xarray as xr
-        except ImportError as e:
-            print("Emanuel tracks currently require xarray "
-                  "to work.")
-            raise e
-
-        def _convert_to_python_datetime(np_date):
-            '''Convert numpy.datetime64 to python datetime.datetime'''
-            (year, month, day_hour) = str(np_date.values).split('-')
-            day = day_hour[0:2]
-            hour = day_hour[3:5]
-            return datetime.datetime(int(year), int(month), int(day), int(hour))
-
-        storm_index = int(storm_name.split('_')[-1])
-
-        with xr.open_dataset(path, drop_variables=['time']) as ds:
-            try:
-                storm = (ds.sel(storm=storm_index)
-                     .drop('storm')
-                     .dropna(dim='time'))
-            except KeyError as e:
-                print("Provided storm name/index not found in "
-                      "the file.")
-                raise e
-
-            # set time
-            # convert from numpy to python datetime
-            # self.t is a list, as opposed to numpy array
-            self.t = [_convert_to_python_datetime(d) for d in storm['datetime']]
-
-            # eye location (n by n)
-            self.eye_location =  numpy.vstack([
-                storm.longstore.values, storm.latstore.values]).T
-
-            # max wind speed (m/s)
-            # array of single value
-            self.max_wind_speed = storm.v_total_ms.values
-
-            # 'The radius (km) of maximum circular wind
-            # along each track' -> convert to m
-            self.max_wind_radius= units.convert(storm.rmstore, 'km', 'm').values
-
-            # central pressure (Pascal)
-            self.central_pressure = units.convert(
-                storm.pstore,'hPa','Pa').values
-
-            # storm name
-            self.name = storm_name
-            # ex. miroc5_rcp45_2055_2065_10
-
-            ### optional attributes ###
-            # generating basin
-            # AL and NA are both atlantic
-            if storm.bas[0] == 'AL':
-                self.basin = 'NA'
-            else:
-                self.basin = ''
-
-            # ID (depends on format)
-            self.ID = str(storm_index)
-
-            # attributes not available
-            #############
-            # proper way is to use shapely / us shapefile to find
-            # the timesteps at which given storm makes landfall ('L' event)
-            # this is not necessary for geoclaw. so instead we are
-            # populating event with array of empty strings
-            # length
-            num_timesteps = len(storm['datetime'])
-            self.event = numpy.empty(num_timesteps, dtype=str)
-            self.classification = numpy.empty(num_timesteps, dtype=str)
-
-            # use last timestep (recommended by IB)
-            self.time_offset = self.t[-1]
-
-            # set storm radius to geoclaw's missing data val (-1)
-            self.storm_radius = numpy.empty(num_timesteps)
-            self.storm_radius.fill(-1)
 
 
     def read_jma(self, path, verbose=False):
