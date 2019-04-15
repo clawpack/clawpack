@@ -9,13 +9,13 @@ import numpy as np
 class InstabilityError(Exception):
     pass
 
-def check_model_stability(model_output_dir,
-                          regions_to_check = [[-81,22,-40,55], # atlantic
-                                              [-100,15,-82,32], # gulf
-                                              [-88.5,13.25,-70,19.75]], # carribean
-                          frames_to_check = 4,
-                          mean_tol_abs = .01,
-                          min_depth = 300):
+def quality_check(model_output_dir,
+                  regions_to_check = [[-81,22,-40,55], # atlantic
+                                      [-100,15,-82,32], # gulf
+                                      [-88.5,13.25,-70,19.75]], # carribean
+                  frames_to_check = 4,
+                  mean_tol_abs = .01,
+                  min_depth = 300):
     """Run a simple check to flag runs that were potentially numerically unstable.
     This function looks through the final *frames_to_check* frames of a model output
     and checks all cells in AMR level 1 that are below *min_depth* and 
@@ -80,5 +80,3 @@ def check_model_stability(model_output_dir,
                     raise InstabilityError("Model possibly unstable due to large magnitude deep "
                                            "ocean surge at end of run ({:.1f} cm in region {})".format(
                                            np.nanmean(all_vals)*100, r))
-
-    return None
