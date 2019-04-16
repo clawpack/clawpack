@@ -358,15 +358,17 @@ class Storm(object):
             self.max_wind_speed[i] = units.convert(float(data[8]), 'knots', 'm/s')
             self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
 
-            # Mark if this is a shortened line - does not contain max wind
-            # radius and outer storm radius - set those to -1 to mark them as
-            # missing
-            if len(data) < 19:
-                self.storm_radius[i] = -1
-                self.max_wind_radius[i] = -1
-            else:
+            # if this is a shortened line - does not contain max wind radius
+            # and outer storm radius - or if these values are missing, set them
+            # to -1 to mark them as missing
+            try:
                 self.storm_radius[i] = units.convert(float(data[18]), 'nmi', 'm')
+            except (ValueError, IndexError):
+                self.storm_radius[i] = -1
+            try:
                 self.max_wind_radius[i] = units.convert(float(data[19]), 'nmi', 'm')
+            except (ValueError, IndexError):
+                self.max_wind_radius[i] = -1
 
     def read_hurdat(self, path, verbose=False):
         r"""Read in HURDAT formatted storm file
@@ -1426,107 +1428,37 @@ def fill_rad_w_other_source(t, storm_targ, storm_fill, var):
     fill_da = xr.DataArray(getattr(storm_fill,var),
                            coords = {'t': getattr(storm_fill,'t')},
                            dims = ('t',))
+    
+    # convert -1 to nan
+    fill_da = fill_da.where(fill_da>0,numpy.nan)
+    
+    # if not all missing, try using storm_fill to fill
+    if fill_da.notnull().any():
 
-    #remove duplicates
-    fill_da = fill_da.groupby('t').mean()
+        #remove duplicates
+        fill_da = fill_da.groupby('t').first()
 
-    # interpolate to point
-    fill_interp = fill_da.interp({'t':t}).item()
+        # interpolate to point
+        fill_interp = fill_da.interp({'t':t}).item()
 
-    # first try replacing with atcf
-    # (assuming atcf has more data points than ibtracs)
-    if not numpy.isnan(fill_interp):
-        return fill_interp
-
-    # next, try just interpolating other ibtracs values
-    targ_da = xr.DataArray(getattr(storm_targ,var),
-                              coords = {'t': getattr(storm_targ,'t')},
-                              dims = ('t',))
-    targ_da = targ_da.groupby('t').mean()
-    targ_interp = targ_da.interp({'t':t}).item()
-    if not numpy.isnan(targ_interp):
-        return targ_interp
-    else:
-        return -1
-
-
-# =============================================================================
-# Radius fill functions
-def fill_rad_w_other_source(t, storm_targ, storm_fill, var):
-    r"""Fill in storm radius variable (*max_wind_radius* or \
-    *storm_radius*) with values from another source. i.e.
-    if you have missing radii in IBTrACS, you can fill with ATCF.
-    This function will assume *storm_fill* has more non-missing
-    values than *storm_targ* for this particular radius variable.
-    Thus, it first attempts to interpolate the variable in *storm_fill*
-    to the desired timestep. If that is missing, it tries to interpolate
-    the non-missing values of the variable in *storm_targ*. If that
-    also fails, it simply returns -1. The proper usage of this
-    function is to wrap it such that you can pass a function
-    with (*t*, *storm*) arguments to *max_wind_radius_fill* or
-    *storm_radius_fill* when calling *write_geoclaw*.
-
-    :Input:
-    - *t* (:py:class:`datetime.datetime`) the time corresponding to
-        a missing value of *max_wind_radius* or *storm_radius*
-    - *storm_targ* (:py:class:`clawpack.geoclaw.storm.Storm`) storm
-        that has missing values you want to fill
-    - *storm_fill* (:py:class:`clawpack.geoclaw.storm.Storm`) storm
-        that has non-missing values you want to use to fill *storm_targ*
-    - *var* (str) Either 'max_wind_radius' or 'storm_radius'
-
-    :Returns:
-    - (float) value to use to fill this time point in *storm_targ*. -1
-        if still missing after using *storm_fill* to fill.
-
-    :Examples:
-
-    .. code-block:: python
-
-        >>> storm_ibtracs = Storm(file_format='IBTrACS', path='path_to_ibtracs.nc',
-        ...     sid='2018300N26315')
-
-        >>> storm_atcf = Storm(file_format='ATCF', path='path_to_atcf.dat')
-
-        >>> def fill_mwr(t, storm):
-        ...     return fill_rad_w_other_source(t, storm, storm_atcf, 'max_wind_radius')
-
-        >>> storm_ibtracs.write(file_format = 'geoclaw',
-        ...     path = 'out_path.storm',
-        ...     max_wind_radius_fill = fill_mwr)
-    """
-
-    try:
-        import xarray as xr
-    except ImportError as e:
-        print("fill_rad_w_other_source currently requires xarray to work.")
-        raise e
-
-    fill_da = xr.DataArray(getattr(storm_fill,var),
-                           coords = {'t': getattr(storm_fill,'t')},
-                           dims = ('t',))
-
-    #remove duplicates
-    fill_da = fill_da.groupby('t').mean()
-
-    # interpolate to point
-    fill_interp = fill_da.interp({'t':t}).item()
-
-    # first try replacing with atcf
-    # (assuming atcf has more data points than ibtracs)
-    if not numpy.isnan(fill_interp):
-        return fill_interp
+        # try replacing with storm_fill
+        # (assuming atcf has more data points than ibtracs)
+        if not numpy.isnan(fill_interp):
+            return fill_interp
 
     # next, try just interpolating other ibtracs values
     targ_da = xr.DataArray(getattr(storm_targ,var),
                               coords = {'t': getattr(storm_targ,'t')},
                               dims = ('t',))
-    targ_da = targ_da.groupby('t').mean()
-    targ_interp = targ_da.interp({'t':t}).item()
-    if not numpy.isnan(targ_interp):
-        return targ_interp
-    else:
-        return -1
+    targ_da = targ_da.where(targ_da>0,numpy.nan)
+    if targ_da.notnull().any():
+        targ_da = targ_da.groupby('t').first()
+        targ_interp = targ_da.interp({'t':t}).item()
+        if not numpy.isnan(targ_interp):
+            return targ_interp
+        
+    # if nothing worked, return the missing value (-1)
+    return -1
 
 
 # =============================================================================
