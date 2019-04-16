@@ -356,15 +356,17 @@ class Storm(object):
             self.max_wind_speed[i] = units.convert(float(data[8]), 'knots', 'm/s')
             self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
 
-            # Mark if this is a shortened line - does not contain max wind
-            # radius and outer storm radius - set those to -1 to mark them as
-            # missing
-            if len(data) < 19:
-                self.storm_radius[i] = -1
-                self.max_wind_radius[i] = -1
-            else:
+            # if this is a shortened line - does not contain max wind radius
+            # and outer storm radius - or if these values are missing, set them
+            # to -1 to mark them as missing
+            try:
                 self.storm_radius[i] = units.convert(float(data[18]), 'nmi', 'm')
+            except (ValueError, IndexError):
+                self.storm_radius[i] = -1
+            try:
                 self.max_wind_radius[i] = units.convert(float(data[19]), 'nmi', 'm')
+            except (ValueError, IndexError):
+                self.max_wind_radius[i] = -1
 
     def read_hurdat(self, path, verbose=False):
         r"""Read in HURDAT formatted storm file
