@@ -55,9 +55,9 @@ deploy:
     script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:dev && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:dev"
     skip_cleanup: true
     on:
-      branches:
-          except:
-              master
+    branches:
+      except:
+        - master
 
   - provider: script
     script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:dev && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:dev" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
