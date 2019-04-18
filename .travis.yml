@@ -53,15 +53,15 @@ notifications:
 
 deploy:
   - provider: script
-    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
+    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
     skip_cleanup: true
     on:
       all_branches: true
-      condition: true
+      condition: NOT (branch = master)
       tags: false
 
   - provider: script
-    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
     skip_cleanup: true
     on:
       branch: master
