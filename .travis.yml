@@ -1,107 +1,81 @@
 
 jobs:
-    include:
-        -   stage: test
-            sudo: required
-            language: python
-            python:
-                - 3.6
-            services:
-                - docker
-            image:
-            env:
-                matrix:
-                    -   DOCKER_ORG=climateimpactlab
-                        IMAGE_NAME=bolliger32-clawpack-image
+  - name: test
+    sudo: required
+    language: python
+    python:
+      - 3.6
+    services:
+      - docker
+    image: climateimpactlab/miniconda3-gfortran-netcdf:latest
+    env:
+      matrix:
+        - DOCKER_ORG=climateimpactlab
+          IMAGE_NAME=bolliger32-clawpack-image
 
 
-            before_install:
-                # Print NumPy version that is already installed by Travis CI:
-                - python -c "import numpy; print(numpy.__version__)"
-                - sudo apt-get update -qq
-                - sudo apt-get install gfortran liblapack-pic liblapack-dev
-                - pip install matplotlib
-                - pip install yolk3k
+    # before_install:
+    #   # Print NumPy version that is already installed by Travis CI:
+    #   - python -c "import numpy; print(numpy.__version__)"
+    #   - sudo apt-get update -qq
+    #   - sudo apt-get install gfortran liblapack-pic liblapack-dev
+    #   - pip install matplotlib
+    #   - pip install yolk3k
+    #
+    # install:
+    #   - pip install -e .
+    #   - export CLAW=${PWD}
+    #   - export FC=gfortran
+    #
+    # before_script:
+    #   - cat /proc/cpuinfo
+    #   - gfortran -v
+    #   - echo "DEBUGGING --------------------"
+    #   - echo "CLAW="$CLAW
+    #   - echo "PYTHONPATH="$PYTHONPATH
+    #   - yolk -l
+    #   - echo "------------------------------"
 
-            install:
-                - pip install -e .
-                - export CLAW=${PWD}
-                - export FC=gfortran
+    script:
+      - echo "done"
+    #   - cd $CLAW/pyclaw/examples
+    #   - nosetests
+    #   - cd $CLAW/classic
+    #   - nosetests
+    #   - cd $CLAW/amrclaw
+    #   - nosetests
+    #   - cd $CLAW/geoclaw
+    #   - nosetests
 
-            before_script:
-                - cat /proc/cpuinfo
-                - gfortran -v
-                - echo "DEBUGGING --------------------"
-                - echo "CLAW="$CLAW
-                - echo "PYTHONPATH="$PYTHONPATH
-                - yolk -l
-                - echo "------------------------------"
+    # after_failure:
+    #  - for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
 
-            script:
-                - echo "done"
-                #   - cd $CLAW/pyclaw/examples
-                #   - nosetests
-                #   - cd $CLAW/classic
-                #   - nosetests
-                #   - cd $CLAW/amrclaw
-                #   - nosetests
-                #   - cd $CLAW/geoclaw
-                #   - nosetests
+  - name: deploy_branch
+    image: docker:latest
+    services:
+      - docker:dind
+    sudo: required
+    if: (NOT (branch = master))
+    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
+    skip_cleanup: true
 
-                # after_failure:
-                #  - for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
+  - name: deploy_master
+    image: docker:latest
+    services:
+      - docker:dind
+    sudo: required
+    if: branch = master
+    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+    skip_cleanup: true
 
-          -   stage: deploy_branch
-              image: docker:latest
-              services:
-                  - docker:dind
-              sudo: required
-              if: (NOT (branch = master))
-              deploy:
-                  provider: script
-                  script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
-                  skip_cleanup: true
-                  on:
-                      all_branches: true
-
-          -   stage: deploy_deploy
-              image: docker:latest
-              services:
-                  - docker:dind
-              sudo: required
-              if: branch = deploy
-              deploy:
-                  provider: script
-                  script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
-                  skip_cleanup: true
-                  on:
-                      all_branches: true
-
-          -   stage: deploy_master
-              image: docker:latest
-              services:
-                  - docker:dind
-              sudo: required
-              if: branch = master
-              deploy:
-                  provider: script
-                  script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
-                  skip_cleanup: true
-                  on:
-                      all_branches: true
-
-          -   stage: deploy_tag
-              image: docker:latest
-              services:
-                  - docker:dind
-              sudo: required
-              if: tag IS present
-              deploy:
-                  provider: script
-                  script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
-                  skip_cleanup: true
-                  on:
-                      all_branches: true
+  - name: deploy_tag
+    image: docker:latest
+    services:
+      - docker:dind
+    sudo: required
+    if: tag IS present
+    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
+    skip_cleanup: true
 
 notifications:
   email: false
