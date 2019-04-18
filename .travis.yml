@@ -1,7 +1,7 @@
 
 jobs:
     include:
-        -   name: test
+        -   stage: test
             sudo: required
             language: python
             python:
@@ -51,41 +51,57 @@ jobs:
                 # after_failure:
                 #  - for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
 
-          -   name: deploy_branch
+          -   stage: deploy_branch
               image: docker:latest
               services:
                   - docker:dind
               sudo: required
               if: (NOT (branch = master))
-              script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
-              skip_cleanup: true
+              deploy:
+                  provider: script
+                  script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
+                  skip_cleanup: true
+                  on:
+                      all_branches: true
 
-          -   name: deploy_deploy
+          -   stage: deploy_deploy
               image: docker:latest
               services:
                   - docker:dind
               sudo: required
               if: branch = deploy
-              script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
-              skip_cleanup: true
+              deploy:
+                  provider: script
+                  script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
+                  skip_cleanup: true
+                  on:
+                      all_branches: true
 
-          -   name: deploy_master
+          -   stage: deploy_master
               image: docker:latest
               services:
                   - docker:dind
               sudo: required
               if: branch = master
-              script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
-              skip_cleanup: true
+              deploy:
+                  provider: script
+                  script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+                  skip_cleanup: true
+                  on:
+                      all_branches: true
 
-          -   name: deploy_tag
+          -   stage: deploy_tag
               image: docker:latest
               services:
                   - docker:dind
               sudo: required
               if: tag IS present
-              script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
-              skip_cleanup: true
+              deploy:
+                  provider: script
+                  script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
+                  skip_cleanup: true
+                  on:
+                      all_branches: true
 
 notifications:
   email: false
