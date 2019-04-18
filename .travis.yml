@@ -35,6 +35,7 @@ env:
 #   - echo "------------------------------"
 
 script:
+    - echo "done"
 #   - cd $CLAW/pyclaw/examples
 #   - nosetests
 #   - cd $CLAW/classic
@@ -52,12 +53,11 @@ notifications:
 
 deploy:
   - provider: script
-    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:dev && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:dev"
+    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
     skip_cleanup: true
-    if: (NOT (branch = master)) AND tag IS blank
 
   - provider: script
-    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:dev && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:dev" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+    script: docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT . && docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
     skip_cleanup: true
     on:
       branch: master
