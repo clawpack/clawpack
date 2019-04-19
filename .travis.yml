@@ -1,20 +1,29 @@
+sudo: required
+
 language: python
 python:
   - 3.6
- 
+
+services:
+  - docker
+
+env:
+  matrix:
+    - DOCKER_ORG=climateimpactlab
+      IMAGE_NAME=bolliger32-clawpack-image
+
 before_install:
-  # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print(numpy.__version__)"
   - sudo apt-get update -qq
   - sudo apt-get install gfortran liblapack-pic liblapack-dev
   - pip install matplotlib
   - pip install yolk3k
-  
+
 install:
   - pip install -e .
   - export CLAW=${PWD}
   - export FC=gfortran
-  
+
 before_script:
   - cat /proc/cpuinfo
   - gfortran -v
@@ -33,9 +42,35 @@ script:
   - nosetests
   - cd $CLAW/geoclaw
   - nosetests
+  - cd $CLAW
 
 after_failure:
  - for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
-  
+
 notifications:
   email: false
+
+before_deploy:
+  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+  - docker build -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
+
+deploy:
+  - provider: script
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
+    skip_cleanup: true
+    on:
+      all_branches: true
+      condition: $TRAVIS_BRANCH != master
+      tags: false
+
+  - provider: script
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+    skip_cleanup: true
+    on:
+      branch: master
+
+  - provider: script
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
+    skip_cleanup: true
+    on:
+      tags: true
