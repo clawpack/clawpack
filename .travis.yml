@@ -57,7 +57,7 @@ deploy:
     skip_cleanup: true
     on:
       all_branches: true
-      condition: NOT (branch = master)
+      condition: true
       tags: false
 
   - provider: script
