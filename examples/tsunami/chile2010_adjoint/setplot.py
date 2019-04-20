@@ -148,7 +148,7 @@ def setplot(plotdata=None):
     plotitem.plot_var = masked_inner_product
     plotitem.pcolor_cmap = colormaps.white_red
     plotitem.pcolor_cmin = 0.0
-    plotitem.pcolor_cmax = 0.005
+    plotitem.pcolor_cmax = 0.0005
     #plotitem.pcolor_cmax = 0.00001 # use for adjoint-error flagging
 
     plotitem.add_colorbar = False   # doesn't work when adjoint all masked
