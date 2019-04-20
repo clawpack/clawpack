@@ -139,11 +139,11 @@ def setrun(claw_pkg='geoclaw'):
     elif clawdata.output_style == 3:
         # Output every iout timesteps with a total of ntot time steps:
         clawdata.output_step_interval = 1
-        clawdata.total_steps = 3
+        clawdata.total_steps = 5
         clawdata.output_t0 = True
         
 
-    clawdata.output_format = 'binary'      # 'ascii', 'binary', 'netcdf'
+    clawdata.output_format = 'binary'      # 'binary' for adjoint
 
     clawdata.output_q_components = 'all'   # need all
     clawdata.output_aux_components = 'none'  # eta=h+B is in q
@@ -205,7 +205,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.transverse_waves = 2
 
     # Number of waves in the Riemann solution:
-    clawdata.num_waves = 3
+    clawdata.num_waves = 2   # only 2 in linearized adjoint
     
     # List of limiters to use for each wave family:  
     # Required:  len(limiter) == num_waves
@@ -215,9 +215,9 @@ def setrun(claw_pkg='geoclaw'):
     #   2 or 'superbee' ==> superbee
     #   3 or 'mc'       ==> MC limiter
     #   4 or 'vanleer'  ==> van Leer
-    clawdata.limiter = ['mc', 'mc', 'mc']
+    clawdata.limiter = ['mc', 'mc']
 
-    clawdata.use_fwaves = True    # True ==> use f-wave version of algorithms
+    clawdata.use_fwaves = False    # True ==> use f-wave version of algorithms
     
     # Source terms splitting:
     #   src_split == 0 or 'none'    ==> no source term (src routine never called)

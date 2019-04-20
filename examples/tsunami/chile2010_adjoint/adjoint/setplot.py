@@ -41,7 +41,7 @@ def setplot(plotdata=None):
 
 
     plotdata.clearfigures()  # clear any old figures,axes,items data
-    plotdata.format = 'binary'      # 'ascii', 'binary', 'netcdf'
+    plotdata.format = 'binary'      # 'binary' for adjoint
 
 
     # To plot gauge locations on pcolor or contour plot, use this as
@@ -86,8 +86,8 @@ def setplot(plotdata=None):
     #plotitem.plot_var = geoplot.surface
     plotitem.plot_var = geoplot.surface_or_depth
     plotitem.pcolor_cmap = geoplot.tsunami_colormap
-    plotitem.pcolor_cmin = -0.005
-    plotitem.pcolor_cmax = 0.005
+    plotitem.pcolor_cmin = -0.0005
+    plotitem.pcolor_cmax = 0.0005
     plotitem.add_colorbar = True
     plotitem.amr_celledges_show = [0,0,0]
     plotitem.patchedges_show = 0
