@@ -8,18 +8,17 @@ env:
 before_install:
   - sudo apt-get update
   - sudo apt-get install gfortran liblapack-pic liblapack-dev
-  # Print NumPy version that is already installed by Travis CI:
-  - python -c "import numpy; print(numpy.__version__)"
-  # - pip install matplotlib
-  # - python -c "import matplotlib; print(matplotlib.__version__)"
   - pip install netCDF4
-  - pip install xarray==0.11.0
+  - pip install xarray
+  - pip install scipy
   - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
   - cd clawpack
   - git submodule init
   - git submodule update
   - rm -rf geoclaw
   - ln -s ../ geoclaw
+  # Print NumPy version being used
+  - python -c "import numpy; print(numpy.__version__)"
   
 install:
   - export PYTHONPATH=${PWD}:$PYTHONPATH

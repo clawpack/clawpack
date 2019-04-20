@@ -119,7 +119,7 @@ program amr2
     integer :: clock_start, clock_finish, clock_rate, ttotal
     real(kind=8) :: ttotalcpu
     integer, parameter :: timing_unit = 48
-    character(len=256) :: timing_line, timing_substr
+    character(len=512) :: timing_line, timing_substr
     character(len=*), parameter :: timing_base_name = "timing."
     character(len=*), parameter :: timing_header_format =                      &
                                                   "(' wall time (', i2,')," // &

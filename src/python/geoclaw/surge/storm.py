@@ -165,7 +165,7 @@ class Storm(object):
     _supported_formats = {"geoclaw": ["GeoClaw", "http://www.clawpack.org/storms"],
                           "atcf": ["ATCF", "http://www.nrlmry.navy.mil/atcf_web/docs/database/new/database.html"],
                           "hurdat": ["HURDAT", "http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html"],
-                          "ibtracs": ["IBTrACS", "ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional"],
+                          "ibtracs": ["IBTrACS", "https://www.ncdc.noaa.gov/ibtracs/index.php?name=ib-v4-access"],
                           "jma": ["JMA", "http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/Besttracks/e_format_bst.html"],
                           "imd": ["IMD", "http://www.rsmcnewdelhi.imd.gov.in/index.php"],
                           "tcvitals": ["TC-Vitals", "http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm"]}
@@ -239,7 +239,7 @@ class Storm(object):
                         "files:",
                         " - ATCF - http://ftp.nhc.noaa.gov/atcf/archive/",
                         " - HURDAT - http://www.aoml.noaa.gov/hrd/hurdat/Data_Storm.html",
-                        " - IBTrACS - ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional",
+                        " - IBTrACS - https://www.ncdc.noaa.gov/ibtracs/index.php?name=ib-v4-access",
                         " - JMA - http://www.jma.go.jp/jma/jma-eng/jma-center/rsmc-hp-pub-eg/besttrack.html",
                         " - IMD - http://www.rsmcnewdelhi.imd.gov.in/index.php",
                         " - TCVITALS - http://www.emc.ncep.noaa.gov/mmb/data_processing/tcvitals_description.htm")
@@ -356,15 +356,17 @@ class Storm(object):
             self.max_wind_speed[i] = units.convert(float(data[8]), 'knots', 'm/s')
             self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
 
-            # Mark if this is a shortened line - does not contain max wind
-            # radius and outer storm radius - set those to -1 to mark them as
-            # missing
-            if len(data) < 19:
-                self.storm_radius[i] = -1
-                self.max_wind_radius[i] = -1
-            else:
+            # if this is a shortened line - does not contain max wind radius
+            # and outer storm radius - or if these values are missing, set them
+            # to -1 to mark them as missing
+            try:
                 self.storm_radius[i] = units.convert(float(data[18]), 'nmi', 'm')
+            except (ValueError, IndexError):
+                self.storm_radius[i] = -1
+            try:
                 self.max_wind_radius[i] = units.convert(float(data[19]), 'nmi', 'm')
+            except (ValueError, IndexError):
+                self.max_wind_radius[i] = -1
 
     def read_hurdat(self, path, verbose=False):
         r"""Read in HURDAT formatted storm file
@@ -452,96 +454,176 @@ class Storm(object):
             self.max_wind_radius[i] = -1
             self.storm_radius[i] = -1
 
-    def read_ibtracs(self, path, storm_name, year, start_date=None):
+    def read_ibtracs(self, path, sid=None, storm_name=None, year=None, start_date=None,
+                     agency_pref = ['wmo',
+                                   'usa',
+                                   'tokyo',
+                                   'newdelhi',
+                                   'reunion',
+                                   'bom',
+                                   'nadi',
+                                   'wellington',
+                                   'cma',
+                                   'hko',
+                                   'ds824',
+                                   'td9636',
+                                   'td9635',
+                                   'neumann',
+                                   'mlc']):
         r"""Read in IBTrACS formatted storm file
 
-        This reads in the netcdf-formatted IBTrACS v4 BETA data (current release
-        as of 10/8/2018). The .nc file passed as *path* must contain a storm 
-        matching *storm_name* and *year*. This function will be updated,
-        if needed, once the BETA version becomes an operational release.
-
-        NOTE: Thus far, only the reading of hurdat/atcf-based best tracks (i.e. USA
-        tracks) is supported.
-
-        TODO: account for data formats from other reporting agencies
-
-        For more details on the IBTrACS v4 BETA format and getting data see
-
-        ftp://filsrv.cicsnc.org/kknapp/ibtracs/testing/hotel1/provisional/
+        This reads in the netcdf-formatted IBTrACS v4 data. You must either pass
+        the *sid* of the storm (a unique identifier supplied by IBTrACS) OR
+        *storm_name* and *year*. The latter will not be unique for unnamed storms,
+        so you may optionally pass *start_date* as well. The `wmo_\*` variable is
+        used when non-missing, with missing values filled in by the corresponding
+        variable of the agency specified in `wmo_agency` and/or `usa_agency`. If
+        still missing, the other agencies are checked in order of *agency_pref* to
+        see if any more non-missing values are available.
 
         :Input:
          - *path* (string) Path to the file to be read.
-         - *storm_name* (string) name of storm of interest (NAME field in IBTrACS).
-         - *year* (int) year of storm of interest.
-         - *start_date* (:py:class:`datetime.datetime`) If storm is not named, will
-             find closest unnamed storm to this start date.
+         - *sid* (string, optional) IBTrACS-supplied unique track identifier.
+             Either *sid* OR *storm_name* and *year* must not be None.
+         - *storm_name* (string, optional) name of storm of interest
+             (NAME field in IBTrACS). Either *sid* OR *storm_name* and
+             *year* must not be None.
+         - *year* (int, optional) year of storm of interest.
+             Either *sid* OR *storm_name* and *year* must not be None.
+         - *start_date* (:py:class:`datetime.datetime`, optional) If storm is not
+             named, will find closest unnamed storm to this start date. Only
+             used for unnamed storms when specifying *storm_name* and *year*
+             does not uniquely identify storm.
+         - *agency_pref* (list, optional) Preference order to use if `wmo_\*` variable
+             is missing and `wmo_agency` and `usa_agency` are also missing.
 
         :Raises:
-         - *ValueError* If the method cannot find the name/year matching the
-           storm then a value error is risen.
+         - *ValueError* If the method cannot find the matching storm then a
+             value error is risen.
         """
 
         # imports that you don't need for other read functions
         try:
             import xarray as xr
-            from pandas import to_datetime
         except ImportError as e:
-            print("IBTrACS currently requires xarray and pandas to work.")
+            print("IBTrACS currently requires xarray to work.")
             raise e
 
-        storm_name = storm_name.upper()
-        
-        # in case storm is unnamed
-        if storm_name in ['NOT_NAMED','UNNAMED','NO-NAME']:
-            storm_name = 'NOT_NAMED'
-            
+        # only allow one method for specifying storms
+        if (sid is not None) and ((storm_name is not None) or (year is not None)):
+            raise ValueError('Cannot specify both *sid* and *storm_name* or *year*.')
+
         with xr.open_dataset(path) as ds:
 
-            ## SLICE IBTRACS DATASET
+            # match on sid
+            if sid is not None:
+                match = ds.sid == sid.encode()
+            # or match on storm_name and year
+            else:
+                storm_name = storm_name.upper()
+                # in case storm is unnamed
+                if storm_name.upper() in ['UNNAMED','NO-NAME']:
+                    storm_name = 'NOT_NAMED'
+                storm_match = (ds.name == storm_name.encode())
+                year_match = (ds.time.dt.year == year).any(dim='date_time')
+                match = storm_match & year_match
+            ds = ds.sel(storm=match).squeeze()
 
-            # match on storm-name and year
-            storm_match = (ds.name == storm_name.encode())
-            year_match = (ds.time.dt.year == year).any(dim='date_time')
-            ds = ds.sel(storm=(year_match & storm_match)).squeeze()
-            
-            # make sure
+            # occurs if we have 0 or >1 matching storms
             if 'storm' in ds.dims.keys():
                 if ds.storm.shape[0] == 0:
                     raise ValueError('Storm/year not found in provided file')
                 else:
                     # see if a date was provided for multiple unnamed storms
                     assert start_date is not None, ValueError('Multiple storms identified and no start_date specified.')
-                    
+
                     start_times = ds.time.isel(date_time=0)
                     start_date = numpy.datetime64(start_date)
-                    
+
                     # find storm with start date closest to provided
                     storm_ix = abs(start_times - start_date).argmin()
                     ds = ds.isel(storm=storm_ix).squeeze()
                     assert 'storm' not in ds.dims.keys()
 
-            # include only valid time points for this storm
-            # i.e. when we have max wind values
-
-            # try using wmo_wind first, then usa_wind
-            if ds.wmo_wind.max().values >= 0:
-                valid = ds.wmo_wind >= 0
-                wind_src = 'wmo_wind'
-                pres_src = 'wmo_pres'
-            elif ds.usa_wind.max().values >= 0:
-                valid = ds.usa_wind >= 0
-                wind_src = 'usa_wind'
-                pres_src = 'usa_pres'
-            else:
+            # cut down dataset to only non-null times
+            valid_t = ds.time.notnull()
+            if valid_t.sum() == 0:
                 raise ValueError('No valid wind speeds found for this storm.')
+            ds = ds.sel(date_time=valid_t)
+
+
+            # list of the agencies that correspond to 'usa_*' variables
+            usa_agencies = [b'atcf', b'hurdat_atl', b'hurdat_epa', b'jtwc_ep',
+                           b'nhc_working_bt', b'tcvightals', b'tcvitals']
+
+
+            ## Create mapping from wmo_ or usa_agency
+            ## to the appropriate variable
+            agency_map = {b'':agency_pref.index('wmo')}
+            # account for multiple usa agencies
+            for a in usa_agencies:
+                agency_map[a] = agency_pref.index('usa')
+            # map all other agencies to themselves
+            for i in [a for a in agency_pref if a not in ['wmo','usa']]:
+                agency_map[i.encode('utf-8')] = agency_pref.index(i)
+
+            # fill in usa as provider if usa_agency is
+            # non-null when wmo_agency is null
+            provider = ds.wmo_agency.where(ds.wmo_agency!=b'',ds.usa_agency)
+
+            # get index into from agency that is wmo_provider
+            def map_val_to_ix(a):
+                func = lambda x: agency_map[x]
+                return xr.apply_ufunc(func,a, vectorize=True)
+            pref_agency_ix=map_val_to_ix(provider)
+
+            ## GET MAX WIND SPEED and PRES
+            pref_vals = {}
+            for v in ['wind','pres']:
+                all_vals = ds[['{}_{}'.format(i,v) for i in agency_pref]].to_array(dim='agency')
+
+                # get wmo value
+                val_pref = ds['wmo_'+v]
+
+                # fill this value in as a second-best
+                pref_2 = all_vals.isel(agency=pref_agency_ix)
+                val_pref = val_pref.fillna(pref_2)
+
+                # now use the agency_pref order to fill in
+                # any remaining values as third best
+                best_ix = all_vals.notnull().argmax(dim='agency')
+                pref_3 = all_vals.isel(agency=best_ix)
+                val_pref = val_pref.fillna(pref_3)
+
+                # add to dict
+                pref_vals[v] = val_pref
+
+
+            ## THESE CANNOT BE MISSING SO DROP
+            ## IF EITHER MISSING
+            valid = pref_vals['wind'].notnull() & pref_vals['pres'].notnull()
             ds = ds.sel(date_time=valid)
+            for i in ['wind','pres']:
+                pref_vals[i] = pref_vals[i].sel(date_time=valid)
+
+
+            ## GET RMW and ROCI
+            ## (these can be missing)
+            for r in ['rmw','roci']:
+                order = ['{}_{}'.format(i,r) for i in agency_pref if
+                                 '{}_{}'.format(i,r) in ds.data_vars.keys()]
+                vals = ds[order].to_array(dim='agency')
+                best_ix = vals.notnull().argmax(dim='agency')
+                val_pref = vals.isel(agency=best_ix)
+                pref_vals[r] = val_pref
+
 
             ## CONVERT TO GEOCLAW FORMAT
 
             # assign basin to be the basin where track originates
             # in case track moves across basins
             self.basin = ds.basin.values[0].astype(str)
-            self.name = storm_name
+            self.name = ds.name.astype(str).item()
             self.ID = ds.sid.astype(str).item()
 
             # convert datetime64 to datetime.datetime
@@ -568,12 +650,12 @@ class Storm(object):
             # Intensity information - for now, including only common, basic intensity
             # info.
             # TODO: add more detailed info for storms that have it
-            self.max_wind_speed = units.convert(ds[wind_src],'knots','m/s').values
-            self.central_pressure = units.convert(ds[pres_src],'mbar','Pa').values
-            self.max_wind_radius = numpy.where(ds.usa_rmw >= 0,
-                units.convert(ds.usa_rmw,'nmi','m'),-1)
-            self.storm_radius = numpy.where(ds.usa_roci >=0,
-                units.convert(ds.usa_roci.values,'nmi','m'),-1)
+            self.max_wind_speed = units.convert(pref_vals['wind'],'knots','m/s').where(pref_vals['wind'].notnull(),-1).values
+            self.central_pressure = units.convert(pref_vals['pres'],'mbar','Pa').where(pref_vals['pres'].notnull(),-1).values
+            self.max_wind_radius = units.convert(pref_vals['rmw'],'nmi','m').where(pref_vals['rmw'].notnull(),-1).values
+            self.storm_radius = units.convert(pref_vals['roci'],'nmi','m').where(pref_vals['roci'].notnull(),-1).values
+
+            # warn if you have missing vals for RMW or ROCI
             if (self.max_wind_radius.max()) == -1 or (self.storm_radius.max() == -1):
                 warnings.warn(missing_data_warning_str)
 
@@ -1180,6 +1262,94 @@ def cle_2015(storm, r, t):
     r""""""
     raise NotImplementedError("CLE 2015 model has not been implemeted.")
     return None, None
+
+
+# =============================================================================
+# Radius fill functions
+def fill_rad_w_other_source(t, storm_targ, storm_fill, var):
+    r"""Fill in storm radius variable (*max_wind_radius* or \
+    *storm_radius*) with values from another source. i.e.
+    if you have missing radii in IBTrACS, you can fill with ATCF.
+    This function will assume *storm_fill* has more non-missing
+    values than *storm_targ* for this particular radius variable.
+    Thus, it first attempts to interpolate the variable in *storm_fill*
+    to the desired timestep. If that is missing, it tries to interpolate
+    the non-missing values of the variable in *storm_targ*. If that
+    also fails, it simply returns -1. The proper usage of this
+    function is to wrap it such that you can pass a function
+    with (*t*, *storm*) arguments to *max_wind_radius_fill* or
+    *storm_radius_fill* when calling *write_geoclaw*.
+
+    :Input:
+    - *t* (:py:class:`datetime.datetime`) the time corresponding to
+        a missing value of *max_wind_radius* or *storm_radius*
+    - *storm_targ* (:py:class:`clawpack.geoclaw.storm.Storm`) storm
+        that has missing values you want to fill
+    - *storm_fill* (:py:class:`clawpack.geoclaw.storm.Storm`) storm
+        that has non-missing values you want to use to fill *storm_targ*
+    - *var* (str) Either 'max_wind_radius' or 'storm_radius'
+
+    :Returns:
+    - (float) value to use to fill this time point in *storm_targ*. -1
+        if still missing after using *storm_fill* to fill.
+
+    :Examples:
+
+    .. code-block:: python
+
+        >>> storm_ibtracs = Storm(file_format='IBTrACS', path='path_to_ibtracs.nc',
+        ...     sid='2018300N26315')
+
+        >>> storm_atcf = Storm(file_format='ATCF', path='path_to_atcf.dat')
+
+        >>> def fill_mwr(t, storm):
+        ...     return fill_rad_w_other_source(t, storm, storm_atcf, 'max_wind_radius')
+
+        >>> storm_ibtracs.write(file_format = 'geoclaw',
+        ...     path = 'out_path.storm',
+        ...     max_wind_radius_fill = fill_mwr)
+    """
+
+    try:
+        import xarray as xr
+    except ImportError as e:
+        print("fill_rad_w_other_source currently requires xarray to work.")
+        raise e
+
+    fill_da = xr.DataArray(getattr(storm_fill,var),
+                           coords = {'t': getattr(storm_fill,'t')},
+                           dims = ('t',))
+    
+    # convert -1 to nan
+    fill_da = fill_da.where(fill_da>0,numpy.nan)
+    
+    # if not all missing, try using storm_fill to fill
+    if fill_da.notnull().any():
+
+        #remove duplicates
+        fill_da = fill_da.groupby('t').first()
+
+        # interpolate to point
+        fill_interp = fill_da.interp({'t':t}).item()
+
+        # try replacing with storm_fill
+        # (assuming atcf has more data points than ibtracs)
+        if not numpy.isnan(fill_interp):
+            return fill_interp
+
+    # next, try just interpolating other ibtracs values
+    targ_da = xr.DataArray(getattr(storm_targ,var),
+                              coords = {'t': getattr(storm_targ,'t')},
+                              dims = ('t',))
+    targ_da = targ_da.where(targ_da>0,numpy.nan)
+    if targ_da.notnull().any():
+        targ_da = targ_da.groupby('t').first()
+        targ_interp = targ_da.interp({'t':t}).item()
+        if not numpy.isnan(targ_interp):
+            return targ_interp
+        
+    # if nothing worked, return the missing value (-1)
+    return -1
 
 
 # =============================================================================
