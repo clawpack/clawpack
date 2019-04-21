@@ -53,9 +53,8 @@ EXCLUDE_SOURCES = \
 MODULES = \
 
 SOURCES = \
-  $(CLAW)/riemann/src/rpn2_geoclaw_adjoint.f \
-  $(CLAW)/riemann/src/rpt2_geoclaw_adjoint.f \
-  $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
+  $(CLAW)/riemann/src/rpn2_geoclaw_adjoint_qwave.f90 \
+  $(CLAW)/riemann/src/rpt2_geoclaw_adjoint_qwave.f90 \
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
