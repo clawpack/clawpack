@@ -53,8 +53,10 @@ EXCLUDE_SOURCES = \
 MODULES = \
 
 SOURCES = \
-  $(CLAW)/riemann/src/rpn2_geoclaw_adjoint_qwave.f90 \
-  $(CLAW)/riemann/src/rpt2_geoclaw_adjoint_qwave.f90 \
+  $(GEOLIB)/rpn2_geoclaw_adjoint_qwave.f90 \
+  $(GEOLIB)/rpt2_geoclaw_adjoint_qwave.f90 \
+  # for now these new Riemann solvers are in geoclaw, move to riemann eventually
+
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
