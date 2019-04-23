@@ -354,9 +354,15 @@ class Storm(object):
             else:
                 self.eye_location[i, 0] = -float(data[7][0:-1]) / 10.0
 
-            # Intensity information
-            self.max_wind_speed[i] = units.convert(float(data[8]), 'knots', 'm/s')
-            self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
+            # Intensity information (occasionally missing for older ATCF storms)
+            try:
+                self.max_wind_speed[i] = units.convert(float(data[8]), 'knots', 'm/s')
+            except ValueError:
+                self.max_wind_speed[i] = -1
+            try:
+                self.central_pressure[i] = units.convert(float(data[9]), 'mbar', 'Pa')
+            except ValueError:
+                self.central_pressure[i] = -1
 
             # if this is a shortened line - does not contain max wind radius
             # and outer storm radius - or if these values are missing, set them
@@ -369,6 +375,13 @@ class Storm(object):
                 self.max_wind_radius[i] = units.convert(float(data[19]), 'nmi', 'm')
             except (ValueError, IndexError):
                 self.max_wind_radius[i] = -1
+                
+            if self.max_wind_speed.min() == -1:
+                warnings.warn('Some timesteps have missing max wind speed. These will not be written'
+                              ' out to geoclaw format.')
+            if self.central_pressure.min() == -1:
+                warnings.warn('Some timesteps have missing central pressure. These will not be written'
+                              ' out to geoclaw format.')
 
     def read_hurdat(self, path, verbose=False):
         r"""Read in HURDAT formatted storm file
@@ -990,7 +1003,11 @@ class Storm(object):
             data.append((self.t[n] - self.time_offset).total_seconds())
             data.append(self.eye_location[n, 0])
             data.append(self.eye_location[n, 1])
+            
+            if self.max_wind_speed[n] == -1:
+                continue
             data.append(self.max_wind_speed[n])
+            
             # Allow custom function to set max wind radius if not
             # available
             if self.max_wind_radius[n] == -1:
@@ -1002,6 +1019,8 @@ class Storm(object):
             else:
                 data.append(self.max_wind_radius[n])
 
+            if self.central_pressure[n] == -1:
+                continue
             data.append(self.central_pressure[n])
 
             # Allow custom function to set storm radius if not available
