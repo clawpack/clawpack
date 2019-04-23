@@ -10,7 +10,7 @@ before_install:
   - pip install netCDF4
   - pip install xarray
   - pip install scipy
-  - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
+  - git clone --branch=master --depth=100 --quiet git://github.com/ClimateImpactLab/clawpack
   - cd clawpack
   - git submodule init
   - git submodule update -j 6
