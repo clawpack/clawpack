@@ -28,8 +28,10 @@ WORKDIR /clawpack
 ## currently pinning rhg_compute_tools until latest worker image version has
 ## more current version
 RUN source activate worker && \
+  pip install --upgrade pip && \
   pip install -e . && \
-  pip install matplotlib yolk3k pytides rhg_compute_tools>=0.1.6 --no-cache-dir
+  pip install --upgrade matplotlib yolk3k \
+   pytides rhg_compute_tools>=0.1.6 --no-cache-dir
 
 WORKDIR /
 
