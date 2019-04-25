@@ -10,7 +10,7 @@ services:
 env:
   matrix:
     - DOCKER_ORG=climateimpactlab
-      IMAGE_NAME=bolliger32-clawpack-image
+      IMAGE_NAME=clawpack-image
       SOURCE_IMAGE=rhodium/worker:v0.2.5
 
 notifications:
@@ -22,18 +22,18 @@ install:
 
 script:
   - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT /usr/bin/env bash /clawpack/run_tests.sh
+  - docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
 
 deploy:
   - provider: script
-    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
     skip_cleanup: true
     on:
       all_branches: true
       condition: $TRAVIS_BRANCH != master
-      tags: false
 
   - provider: script
-    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT" && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
     skip_cleanup: true
     on:
       branch: master

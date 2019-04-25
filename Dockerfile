@@ -25,10 +25,11 @@ SHELL ["/bin/bash", "-c"]
 
 WORKDIR /clawpack
 
+## currently pinning rhg_compute_tools until latest worker image version has
+## more current version
 RUN source activate worker && \
   pip install -e . && \
-  pip install matplotlib && \
-  pip install yolk3k
+  pip install matplotlib yolk3k pytides rhg_compute_tools>=0.1.6 --no-cache-dir
 
 WORKDIR /
 
