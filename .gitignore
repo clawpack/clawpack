@@ -8,6 +8,7 @@ clawpack/visclaw
 clawpack/amrclaw
 clawpack/geoclaw
 clawpack/classic
+clawpack/forestclaw
 clawpack/version.py
 
 # ignore build directory
@@ -17,3 +18,7 @@ build
 *.pyc
 *.log
 *.egg-info
+.ipynb_checkpoints/
+
+# outputs of pull_all.sh
+*claw_git_*.txt
