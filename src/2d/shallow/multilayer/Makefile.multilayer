@@ -35,7 +35,8 @@ GEOLIB:=$(CLAW)/geoclaw/src/2d/shallow
 #list of common sources for amr 2d codes
 COMMON_MODULES += \
   $(AMRLIB)/amr_module.f90 \
-  $(AMRLIB)/regions_module.f90 
+  $(AMRLIB)/regions_module.f90 \
+  $(AMRLIB)/adjoint_module.f90
 
 #list of common sources needed for geoclaw codes (subset of amr dependencies)
 COMMON_MODULES += \
@@ -51,7 +52,8 @@ COMMON_MODULES += \
   $(GEOLIB)/refinement_module.f90 \
   $(GEOLIB)/fixedgrids_module.f90 \
   $(GEOLIB)/fgmax_module.f90 \
-  $(GEOLIB)/friction_module.f90
+  $(GEOLIB)/friction_module.f90 \
+  $(GEOLIB)/adjointsup_module.f90 
 
 # list of source files from AMR library. 
 COMMON_SOURCES += \
@@ -61,6 +63,7 @@ COMMON_SOURCES += \
   $(AMRLIB)/intfil.f90 \
   $(AMRLIB)/flagregions2.f90  \
   $(AMRLIB)/quick_sort1.f \
+  $(AMRLIB)/quick_sort_reals.f \
   $(AMRLIB)/estdt.f \
   $(AMRLIB)/check4nans.f90 \
   $(AMRLIB)/init_iflags.f \

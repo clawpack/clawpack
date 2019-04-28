@@ -42,6 +42,10 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     use regions_module, only: num_regions, regions
     use refinement_module
 
+    use adjoint_module, only: totnum_adjoints,innerprod_index, &
+                              adjoint_flagging,select_snapshots
+    use adjointsup_module, only: calculate_innerproduct
+
     implicit none
 
     ! Subroutine arguments
@@ -49,7 +53,7 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     real(kind=8), intent(in) :: xlower,ylower,dx,dy,t,tolsp
 
     real(kind=8), intent(in) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
-    real(kind=8), intent(in) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
+    real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
 
     ! Flagging
     real(kind=8), intent(in out) :: amrflags(1-mbuff:mx+mbuff,1-mbuff:my+mbuff)
@@ -58,16 +62,36 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
     external allowflag
 
     ! Generic locals
-    integer :: i,j,m
+    integer :: i,j,m,r
     real(kind=8) :: x_c,y_c,x_low,y_low,x_hi,y_hi
     real(kind=8) :: speed, eta, ds
 
     ! Storm specific variables
     real(kind=8) :: R_eye(2), wind_speed
 
+    ! Adjoint method specific variables
+    logical mask_selecta(totnum_adjoints)
+
     ! Don't initialize flags, since they were already
     ! flagged by flagregions2
     ! amrflags = DONTFLAG
+
+    if(adjoint_flagging) then
+        aux(innerprod_index,:,:) = 0.0
+        call select_snapshots(t,mask_selecta)
+
+        ! Loop over adjoint snapshots
+        aloop: do r=1,totnum_adjoints
+
+            ! Consider only snapshots that are within the desired time range
+            if (mask_selecta(r)) then
+                ! Calculate inner product with current snapshot
+                call calculate_innerproduct(q,r,mx,my,xlower,   &
+                        ylower,dx,dy,meqn,mbc,maux,aux)
+            endif
+
+        enddo aloop
+    endif
 
     ! Loop over interior points on this grid
     ! (i,j) grid cell is [x_low,x_hi] x [y_low,y_hi], cell center at (x_c,y_c)
@@ -166,32 +190,48 @@ subroutine flag2refine2(mx,my,mbc,mbuff,meqn,maux,xlower,ylower,dx,dy,t,level, &
             if (allowflag(x_c,y_c,t,level) .and. amrflags(i,j) == UNSET) then
 
                 if (q(1,i,j) > dry_tolerance) then
-                    eta = q(1,i,j) + aux(1,i,j)
 
-                    ! Check wave criteria
-                    if (abs(eta - sea_level) > wave_tolerance) then
-                        ! Check to see if we are near shore
-                        if (q(1,i,j) < deep_depth) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
-                        ! Check if we are allowed to flag in deep water
-                        ! anyway
-                        else if (level < max_level_deep) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
+                    if(adjoint_flagging) then
+                        if(aux(innerprod_index,i,j) > tolsp) then
+                            ! Check to see if we are near shore
+                            if (q(1,i,j) < deep_depth) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            ! Check if we are allowed to flag in deep water
+                            ! anyway
+                            else if (level < max_level_deep) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
                         endif
+                    else
+                        eta = q(1,i,j) + aux(1,i,j)
+
+                        ! Check wave criteria
+                        if (abs(eta - sea_level) > wave_tolerance) then
+                            ! Check to see if we are near shore
+                            if (q(1,i,j) < deep_depth) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            ! Check if we are allowed to flag in deep water
+                            ! anyway
+                            else if (level < max_level_deep) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
+                        endif
+
+                        ! Check speed criteria, note that it might be useful to
+                        ! also have a per layer criteria since this is not
+                        ! gradient based
+                        speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2) / q(1,i,j)
+                        do m=1,min(size(speed_tolerance),mxnest)
+                            if (speed > speed_tolerance(m) .and. level <= m) then
+                                amrflags(i,j) = DOFLAG
+                                cycle x_loop
+                            endif
+                        enddo
                     endif
-
-                    ! Check speed criteria, note that it might be useful to
-                    ! also have a per layer criteria since this is not
-                    ! gradient based
-                    speed = sqrt(q(2,i,j)**2 + q(3,i,j)**2) / q(1,i,j)
-                    do m=1,min(size(speed_tolerance),mxnest)
-                        if (speed > speed_tolerance(m) .and. level <= m) then
-                            amrflags(i,j) = DOFLAG
-                            cycle x_loop
-                        endif
-                    enddo
                 endif
             endif
 

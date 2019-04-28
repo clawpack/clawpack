@@ -243,8 +243,9 @@ c     should change the way print_gauges does io - right now is critical section
 c     NOW changed, mjb 2/6/2015.
 c     NOTE that gauge subr called before stepgrid, so never get
 c     the very last gauge time at end of run.
+
       if (num_gauges > 0) then
-           call update_gauges(alloc(locnew:locnew+nvar*mitot*mjtot), 
+           call update_gauges(alloc(locnew:locnew+nvar*mitot*mjtot),
      .                       alloc(locaux:locnew+nvar*mitot*mjtot),
      .                       xlow,ylow,nvar,mitot,mjtot,naux,mptr)
            endif
@@ -253,7 +254,7 @@ c
       call stepgrid(alloc(locnew),fm,fp,gm,gp,
      2            mitot,mjtot,nghost,
      3            delt,dtnew,hx,hy,nvar,
-     4            xlow,ylow,time,mptr,naux,alloc(locaux))
+     4            xlow,ylow,time,mptr,naux,alloc(locaux),.true.)
 
       if (node(cfluxptr,mptr) .ne. 0)
      2   call fluxsv(mptr,fm,fp,gm,gp,

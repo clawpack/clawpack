@@ -39,6 +39,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     use friction_module, only: set_friction_field
 
     use topo_module
+    
+    use adjoint_module, only : adjoint_flagging,innerprod_index
 
     implicit none
 
@@ -101,6 +103,18 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     if (pressure_forcing) then
         aux(pressure_index, :, :) = ambient_pressure
     endif
+
+    ! Innerproduct field if used
+    if (adjoint_flagging) then
+        do jj=1-mbc,my+mbc
+            do ii=1-mbc,mx+mbc
+                if (aux(1,ii,jj) .eq. NEEDS_TO_BE_SET) then
+                    aux(innerprod_index,ii,jj) = 0.d0
+                    endif
+                enddo
+            enddo
+    endif
+
 
     ! ==========================================================================
     !  Set Bathymetry
