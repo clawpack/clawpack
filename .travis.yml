@@ -8,6 +8,8 @@ services:
   - docker
 
 env:
+  global:
+    - secure: "mDbSPjtPn8POCiCC0Am5QKnYqPb3kllihaBrKFrb32p3GGpIcrdjGcZLy9AGR/1QeV2NgyFX30eYSpHICQjPvZlmy2vLENefRnk7yhneNa8RA7aV5LCoffCXlveies4BiVS3S+ISyre5aH1gT+jti6SN1btJsnZn4Il7g61sIq+/fH4h4J2k1Ulev2sFmLbUFFHvUO5ZHDM0aVH9Dx3xd++ZrPVXJ9LTUZkazniAoiOG6UlaWuQ44uT50Sn9xXakbgR95lFZ60oNGvA2Japnwtyq4rC7iR7VfvyohBD8/Jhp/yFy+zvLWs7UirOwZpgcp7VqHkUEqwA6qHRo6LVrFHZ6lpFt1Oduz80aaQ/vIUvvmBvsHQmPpZMLnS+wUkZsJ5OVVj1+0DRFd88HEyTrliQb38lzy6GQ5IMbdtK9YgcsnLRHA8MxfXDsMnzVXk2RGcWyHjPKdw/Ze1zkyA/eJGSY4a7TXlkwTGi8UIf8T50skL5i2+7216FkB490RV5Sr8PPP9jc1mhsMIoPa9pbVRnxV1dWoPw+j7mmR5InmKoAGFOuwWAVzL8SmryEhrUv1KRJVwI4U1fRpU1g5XJZglqPCjoAzdelcFDSRlBzdmU+3ghT7wKFJ1psk4zIeBaAPfHaY8qf1zu/P1//20zEOy7l3D3FOYTQnPfAmj/RWeM="
   matrix:
     - DOCKER_ORG=climateimpactlab
       IMAGE_NAME=clawpack-image
@@ -43,3 +45,6 @@ deploy:
     skip_cleanup: true
     on:
       tags: true
+
+after_success:
+  - "BRANCHES_TO_MERGE_REGEX='master' BRANCH_TO_MERGE_INTO=integration-testing GITHUB_REPO=climateimpactlab/clawpack ./travis-automerge.sh"
