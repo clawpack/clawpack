@@ -194,6 +194,13 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
 
                 ! Binary output
                 case(3)
+
+                    ! Updating ghost cell data
+                    call bound(time,num_eqn,num_ghost,alloc(q_loc),     &
+                                 num_cells(1) + 2*num_ghost,            &
+                                 num_cells(2) + 2*num_ghost,            &
+                                 grid_ptr,alloc(aux_loc),num_aux)
+
                     ! Need to add eta to the output data
                     allocate(qeta((num_eqn + 1)                         &
                              * (num_cells(1) + 2 * num_ghost)           &

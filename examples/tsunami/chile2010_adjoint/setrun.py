@@ -4,12 +4,16 @@ Module to set up run time parameters for Clawpack.
 The values set in the function setrun are then written out to data files
 that will be read in by the Fortran code.
 
+
+For AMR based on adjoint flagging. 
+
 """
 
 from __future__ import absolute_import
 from __future__ import print_function
 import os
 import numpy as np
+
 
 try:
     CLAW = os.environ['CLAW']
@@ -55,6 +59,7 @@ def setrun(claw_pkg='geoclaw'):
     #------------------------------------------------------------------
     rundata = setgeo(rundata)
 
+
     #------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
     #   (or to amr2ez.data for AMR)
@@ -94,6 +99,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 3
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
+    # Note: as required for original problem - modified below for adjoint
     clawdata.num_aux = 3
 
     # Index of aux array corresponding to capacity function, if there is one:
@@ -128,8 +134,8 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style==1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.num_output_times = 18
-        clawdata.tfinal = 9*3600.
+        clawdata.num_output_times = 28
+        clawdata.tfinal = 7*3600.
         clawdata.output_t0 = True  # output at initial (or restart) time?
 
     elif clawdata.output_style == 2:
@@ -143,10 +149,10 @@ def setrun(claw_pkg='geoclaw'):
         clawdata.output_t0 = True
         
 
-    clawdata.output_format = 'ascii'      # 'ascii' or 'binary' 
+    clawdata.output_format = 'ascii'      # 'ascii', 'binary', 'netcdf' 
 
     clawdata.output_q_components = 'all'   # need all
-    clawdata.output_aux_components = 'none'  # eta=h+B is in q
+    clawdata.output_aux_components = 'all'  # need this to plot inner product
     clawdata.output_aux_onlyonce = False    # output aux arrays each frame
 
 
@@ -260,15 +266,15 @@ def setrun(claw_pkg='geoclaw'):
         # Do not checkpoint at all
         pass
 
-    elif np.abs(clawdata.checkpt_style) == 1:
+    elif clawdata.checkpt_style == 1:
         # Checkpoint only at tfinal.
         pass
 
-    elif np.abs(clawdata.checkpt_style) == 2:
+    elif clawdata.checkpt_style == 2:
         # Specify a list of checkpoint times.  
         clawdata.checkpt_times = [0.1,0.15]
 
-    elif np.abs(clawdata.checkpt_style) == 3:
+    elif clawdata.checkpt_style == 3:
         # Checkpoint every checkpt_interval timesteps (on Level 1)
         # and at the final time.
         clawdata.checkpt_interval = 5
@@ -283,22 +289,27 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2,6]
-    amrdata.refinement_ratios_y = [2,6]
-    amrdata.refinement_ratios_t = [2,6]
+    amrdata.refinement_ratios_x = [2,4]
+    amrdata.refinement_ratios_y = [2,4]
+    amrdata.refinement_ratios_t = [2,4]
 
 
     # Specify type of each aux variable in amrdata.auxtype.
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
+    # Note: as required for original problem - modified below for adjoint
     amrdata.aux_type = ['center','capacity','yleft']
 
-
-    # Flag using refinement routine flag2refine rather than richardson error
-    amrdata.flag_richardson = False    # use Richardson?
-    amrdata.flag_richardson_tol = 0.002  # Richardson tolerance
+    # set tolerances appropriate for adjoint flagging:
+    
+    # Flag for refinement based on Richardson error estimater:
+    amrdata.flag_richardson = False  # Doesn't work for GeoClaw
+    amrdata.flag_richardson_tol = 0.5
+    
+    # Flag for refinement using routine flag2refine:
     amrdata.flag2refine = True
+    rundata.amrdata.flag2refine_tol = 0.0001
 
     # steps to take on each level L between regriddings of level L+1:
     amrdata.regrid_interval = 3
@@ -324,7 +335,7 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.pprint = False      # proj. of tagged points
     amrdata.rprint = False      # print regridding summary
     amrdata.sprint = False      # space/memory output
-    amrdata.tprint = True       # time step reporting each level
+    amrdata.tprint = False      # time step reporting each level
     amrdata.uprint = False      # update/upbnd reporting
     
     # More AMR parameters can be set -- see the defaults in pyclaw/data.py
@@ -335,8 +346,12 @@ def setrun(claw_pkg='geoclaw'):
     rundata.regiondata.regions = []
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    rundata.regiondata.regions.append([3, 3, 0., 10000., -85,-72,-38,-25])
-    rundata.regiondata.regions.append([3, 3, 8000., 26000., -90,-80,-30,-15])
+
+    # all 3 levels anywhere, based on flagging:
+    rundata.regiondata.regions.append([1, 3, 0., 1e9, -220,0,-90,90])
+
+    # earthquake source region - force refinement initially:
+    rundata.regiondata.regions.append([3, 3, 0., 200., -85,-70,-38,-25])
 
     # ---------------
     # Gauges:
@@ -345,6 +360,34 @@ def setrun(claw_pkg='geoclaw'):
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
     rundata.gaugedata.gauges.append([32412, -86.392, -17.975, 0., 1.e10])
     
+
+
+    #------------------------------------------------------------------
+    # Adjoint specific data:
+    #------------------------------------------------------------------
+    # Also need to set flagging method and appropriate tolerances above
+
+    adjointdata = rundata.adjointdata
+    adjointdata.use_adjoint = True
+
+    # location of adjoint solution, must first be created:
+    adjointdata.adjoint_outdir = os.path.abspath('adjoint/_output')
+
+    # time period of interest:
+    adjointdata.t1 = rundata.clawdata.t0
+    adjointdata.t2 = rundata.clawdata.tfinal
+
+    # or try a shorter time period of interest:
+    #adjointdata.t1 = 3. * 3600.
+    #adjointdata.t2 = 4.5 * 3600.
+
+    if adjointdata.use_adjoint:
+        # need an additional aux variable for inner product:
+        rundata.amrdata.aux_type.append('center')
+        rundata.clawdata.num_aux = len(rundata.amrdata.aux_type)
+        adjointdata.innerprod_index = len(rundata.amrdata.aux_type)
+    
+
 
     return rundata
     # end of function setrun
@@ -383,7 +426,7 @@ def setgeo(rundata):
     # Refinement settings
     refinement_data = rundata.refinement_data
     refinement_data.variable_dt_refinement_ratios = True
-    refinement_data.wave_tolerance = 1.e-1
+    refinement_data.wave_tolerance = 1.e-1  # not used for adjoint flagging
     refinement_data.deep_depth = 1e2
     refinement_data.max_level_deep = 3
 
@@ -420,13 +463,9 @@ def setgeo(rundata):
     # ----------------------
 
 
-
 if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
     import sys
-    from clawpack.geoclaw import kmltools
-
     rundata = setrun(*sys.argv[1:])
     rundata.write()
 
-    kmltools.make_input_data_kmls(rundata)
