@@ -1,9 +1,9 @@
 ! Set auxiliary arrays
 !
 ! Routine that sets the values found in the aux array including topography and
-! other fields that are used in the source terms and other things.  
+! other fields that are used in the source terms and other things.
 !
-! In the default routine sets the following fields depending on the input 
+! In the default routine sets the following fields depending on the input
 ! parameters present:
 !  (1) topography
 !  (2) capacity (set if coordinate_system == 2)
@@ -16,7 +16,7 @@
 !
 !  - This routine is called anytime a grid is created during re-gridding to fill
 !    in the aux arrays.
-!  - Built-in to this routine is an ability to copy aux values from grids from 
+!  - Built-in to this routine is an ability to copy aux values from grids from
 !    the same level.  If you do not want this behavior you will need to modify
 !    this routine.
 !  - If you are using periodic BCs then you must handle this here.  Look to the
@@ -39,7 +39,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     use friction_module, only: set_friction_field
 
     use topo_module
-    
+
     use adjoint_module, only : adjoint_flagging,innerprod_index
 
     implicit none
@@ -66,7 +66,7 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         endif
     endif
 
-    ! Compute integer indices based off same corner of domain to reduce round 
+    ! Compute integer indices based off same corner of domain to reduce round
     ! off discrepancies
     ilo = floor((xlow - xlower + .05d0*dx)/dx)
     jlo = floor((ylow - ylower + .05d0*dy)/dy)
@@ -83,17 +83,12 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
             do ii = 1 - mbc, mx + mbc
                 ym = ylower + (jlo+jj-1.d0) * dy
                 yp = ylower + (jlo+jj) * dy
-                aux(2,ii,jj) = deg2rad * earth_radius**2                      & 
+                aux(2,ii,jj) = deg2rad * earth_radius**2                      &
                                 * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
                 aux(3,ii,jj) = ym * deg2rad
             end do
         end do
     end if
-
-    ! If using a variable friction field initialize the coefficients to 0
-    if (variable_friction) then
-        call set_friction_field(mx, my, mbc, maux, xlow, ylow, dx, dy, aux)
-    endif
 
     ! Storm fields if used
     if (wind_forcing) then
@@ -149,9 +144,9 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 ! Parameter NEEDS_TO_BE_SET initialized in amr_module.f90
                 ! saves time by otherwise copying instead of reinitializing
                 if (aux(1,ii,jj) .ne. NEEDS_TO_BE_SET) then
-                    cycle 
+                    cycle
                 endif
-            
+
                 topo_integral = 0.d0
                 if ((y>yupper).or.(y<ylower).or.(x>xupper).or.(x<xlower)) then
                     if (.not.(xperdom .or. yperdom)) then
@@ -164,14 +159,14 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                         ! the appropriate periodic grid cell coordinates and
                         ! again calling cellgridintegrate
                         call wrap_coords(x,y,xperm,xper,xperp,yperm,yper, &
-                                         yperp,dx,dy) 
+                                         yperp,dx,dy)
                         call cellgridintegrate(topo_integral,  &
                             xperm,xper,xperp,yperm,yper,yperp, &
                             xlowtopo,ylowtopo,xhitopo,yhitopo,dxtopo,dytopo, &
                             mxtopo,mytopo,mtopo,i0topo,mtopoorder, &
                             mtopofiles,mtoposize,topowork)
                     endif
-                else 
+                else
                     ! Cell does not extend outside of physical domain
                     call cellgridintegrate(topo_integral,xm,x,xp,ym,y,yp, &
                             xlowtopo,ylowtopo,xhitopo,yhitopo,dxtopo,dytopo, &
@@ -226,10 +221,15 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         enddo
     endif
 
+    ! If using a variable friction field initialize the coefficients to 0
+    if (variable_friction) then
+        call set_friction_field(mx, my, mbc, maux, xlow, ylow, dx, dy, aux)
+    endif
+
 contains
 
     ! Provide wrapper function for providing periodic coordinates
-    subroutine wrap_coords(x,y,xperm,xper,xperp,yperm,yper,yperp,dx,dy)                  
+    subroutine wrap_coords(x,y,xperm,xper,xperp,yperm,yper,yperp,dx,dy)
 
         use amr_module, only: xperdom, yperdom, xupper, yupper, xlower, ylower
 
