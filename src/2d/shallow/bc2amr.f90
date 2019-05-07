@@ -125,8 +125,13 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
 
         select case(mthbc(1))
             case(0) ! User defined boundary condition
-                ! Replace this code with a user defined boundary condition
-                stop "A user defined boundary condition was not provided."
+                do j = 1, ncol
+                    do i=1, nxl
+                        aux(:, i, j) = aux(:, nxl + 1, j)
+                        val(:, i, j) = val(:, nxl + 1, j)
+                        val(2, i, j) = 0.d0
+                    end do
+                end do
             case(1) ! Zero-order extrapolation
                 do j = 1, ncol
                     do i=1, nxl
@@ -172,8 +177,13 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
 
         select case(mthbc(2))
             case(0) ! User defined boundary condition
-                ! Replace this code with a user defined boundary condition
-                stop "A user defined boundary condition was not provided."
+                do i = ibeg, nrow
+                    do j = 1, ncol
+                        aux(:, i, j) = aux(:, ibeg - 1, j)
+                        val(:, i, j) = val(:, ibeg - 1, j)
+                        val(2, i, j) = 0.d0
+                    end do
+                end do
             case(1) ! Zero-order extrapolation
                 do i = ibeg, nrow
                     do j = 1, ncol
@@ -219,8 +229,13 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
 
         select case(mthbc(3))
             case(0) ! User defined boundary condition
-                ! Replace this code with a user defined boundary condition
-                stop "A user defined boundary condition was not provided."
+                do j = 1, nyb
+                    do i = 1, nrow
+                        aux(:,i,j) = aux(:, i, nyb + 1)
+                        val(:,i,j) = val(:, i, nyb + 1)
+                        val(3,i,j) = 0.d0
+                    end do
+                end do
             
             case(1) ! Zero-order extrapolation
                 do j = 1, nyb
@@ -268,8 +283,13 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
 
         select case(mthbc(4))
             case(0) ! User defined boundary condition
-                ! Replace this code with a user defined boundary condition
-                stop "A user defined boundary condition was not provided."
+                do j = jbeg, ncol
+                    do i = 1, nrow
+                        aux(:, i, j) = aux(:, i, jbeg - 1)
+                        val(:, i, j) = val(:, i, jbeg - 1)
+                        val(3, i, j) = 0.d0
+                    end do
+                end do
 
             case(1) ! Zero-order extrapolation
                 do j = jbeg, ncol
