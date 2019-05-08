@@ -80,3 +80,109 @@ def quality_check(model_output_dir,
                     raise InstabilityError("Model possibly unstable due to large magnitude deep "
                                            "ocean surge at end of run ({:.1f} cm in region {})".format(
                                            np.nanmean(all_vals)*100, r))
+
+                    
+def get_max_boundary_fluxes(model_output_dir, max_refinement_depth_to_check = None, 
+                            frames_to_check = 1):
+    """A common cause of instability is a persistant normal flux at the boundary.
+    This code checks the last frame(s) of a model output and returns the maximum
+    magnitude normal fluxes and currents at each boundary, as well as the maximum 
+    magnitude fluxes and currents observed within the entire domain.
+    
+    :Input:
+    - *model_output_dir* (str) Path to the output directory for a given model
+    - *max_refinement_depth_to_check* (int or None, optional) How many refinement levels to 
+        loop through to find max values. Runs quicker when just checking level 1, but
+        you may find higher max values at higher refinement levels. None (default)
+        means check all levels
+    - *frames_to_check* (int) How many of the last output frames to check for max. Default
+        is just one.
+    """
+
+    # find which frame is last
+    output_files = glob(join(model_output_dir,'fort.q*'))
+    frames = [int(i.split('/')[-1][-4:]) for i in output_files]
+    last_frame = max(frames)
+    
+    # get domain and file format
+    with open(join(model_output_dir,'claw.data'),'r') as f:
+        for l in f:
+            if '=: lower' in l:
+                xl,yl = [float(i) for i in l.strip().split()[:2]]
+            elif '=: upper' in l:
+                xu,yu = [float(i) for i in l.strip().split()[:2]]
+            elif '=: output_format' in l:
+                of = int(l.strip().split()[0]) - 1
+    file_format = ['ascii','netcdf','binary'][of]
+
+    maxhxl = -np.inf
+    maxhyl = -np.inf
+    maxcurrxl = -np.inf
+    maxcurryl = -np.inf
+    maxhxu = -np.inf
+    maxhyu = -np.inf
+    maxcurrxu = -np.inf
+    maxcurryu = -np.inf
+    maxhx_overall = -np.inf
+    maxhy_overall = -np.inf
+    maxcurrx_overall = -np.inf
+    maxcurry_overall = -np.inf
+
+    for f in range(last_frame+1-frames_to_check,last_frame+1):
+
+        soln = Solution()
+        soln.read(f, path = model_output_dir, file_format=file_format, read_aux=False)
+
+        for s in soln.states:
+
+            # only looking at lowest AMR levels
+            if max_refinement_depth_to_check is not None:
+                if s.patch.level > max_refinement_depth_to_check:
+                    continue
+                    
+            # get rounding error tolerance
+            delta = s.grid.dimensions[0].delta
+            edge_tol = delta * .001
+            
+            x = s.grid.c_centers[0]
+            xedges = s.grid.c_nodes[0]
+            y = s.grid.c_centers[1]
+            yedges = s.grid.c_nodes[1]
+
+            eta = s.q[3,:,:]
+            h = s.q[0,:,:]
+            hx = s.q[1,:,:]
+            curr_x = hx / h
+            hy = s.q[2,:,:]
+            curr_y = hy / h
+            topo = eta - s.q[0,:,:]
+            maxhx_overall = np.nanmax([np.abs(hx).max(),maxhx_overall])
+            maxhy_overall = np.nanmax([np.abs(hy).max(),maxhy_overall])
+            maxcurrx_overall = np.nanmax([np.nanmax(np.abs(curr_x)),maxcurrx_overall])
+            maxcurry_overall = np.nanmax([np.nanmax(np.abs(curr_y)),maxcurry_overall])
+
+            if abs(xedges[0,0] - xl) < edge_tol:
+                maxhxl = np.nanmax([maxhxl,np.nanmax(np.abs(hx[0,:]))])
+                maxcurrxl = np.nanmax([maxcurrxl,np.nanmax(np.abs(curr_x[0,:]))])
+            if abs(xedges[-1,0] - xu) < edge_tol:
+                maxhxu = np.nanmax([maxhxu,np.nanmax(np.abs(hx[-1,:]))])
+                maxcurrxu = np.nanmax([maxcurrxu,np.nanmax(np.abs(curr_x[-1,:]))])
+            if abs(yedges[0,0] - yl) < edge_tol:
+                maxhyl = np.nanmax([maxhyl,np.nanmax(np.abs(hy[:,0]))])
+                maxcurryl = np.nanmax([maxcurryl,np.nanmax(np.abs(curr_y[:,0]))])
+            if abs(yedges[0,-1] - yu) < edge_tol:
+                maxhyu = np.nanmax([maxhyu,np.nanmax(np.abs(hy[:,-1]))])
+                maxcurryu = np.nanmax([maxcurryu,np.nanmax(np.abs(curr_y[:,-1]))])
+                
+    return ({'max_normal_fluxes':{'W': maxhxl,
+                              'E': maxhxu,
+                              'N': maxhyu,
+                              'S': maxhyl},
+             'max_normal_currents':{'W': maxcurrxl,
+                                'E': maxcurrxu,
+                                'N': maxcurryu,
+                                'S': maxcurryl},
+             'domain_maxs': {'hu': maxhx_overall,
+                             'hv': maxhy_overall,
+                             'u': maxcurrx_overall,
+                             'v': maxcurry_overall}})
