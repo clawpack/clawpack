@@ -3,18 +3,36 @@
                        ql,qr,auxl,auxr,wave,s,amdq,apdq)
 !======================================================================
 !
-! Solves normal Riemann problems for the adjoint of the linearized 2D
-! SHALLOW WATER equations with topography:
-!     eta_t + mom_x = 0
-!     mom_x + g*h0(x) * eta_x = 0
-! where (eta, mom) are the adjoint eta and momentum variables.
-! The coefficient matrix is
-!     A^T = [0         1]
-!           [g*h0(x)   0]
-! where h0(x) is the background depth (ocean at rest).
-!
+! Solves normal Riemann problems for the adjoint of the linearized
+! 2D shallow water equations with topography.
 ! Uses q-waves, not f-waves, since the forward solve is in conservation
 ! form using f-waves.
+!
+! The full nonlinear forward problem in the x-direction is:
+!     h_t + (hu)_x = 0
+!     (hu)_t + (h*u^2 + 0.5*g*h^2)_x = -g*h*B_x(x)
+! where h is the depth, hu the momentum, and B(x) the topography/bathymetry.
+!
+! The linearized forward problem is:
+!     eta_t + mom_x = 0
+!     mom_t + [g*h0(x) * eta]_x = 0
+! where (eta, mom) are the surface displacement eta and linearized momentum,
+! and h0(x) is the background depth (ocean at rest), so h0(x) = max(-B(x), 0).
+!
+! Note the forward problem is in conservation form q_t + (A(x)q)_x = 0, 
+! so the adjoint equation is non-conservative and has the form
+!     q_hat_t + A(x)^T q_hat_x = 0
+! with coefficient matrix is
+!     A(x)^T = [0  g*h0(x)]
+!              [1     0   ]
+!
+! We need to solve the adjoint backwards in time, but we convert this into
+! a problem going forward in time in order to apply GeoClaw, by solving
+!     q_hat_t - A(x)^T q_hat_x = 0.
+!
+! Hence the Riemann solver uses the eigenvalues/vectors of -A(x)^T, which are:
+!     lambda_1 = -c0,  r_1 = [+c0, 1]^T,
+!     lambda_2 = +c0,  r_2 = [-c0, 1]^T.
 !
 ! If h0 < drytol on one side of the interface, then "solid wall" BCs
 ! are used to find the single wave propagating into the ocean with mom=0 behind.
@@ -111,6 +129,10 @@
         huL = qr(mu,i-1)
         huR = ql(mu,i)
 
+        ! wave speeds
+        cL = sqrt(g*h0L) ! 1 wave speed is -cL
+        cR = sqrt(g*h0R) ! 2 wave speed is +cR
+
 
         ! Check for wet/dry boundary
         if (hR <= drytol) then
@@ -118,6 +140,7 @@
             etaR = etaL
             huR = -huL
             dryR = .true.
+            cR = cL
         else
             dryR = .false.
         endif
@@ -127,14 +150,11 @@
             etaL = etaR
             huL = -huR
             dryL = .true.
+            cL = cR
         else
             dryL = .false.
         endif
 
-
-        ! wave speeds
-        cL = sqrt(g*h0L) ! 1 wave speed is -cL
-        cR = sqrt(g*h0R) ! 2 wave speed is +cR
         
         ! Roe average speeds 
         ! More consistent with forward solver, but doesn't make much difference
