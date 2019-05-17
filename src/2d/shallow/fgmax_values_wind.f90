@@ -38,7 +38,7 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     if (FG_NUM_VAL == 1) then
         return
     else
-        write(6,*) '*** Error -- expecting FG_NUM_VAL = 1, 2, or 5'
+        write(6,*) '*** Error -- expecting FG_NUM_VAL = 1'
         write(6,*) '***   in fgmax_values, found FG_NUM_VAL = ',FG_NUM_VAL
         stop
         endif
