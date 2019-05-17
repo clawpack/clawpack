@@ -31,9 +31,6 @@ subroutine fgmax_values(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
     logical, intent(in) :: mask_patch(1-mbc:mx+mbc, 1-mbc:my+mbc)
     real(kind=8), intent(inout) :: values(1, 1-mbc:mx+mbc, 1-mbc:my+mbc)
 
-    real(kind=8) :: s,hs,hss,s_dry_tol
-    real(kind=8) :: wind(2, 1-mbc:mx+mbc, 1-mbc:my+mbc)
-
     where (mask_patch)
         values(1,:,:) = sqrt(aux(5,:,:)**2 + aux(6,:,:)**2)
     endwhere
