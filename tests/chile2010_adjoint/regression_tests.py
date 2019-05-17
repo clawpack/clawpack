@@ -20,8 +20,6 @@ from clawpack.clawutil.test import wip
 thisfile = os.path.realpath(__file__)
 testdir = os.path.split(thisfile)[0]
 
-# Mark this test so that it doesn't count as a failure until
-# we figure out how to make it work reliably...
 
 class Chile2010AdjointTest(test.GeoClawRegressionTest):
 
@@ -35,7 +33,8 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         os.system('make -s topo')
 
 
-    ##@unittest.expectedFailure
+    # Mark this test so that it doesn't count as a failure until
+    # we figure out how to make it work reliably...
     @wip
     def runTest(self, save=False, indices=(2, 3)):
         r"""Test chile2010_adjoint example
