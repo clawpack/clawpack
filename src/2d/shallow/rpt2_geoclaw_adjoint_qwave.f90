@@ -31,7 +31,7 @@ subroutine rpt2(ixy,imp,maxm,meqn,mwaves,maux,mbc,mx,ql,qr, &
 
 !   local:
     integer :: i,mu,mv,i1
-    real(kind=8) :: h0D,h00,h0U,bD,b0,bU,c0,cU,cD,a1,a2,dxdcU,dxdcD
+    real(kind=8) :: h0D,h00,h0U,bD,b0,bU,c0,cU,cD,a1,a2,dxdcU,dxdcD,s1,s2
 
 !   # initialize for dry state cells:
     bmasdq = 0.d0
@@ -93,14 +93,14 @@ subroutine rpt2(ixy,imp,maxm,meqn,mwaves,maux,mbc,mx,ql,qr, &
         if (h0D < drytol) then
             a1 = 0.d0  ! no transmitted wave
         else
-            a1 = (-asdq(1,i) + asdq(mv,i)*c0) / (c0 + cD)
+            a1 = (asdq(1,i) + asdq(mv,i)*c0) / (c0 + cD)
         endif
 
 !       # transmitted part of up-going wave:
         if (h0U < drytol) then
             a2 = 0.d0  ! no transmitted wave
         else
-            a2 = (asdq(1,i) + asdq(mv,i)*c0) / (c0 + cU)
+            a2 = (-asdq(1,i) + asdq(mv,i)*c0) / (c0 + cU)
         endif
         
         !====== Adjust for mapping from latitude longitude to physical space====
@@ -119,16 +119,20 @@ subroutine rpt2(ixy,imp,maxm,meqn,mwaves,maux,mbc,mx,ql,qr, &
 
     
 !       # The down-going flux difference bmasdq is the product  -cD * wave1
+!       # down-going eigenvector of -A(x)^T is r1 = [cD, 1]^T
     
-        bmasdq(1,i) = dxdcD*cD * a1*cD
+        s1 = -cD * dxdcD  ! adjusted down-going wave speed
+        bmasdq(1,i) = s1 * a1*cD
         bmasdq(mu,i) = 0.d0
-        bmasdq(mv,i) = -dxdcD*cD * a1
+        bmasdq(mv,i) = s1 * a1
     
 !       # The up-going flux difference bpasdq is the product  cU * wave2
+!       # up-going eigenvector of -A(x)^T is r2 = [-cU, 1]^T
     
-        bpasdq(1,i) = dxdcU*cU * a2*cU
+        s2 = cU * dxdcU  ! adjusted up-going wave speed
+        bpasdq(1,i) = s2 * a2*(-cU)
         bpasdq(mu,i) = 0.d0
-        bpasdq(mv,i) = dxdcU*cU * a2
+        bpasdq(mv,i) = s2 * a2
     
         enddo
 
