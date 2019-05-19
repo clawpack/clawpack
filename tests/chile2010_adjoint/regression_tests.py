@@ -64,7 +64,7 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         print('+++ Running forward in directory ',os.getcwd())
         print('+++   contents: ', os.listdir())
         os.system('python maketopo.py')
-        print('+++   scratch directory: ', scratch_dir
+        print('+++   scratch directory: ', scratch_dir)
         print('+++   contents of scratch: ', os.listdir(scratch_dir))
         os.chdir(start_dir)
 
