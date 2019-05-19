@@ -81,6 +81,9 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
 
         # Write out data files
         self.load_rundata()
+        temp_adjoint_path = os.path.join(self.temp_path, 'adjoint')
+        self.rundata.adjointdata.adjoint_outdir = \
+             os.path.join(temp_adjoint_path, '_output')
         self.write_rundata_objects()
 
         # Run code
