@@ -45,11 +45,15 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         os.system('make -s data')
         os.system('make -s new')
         os.system('make .output > output.txt')
+        print('+++   contents of _output: ', os.listdir('_output'))
 
         # set up forward code
+        shutil.copy(os.path.join(self.test_path, "maketopo.py"),
+                                 self.temp_path)
         os.chdir(self.temp_path)
         print('+++ Running forward in directory ',os.getcwd())
-        os.system('make -s topo')
+        print('+++   contents: ', os.listdir())
+        os.system('python maketopo.py')
 
 
     # Mark this test so that it doesn't count as a failure until
