@@ -18,6 +18,15 @@ import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
 from clawpack.clawutil.test import wip
 
+
+try:
+    CLAW = os.environ['CLAW']
+except:
+    raise Exception("*** Must first set CLAW enviornment variable")
+
+# Scratch directory for storing topo and dtopo files:
+scratch_dir = os.path.join(CLAW, 'geoclaw', 'scratch')
+
 thisfile = os.path.realpath(__file__)
 testdir = os.path.split(thisfile)[0]
 
@@ -30,6 +39,7 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
 
         super(Chile2010AdjointTest, self).setUp()
 
+        start_dir = os.path.getcwd()
         test_adjoint_path = os.path.join(self.test_path, 'adjoint')
         temp_adjoint_path = os.path.join(self.temp_path, 'adjoint')
         print('+++ test_adjoint_path = ',test_adjoint_path)
@@ -54,6 +64,9 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         print('+++ Running forward in directory ',os.getcwd())
         print('+++   contents: ', os.listdir())
         os.system('python maketopo.py')
+        print('+++   scratch directory: ', scratch_dir
+        print('+++   contents of scratch: ', os.listdir(scratch_dir))
+        os.chdir(start_dir)
 
 
     # Mark this test so that it doesn't count as a failure until
