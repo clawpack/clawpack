@@ -10,6 +10,7 @@ from __future__ import absolute_import
 import os
 import sys
 import unittest
+import shutil
 
 import numpy
 
@@ -29,7 +30,25 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
 
         super(Chile2010AdjointTest, self).setUp()
 
-        # Make topography
+        test_adjoint_path = os.path.join(self.test_path, 'adjoint')
+        temp_adjoint_path = os.path.join(self.temp_path, 'adjoint')
+        print('+++ test_adjoint_path = ',test_adjoint_path)
+        print('+++ temp_adjoint_path = ',temp_adjoint_path)
+
+        shutil.copytree(test_adjoint_path, temp_adjoint_path)
+
+        # run adjoint code
+        os.chdir(temp_adjoint_path)
+        print('+++ Running adjoint in directory ',os.getcwd())
+        print('+++   contents: ', os.listdir())
+        os.system('make -s topo')
+        os.system('make -s data')
+        os.system('make -s new')
+        os.system('make .output > output.txt')
+
+        # set up forward code
+        os.chdir(self.temp_path)
+        print('+++ Running forward in directory ',os.getcwd())
         os.system('make -s topo')
 
 
@@ -42,19 +61,6 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         Note that this stub really only runs the code and performs no tests.
 
         """
-
-
-        # Run adjoint problem
-        adjointdir = testdir + '/adjoint'
-
-        # Running the adjoint problem
-        os.chdir(adjointdir)
-        os.system('make -s topo') # also make qinit for adjoint
-        os.system('make -s data')
-        os.system('make -s new')
-        os.system('make .output > output.txt')
-        os.chdir(testdir)
-
 
         # Write out data files
         self.load_rundata()
