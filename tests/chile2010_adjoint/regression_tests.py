@@ -39,7 +39,7 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
 
         super(Chile2010AdjointTest, self).setUp()
 
-        start_dir = os.path.getcwd()
+        start_dir = os.getcwd()
         test_adjoint_path = os.path.join(self.test_path, 'adjoint')
         temp_adjoint_path = os.path.join(self.temp_path, 'adjoint')
         print('+++ test_adjoint_path = ',test_adjoint_path)
