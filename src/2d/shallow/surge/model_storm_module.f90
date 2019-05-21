@@ -385,7 +385,7 @@ contains
                                        pressure_index, storm)
 
         use geoclaw_module, only: g => grav, rho_air, ambient_pressure
-        use geoclaw_module, only: coriolis, deg2rad
+        use geoclaw_module, only: coriolis, deg2rad, coordinate_system
         use geoclaw_module, only: spherical_distance
 
         use geoclaw_module, only: rad2deg
@@ -447,9 +447,16 @@ contains
                 x = xlower + (i-0.5d0) * dx   ! Degrees longitude
 
                 ! Calculate storm centric polar coordinate location of grid
-                ! cell center, uses Haversine formula
-                r = spherical_distance(x, y, sloc(1), sloc(2))
-                theta = atan2((y - sloc(2)) * DEG2RAD,(x - sloc(1)) * DEG2RAD)
+                ! cell center
+                if (coordinate_system == 2) then
+                    ! lat-long coordinates, uses Haversine formula
+                    r = spherical_distance(x, y, sloc(1), sloc(2))
+                    theta = atan2((y - sloc(2)) * DEG2RAD,(x - sloc(1)) * DEG2RAD)
+                else
+                    ! Strictly cartesian
+                    r = sqrt( (x - sloc(1))**2 + (y - sloc(2))**2)
+                    theta = atan2(y - sloc(2), x - sloc(1))
+                end if
 
                 ! Set pressure field
                 aux(pressure_index,i,j) = Pc + dp * exp(-(mwr / r)**B)
