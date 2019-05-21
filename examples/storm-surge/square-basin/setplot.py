@@ -32,7 +32,7 @@ def setplot(plotdata=None):
 
     # clear any old figures,axes,items data
     plotdata.clearfigures()
-    plotdata.format = 'ascii'
+    plotdata.format = 'binary'
 
     # Load data from output
     clawdata = clawutil.ClawInputData(2)
@@ -43,6 +43,11 @@ def setplot(plotdata=None):
     surge_data.read(os.path.join(plotdata.outdir, 'surge.data'))
     friction_data = geodata.FrictionData()
     friction_data.read(os.path.join(plotdata.outdir, 'friction.data'))
+
+    # Set indices for plotting
+    surgeplot.friction_field = 1
+    surgeplot.wind_field = 2
+    surgeplot.pressure_field = 4
 
     # Load storm track
     track = surgeplot.track_data(os.path.join(plotdata.outdir, 'fort.track'))
@@ -65,12 +70,9 @@ def setplot(plotdata=None):
     # ==========================================================================
     #   Plot specifications
     # ==========================================================================
-    regions = {"Gulf": {"xlimits": (clawdata.lower[0], clawdata.upper[0]),
+    regions = {"domain": {"xlimits": (clawdata.lower[0], clawdata.upper[0]),
                         "ylimits": (clawdata.lower[1], clawdata.upper[1]),
-                        "figsize": (6.4, 4.8)},
-               "LaTex Shelf": {"xlimits": (-97.5, -88.5),
-                               "ylimits": (27.5, 30.5),
-                               "figsize": (8, 2.7)}}
+                        "figsize": (6.4, 4.8)}}
 
     for (name, region_dict) in regions.items():
 
@@ -101,6 +103,7 @@ def setplot(plotdata=None):
         surgeplot.add_land(plotaxes)
         plotaxes.plotitem_dict['speed'].amr_patchedges_show = [0] * 10
         plotaxes.plotitem_dict['land'].amr_patchedges_show = [0] * 10
+
     #
     # Friction field
     #
@@ -108,8 +111,8 @@ def setplot(plotdata=None):
     plotfigure.show = friction_data.variable_friction and True
 
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = regions['Gulf']['xlimits']
-    plotaxes.ylimits = regions['Gulf']['ylimits']
+    plotaxes.xlimits = regions['domain']['xlimits']
+    plotaxes.ylimits = regions['domain']['ylimits']
     # plotaxes.title = "Manning's N Coefficient"
     plotaxes.afteraxes = friction_after_axes
     plotaxes.scaled = True
@@ -126,8 +129,8 @@ def setplot(plotdata=None):
     plotfigure.show = surge_data.pressure_forcing and True
 
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = regions['Gulf']['xlimits']
-    plotaxes.ylimits = regions['Gulf']['ylimits']
+    plotaxes.xlimits = regions['domain']['xlimits']
+    plotaxes.ylimits = regions['domain']['ylimits']
     plotaxes.title = "Pressure Field"
     plotaxes.afteraxes = surge_afteraxes
     plotaxes.scaled = True
@@ -139,8 +142,8 @@ def setplot(plotdata=None):
     plotfigure.show = surge_data.wind_forcing and True
 
     plotaxes = plotfigure.new_plotaxes()
-    plotaxes.xlimits = regions['Gulf']['xlimits']
-    plotaxes.ylimits = regions['Gulf']['ylimits']
+    plotaxes.xlimits = regions['domain']['xlimits']
+    plotaxes.ylimits = regions['domain']['ylimits']
     plotaxes.title = "Wind Field"
     plotaxes.afteraxes = surge_afteraxes
     plotaxes.scaled = True
