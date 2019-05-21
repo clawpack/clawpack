@@ -1,34 +1,29 @@
+#!/usr/bin/env python
 # encoding: utf-8
-"""
-Module to set up run time parameters for Clawpack.
-
-The values set in the function setrun are then written out to data files
-that will be read in by the Fortran code.
-
-"""
-
 from __future__ import absolute_import
 from __future__ import print_function
 
+#ensure# encoding: utf-8
+"""
+Setup a run for a simple hurricane in a square ocean basin
+
+"""
+
 import os
 import datetime
-import shutil
-import gzip
 
-import numpy as np
+import numpy
 
+import clawpack.geoclaw.data
+import clawpack.geoclaw.topotools as tt
+import clawpack.geoclaw.units as units
 from clawpack.geoclaw.surge.storm import Storm
-import clawpack.clawutil as clawutil
 
+# Initial ramp up time for hurricane
+RAMP_UP_TIME = 12 * 60**2
 
-# Time Conversions
 def days2seconds(days):
-    return days * 60.0**2 * 24.0
-
-
-# Scratch directory for storing topo and dtopo files:
-scratch_dir = os.path.join(os.environ["CLAW"], 'geoclaw', 'scratch')
-
+    return days * 24 * 60**2
 
 # ------------------------------
 def setrun(claw_pkg='geoclaw'):
@@ -68,18 +63,15 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
 
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = -99.0      # west longitude
-    clawdata.upper[0] = -70.0      # east longitude
+    clawdata.lower[0] = -200e3      # west boundary (m)
+    clawdata.upper[0] = 500e3       # east boundary (m)
 
-    clawdata.lower[1] = 8.0       # south latitude
-    clawdata.upper[1] = 32.0      # north latitude
+    clawdata.lower[1] = -300e3      # south boundary (m)
+    clawdata.upper[1] = 300e3       # north boundary (m)
 
     # Number of grid cells:
-    degree_factor = 4  # (0.25º,0.25º) ~ (25237.5 m, 27693.2 m) resolution
-    clawdata.num_cells[0] = int(clawdata.upper[0] - clawdata.lower[0]) \
-        * degree_factor
-    clawdata.num_cells[1] = int(clawdata.upper[1] - clawdata.lower[1]) \
-        * degree_factor
+    clawdata.num_cells[0] = 70 
+    clawdata.num_cells[1] = 60
 
     # ---------------
     # Size of system:
@@ -91,15 +83,15 @@ def setrun(claw_pkg='geoclaw'):
     # Number of auxiliary variables in the aux array (initialized in setaux)
     # First three are from shallow GeoClaw, fourth is friction and last 3 are
     # storm fields
-    clawdata.num_aux = 3 + 1 + 3
+    clawdata.num_aux = 1 + 1 + 3
 
     # Index of aux array corresponding to capacity function, if there is one:
-    clawdata.capa_index = 2
+    clawdata.capa_index = 0
 
     # -------------
     # Initial time:
     # -------------
-    clawdata.t0 = -days2seconds(3)
+    clawdata.t0 = -RAMP_UP_TIME
 
     # Restart from checkpoint file of a previous run?
     # If restarting, t0 above should be from original run, and the
@@ -121,7 +113,7 @@ def setrun(claw_pkg='geoclaw'):
 
     if clawdata.output_style == 1:
         # Output nout frames at equally spaced times up to tfinal:
-        clawdata.tfinal = days2seconds(1)
+        clawdata.tfinal = days2seconds(3)
         recurrence = 4
         clawdata.num_output_times = int((clawdata.tfinal - clawdata.t0) *
                                         recurrence / (60**2 * 24))
@@ -138,7 +130,7 @@ def setrun(claw_pkg='geoclaw'):
         clawdata.total_steps = 1
         clawdata.output_t0 = True
 
-    clawdata.output_format = 'ascii'      # 'ascii' or 'binary'
+    clawdata.output_format = 'binary'      # 'ascii' or 'binary'
     clawdata.output_q_components = 'all'   # could be list such as [True,True]
     clawdata.output_aux_components = 'all'
     clawdata.output_aux_onlyonce = False    # output aux arrays only at t0
@@ -262,19 +254,18 @@ def setrun(claw_pkg='geoclaw'):
     amrdata = rundata.amrdata
 
     # max number of refinement levels:
-    amrdata.amr_levels_max = 2
+    amrdata.amr_levels_max = 3
 
     # List of refinement ratios at each level (length at least mxnest-1)
-    amrdata.refinement_ratios_x = [2, 2, 2, 6, 16]
-    amrdata.refinement_ratios_y = [2, 2, 2, 6, 16]
-    amrdata.refinement_ratios_t = [2, 2, 2, 6, 16]
+    amrdata.refinement_ratios_x = [2,6]
+    amrdata.refinement_ratios_y = [2,6]
+    amrdata.refinement_ratios_t = [2,6]
 
     # Specify type of each aux variable in amrdata.auxtype.
     # This must be a list of length maux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
 
-    amrdata.aux_type = ['center', 'capacity', 'yleft', 'center', 'center',
-                        'center', 'center']
+    amrdata.aux_type = ['center', 'center', 'center', 'center', 'center']
 
     # Flag using refinement routine flag2refine rather than richardson error
     amrdata.flag_richardson = False    # use Richardson?
@@ -313,22 +304,9 @@ def setrun(claw_pkg='geoclaw'):
     regions = rundata.regiondata.regions
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-    # Gauges from Ike AWR paper (2011 Dawson et al)
-    rundata.gaugedata.gauges.append([1, -95.04, 29.07,
-                                     rundata.clawdata.t0,
-                                     rundata.clawdata.tfinal])
-    rundata.gaugedata.gauges.append([2, -94.71, 29.28,
-                                     rundata.clawdata.t0,
-                                     rundata.clawdata.tfinal])
-    rundata.gaugedata.gauges.append([3, -94.39, 29.49,
-                                     rundata.clawdata.t0,
-                                     rundata.clawdata.tfinal])
-    rundata.gaugedata.gauges.append([4, -94.13, 29.58,
-                                     rundata.clawdata.t0,
-                                     rundata.clawdata.tfinal])
 
     # Force the gauges to also record the wind and pressure fields
-    rundata.gaugedata.aux_out_fields = [4, 5, 6]
+    # rundata.gaugedata.aux_out_fields = [4, 5, 6]
 
     # ------------------------------------------------------------------
     # GeoClaw specific parameters:
@@ -351,7 +329,7 @@ def setgeo(rundata):
 
     # == Physics ==
     geo_data.gravity = 9.81
-    geo_data.coordinate_system = 2
+    geo_data.coordinate_system = 1
     geo_data.earth_radius = 6367.5e3
     geo_data.rho = 1025.0
     geo_data.rho_air = 1.15
@@ -359,12 +337,13 @@ def setgeo(rundata):
 
     # == Forcing Options
     geo_data.coriolis_forcing = True
+    geo_data.theta_0 = 25.0 # Beta-plane approximation center
     geo_data.friction_forcing = True
     geo_data.friction_depth = 1e10
 
     # == Algorithm and Initial Conditions ==
     # Due to seasonal swelling of gulf we set sea level higher
-    geo_data.sea_level = 0.28
+    geo_data.sea_level = 0.0
     geo_data.dry_tolerance = 1.e-2
 
     # Refinement Criteria
@@ -380,14 +359,7 @@ def setgeo(rundata):
     topo_data.topofiles = []
     # for topography, append lines of the form
     #   [topotype, minlevel, maxlevel, t1, t2, fname]
-    # See regions for control over these regions, need better bathy data for
-    # the smaller domains
-    clawutil.data.get_remote_file(
-           "http://www.columbia.edu/~ktm2132/bathy/gulf_caribbean.tt3.tar.bz2")
-    topo_path = os.path.join(scratch_dir, 'gulf_caribbean.tt3')
-    topo_data.topofiles.append([3, 1, 5, rundata.clawdata.t0,
-                                rundata.clawdata.tfinal,
-                                topo_path])
+    topo_data.topofiles.append([2, 1, 5, -RAMP_UP_TIME, 1e10, 'topo.tt2'])
 
     # == setfixedgrids.data values ==
     rundata.fixed_grid_data.fixedgrids = []
@@ -405,6 +377,9 @@ def setgeo(rundata):
     data.drag_law = 1
     data.pressure_forcing = True
 
+    data.wind_index = 2
+    data.pressure_index = 4
+
     data.display_landfall_time = True
 
     # AMR parameters, m/s and m respectively
@@ -414,27 +389,30 @@ def setgeo(rundata):
     # Storm parameters - Parameterized storm (Holland 1980)
     data.storm_specification_type = 'holland80'  # (type 1)
     data.storm_file = os.path.expandvars(os.path.join(os.getcwd(),
-                                         'ike.storm'))
+                                         'fake.storm'))
 
-    # Convert ATCF data to GeoClaw format
-    clawutil.data.get_remote_file(
-                   "http://ftp.nhc.noaa.gov/atcf/archive/2008/bal092008.dat.gz")
-    atcf_path = os.path.join(scratch_dir, "bal092008.dat")
-    # Note that the get_remote_file function does not support gzip files which
-    # are not also tar files.  The following code handles this
-    with gzip.open(".".join((atcf_path, 'gz')), 'rb') as atcf_file,    \
-            open(atcf_path, 'w') as atcf_unzipped_file:
-        atcf_unzipped_file.write(atcf_file.read().decode('ascii'))
+    # Contruct storm
+    forward_velocity = units.convert(20, 'km/h', 'm/s')
+    theta = 0.0 * numpy.pi / 180.0 # degrees from horizontal to radians
 
-    # Uncomment/comment out to use the old version of the Ike storm file
-    # ike = Storm(path="old_ike.storm", file_format="ATCF")
-    ike = Storm(path=atcf_path, file_format="ATCF")
+    my_storm = Storm()
+    
+    # Take seconds and time period of 30 minutes and turn them into datatimes
+    t_ref = datetime.datetime.now()
+    t_sec = numpy.arange(-RAMP_UP_TIME, rundata.clawdata.tfinal, 30.0 * 60.0)
+    my_storm.t = [t_ref + datetime.timedelta(seconds=t) for t in t_sec]
 
-    # Calculate landfall time - Need to specify as the file above does not
-    # include this info (9/13/2008 ~ 7 UTC)
-    ike.time_offset = datetime.datetime(2008, 9, 13, 7)
+    my_storm.time_offset = t_ref
+    my_storm.eye_location = numpy.empty((t_sec.shape[0], 2))
+    my_storm.eye_location[:, 0] = forward_velocity * t_sec * numpy.cos(theta)
+    my_storm.eye_location[:, 1] = forward_velocity * t_sec * numpy.sin(theta)
+    my_storm.max_wind_speed = [units.convert(54, 'knots', 'm/s')] * t_sec.shape[0]
+    my_storm.max_wind_radius = [units.convert(50, 'km', 'm')] * t_sec.shape[0]
+    my_storm.central_pressure = [units.convert(980, 'mbar', 'Pa')] * t_sec.shape[0]
+    my_storm.storm_radius = [units.convert(1000, 'km', 'm')] * t_sec.shape[0]
 
-    ike.write(data.storm_file, file_format='geoclaw')
+    my_storm.write(data.storm_file, file_format="geoclaw")
+
 
     # =======================
     #  Set Variable Friction
@@ -442,23 +420,42 @@ def setgeo(rundata):
     data = rundata.friction_data
 
     # Variable friction
-    data.variable_friction = True
-
-    # Region based friction
-    # Entire domain
-    data.friction_regions.append([rundata.clawdata.lower,
-                                  rundata.clawdata.upper,
-                                  [np.infty, 0.0, -np.infty],
-                                  [0.030, 0.022]])
-
-    # La-Tex Shelf
-    data.friction_regions.append([(-98, 25.25), (-90, 30),
-                                  [np.infty, -10.0, -200.0, -np.infty],
-                                  [0.030, 0.012, 0.022]])
+    data.variable_friction = False
+    data.friction_index = 1
 
     return rundata
     # end of function setgeo
     # ----------------------
+
+
+def write_topo_file(run_data, out_file, **kwargs):
+    """Create simple topography"""
+
+    # Make topography
+    topo = tt.Topography()
+    topo.x = numpy.linspace(run_data.clawdata.lower[0], 
+                            run_data.clawdata.upper[0], 
+                            run_data.clawdata.num_cells[0] + 8)
+    topo.y = numpy.linspace(run_data.clawdata.lower[1], 
+                            run_data.clawdata.upper[1], 
+                            run_data.clawdata.num_cells[1] + 8)
+
+    # Create bathymetry profile
+    beach_slope = 0.05
+    basin_depth = -3000
+    shelf_depth = -200
+    x0 = 350e3
+    x1 = 450e3
+    x2 = 480e3
+    topo_profile = [(run_data.clawdata.lower[0], basin_depth),
+                    (x0, basin_depth), (x1, shelf_depth), (x2, shelf_depth),
+                    (run_data.clawdata.upper[0], 
+                            beach_slope * (run_data.clawdata.upper[0] - x2) 
+                            + shelf_depth)]
+    topo.topo_func = tt.create_topo_func(topo_profile)
+    topo.write(out_file)
+
+    return topo
 
 
 if __name__ == '__main__':
@@ -470,3 +467,5 @@ if __name__ == '__main__':
         rundata = setrun()
 
     rundata.write()
+
+    topo = write_topo_file(rundata, 'topo.tt2')
