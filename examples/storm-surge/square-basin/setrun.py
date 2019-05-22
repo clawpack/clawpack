@@ -142,7 +142,7 @@ def setrun(claw_pkg='geoclaw'):
     # The current t, dt, and cfl will be printed every time step
     # at AMR levels <= verbosity.  Set verbosity = 0 for no printing.
     #   (E.g. verbosity == 2 means print only on levels 1 and 2.)
-    clawdata.verbosity = 0
+    clawdata.verbosity = 3
 
     # --------------
     # Time stepping:
@@ -165,7 +165,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.cfl_max = 1.0
 
     # Maximum number of time steps to allow between output times:
-    clawdata.steps_max = 5000
+    clawdata.steps_max = 50000
 
     # ------------------
     # Method to be used:
@@ -402,14 +402,20 @@ def setgeo(rundata):
     t_sec = numpy.arange(-RAMP_UP_TIME, rundata.clawdata.tfinal, 30.0 * 60.0)
     my_storm.t = [t_ref + datetime.timedelta(seconds=t) for t in t_sec]
 
+    ramp_func = lambda t: (t + (2 * RAMP_UP_TIME)) * (t < 0) / (2 * RAMP_UP_TIME) \
+                          + numpy.ones(t_sec.shape) * (t >= 0)
+
     my_storm.time_offset = t_ref
     my_storm.eye_location = numpy.empty((t_sec.shape[0], 2))
     my_storm.eye_location[:, 0] = forward_velocity * t_sec * numpy.cos(theta)
     my_storm.eye_location[:, 1] = forward_velocity * t_sec * numpy.sin(theta)
-    my_storm.max_wind_speed = [units.convert(54, 'knots', 'm/s')] * t_sec.shape[0]
-    my_storm.max_wind_radius = [units.convert(50, 'km', 'm')] * t_sec.shape[0]
-    my_storm.central_pressure = [units.convert(980, 'mbar', 'Pa')] * t_sec.shape[0]
-    my_storm.storm_radius = [units.convert(1000, 'km', 'm')] * t_sec.shape[0]
+    my_storm.max_wind_speed = units.convert(56, 'knots', 'm/s') * ramp_func(t_sec)
+    my_storm.central_pressure = units.convert(1024, "mbar", "Pa")  \
+                                - (units.convert(1024, "mbar", "Pa")  \
+                                   - units.convert(950, 'mbar', 'Pa'))  \
+                                       * ramp_func(t_sec)
+    my_storm.max_wind_radius = [units.convert(8, 'km', 'm')] * t_sec.shape[0]
+    my_storm.storm_radius = [units.convert(100, 'km', 'm')] * t_sec.shape[0]
 
     my_storm.write(data.storm_file, file_format="geoclaw")
 

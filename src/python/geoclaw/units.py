@@ -69,7 +69,8 @@ units['pressure'] = {'Pa': 'pascals', 'hPa': 'hectopascals',
                      'dyne/cm^2': 'Dynes/cm^2', 'dyne/m^2': 'Dynes/m^2'}
 
 # Speeds
-conversion_func['km/h'] = [lambda v: v * 1e3, lambda v: v / 1e3]
+conversion_func['km/h'] = [lambda v: v * 1e3 / (60**2), 
+                           lambda v: v * 60**2 / 1e3]
 conversion_func['mph'] = [lambda v: v * 0.44704, lambda v: v / 0.44704]
 conversion_func['m/s'] = [lambda v: v, lambda v: v]
 conversion_func['knots'] = [lambda v: v * 0.51444444, 
