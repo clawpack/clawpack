@@ -70,8 +70,9 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
 
 
     # Mark this test so that it doesn't count as a failure until
-    # we figure out how to make it work reliably...
-    @wip
+    # we figure out how to make it work reliably.
+    # Passes with rtol=atol=1e-5 below.
+    #@wip
     def runTest(self, save=False, indices=(2, 3)):
         r"""Test chile2010_adjoint example
 
