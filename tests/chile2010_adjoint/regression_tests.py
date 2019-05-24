@@ -10,12 +10,22 @@ from __future__ import absolute_import
 import os
 import sys
 import unittest
+import shutil
 
 import numpy
 
 import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
 from clawpack.clawutil.test import wip
+
+
+try:
+    CLAW = os.environ['CLAW']
+except:
+    raise Exception("*** Must first set CLAW enviornment variable")
+
+# Scratch directory for storing topo and dtopo files:
+scratch_dir = os.path.join(CLAW, 'geoclaw', 'scratch')
 
 thisfile = os.path.realpath(__file__)
 testdir = os.path.split(thisfile)[0]
@@ -29,13 +39,40 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
 
         super(Chile2010AdjointTest, self).setUp()
 
-        # Make topography
+        start_dir = os.getcwd()
+        test_adjoint_path = os.path.join(self.test_path, 'adjoint')
+        temp_adjoint_path = os.path.join(self.temp_path, 'adjoint')
+        #print('+++ test_adjoint_path = ',test_adjoint_path)
+        #print('+++ temp_adjoint_path = ',temp_adjoint_path)
+
+        shutil.copytree(test_adjoint_path, temp_adjoint_path)
+
+        # run adjoint code
+        os.chdir(temp_adjoint_path)
+        #print('+++ Running adjoint in directory ',os.getcwd())
+        #print('+++   contents: ', os.listdir('.'))
         os.system('make -s topo')
+        os.system('make -s data')
+        os.system('make -s new')
+        os.system('make .output > output.txt')
+        #print('+++   contents of _output: ', os.listdir('_output'))
+
+        # set up forward code
+        shutil.copy(os.path.join(self.test_path, "maketopo.py"),
+                                 self.temp_path)
+        os.chdir(self.temp_path)
+        #print('+++ Running forward in directory ',os.getcwd())
+        #print('+++   contents: ', os.listdir())
+        os.system('python maketopo.py')
+        #print('+++   scratch directory: ', scratch_dir)
+        #print('+++   contents of scratch: ', os.listdir(scratch_dir))
+        os.chdir(start_dir)
 
 
     # Mark this test so that it doesn't count as a failure until
-    # we figure out how to make it work reliably...
-    @wip
+    # we figure out how to make it work reliably.
+    # Passes with rtol=atol=1e-5 below.
+    #@wip
     def runTest(self, save=False, indices=(2, 3)):
         r"""Test chile2010_adjoint example
 
@@ -43,28 +80,20 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
 
         """
 
-
-        # Run adjoint problem
-        adjointdir = testdir + '/adjoint'
-
-        # Running the adjoint problem
-        os.chdir(adjointdir)
-        os.system('make -s topo') # also make qinit for adjoint
-        os.system('make -s data')
-        os.system('make -s new')
-        os.system('make .output > output.txt')
-        os.chdir(testdir)
-
-
         # Write out data files
         self.load_rundata()
+        temp_adjoint_path = os.path.join(self.temp_path, 'adjoint')
+        self.rundata.adjointdata.adjoint_outdir = \
+             os.path.join(temp_adjoint_path, '_output')
         self.write_rundata_objects()
 
         # Run code
         self.run_code()
 
         # Perform tests
-        self.check_gauges(save=save, gauge_id=1, indices=(2, 3))
+        # (increase rtol,atol because of mysterious diffs between machines)
+        self.check_gauges(save=save, gauge_id=1, indices=(2, 3),
+                          rtol=1e-5, atol=1e-5)
         self.success = True
 
 
