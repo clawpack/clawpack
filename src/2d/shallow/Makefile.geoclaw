@@ -50,7 +50,7 @@ COMMON_SOURCES += \
   $(AMRLIB)/fluxad.f \
   $(AMRLIB)/fluxsv.f \
   $(AMRLIB)/grdfit2.f \
-  $(AMRLIB)/moment.f \
+  $(AMRLIB)/moment.f90 \
   $(AMRLIB)/nestck2.f \
   $(AMRLIB)/prepc.f \
   $(AMRLIB)/prepf.f \
