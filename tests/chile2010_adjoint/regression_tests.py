@@ -69,10 +69,6 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         os.chdir(start_dir)
 
 
-    # Mark this test so that it doesn't count as a failure until
-    # we figure out how to make it work reliably.
-    # Passes with rtol=atol=1e-5 below.
-    #@wip
     def runTest(self, save=False, indices=(2, 3)):
         r"""Test chile2010_adjoint example
 
@@ -91,9 +87,7 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         self.run_code()
 
         # Perform tests
-        # (increase rtol,atol because of mysterious diffs between machines)
-        self.check_gauges(save=save, gauge_id=1, indices=(2, 3),
-                          rtol=1e-5, atol=1e-5)
+        self.check_gauges(save=save, gauge_id=1, indices=(2, 3))
         self.success = True
 
 
