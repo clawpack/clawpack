@@ -21,7 +21,6 @@ PLOTDIR = _plots               # Directory for plots
 
 OVERWRITE ?= True                   # False ==> make a copy of OUTDIR first
 RESTART ?= False                    # Should = clawdata.restart in setrun
-GIT_STATUS = True
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
