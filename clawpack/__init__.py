@@ -20,3 +20,5 @@ _path = (_os.path.join(_root, *_sdir.split('/'))
 __path__.extend(_sdir for _sdir in _path
                 if _os.path.isdir(_sdir))
 del _root, _path
+
+__version__ = '5.6.0'
