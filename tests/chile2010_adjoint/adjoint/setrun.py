@@ -296,7 +296,7 @@ def setrun(claw_pkg='geoclaw'):
 
 
     # Flag using refinement routine flag2refine rather than richardson error
-    amrdata.flag_richardson = True    # use Richardson?
+    amrdata.flag_richardson = False    # use Richardson?
     amrdata.flag_richardson_tol = 0.002  # Richardson tolerance
     amrdata.flag2refine = False
 

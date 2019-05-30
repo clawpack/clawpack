@@ -21,12 +21,11 @@ PLOTDIR = _plots               # Directory for plots
 
 OVERWRITE ?= True                   # False ==> make a copy of OUTDIR first
 RESTART ?= False                    # Should = clawdata.restart in setrun
-GIT_STATUS = True
 
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS = -O2 -fopenmp
+FFLAGS ?=
 
 # ---------------------------------
 # package sources for this program:
@@ -53,10 +52,8 @@ EXCLUDE_SOURCES = \
 MODULES = \
 
 SOURCES = \
-  $(GEOLIB)/rpn2_geoclaw_adjoint_qwave.f90 \
-  $(GEOLIB)/rpt2_geoclaw_adjoint_qwave.f90 \
-  # for now these new Riemann solvers are in geoclaw, move to riemann eventually
-
+  $(CLAW)/riemann/src/rpn2_geoclaw_adjoint_qwave.f90 \
+  $(CLAW)/riemann/src/rpt2_geoclaw_adjoint_qwave.f90 \
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
