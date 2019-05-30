@@ -30,7 +30,7 @@ WORKDIR /clawpack
 RUN source activate worker && \
   pip install --upgrade pip && \
   pip install -e . && \
-  pip install --upgrade matplotlib yolk3k \
+  pip install --upgrade matplotlib==3.0.3 yolk3k \
    pytides rhg_compute_tools>=0.1.6 --no-cache-dir
 
 WORKDIR /
