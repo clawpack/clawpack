@@ -114,7 +114,8 @@ def test_storm_IO(save=False):
                 # sid
 #                 kwargs = {'storm_name':'IKE',
 #                          'year':2008}
-                kwargs = {'sid': '2008245N17323'}
+                kwargs = {'sid': '2008245N17323',
+                          'agency_pref': ['wmo','usa']}
 
                 # test the fill_radius_w_other_source func
                 atcf_path = os.path.join(testdir, "data", "storm", "atcf.txt")
