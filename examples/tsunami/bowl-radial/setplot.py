@@ -51,14 +51,6 @@ def setplot(plotdata=None):
 
     plotdata.beforeframe = set_drytol
 
-    # To plot gauge locations on pcolor or contour plot, use this as
-    # an afteraxis function:
-
-    def addgauges(current_data):
-        from clawpack.visclaw import gaugetools
-        gaugetools.plot_gauge_locations(current_data.plotdata, \
-             gaugenos='all', format_string='ko', add_labels=True)
-    
 
     #-----------------------------------------
     # Figure for pcolor plot
@@ -108,6 +100,13 @@ def setplot(plotdata=None):
     plotaxes.scaled = True
     plotaxes.xlimits = [55,66]
     plotaxes.ylimits = [55,66]
+
+    def addgauges(current_data):
+        from clawpack.visclaw import gaugetools
+        gaugenos = range(101,110) # on diagonal
+        gaugetools.plot_gauge_locations(current_data.plotdata, \
+             gaugenos=gaugenos, format_string='ko', add_labels=True)
+    
     plotaxes.afteraxes = addgauges
 
     # Water
@@ -181,6 +180,13 @@ def setplot(plotdata=None):
     plotaxes.scaled = True
     plotaxes.xlimits = [82,93]
     plotaxes.ylimits = [-5,6]
+
+    def addgauges(current_data):
+        from clawpack.visclaw import gaugetools
+        gaugenos = range(1,10) # on x-axis
+        gaugetools.plot_gauge_locations(current_data.plotdata, \
+             gaugenos=gaugenos, format_string='ko', add_labels=True)
+    
     plotaxes.afteraxes = addgauges
 
     # Water
@@ -346,6 +352,7 @@ def setplot(plotdata=None):
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
     plotdata.parallel = True                 # make multiple frame png's at once
+    plotdata.html_movie_width = 800         # width for js movie
 
     return plotdata
 
