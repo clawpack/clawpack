@@ -6,7 +6,7 @@
 	url = https://github.com/clawpack/visclaw.git
 [submodule "clawutil"]
 	path = clawutil
-	url = https://github.com/clawpack/clawutil.git
+	url = https://github.com/ClimateImpactLab/clawutil.git
 [submodule "riemann"]
 	path = riemann
 	url = https://github.com/clawpack/riemann.git
