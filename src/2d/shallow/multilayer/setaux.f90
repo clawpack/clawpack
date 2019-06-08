@@ -49,26 +49,29 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         endif
     endif
 
-    ! Check below is new in 5.2.1 -- need to rethink for storm surge
-    ! and other applications where other aux arrays might be used?
-    if (coordinate_system == 1) then
-        if (mcapa > 0) then
-            print *,'ERROR in setaux:  for coordinate_system==1'
-            print *,'     need mcapa == 0 and maux == 1'
-            print *,'     have mcapa = ',mcapa,'  maux = ',maux
-            stop
-        else if (maux > 1) then
-            ! Should not need to set aux(2,:,:) in this case, but 
-            ! for some reason it bombs, e.g. in bowl-radial if maux>1.
-            aux(2,:,:) = 1.d0 
-            !aux(3,:,:) = 1.d0
-        endif
-    endif
+    ! Compute integer indices based off same corner of domain to reduce round
+    ! off discrepancies
+    ilo = floor((xlow - xlower + .05d0*dx)/dx)
+    jlo = floor((ylow - ylower + .05d0*dy)/dy)
 
-    ! If using a variable friction field initialize the coefficients to 0
-    if (variable_friction) then
-        aux(friction_index,:,:) = 0.d0
-    endif
+    ! Set geometry values
+    if (coordinate_system == 1) then
+        if (maux == 0 .and. mcapa > 0) then
+            print *, "ERROR:  Capacity array requested but number of aux"
+            print *, "variables is set to 0."
+            stop
+        end if
+    else if (coordinate_system == 2) then
+        do jj = 1 - mbc, my + mbc
+            do ii = 1 - mbc, mx + mbc
+                ym = ylower + (jlo+jj-1.d0) * dy
+                yp = ylower + (jlo+jj) * dy
+                aux(2,ii,jj) = deg2rad * earth_radius**2                      &
+                                * (sin(yp * deg2rad) - sin(ym * deg2rad)) / dy
+                aux(3,ii,jj) = ym * deg2rad
+            end do
+        end do
+    end if
 
     ! Storm fields if used
     if (wind_forcing) then
@@ -77,6 +80,17 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
     endif
     if (pressure_forcing) then
         aux(pressure_index, :, :) = ambient_pressure
+    endif
+
+    ! Innerproduct field if used
+    if (adjoint_flagging) then
+        do jj=1-mbc,my+mbc
+            do ii=1-mbc,mx+mbc
+                if (aux(1,ii,jj) .eq. NEEDS_TO_BE_SET) then
+                    aux(innerprod_index,ii,jj) = 0.d0
+                endif
+            enddo
+        enddo
     endif
 
     ! Initial layer depths for multilayer
@@ -90,8 +104,8 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         end forall
     endif
 
-! test:  compute integer indices based off same corner of domain 
-!        to reduce round off discrepancies
+    ! test:  compute integer indices based off same corner of domain 
+    !        to reduce round off discrepancies
     ilo = floor((xlow - xlower + .05d0*dx)/dx)
     jlo = floor((ylow - ylower + .05d0*dy)/dy)
 
@@ -142,10 +156,14 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
                 else
                     aux(1,ii,jj) = topo_integral / (dx * dy)
                 endif
-
-            endif
+            enddo
         enddo
-    enddo
+    else
+        print *, "ERROR:  There is no way to set bathymetry!  Either "
+        print *, "        provide topography files or request topography "
+        print *,  "        defined by a function."
+        stop
+    end if
 
     ! Copy topo to ghost cells if outside physical domain
 
