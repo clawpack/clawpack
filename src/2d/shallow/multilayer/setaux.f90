@@ -1,4 +1,3 @@
-subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !     ============================================
 !
 !     # set auxiliary arrays
@@ -12,6 +11,11 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 !     aux(4:num_layers + 3,i,j) = Initial layer depths for linearized problem
 !
 
+<<<<<<< HEAD
+=======
+subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
+
+>>>>>>> fix-square-basin
     use amr_module, only: mcapa, xupper, yupper, xlower, ylower, NEEDS_TO_BE_SET
     use amr_module, only: xperdom, yperdom
 
@@ -210,7 +214,6 @@ subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
         enddo
     endif
 
-
     ! Set friction coefficient based on a set of depth levels
     if (friction_index > 0) then
        call set_friction_field(mx, my, mbc, maux, xlow, ylow, dx, dy, aux)
@@ -280,5 +283,5 @@ contains
         yperp = yper + 0.5d0 * dy
 
     end subroutine wrap_coords
-
+    
 end subroutine setaux
