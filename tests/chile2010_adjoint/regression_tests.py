@@ -17,6 +17,7 @@ import numpy
 import clawpack.geoclaw.test as test
 import clawpack.geoclaw.topotools as topotools
 from clawpack.clawutil.test import wip
+from clawpack.clawutil import runclaw
 
 
 try:
@@ -54,7 +55,7 @@ class Chile2010AdjointTest(test.GeoClawRegressionTest):
         os.system('make -s topo')
         os.system('make -s data')
         os.system('make -s new')
-        os.system('make .output > output.txt')
+        os.system('make output > output.txt')
         #print('+++   contents of _output: ', os.listdir('_output'))
 
         # set up forward code
