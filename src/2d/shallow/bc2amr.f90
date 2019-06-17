@@ -193,7 +193,7 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                         val(1, i, j) = sea_level - aux(1, ibeg - 1, j)
                         if (abs(val(2, ibeg -1, j)) > mom_norm_thresh) then
                             write(0,"('Boundary velocity error: ',f12.8)") abs(val(2, ibeg -1, j))
-                            call exit(1)
+                            call exit(2)
                         endif
                     end do
                 end do
@@ -250,7 +250,7 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                         val(1, i, j) = sea_level - aux(1, i, nyb + 1)
                         if (abs(val(3, i, nyb + 1)) > mom_norm_thresh) then
                             write(0,"('Boundary velocity error: ',f12.8)") abs(val(3, i, nyb + 1))
-                            call exit(1)
+                            call exit(3)
                         endif
                     end do
                 end do
@@ -309,7 +309,7 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                         val(1, i, j) = sea_level - aux(1, i, jbeg - 1)
                         if (abs(val(3, i, jbeg - 1)) > mom_norm_thresh) then
                             write(0,"('Boundary velocity error: ',f12.8)") abs(val(3, i, jbeg - 1))
-                            call exit(1)
+                            call exit(4)
                         endif
                     end do
                 end do
