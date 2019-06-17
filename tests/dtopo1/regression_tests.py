@@ -87,9 +87,12 @@ class DTopoTests(test.GeoClawRegressionTest):
         """
 
         # Write out data files
+        cwd = os.getcwd()
+        os.chdir(self.temp_path)
         self.load_rundata()
         self.write_rundata_objects()
-
+        os.chdir(cwd)
+        
         # Run code
         self.run_code()
 

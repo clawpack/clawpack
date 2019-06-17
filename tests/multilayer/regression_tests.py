@@ -54,9 +54,12 @@ class MultilayerTest(test.GeoClawRegressionTest):
         r"""Test multi-layer basic plane-waves."""
 
         # Load and write data, change init-condition's starting angle
+        cwd = os.getcwd()
+        os.chdir(self.temp_path)
         self.load_rundata()
         self.rundata.qinit_data.angle = numpy.pi / 4.0
         self.write_rundata_objects()
+        os.chdir(cwd)
 
         # Run code and check surface heights
         self.run_code()

@@ -65,9 +65,9 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         self.add_attribute('sea_level',0.0)
 
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='geoclaw.data'):
 
-        self.open_data_file('geoclaw.data',data_source)
+        self.open_data_file(out_file, data_source)
 
         self.data_write('gravity', 
                                description="(gravitational acceleration m/s^2)")
@@ -118,9 +118,9 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         self.add_attribute('variable_dt_refinement_ratios',False)
 
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='refinement.data'):
         # Refinement controls
-        self.open_data_file('refinement.data',data_source)
+        self.open_data_file(out_file, data_source)
         self.data_write('wave_tolerance')
         if not isinstance(self.speed_tolerance,list):
             self.speed_tolerance = [self.speed_tolerance]
@@ -159,9 +159,9 @@ class TopographyData(clawpack.clawutil.data.ClawData):
         self.add_attribute('beach_slope',0.008)
 
 
-    def write(self,data_source='setrun.py'): 
+    def write(self,data_source='setrun.py', out_file='topo.data'): 
 
-        self.open_data_file('topo.data',data_source)
+        self.open_data_file(out_file, data_source)
         self.data_write(name='test_topography',description='(Type topography specification)')
         if self.test_topography == 0:
             ntopofiles = len(self.topofiles)
@@ -199,9 +199,9 @@ class FixedGridData(clawpack.clawutil.data.ClawData):
         self.add_attribute('fixedgrids',[])
 
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='fixed_grids.data'):
         # Fixed grid settings
-        self.open_data_file('fixed_grids.data',data_source)
+        self.open_data_file(out_file, data_source)
         nfixedgrids = len(self.fixedgrids)
         self.data_write(value=nfixedgrids,alt_name='nfixedgrids')
         self.data_write()
@@ -220,8 +220,8 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         self.add_attribute('num_fgmax_val',1)
 
 
-    def write(self,data_source='setrun.py'):
-        self.open_data_file('fgmax.data',data_source)
+    def write(self,data_source='setrun.py', out_file='fgmax.data'):
+        self.open_data_file(out_file, data_source)
         num_fgmax_val = self.num_fgmax_val
         if num_fgmax_val not in [1,2,5]:
             raise NotImplementedError( \
@@ -247,10 +247,10 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.add_attribute('dtopofiles',[])
         self.add_attribute('dt_max_dtopo', 1.e99)
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='dtopo.data'):
 
         # Moving topography settings
-        self.open_data_file('dtopo.data',data_source)
+        self.open_data_file(out_file, data_source)
         mdtopofiles = len(self.dtopofiles)
         self.data_write(value=mdtopofiles,alt_name='mdtopofiles')
         self.data_write()
@@ -313,9 +313,9 @@ class QinitData(clawpack.clawutil.data.ClawData):
         self.add_attribute('qinit_type',0)
         self.add_attribute('qinitfiles',[])   
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='qinit.data'):
         # Initial perturbation
-        self.open_data_file('qinit.data',data_source)
+        self.open_data_file(out_file, data_source)
         self.data_write('qinit_type')
 
         # Perturbation requested
