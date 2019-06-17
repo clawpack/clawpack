@@ -73,7 +73,7 @@ class IkeTest(test.GeoClawRegressionTest):
         # Write out data files
         self.load_rundata()
         self.write_rundata_objects()
-        
+
         # Run code
         self.run_code()
 
