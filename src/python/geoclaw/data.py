@@ -167,7 +167,9 @@ class TopographyData(clawpack.clawutil.data.ClawData):
             ntopofiles = len(self.topofiles)
             self.data_write(value=ntopofiles,alt_name='ntopofiles')
             for tfile in self.topofiles:
-                fname = os.path.abspath(tfile[-1])
+                # if path is relative in setrun, assume it's relative to the
+                # same directory that out_file comes from
+                fname = os.path.abspath(os.path.join(os.path.dirname(out_file),tfile[-1]))
                 self._out_file.write("\n'%s' \n " % fname)
                 self._out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
         elif self.test_topography == 1:
@@ -231,7 +233,9 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         self.data_write(value=num_fgmax_grids,alt_name='num_fgmax_grids')
         self.data_write()
         for fgmax_file in self.fgmax_files:
-            fname = os.path.abspath(fgmax_file)
+            # if path is relative in setrun, assume it's relative to the
+            # same directory that out_file comes from
+            fname = os.path.abspath(os.path.join(os.path.dirname(out_file),fgmax_file))
             self._out_file.write("\n'%s' \n" % fname)
         self.close_data_file()
 
@@ -255,7 +259,9 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.data_write(value=mdtopofiles,alt_name='mdtopofiles')
         self.data_write()
         for tfile in self.dtopofiles:
-            fname = os.path.abspath(tfile[-1])
+            # if path is relative in setrun, assume it's relative to the
+            # same directory that out_file comes from
+            fname = os.path.abspath(os.path.join(os.path.dirname(out_file),tfile[-1]))
             self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.data_write()
@@ -324,8 +330,10 @@ class QinitData(clawpack.clawutil.data.ClawData):
         else:
             # Check to see if each qinit file is present and then write the data
             for tfile in self.qinitfiles:
-                fname = "'%s'" % os.path.abspath(tfile[-1])
-                self._out_file.write("\n%s  \n" % fname)
+                # if path is relative in setrun, assume it's relative to the
+                # same directory that out_file comes from
+                fname = os.path.abspath(os.path.join(os.path.dirname(out_file),tfile[-1]))
+                self._out_file.write("\n'%s' \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         # else:
         #     raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
@@ -475,7 +483,10 @@ class FrictionData(clawpack.clawutil.data.ClawData):
             self.data_write(value=len(self.friction_files),
                             alt_name='num_friction_files')
             for friction_file in self.friction_files:
-                self._out_file.write("'%s' %s\n " % friction_file)
+                # if path is relative in setrun, assume it's relative to the
+                # same directory that out_file comes from
+                fname = os.path.abspath(os.path.join(os.path.dirname(out_file),friction_file))
+                self._out_file.write("'%s' %s\n " % fname)
 
         self.close_data_file()
 
