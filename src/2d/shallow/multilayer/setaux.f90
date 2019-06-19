@@ -10,12 +10,8 @@
 !     
 !     aux(4:num_layers + 3,i,j) = Initial layer depths for linearized problem
 !
-
-<<<<<<< HEAD
-=======
 subroutine setaux(mbc,mx,my,xlow,ylow,dx,dy,maux,aux)
 
->>>>>>> fix-square-basin
     use amr_module, only: mcapa, xupper, yupper, xlower, ylower, NEEDS_TO_BE_SET
     use amr_module, only: xperdom, yperdom
 
