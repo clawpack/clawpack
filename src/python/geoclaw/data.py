@@ -65,9 +65,9 @@ class GeoClawData(clawpack.clawutil.data.ClawData):
         self.add_attribute('sea_level',0.0)
 
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='geoclaw.data'):
 
-        self.open_data_file('geoclaw.data',data_source)
+        self.open_data_file(out_file, data_source)
 
         self.data_write('gravity', 
                                description="(gravitational acceleration m/s^2)")
@@ -118,9 +118,9 @@ class RefinementData(clawpack.clawutil.data.ClawData):
         self.add_attribute('variable_dt_refinement_ratios',False)
 
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='refinement.data'):
         # Refinement controls
-        self.open_data_file('refinement.data',data_source)
+        self.open_data_file(out_file, data_source)
         self.data_write('wave_tolerance')
         if not isinstance(self.speed_tolerance,list):
             self.speed_tolerance = [self.speed_tolerance]
@@ -159,15 +159,17 @@ class TopographyData(clawpack.clawutil.data.ClawData):
         self.add_attribute('beach_slope',0.008)
 
 
-    def write(self,data_source='setrun.py'): 
+    def write(self,data_source='setrun.py', out_file='topo.data'): 
 
-        self.open_data_file('topo.data',data_source)
+        self.open_data_file(out_file, data_source)
         self.data_write(name='test_topography',description='(Type topography specification)')
         if self.test_topography == 0:
             ntopofiles = len(self.topofiles)
             self.data_write(value=ntopofiles,alt_name='ntopofiles')
             for tfile in self.topofiles:
-                fname = os.path.abspath(tfile[-1])
+                # if path is relative in setrun, assume it's relative to the
+                # same directory that out_file comes from
+                fname = os.path.abspath(os.path.join(os.path.dirname(out_file),tfile[-1]))
                 self._out_file.write("\n'%s' \n " % fname)
                 self._out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
         elif self.test_topography == 1:
@@ -199,9 +201,9 @@ class FixedGridData(clawpack.clawutil.data.ClawData):
         self.add_attribute('fixedgrids',[])
 
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='fixed_grids.data'):
         # Fixed grid settings
-        self.open_data_file('fixed_grids.data',data_source)
+        self.open_data_file(out_file, data_source)
         nfixedgrids = len(self.fixedgrids)
         self.data_write(value=nfixedgrids,alt_name='nfixedgrids')
         self.data_write()
@@ -220,8 +222,8 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         self.add_attribute('num_fgmax_val',1)
 
 
-    def write(self,data_source='setrun.py'):
-        self.open_data_file('fgmax.data',data_source)
+    def write(self,data_source='setrun.py', out_file='fgmax.data'):
+        self.open_data_file(out_file, data_source)
         num_fgmax_val = self.num_fgmax_val
         if num_fgmax_val not in [1,2,5]:
             raise NotImplementedError( \
@@ -231,7 +233,9 @@ class FGmaxData(clawpack.clawutil.data.ClawData):
         self.data_write(value=num_fgmax_grids,alt_name='num_fgmax_grids')
         self.data_write()
         for fgmax_file in self.fgmax_files:
-            fname = os.path.abspath(fgmax_file)
+            # if path is relative in setrun, assume it's relative to the
+            # same directory that out_file comes from
+            fname = os.path.abspath(os.path.join(os.path.dirname(out_file),fgmax_file))
             self._out_file.write("\n'%s' \n" % fname)
         self.close_data_file()
 
@@ -247,15 +251,17 @@ class DTopoData(clawpack.clawutil.data.ClawData):
         self.add_attribute('dtopofiles',[])
         self.add_attribute('dt_max_dtopo', 1.e99)
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='dtopo.data'):
 
         # Moving topography settings
-        self.open_data_file('dtopo.data',data_source)
+        self.open_data_file(out_file, data_source)
         mdtopofiles = len(self.dtopofiles)
         self.data_write(value=mdtopofiles,alt_name='mdtopofiles')
         self.data_write()
         for tfile in self.dtopofiles:
-            fname = os.path.abspath(tfile[-1])
+            # if path is relative in setrun, assume it's relative to the
+            # same directory that out_file comes from
+            fname = os.path.abspath(os.path.join(os.path.dirname(out_file),tfile[-1]))
             self._out_file.write("\n'%s' \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.data_write()
@@ -313,9 +319,9 @@ class QinitData(clawpack.clawutil.data.ClawData):
         self.add_attribute('qinit_type',0)
         self.add_attribute('qinitfiles',[])   
 
-    def write(self,data_source='setrun.py'):
+    def write(self,data_source='setrun.py', out_file='qinit.data'):
         # Initial perturbation
-        self.open_data_file('qinit.data',data_source)
+        self.open_data_file(out_file, data_source)
         self.data_write('qinit_type')
 
         # Perturbation requested
@@ -324,8 +330,10 @@ class QinitData(clawpack.clawutil.data.ClawData):
         else:
             # Check to see if each qinit file is present and then write the data
             for tfile in self.qinitfiles:
-                fname = "'%s'" % os.path.abspath(tfile[-1])
-                self._out_file.write("\n%s  \n" % fname)
+                # if path is relative in setrun, assume it's relative to the
+                # same directory that out_file comes from
+                fname = os.path.abspath(os.path.join(os.path.dirname(out_file),tfile[-1]))
+                self._out_file.write("\n'%s' \n" % fname)
                 self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         # else:
         #     raise ValueError("Invalid qinit_type parameter %s." % self.qinit_type)
@@ -475,7 +483,10 @@ class FrictionData(clawpack.clawutil.data.ClawData):
             self.data_write(value=len(self.friction_files),
                             alt_name='num_friction_files')
             for friction_file in self.friction_files:
-                self._out_file.write("'%s' %s\n " % friction_file)
+                # if path is relative in setrun, assume it's relative to the
+                # same directory that out_file comes from
+                fname = os.path.abspath(os.path.join(os.path.dirname(out_file),friction_file))
+                self._out_file.write("'%s' %s\n " % fname)
 
         self.close_data_file()
 
