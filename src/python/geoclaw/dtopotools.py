@@ -137,7 +137,7 @@ def plot_dZ_colors(x, y, dZ, axes=None, cmax_dZ=None, dZ_interval=None,
 
     y_ave = 0.5 * (y.min() + y.max())
     axes.set_aspect(1. / numpy.cos(y_ave * numpy.pi / 180.))
-    axes.ticklabel_format(format='plain', useOffset=False)
+    axes.ticklabel_format(style='plain', useOffset=False)
     axes.set_title('Seafloor deformation')
     for label in axes.get_xticklabels():
         label.set_rotation(20)
@@ -1003,7 +1003,7 @@ class Fault(object):
         else:
             slipax.set_title('Fault planes')
 
-        slipax.ticklabel_format(format='plain', useOffset=False)
+        slipax.ticklabel_format(style='plain', useOffset=False)
         for label in slipax.get_xticklabels():
             label.set_rotation(20)
         
@@ -2574,7 +2574,7 @@ class SubFault(object):
                              "/n    need to specify rupture_time, rise_time")
 
         rf = rise_fraction(t, self.rupture_time, self.rise_time,
-                           self.rise_time_starting. self.rise_shape)
+                           self.rise_time_starting, self.rise_shape)
         return rf * self.slip
 
 

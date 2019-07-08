@@ -731,7 +731,7 @@ contains
         ! ! integer :: dim_ids(2), z_type
         ! real(kind=8) :: convention_version(10), buffer(10)
 
-        verbose = .true.
+        verbose = .false.
 
         inquire(file=fname, exist=found_file)
         if (.not. found_file) then
@@ -880,7 +880,9 @@ contains
 
                 ! Read in variables
                 call check_netcdf_error(nf90_inq_varids(nc_file, num_vars, var_ids))
-                print *, "n, var_name, var_type, num_dims, dim_ids"
+                if (verbose) then
+                    print *, "n, var_name, var_type, num_dims, dim_ids"
+                end if
                 do n=1, num_vars
                     call check_netcdf_error(nf90_inquire_variable(nc_file, n, var_name, var_type, num_dims, dim_ids))
                     if (verbose) then
@@ -912,9 +914,11 @@ contains
 
                 end do
 
-                print *, "x_var_name, x_var_id = ", x_var_name, x_var_id
-                print *, "x_var_name, x_var_id = ", y_var_name, y_var_id
-                print *, "x_var_name, x_var_id = ", z_var_name, z_var_id
+                if (verbose) then
+                    print *, "x_var_name, x_var_id = ", x_var_name, x_var_id
+                    print *, "x_var_name, x_var_id = ", y_var_name, y_var_id
+                    print *, "x_var_name, x_var_id = ", z_var_name, z_var_id
+                end if
 
                 call check_netcdf_error(nf90_get_var(nc_file, x_var_id, xll, start=(/ 1 /)))
                 call check_netcdf_error(nf90_get_var(nc_file, x_var_id, xhi, start=(/ mx /)))

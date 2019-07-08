@@ -70,7 +70,7 @@ c     # need to allocate for dynamic memory:
         do ifg = 1, FG_num_fgrids
           fg => FG_fgrids(ifg)
           read(rstunit) fg%levelmax
-          read(rstunit) fg%auxdone(1:mxnold) 
+          read(rstunit) fg%auxdone(1:mxnest) 
           read(rstunit) fg%x,fg%y,fg%valuemax,fg%tmax,
      &       fg%arrival_time,fg%aux(1:mxnold,:,:),fg%t_last_updated
         end do

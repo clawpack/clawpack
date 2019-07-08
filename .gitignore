@@ -8,6 +8,7 @@
 xclaw
 xamr
 xgeoclaw
+xgeoclaw.dSYM
 *.html
 _output/
 _plots/
@@ -18,3 +19,12 @@ _plots/
 *.xyz
 scratch/*
 !scratch/README.txt
+
+# log files
+*.log
+
+# py3k cache directories
+__pycache__
+
+# ipython
+.ipynb_checkpoints

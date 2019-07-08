@@ -25,7 +25,7 @@ subroutine qinit(meqn,mbc,mx,my,xlower,ylower,dx,dy,q,maux,aux)
     do i=1-mbc,mx+mbc
         x = xlower + (i - 0.5d0)*dx
         do j=1-mbc,my+mbc
-            y = ylower + (j - 0.5d0) * dx
+            y = ylower + (j - 0.5d0) * dy
             eta = sigma * h0 / a**2 * (2.d0 * x - sigma)
             
             q(1,i,j) = max(0.d0,eta - aux(1,i,j))
