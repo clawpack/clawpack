@@ -8,6 +8,7 @@
 xclaw
 xamr
 xgeoclaw
+xgeoclaw.dSYM
 *.html
 _output/
 _plots/

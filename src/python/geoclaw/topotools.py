@@ -1098,7 +1098,7 @@ class Topography(object):
             axes = fig.add_subplot(111)
         
         # Turn off annoying offset
-        axes.ticklabel_format(format="plain", useOffset=False)
+        axes.ticklabel_format(style="plain", useOffset=False)
         for label in axes.get_xticklabels():
             label.set_rotation(20)
 
