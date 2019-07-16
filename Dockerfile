@@ -33,7 +33,7 @@ RUN source activate worker && \
   pip install --upgrade \
       matplotlib==3.0.3 \
       yolk3k \
-      git+ssh://git@github.com/maritimeplanning/pytides.git@master \
+      git+https://github.com/maritimeplanning/pytides.git@master \
       rhg_compute_tools>=0.1.6 \
       --no-cache-dir
 
