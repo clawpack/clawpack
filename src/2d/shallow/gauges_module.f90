@@ -335,6 +335,8 @@ contains
         use amr_module, only: nestlevel, nghost, timemult, rnode, node, maxvar
         use amr_module, only: maxaux, hxposs, hyposs
         use geoclaw_module, only: dry_tolerance
+        use geoclaw_module, only: ambient_pressure
+        use storm_module, only: pressure_index
 
         implicit none
 
@@ -528,7 +530,11 @@ contains
             gauges(i)%level(n) = level
             gauges(i)%data(1,n) = tgrid
             do j = 1, gauges(i)%num_out_vars
-                gauges(i)%data(1 + j, n) = var(j)
+                if (j .eq. pressure_index) then
+                  gauges(i)%data(1 + j, n) = var(j)/ambient_pressure
+                else
+                  gauges(i)%data(1 + j, n) = var(j)
+                endif
             end do
             
             gauges(i)%buffer_index = n + 1

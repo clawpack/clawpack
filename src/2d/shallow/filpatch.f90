@@ -12,7 +12,8 @@
 !
 ! :::::::::::::::::::::::::::::::::::::::;:::::::::::::::::::::::;
 recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
-                              nrowst,ncolst,ilo,ihi,jlo,jhi,patchOnly,msrc)
+                              nrowst,ncolst,ilo,ihi,jlo,jhi,patchOnly,msrc,  &
+                              do_aux_copy)
 
     use amr_module, only: nghost, xlower, ylower, xupper, yupper, outunit
     use amr_module, only: xperdom, yperdom, spheredom, hxposs, hyposs
@@ -28,7 +29,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     integer, intent(in) :: level, nvar, naux, mx, my, nrowst, ncolst
     integer, intent(in) :: ilo,ihi,jlo,jhi,msrc
     real(kind=8), intent(in) :: t
-    logical  :: patchOnly
+    logical  :: patchOnly, do_aux_copy, yes_do_aux_copy
 
     ! Output
     real(kind=8), intent(in out) :: valbig(nvar,mx,my)
@@ -81,6 +82,7 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     real(kind=8) :: valcrse((ihi-ilo+3) * (jhi-jlo+3) * nvar)   ! NB this is a 1D array 
     real(kind=8) :: auxcrse((ihi-ilo+3) * (jhi-jlo+3) * naux)  
  
+    yes_do_aux_copy = .true.
 
     mx_patch = ihi-ilo + 1 ! nrowp
     my_patch = jhi-jlo + 1 
@@ -96,8 +98,8 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
     ! note that if only a patch, msrc = -1, otherwise a real grid and intfil
     ! uses its boundary list
     ! msrc either -1 (for a patch) or the real grid number
-    call intfil(valbig,mx,my,t,flaguse,nrowst,ncolst, ilo,  &
-                ihi,jlo,jhi,level,nvar,naux,msrc)
+    call intfil(valbig,aux,mx,my,t,flaguse,nrowst,ncolst, ilo,  &
+                ihi,jlo,jhi,level,nvar,naux,msrc,do_aux_copy)
 
     ! Trimbd returns set = true if all of the entries are filled (=1.).
     ! set = false, otherwise. If set = true, then no other levels are
@@ -178,32 +180,42 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
         
         if (naux > 0) then
             nghost_patch = 0
+            lencrse = (ihi-ilo+3)*(jhi-jlo+3)*naux ! set 1 component, not all naux
+            ! new system checks initialization before setting aux vals
+            ! set here and check later if not all set by copying in intfil
+            ! after some more testing shoudl move thiese auxcrse initialization
+            ! into the branches that need it (topo_finalized dand periodic
+            ! but out of the most used filrecur pathway
+            do k = 1, lencrse, naux
+              auxcrse(k) = NEEDS_TO_BE_SET  
+            end do
   
             ! update topography if needed
             !if ((num_dtopo>0).and.(topo_finalized.eqv..false.)) then
             !   if ((minval(topotime)<maxval(tfdtopo)).and.(t>=minval(t0dtopo))) then
             if (.not. topo_finalized) then
                 call topo_update(t)
-                endif
-
-            nghost_patch = 0                           
-            lencrse = (ihi-ilo+3)*(jhi-jlo+3)*naux ! set 1 component, not all naux
-            do k = 1, lencrse, naux
-              auxcrse(k) = NEEDS_TO_BE_SET  ! new system checks initialization before setting aux vals
-            end do
-            call setaux(nghost_patch, mx_coarse, my_coarse,       &
-                        xlow_coarse, ylow_coarse,                 &
-                        dx_coarse,dy_coarse,naux,auxcrse)
+                call setaux(nghost_patch, mx_coarse, my_coarse,       &
+                            xlow_coarse, ylow_coarse,                 &
+                            dx_coarse,dy_coarse,naux,auxcrse)
+                yes_do_aux_copy = .false. !grids may not have latest topo
+            endif
         endif
 
         ! Fill in the edges of the coarse grid
         if ((xperdom .or. (yperdom .or. spheredom)) .and. sticksout(iplo,iphi,jplo,jphi)) then
+            call setaux(nghost_patch, mx_coarse, my_coarse,       &
+                        xlow_coarse, ylow_coarse,                 &
+                        dx_coarse,dy_coarse,naux,auxcrse)
             call prefilrecur(level-1,nvar,valcrse,auxcrse,naux,t, &
                              mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi,iplo,iphi,jplo,jphi,.true.)
         else ! when going to coarser patch, no source grid (for now at least) hence -1
             call filrecur(level-1,nvar,valcrse,auxcrse,naux,t,  &
-                          mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi,.true.,-1)
-
+                          mx_coarse,my_coarse,1,1,iplo,iphi,jplo,jphi,.true.,-1,    &
+                          yes_do_aux_copy)
+            !call setaux(nghost_patch, mx_coarse, my_coarse,       &
+            !            xlow_coarse, ylow_coarse,                 &
+            !            dx_coarse,dy_coarse,naux,auxcrse)
         endif
 
         ! loop through coarse cells determining intepolation slopes
@@ -422,8 +434,8 @@ recursive subroutine filrecur(level,nvar,valbig,aux,naux,t,mx,my, &
                         endif
                     enddo
                 enddo
-            endif
-        enddo
+            endif ! end if reloop
+        enddo  ! end loop over nvar
     endif   ! end if patch not set
 
     ! set bcs, whether or not recursive calls needed. set any part of patch that stuck out
