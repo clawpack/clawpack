@@ -974,7 +974,7 @@ contains
         end select
 
         close(iunit)
-        
+
         write(GEO_PARM_UNIT,*) '  mx = ',mx,'  x = (',xll,',',xhi,')'
         write(GEO_PARM_UNIT,*) '  my = ',my,'  y = (',yll,',',yhi,')'
         write(GEO_PARM_UNIT,*) '  dx, dy (meters/degrees) = ', dx,dy
