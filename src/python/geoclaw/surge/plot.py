@@ -19,7 +19,7 @@ import matplotlib.colors as colors
 
 import clawpack.visclaw.colormaps as colormaps
 import clawpack.visclaw.gaugetools as gaugetools
-import clawpack.geoclaw.geoplot as geoplot
+import clawpack.visclaw.geoplot as geoplot
 import clawpack.geoclaw.data as geodata
 
 # TODO:  Assign these absed on data files

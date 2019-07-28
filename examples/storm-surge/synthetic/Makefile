@@ -19,12 +19,7 @@ OUTDIR = _output               # Directory for output
 SETPLOT_FILE = setplot.py      # File containing function to set plots
 PLOTDIR = _plots               # Directory for plots
 
-OVERWRITE ?= True                   # False ==> make a copy of OUTDIR first
-RESTART ?= False                    # Should = clawdata.restart in setrun
-
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
-
-# Compiler flags can be specified here or set as an environment variable
 FFLAGS ?=
 
 # ---------------------------------
@@ -48,24 +43,17 @@ EXCLUDE_SOURCES = \
 # List of custom sources for this program:
 # ----------------------------------------
 
+RIEMANN = $(CLAW)/riemann/src
 
 MODULES = \
 
 SOURCES = \
-  $(CLAW)/riemann/src/rpn2_geoclaw_adjoint_qwave.f90 \
-  $(CLAW)/riemann/src/rpt2_geoclaw_adjoint_qwave.f90 \
+  $(RIEMANN)/rpn2_geoclaw.f \
+  $(RIEMANN)/rpt2_geoclaw.f \
+  $(RIEMANN)/geoclaw_riemann_utils.f \
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
 
-# Construct the topography data
-.PHONY: topo all
-topo:
-	python maketopo.py
-
-all: 
-	$(MAKE) topo
-	$(MAKE) .plots
-	$(MAKE) .htmls
-
+### DO NOT remove this line - make depends on it ###

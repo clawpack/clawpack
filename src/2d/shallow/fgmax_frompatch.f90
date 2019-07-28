@@ -93,16 +93,16 @@ subroutine fgmax_frompatch(mx,my,meqn,mbc,maux,q,aux,dx,dy, &
 
                 ! keep track of arrival time...
                 ! This might not be correct when there is subsidence or uplift?
-                h = fg_values(1,k)
-                B = fg%aux(level,1,k)
-                eta = h+B
-                if (mask_fgrid(k) .and. &
-                   (level >= fg%min_level_check) .and. &
-                   (h>dry_tolerance) .and. &
-                   (eta > sea_level + fg%arrival_tol) .and. &
-                   (fg%arrival_time(k) == FG_NOTSET)) then
-                        fg%arrival_time(k) = time
-                    endif
+!                h = fg_values(1,k)
+!                B = fg%aux(level,1,k)
+!                eta = h+B
+!                if (mask_fgrid(k) .and. &
+!                   (level >= fg%min_level_check) .and. &
+!                   (h>dry_tolerance) .and. &
+!                   (eta > sea_level + fg%arrival_tol) .and. &
+!                   (fg%arrival_time(k) == FG_NOTSET)) then
+!                        fg%arrival_time(k) = time
+!                    endif
 
                 enddo
                 deallocate(mask_fgrid, fg_values)

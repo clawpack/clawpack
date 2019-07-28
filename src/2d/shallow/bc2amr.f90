@@ -90,6 +90,7 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
 
     use amr_module, only: mthbc, xlower, ylower, xupper, yupper
     use amr_module, only: xperdom,yperdom,spheredom
+    use geoclaw_module, only: sea_level
 
     implicit none
 
@@ -103,10 +104,11 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
     
     ! Local storage
     integer :: i, j, ibeg, jbeg, nxl, nxr, nyb, nyt
-    real(kind=8) :: hxmarg, hymarg
+    real(kind=8) :: hxmarg, hymarg, mom_norm_thresh
 
     hxmarg = hx * .01d0
     hymarg = hy * .01d0
+    mom_norm_thresh = 5.d0
 
     ! Use periodic boundary condition specialized code only, if only one 
     ! boundary is periodic we still proceed below
@@ -128,10 +130,16 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                 do j = 1, ncol
                     do i=1, nxl
                         aux(:, i, j) = aux(:, nxl + 1, j)
-                        val(:, i, j) = val(:, nxl + 1, j)
-                        val(2, i, j) = 0.d0
+                        !val(:, i, j) = val(:, nxl + 1, j)
+                        val(:, i, j) = 0.d0
+                        val(1, i, j) = sea_level - aux(1, nxl + 1, j)
+                        if (abs(val(2, nxl + 1, j)) > mom_norm_thresh) then
+                            write(0,"('Boundary velocity error: ',f12.8)") abs(val(2, nxl+1, j))
+                            call exit(1)
+                        endif
                     end do
                 end do
+                
             case(1) ! Zero-order extrapolation
                 do j = 1, ncol
                     do i=1, nxl
@@ -180,8 +188,13 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                 do i = ibeg, nrow
                     do j = 1, ncol
                         aux(:, i, j) = aux(:, ibeg - 1, j)
-                        val(:, i, j) = val(:, ibeg - 1, j)
-                        val(2, i, j) = 0.d0
+                        !val(:, i, j) = val(:, ibeg - 1, j)
+                        val(:, i, j) = 0.d0
+                        val(1, i, j) = sea_level - aux(1, ibeg - 1, j)
+                        if (abs(val(2, ibeg -1, j)) > mom_norm_thresh) then
+                            write(0,"('Boundary velocity error: ',f12.8)") abs(val(2, ibeg -1, j))
+                            call exit(2)
+                        endif
                     end do
                 end do
             case(1) ! Zero-order extrapolation
@@ -232,8 +245,13 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                 do j = 1, nyb
                     do i = 1, nrow
                         aux(:,i,j) = aux(:, i, nyb + 1)
-                        val(:,i,j) = val(:, i, nyb + 1)
-                        val(3,i,j) = 0.d0
+                        !val(:,i,j) = val(:, i, nyb + 1)
+                        val(:,i,j) = 0.d0
+                        val(1, i, j) = sea_level - aux(1, i, nyb + 1)
+                        if (abs(val(3, i, nyb + 1)) > mom_norm_thresh) then
+                            write(0,"('Boundary velocity error: ',f12.8)") abs(val(3, i, nyb + 1))
+                            call exit(3)
+                        endif
                     end do
                 end do
             
@@ -286,8 +304,13 @@ subroutine bc2amr(val,aux,nrow,ncol,meqn,naux, hx, hy, level, time,   &
                 do j = jbeg, ncol
                     do i = 1, nrow
                         aux(:, i, j) = aux(:, i, jbeg - 1)
-                        val(:, i, j) = val(:, i, jbeg - 1)
-                        val(3, i, j) = 0.d0
+                        !val(:, i, j) = val(:, i, jbeg - 1)
+                        val(:, i, j) = 0.d0
+                        val(1, i, j) = sea_level - aux(1, i, jbeg - 1)
+                        if (abs(val(3, i, jbeg - 1)) > mom_norm_thresh) then
+                            write(0,"('Boundary velocity error: ',f12.8)") abs(val(3, i, jbeg - 1))
+                            call exit(4)
+                        endif
                     end do
                 end do
 

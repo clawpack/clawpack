@@ -9,7 +9,6 @@ c
       implicit double precision (a-h,o-z)
       logical   ee
  
- 
       logical foundFile
       dimension intrtx(maxlv),intrty(maxlv),intrtt(maxlv)
       type(fgrid), pointer :: fg
@@ -79,7 +78,7 @@ c     # need to allocate for dynamic memory:
         do ifg = 1, FG_num_fgrids
           fg => FG_fgrids(ifg)
           read(rstunit) fg%levelmax
-          read(rstunit) fg%auxdone
+          read(rstunit) fg%auxdone(1:mxnest)
           read(rstunit) fg%x,fg%y,fg%valuemax,fg%tmax,
      &         fg%arrival_time,fg%aux,fg%t_last_updated
         end do
@@ -155,6 +154,8 @@ c
      &            '  old mxnest ',i4, ' new mxnest ',i4)
              write(outunit,*)" reclaiming finer levels from",
      .                mxnest+1," to ",mxnold
+             write(*,*)" reclaiming finer levels from",
+     .                mxnest+1," to ",mxnold
              do 95 lev = mxnest,mxnold
                 mptr = lstart(lev)
                 if (lev .gt. mxnest) lstart(lev) = 0   
@@ -165,9 +166,11 @@ c
                    endif
                    nx = node(ndihi,mptr) - node(ndilo,mptr) + 1
                    ny = node(ndjhi,mptr) - node(ndjlo,mptr) + 1
-                   ikeep = nx/intrtx(lev-1)
-                   jkeep = ny/intrty(lev-1)
-                   lenbc = 2*(ikeep+jkeep)
+                   if (lev .gt. 1) then
+                      ikeep = nx/intrtx(lev-1)
+                      jkeep = ny/intrty(lev-1)
+                      lenbc = 2*(ikeep+jkeep)
+                   endif
                    if (lev .gt. mxnest) then
                        call reclam
      .                  (node(ffluxptr,mptr),2*nvar*lenbc+naux*lenbc)
