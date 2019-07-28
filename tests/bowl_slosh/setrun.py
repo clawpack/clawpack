@@ -388,7 +388,7 @@ def setgeo(rundata):
     fgmax_files = rundata.fgmax_data.fgmax_files
     # for fixed grids append to this list names of any fgmax input files
     fgmax_files.append('fgmax1.txt')
-    rundata.fgmax_data.num_fgmax_val = 2
+    rundata.fgmax_data.num_fgmax_val = 1
 
     return rundata
     # end of function setgeo

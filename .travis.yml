@@ -1,7 +1,6 @@
 language: python
 python:
-  - 2.7
-  - 3.5
+  - 3.6
 env:
   - BUILD_TYPE="Release"
   
@@ -11,20 +10,19 @@ before_install:
   - pip install netCDF4
   - pip install xarray
   - pip install scipy
-  - git clone --branch=master --depth=100 --quiet git://github.com/clawpack/clawpack
+  - git clone --branch=master --depth=100 --quiet git://github.com/ClimateImpactLab/clawpack
   - cd clawpack
   - git submodule init
-  - git submodule update
+  - git submodule update -j 6
   - rm -rf geoclaw
   - ln -s ../ geoclaw
   # Print NumPy version being used
   - python -c "import numpy; print(numpy.__version__)"
   
 install:
-  - export PYTHONPATH=${PWD}:$PYTHONPATH
+  - pip install -e .
   - export CLAW=${PWD}
   - export FC=gfortran
-  - cd geoclaw
   
 before_script:
   # Print CPU info for debugging purposes:
