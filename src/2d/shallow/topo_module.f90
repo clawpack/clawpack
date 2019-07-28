@@ -453,18 +453,17 @@ contains
         real(kind=8) :: no_data_value,x,y,z,topo_temp
         real(kind=8) :: values(10)
         character(len=80) :: str
-        real(kind=8), allocatable :: xlocs(:), ylocs(:)
-        integer :: xstart(1), ystart(1), mx_tot, my_tot
-        character(len=10) :: x_dim_name, x_var_name, y_dim_name, y_var_name, z_var_name, var_name
-        integer(kind=4) :: x_var_id, y_var_id, z_var_id, row_index
+        integer(kind=4) :: row_index
 
         ! NetCDF Support
-        character(len=10) :: direction
+        character(len=10) :: direction, x_dim_name, x_var_name, y_dim_name, &
+            y_var_name, z_var_name, var_name
         ! character(len=1) :: axis_string
-        real(kind=8), allocatable :: nc_buffer(:, :)
-        
-        integer(kind=4) :: ios, nc_file, num_values
-        integer(kind=4) :: dim_ids(2), num_dims, var_type, var_ids(2), num_vars
+        real(kind=8), allocatable :: nc_buffer(:, :), xlocs(:), ylocs(:)
+        integer(kind=4) :: x_var_id, y_var_id, z_var_id
+        integer(kind=4) :: xstart(1), ystart(1), mx_tot, my_tot
+        integer(kind=4) :: ios, nc_file, num_values, dim_ids(2), num_dims, &
+            var_type, var_ids(2), num_vars
 
         print *, ' '
         print *, 'Reading topography file  ', fname
@@ -731,30 +730,22 @@ contains
         logical :: found_file
         real(kind=8) :: values(10)
         character(len=80) :: str
-        real(kind=8), allocatable :: xlocs(:),ylocs(:)
-        logical, allocatable :: x_in_dom(:),y_in_dom(:)
+        logical :: verbose
+        logical :: xll_registered, yll_registered
 
         ! NetCDF Support
         ! character(len=1) :: axis_string
         ! character(len=6) :: convention_string
         ! integer(kind=4) :: convention_version
         integer(kind=4) :: ios, nc_file, num_values
-
+        real(kind=8), allocatable :: xlocs(:),ylocs(:)
+        logical, allocatable :: x_in_dom(:),y_in_dom(:)
         integer(kind=4) :: dim_ids(2), num_dims, var_type, var_ids(2), num_vars
-        character(len=10) :: var_name
-
-        character(len=10) :: x_dim_name, x_var_name, y_dim_name, y_var_name, z_var_name
+        character(len=10) :: var_name, x_var_name, y_var_name, z_var_name
+        character(len=10) :: x_dim_name, y_dim_name
         integer(kind=4) :: x_var_id, y_var_id, z_var_id
-        logical :: verbose
-        logical :: xll_registered, yll_registered
-        ! character(len=10) :: x_dim_name, y_dim_name, z_dim_name
-        ! character(len=10) :: x_var_name, y_var_name, z_var_name
-        ! integer :: ios, root_id, x_var_id, y_var_id, z_var_id, var_ids(10)
-        ! integer :: num_dims, num_vars, type, x_dim_id, y_dim_id, num_values
-        ! ! integer :: dim_ids(2), z_type
-        ! real(kind=8) :: convention_version(10), buffer(10)
 
-        verbose = .true.
+        verbose = .false.
 
         inquire(file=fname, exist=found_file)
         if (.not. found_file) then
@@ -967,6 +958,7 @@ contains
                 my = count(y_in_dom)
 
                 call check_netcdf_error(nf90_close(nc_file))
+                deallocate(xlocs,ylocs,x_in_dom,y_in_dom)
 #else
                 print *, "ERROR:  NetCDF library was not included in this build"
                 print *, "  of GeoClaw."
@@ -982,7 +974,7 @@ contains
         end select
 
         close(iunit)
-        deallocate(xlocs,ylocs,x_in_dom,y_in_dom)
+        
         write(GEO_PARM_UNIT,*) '  mx = ',mx,'  x = (',xll,',',xhi,')'
         write(GEO_PARM_UNIT,*) '  my = ',my,'  y = (',yll,',',yhi,')'
         write(GEO_PARM_UNIT,*) '  dx, dy (meters/degrees) = ', dx,dy
