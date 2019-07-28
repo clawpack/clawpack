@@ -18,7 +18,7 @@
 ! ============================================================================
 module topo_module
 
-    use amr_module, only: tstart_thisrun
+    use amr_module, only: xlower,xupper,ylower,yupper
     implicit none
 
     logical, private :: module_setup = .false.
@@ -99,7 +99,6 @@ contains
     subroutine read_topo_settings(file_name)
 
         use geoclaw_module
-        use amr_module, only: xlower,xupper,ylower,yupper
 
         implicit none
 
@@ -219,8 +218,7 @@ contains
                     topoID(i) = i
                     topotime(i) = -huge(1.0)
                     call read_topo_file(mxtopo(i),mytopo(i),itopotype(i),topofname(i), &
-                        topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
-
+                        xlowtopo(i),ylowtopo(i),topowork(i0topo(i):i0topo(i)+mtopo(i)-1))
                     ! set topo0save(i) = 1 if this topo file intersects any
                     ! dtopo file.  This approach to setting topo0save is changed from 
                     ! v5.4.1, where it only checked if some dtopo point lies within the
@@ -425,13 +423,12 @@ contains
 
 
     ! ========================================================================
-    !  read_topo(mx,my,dx,dy,xlow,xhi,ylow,yhi,itopo,fname,topo_type)
+    !  read_topo_file(mx,my,topo_type,fname,xll,yll,topo)
     !
     !  Read topo file.
-    !  New feature: topo_type < 0 means z values need to be negated.
     ! ========================================================================
 
-    subroutine read_topo_file(mx,my,topo_type,fname,topo)
+    subroutine read_topo_file(mx,my,topo_type,fname,xll,yll,topo)
 
 #ifdef NETCDF
         use netcdf
@@ -446,6 +443,7 @@ contains
         integer, intent(in) :: mx,my,topo_type
         character(len=150), intent(in) :: fname
         real(kind=8), intent(inout) :: topo(1:mx*my)
+        real(kind=8), intent(in) :: xll,yll
 
         ! Locals
         integer, parameter :: iunit = 19, miss_unit = 17
@@ -455,16 +453,17 @@ contains
         real(kind=8) :: no_data_value,x,y,z,topo_temp
         real(kind=8) :: values(10)
         character(len=80) :: str
+        integer(kind=4) :: row_index
 
         ! NetCDF Support
-        character(len=10) :: direction
+        character(len=10) :: direction, x_dim_name, x_var_name, y_dim_name, &
+            y_var_name, z_var_name, var_name
         ! character(len=1) :: axis_string
-        real(kind=8), allocatable :: nc_buffer(:, :)
-        
-        integer(kind=4) :: ios, nc_file, num_values
-        integer(kind=4) :: dim_ids(2), num_dims, var_type, var_ids(2), num_vars
-        character(len=10) :: z_var_name, var_name
-        integer(kind=4) :: z_var_id, row_index
+        real(kind=8), allocatable :: nc_buffer(:, :), xlocs(:), ylocs(:)
+        integer(kind=4) :: x_var_id, y_var_id, z_var_id
+        integer(kind=4) :: xstart(1), ystart(1), mx_tot, my_tot
+        integer(kind=4) :: ios, nc_file, num_values, dim_ids(2), num_dims, &
+            var_type, var_ids(2), num_vars
 
         print *, ' '
         print *, 'Reading topography file  ', fname
@@ -565,25 +564,44 @@ contains
                 ! Again assume that the topography is the only variable that has
                 ! two dimensions
                 call check_netcdf_error(nf90_inq_varids(nc_file, num_vars, var_ids))
-                ! print *, "n, var_name, var_type, num_dims, dim_ids"
                 z_var_id = -1
+                
+                ! get indices to start at for reading netcdf within domain
+                ! again assuming lon/lat are dimensions 1 and 2
+                call check_netcdf_error(nf90_inquire_dimension(nc_file, 1, x_dim_name, mx_tot))
+                call check_netcdf_error(nf90_inquire_dimension(nc_file, 2, y_dim_name, my_tot))
+                allocate(xlocs(mx_tot),ylocs(my_tot))
+                
+                call check_netcdf_error(nf90_get_var(nc_file, 1, xlocs, start=(/ 1 /), count=(/ mx_tot /)))
+                call check_netcdf_error(nf90_get_var(nc_file, 2, ylocs, start=(/ 1 /), count=(/ my_tot /)))
+                xstart = minloc(xlocs, mask=(xlocs.eq.xll))
+                ystart = minloc(ylocs, mask=(ylocs.eq.yll))
+                deallocate(xlocs,ylocs)
+                
                 do n=1, num_vars
                     call check_netcdf_error(nf90_inquire_variable(nc_file, n, var_name, var_type, num_dims, dim_ids))
-
-                    if (num_dims == 2) then
+                    
+                    ! Assume dim names are same as var ids
+                    if (var_name == x_dim_name) then
+                        x_var_name = var_name
+                        call check_netcdf_error(nf90_inq_varid(nc_file, x_var_name, x_var_id))
+                    else if (var_name == y_dim_name) then
+                        y_var_name = var_name
+                        call check_netcdf_error(nf90_inq_varid(nc_file, y_var_name, y_var_id))
+                    else if (num_dims == 2) then
                         z_var_name = var_name
                         call check_netcdf_error(nf90_inq_varid(nc_file, z_var_name, z_var_id))
                     end if
 
                 end do
-
                 if (z_var_id == -1) then
                     stop "Unable to find topography data!"
                 end if
 
                 ! Load in data
                 ! TODO: Provide striding into data if need be
-                ! TODO: Only grab section of data within the domain
+                ! TODO: Allow z to be indexed (lat, lon) rather
+                ! than assuming (lon, lat)
                 ! ! i = mx + 1
                 ! +--------------------+
                 ! |                    | <--- start on this row
@@ -594,8 +612,10 @@ contains
 
 
                 allocate(nc_buffer(mx, my))
-                ! print *, size(topo, 1)
-                call check_netcdf_error(nf90_get_var(nc_file, z_var_id, nc_buffer))
+
+                call check_netcdf_error(nf90_get_var(nc_file, z_var_id, nc_buffer, &
+                                            start = (/ xstart(1), ystart(1) /), &
+                                            count = (/ mx, my /)))
                 do j = 0, my - 1
                     topo(j * mx + 1:(j + 1) * mx) = nc_buffer(:, my - j)
                 end do
@@ -623,6 +643,7 @@ contains
                 ! sign if need be.  Just in case this is true but topo_type < 0
                 ! we do not do anything here on this to avoid doing it twice.
                 ios = nf90_get_att(nc_file, z_var_id, 'positive', direction)
+                call check_netcdf_error(nf90_close(nc_file))
                 if (ios == NF90_NOERR) then
                     if (to_lower(direction) == "down") then
                         if (topo_type < 0) then
@@ -687,7 +708,6 @@ contains
     !   - dx,dy - (float) Spatial resolution of grid
     ! ========================================================================
     subroutine read_topo_header(fname,topo_type,mx,my,xll,yll,xhi,yhi,dx,dy)
-
 #ifdef NETCDF
         use netcdf
 #endif
@@ -710,26 +730,20 @@ contains
         logical :: found_file
         real(kind=8) :: values(10)
         character(len=80) :: str
+        logical :: verbose
+        logical :: xll_registered, yll_registered
 
         ! NetCDF Support
         ! character(len=1) :: axis_string
         ! character(len=6) :: convention_string
         ! integer(kind=4) :: convention_version
         integer(kind=4) :: ios, nc_file, num_values
-
+        real(kind=8), allocatable :: xlocs(:),ylocs(:)
+        logical, allocatable :: x_in_dom(:),y_in_dom(:)
         integer(kind=4) :: dim_ids(2), num_dims, var_type, var_ids(2), num_vars
-        character(len=10) :: var_name
-
-        character(len=10) :: x_dim_name, x_var_name, y_dim_name, y_var_name, z_var_name
+        character(len=10) :: var_name, x_var_name, y_var_name, z_var_name
+        character(len=10) :: x_dim_name, y_dim_name
         integer(kind=4) :: x_var_id, y_var_id, z_var_id
-        logical :: verbose
-        logical :: xll_registered, yll_registered
-        ! character(len=10) :: x_dim_name, y_dim_name, z_dim_name
-        ! character(len=10) :: x_var_name, y_var_name, z_var_name
-        ! integer :: ios, root_id, x_var_id, y_var_id, z_var_id, var_ids(10)
-        ! integer :: num_dims, num_vars, type, x_dim_id, y_dim_id, num_values
-        ! ! integer :: dim_ids(2), z_type
-        ! real(kind=8) :: convention_version(10), buffer(10)
 
         verbose = .false.
 
@@ -872,6 +886,9 @@ contains
                 ! Get dimensions - Assume the lon-lat are dimensions 1 and 2
                 call check_netcdf_error(nf90_inquire_dimension(nc_file, 1, x_dim_name, mx))
                 call check_netcdf_error(nf90_inquire_dimension(nc_file, 2, y_dim_name, my))
+                
+                ! allocate vector to hold lon and lat vals
+                allocate(xlocs(mx),ylocs(my),x_in_dom(mx),y_in_dom(my))
 
                 if (verbose) then
                     print *, "Names = (", x_dim_name, ", ", y_dim_name, ")"
@@ -883,6 +900,7 @@ contains
                 if (verbose) then
                     print *, "n, var_name, var_type, num_dims, dim_ids"
                 end if
+
                 do n=1, num_vars
                     call check_netcdf_error(nf90_inquire_variable(nc_file, n, var_name, var_type, num_dims, dim_ids))
                     if (verbose) then
@@ -920,17 +938,27 @@ contains
                     print *, "x_var_name, x_var_id = ", z_var_name, z_var_id
                 end if
 
-                call check_netcdf_error(nf90_get_var(nc_file, x_var_id, xll, start=(/ 1 /)))
-                call check_netcdf_error(nf90_get_var(nc_file, x_var_id, xhi, start=(/ mx /)))
-
-                call check_netcdf_error(nf90_get_var(nc_file, y_var_id, yll, start=(/ 1 /)))
-                call check_netcdf_error(nf90_get_var(nc_file, y_var_id, yhi, start=(/ my /)))
+                call check_netcdf_error(nf90_get_var(nc_file, x_var_id, xlocs, start=(/ 1 /), count=(/ mx /)))
+                call check_netcdf_error(nf90_get_var(nc_file, y_var_id, ylocs, start=(/ 1 /), count=(/ my /)))
+                
+                dx = xlocs(2) - xlocs(1)
+                dy = ylocs(2) - ylocs(1)
+                
+                ! find which locs are within domain (with a dx/dy buffer around domain)
+                x_in_dom = (xlocs.gt.(xlower-dx)) .and. (xlocs.lt.(xupper+dx))
+                y_in_dom = (ylocs.gt.(ylower-dy)) .and. (ylocs.lt.(yupper+dy))
+                
+                xll = minval(xlocs, mask=x_in_dom)
+                yll = minval(ylocs, mask=y_in_dom)
+                xhi = maxval(xlocs, mask=x_in_dom)
+                yhi = maxval(ylocs, mask=y_in_dom)
+                
+                ! adjust mx, my
+                mx = count(x_in_dom)
+                my = count(y_in_dom)
 
                 call check_netcdf_error(nf90_close(nc_file))
-                
-                dx = (xhi - xll) / (mx - 1)
-                dy = (yhi - yll) / (my - 1)
-
+                deallocate(xlocs,ylocs,x_in_dom,y_in_dom)
 #else
                 print *, "ERROR:  NetCDF library was not included in this build"
                 print *, "  of GeoClaw."
