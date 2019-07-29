@@ -38,7 +38,7 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
 
         self.stdout = open(os.path.join(self.temp_path, "run_output.txt"), "w")
         self.stdout.write("Output from Test %s\n" % self.__class__.__name__)
-        # TODO - Should change this to use the time module's formatting 
+        # TODO - Should change this to use the time module's formatting
         # apparatus
         tm = time.localtime()
         year = str(tm[0]).zfill(4)
@@ -70,16 +70,16 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
         topo_func = lambda x,y: h0 * (x**2 + y**2) / a**2 - h0
 
         topo = topotools.Topography(topo_func=topo_func)
-        topo.x = numpy.linspace(-2.1, 2.1, 210)
-        topo.y = numpy.linspace(-2.1, 2.1, 210)
+        topo.x = numpy.linspace(-3.1, 3.1, 310)
+        topo.y = numpy.linspace(-3.1, 3.1, 310)
         try:
             topo.write(os.path.join(self.temp_path, "bowl.nc"))
-        
+
         except ImportError:
             # Assume that NetCDF is not installed and move on
             self.netcdf_passed = False
             self.success = True
-            raise nose.SkipTest("NetCDF topography test skipped due to " + 
+            raise nose.SkipTest("NetCDF topography test skipped due to " +
                                 "failure to build test program.")
 
         except RuntimeError as e:
@@ -94,13 +94,13 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
     def build_executable(self):
         try:
             self.stdout.write("Teting NetCDF output:\n")
-            subprocess.check_call("cd %s ; make netcdf_test " % self.test_path, 
+            subprocess.check_call("cd %s ; make netcdf_test " % self.test_path,
                                                                 stdout=self.stdout,
                                                                 stderr=self.stderr,
                                                                 shell=True)
         except subprocess.CalledProcessError:
 
-            self.stdout.write("NetCDF topography test skipped due to failure" + 
+            self.stdout.write("NetCDF topography test skipped due to failure" +
                               "to build test program.")
             self.success = True
             self.netcdf_passed = False
@@ -135,7 +135,7 @@ class NetCDFBowlSloshTest(test.GeoClawRegressionTest):
             self.run_code()
 
             # Perform tests
-            self.check_gauges(save=save, gauge_id=1, indices=(2, 3), 
+            self.check_gauges(save=save, gauge_id=1, indices=(2, 3),
                               tolerance=1e-4)
         self.success = True
 
