@@ -375,7 +375,7 @@ class Storm(object):
                 self.max_wind_radius[i] = units.convert(float(data[19]), 'nmi', 'm')
             except (ValueError, IndexError):
                 self.max_wind_radius[i] = -1
-                
+
             if self.max_wind_speed.min() == -1:
                 warnings.warn('Some timesteps have missing max wind speed. These will not be written'
                               ' out to geoclaw format.')
@@ -487,12 +487,12 @@ class Storm(object):
                                    'mlc']):
         r"""Read in IBTrACS formatted storm file
 
-        This reads in the netcdf-formatted IBTrACS v4 data. You must either pass 
-        the *sid* of the storm (a unique identifier supplied by IBTrACS) OR 
-        *storm_name* and *year*. The latter will not be unique for unnamed storms, 
-        so you may optionally pass *start_date* as well. The `wmo_\*` variable is 
-        used when non-missing, with missing values filled in by the corresponding 
-        variable of the agency specified in `wmo_agency` and/or `usa_agency`. If 
+        This reads in the netcdf-formatted IBTrACS v4 data. You must either pass
+        the *sid* of the storm (a unique identifier supplied by IBTrACS) OR
+        *storm_name* and *year*. The latter will not be unique for unnamed storms,
+        so you may optionally pass *start_date* as well. The `wmo_\*` variable is
+        used when non-missing, with missing values filled in by the corresponding
+        variable of the agency specified in `wmo_agency` and/or `usa_agency`. If
         still missing, the other agencies are checked in order of *agency_pref* to
         see if any more non-missing values are available.
 
@@ -631,7 +631,7 @@ class Storm(object):
                 val_pref = vals.isel(agency=best_ix)
                 pref_vals[r] = val_pref
 
-                
+
             ## CONVERT TO GEOCLAW FORMAT
 
             # assign basin to be the basin where track originates
@@ -674,7 +674,8 @@ class Storm(object):
                 warnings.warn(missing_data_warning_str)
 
 
-    def read_emanuel(self, path, storm_name, verbose=False):
+    def read_emanuel(
+            self, path, storm_name, velocity_varname='v_total', verbose=False):
         r"""Read in Kerry Emanuel's storm file
         This reads in the netcdf-formatted tracks from Kerry Emanuel.
         Correspondence September 2018. Original storms have been converted
@@ -683,6 +684,7 @@ class Storm(object):
         :Input:
         - *path* (string) Path to the file to be read.
         - *storm_name* (string) storm name containing information about
+         - *velocity_varname* (string) name of velocity variable in netCDF
         model, scenario, time period, and storm index within the file.
             ex. ccsm4_rcp85_2007_2025_0, hadgem5_rcp45_2035_2045_10
             model_scenario_period is equivalent to filename.
@@ -738,7 +740,7 @@ class Storm(object):
 
             # max wind speed (m/s)
             # array of single value
-            self.max_wind_speed = storm.v_total_ms.values
+            self.max_wind_speed = storm[velocity_varname].values
 
             # 'The radius (km) of maximum circular wind
             # along each track' -> convert to m
@@ -1003,11 +1005,11 @@ class Storm(object):
             data.append((self.t[n] - self.time_offset).total_seconds())
             data.append(self.eye_location[n, 0])
             data.append(self.eye_location[n, 1])
-            
+
             if self.max_wind_speed[n] == -1:
                 continue
             data.append(self.max_wind_speed[n])
-            
+
             # Allow custom function to set max wind radius if not
             # available
             if self.max_wind_radius[n] == -1:
@@ -1396,7 +1398,7 @@ def cle_2015(storm, r, t):
 # Radius fill functions
 def fill_rad_w_other_source(t, storm_targ, storm_fill, var):
     r"""Fill in storm radius variable (*max_wind_radius* or \
-    *storm_radius*) with values from another source. i.e. 
+    *storm_radius*) with values from another source. i.e.
     if you have missing radii in IBTrACS, you can fill with ATCF.
     This function will assume *storm_fill* has more non-missing
     values than *storm_targ* for this particular radius variable.
@@ -1447,10 +1449,10 @@ def fill_rad_w_other_source(t, storm_targ, storm_fill, var):
     fill_da = xr.DataArray(getattr(storm_fill,var),
                            coords = {'t': getattr(storm_fill,'t')},
                            dims = ('t',))
-    
+
     # convert -1 to nan
     fill_da = fill_da.where(fill_da>0,numpy.nan)
-    
+
     # if not all missing, try using storm_fill to fill
     if fill_da.notnull().any():
 
@@ -1475,7 +1477,7 @@ def fill_rad_w_other_source(t, storm_targ, storm_fill, var):
         targ_interp = targ_da.interp({'t':t}).item()
         if not numpy.isnan(targ_interp):
             return targ_interp
-        
+
     # if nothing worked, return the missing value (-1)
     return -1
 
