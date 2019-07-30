@@ -113,6 +113,12 @@ missing_data_warning_str = """*** Cannot yet automatically determine the
     `max_wind_radius_fill` function passed as argument
     to the `write` function."""
 
+# Warning for not having any time points with both a max wind speed and central
+# pressure observation
+missing_necessary_data_warning_str = """*** No data points are returned in your 
+    storm because no time points in the data file had both a max wind speed and 
+    a central pressure observation."""
+
 
 # =============================================================================
 #  Basic storm class
@@ -619,59 +625,67 @@ class Storm(object):
             ds = ds.sel(date_time=valid)
             for i in ['wind','pres']:
                 pref_vals[i] = pref_vals[i].sel(date_time=valid)
+        
+            # in case all values missing, need to return a bunch of empty arrays
+            self.t = []
+            if len(ds.date_time) == 0:
+                self.basin = numpy.array([])
+                self.event = numpy.array([])
+                self.time_offset = numpy.array([])
+                self.classification = numpy.array([])
+                self.max_wind_speed = numpy.array([])
+                self.central_pressure = numpy.array([])
+                self.max_wind_radius = numpy.array([])
+                self.storm_radius = numpy.array([])
+                warnings.warn(missing_necessary_data_warning_str)
+            else:
+                ## GET RMW and ROCI
+                ## (these can be missing)
+                for r in ['rmw','roci']:
+                    order = ['{}_{}'.format(i,r) for i in agency_pref if
+                                     '{}_{}'.format(i,r) in ds.data_vars.keys()]
+                    vals = ds[order].to_array(dim='agency')
+                    best_ix = vals.notnull().argmax(dim='agency')
+                    val_pref = vals.isel(agency=best_ix)
+                    pref_vals[r] = val_pref
+                    
+                self.basin = ds.basin.values[0].astype(str)
+                self.event = ds.usa_record.values.astype(str)
+                
+                # convert datetime64 to datetime.datetime
+                for d in ds.time:
+                    t = d.dt
+                    self.t.append(datetime.datetime(t.year,t.month,t.day,t.hour,t.minute,t.second))
+                
+                ## time offset
+                if (self.event=='L').any():
+                    # if landfall, use last landfall
+                    self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
+                else:
+                    #if no landfall, use last time of storm
+                    self.time_offset = self.t[-1]
+                
+                # Classification, note that this is not the category of the storm
+                self.classification = ds.usa_status.values
+                
+                # Intensity information - for now, including only common, basic intensity
+                # info.
+                # TODO: add more detailed info for storms that have it
+                self.max_wind_speed = units.convert(pref_vals['wind'],'knots','m/s').where(pref_vals['wind'].notnull(),-1).values
+                self.central_pressure = units.convert(pref_vals['pres'],'mbar','Pa').where(pref_vals['pres'].notnull(),-1).values
+                self.max_wind_radius = units.convert(pref_vals['rmw'],'nmi','m').where(pref_vals['rmw'].notnull(),-1).values
+                self.storm_radius = units.convert(pref_vals['roci'],'nmi','m').where(pref_vals['roci'].notnull(),-1).values
+                
+                # warn if you have missing vals for RMW or ROCI
+                if (self.max_wind_radius.max()) == -1 or (self.storm_radius.max() == -1):
+                    warnings.warn(missing_data_warning_str)
 
-
-            ## GET RMW and ROCI
-            ## (these can be missing)
-            for r in ['rmw','roci']:
-                order = ['{}_{}'.format(i,r) for i in agency_pref if
-                                 '{}_{}'.format(i,r) in ds.data_vars.keys()]
-                vals = ds[order].to_array(dim='agency')
-                best_ix = vals.notnull().argmax(dim='agency')
-                val_pref = vals.isel(agency=best_ix)
-                pref_vals[r] = val_pref
-
-
-            ## CONVERT TO GEOCLAW FORMAT
-
-            # assign basin to be the basin where track originates
-            # in case track moves across basins
-            self.basin = ds.basin.values[0].astype(str)
+            # assign name and ID to storm
             self.name = ds.name.astype(str).item()
             self.ID = ds.sid.astype(str).item()
 
-            # convert datetime64 to datetime.datetime
-            self.t = []
-            for d in ds.time:
-                t = d.dt
-                self.t.append(datetime.datetime(t.year,t.month,t.day,t.hour,t.minute,t.second))
-
-            ## events
-            self.event = ds.usa_record.values.astype(str)
-
-            ## time offset
-            if (self.event=='L').any():
-                # if landfall, use last landfall
-                self.time_offset = numpy.array(self.t)[self.event=='L'][-1]
-            else:
-                #if no landfall, use last time of storm
-                self.time_offset = self.t[-1]
-
-            # Classification, note that this is not the category of the storm
-            self.classification = ds.usa_status.values
+            # assign eye locations
             self.eye_location = numpy.array([ds.lon,ds.lat]).T
-
-            # Intensity information - for now, including only common, basic intensity
-            # info.
-            # TODO: add more detailed info for storms that have it
-            self.max_wind_speed = units.convert(pref_vals['wind'],'knots','m/s').where(pref_vals['wind'].notnull(),-1).values
-            self.central_pressure = units.convert(pref_vals['pres'],'mbar','Pa').where(pref_vals['pres'].notnull(),-1).values
-            self.max_wind_radius = units.convert(pref_vals['rmw'],'nmi','m').where(pref_vals['rmw'].notnull(),-1).values
-            self.storm_radius = units.convert(pref_vals['roci'],'nmi','m').where(pref_vals['roci'].notnull(),-1).values
-
-            # warn if you have missing vals for RMW or ROCI
-            if (self.max_wind_radius.max()) == -1 or (self.storm_radius.max() == -1):
-                warnings.warn(missing_data_warning_str)
 
 
     def read_emanuel(
