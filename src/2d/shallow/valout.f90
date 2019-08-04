@@ -49,8 +49,8 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
 #endif
 
     ! Timing
-    integer :: clock_start, clock_finish, clock_rate
-    integer    tick_clock_finish, tick_clock_rate, timeTick_int
+    integer(kind=8) :: clock_start, clock_finish, clock_rate
+    integer(kind=8) ::    tick_clock_finish, tick_clock_rate, timeTick_int
     real(kind=8) :: cpu_start, cpu_finish, t_CPU_overall, timeTick_overall
     character(len=128) :: console_format
     character(len=512) :: timing_line, timing_substr

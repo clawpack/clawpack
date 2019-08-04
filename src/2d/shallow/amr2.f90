@@ -116,7 +116,7 @@ program amr2
     logical :: vtime, rest, output_t0    
 
     ! Timing variables
-    integer :: clock_start, clock_finish, clock_rate, ttotal
+    integer(kind=8) :: clock_start, clock_finish, clock_rate, ttotal
     real(kind=8) :: ttotalcpu
     integer, parameter :: timing_unit = 48
     character(len=512) :: timing_line, timing_substr

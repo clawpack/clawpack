@@ -14,8 +14,9 @@ c
       integer omp_get_thread_num, omp_get_max_threads
       integer mythread/0/, maxthreads/1/
       integer listgrids(numgrids(level))
-      integer clock_start, clock_finish, clock_rate
-      integer clock_startStepgrid, clock_startBound,clock_finishBound
+      integer(kind=8) :: clock_start, clock_finish, clock_rate
+      integer(kind=8) :: clock_startStepgrid, clock_startBound,
+     &                   clock_finishBound
       real(kind=8) cpu_start, cpu_finish
       real(kind=8) cpu_startBound,cpu_finishBound
       real(kind=8) cpu_startStepgrid, cpu_finishStepgrid
