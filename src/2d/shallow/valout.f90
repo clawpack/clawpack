@@ -53,7 +53,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     integer    tick_clock_finish, tick_clock_rate, timeTick_int
     real(kind=8) :: cpu_start, cpu_finish, t_CPU_overall, timeTick_overall
     character(len=128) :: console_format
-    character(len=256) :: timing_line, timing_substr
+    character(len=512) :: timing_line, timing_substr
     character(len=*), parameter :: timing_file_name = "timing.csv"
 
     character(len=*), parameter :: header_format =                             &
@@ -194,6 +194,13 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
 
                 ! Binary output
                 case(3)
+
+                    ! Updating ghost cell data
+                    call bound(time,num_eqn,num_ghost,alloc(q_loc),     &
+                                 num_cells(1) + 2*num_ghost,            &
+                                 num_cells(2) + 2*num_ghost,            &
+                                 grid_ptr,alloc(aux_loc),num_aux)
+
                     ! Need to add eta to the output data
                     allocate(qeta((num_eqn + 1)                         &
                              * (num_cells(1) + 2 * num_ghost)           &
@@ -380,7 +387,8 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     ! ==========================================================================
     ! Write out timing stats
     open(unit=out_unit, file=timing_file_name, form='formatted',         &
-             status='old', action='write', position='append')
+             status='unknown', action='write', position='append')
+             !status='old', action='write', position='append')
     
     timing_line = "(e16.6, ', ', e16.6, ', ', e16.6,"
     do level=1, mxnest

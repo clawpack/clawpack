@@ -17,9 +17,9 @@ import numpy
 import clawpack.clawutil.test as test
 import clawpack.geoclaw.surge.storm as storm
 
-# Set local test directory to get local files 
-testdir = os.path.dirname(__file__) 
-if len(testdir) == 0: 
+# Set local test directory to get local files
+testdir = os.path.dirname(__file__)
+if len(testdir) == 0:
     testdir = "./"
 
 # Current tests
@@ -30,7 +30,7 @@ def check_geoclaw(paths, check_header=False):
 
     This does not use object equivalence due to round off errors that can occur
     due to format constraints.  If the *check_header* is True the routine also
-    checks that the number of lines is equivalent (is implicitly checked 
+    checks that the number of lines is equivalent (is implicitly checked
     anyway) but more importantly that the *time_offset*s are equivalent.
 
     :Input:
@@ -88,46 +88,63 @@ def test_storm_IO(save=False):
     temp_path = tempfile.mkdtemp()
 
     try:
-        # Currently we read in the format, write it back out in the GeoClaw 
+        # Currently we read in the format, write it back out in the GeoClaw
         # format and check the stored GeoClaw file for that format
         for file_format in file_format_tests:
             if file_format=='ibtracs':
                 file_suffix = 'nc'
                 # Check here to see if we have xarray and pandas
                 try:
-                    import pandas
                     import xarray
                 except ImportError as e:
-                    print("Skipping IBTrACS IO test, missing pandas and xarray.")
+                    print("Skipping IBTrACS IO test, missing xarray.")
                     continue
 
             else:
                 file_suffix = 'txt'
             input_path = os.path.join(testdir, "data", "storm", "%s.%s" % (file_format,file_suffix))
             out_path = os.path.join(temp_path, '%s_geoclaw.txt' % file_format)
-            check_path = os.path.join(testdir, "data", "storm", 
+            check_path = os.path.join(testdir, "data", "storm",
                                       "%s_geoclaw.txt" % file_format)
 
             # Read in test data and write it back out in the GeoClaw format
             # for IBTrACS input, need storm/year info
             if file_format=='ibtracs':
-                kwargs = {'storm_name':'IKE',
-                         'year':2008}
+                # test for Ike using EITHER storm_name and year OR
+                # sid
+#                 kwargs = {'storm_name':'IKE',
+#                          'year':2008}
+                kwargs = {'sid': '2008245N17323',
+                          'agency_pref': ['wmo','usa']}
+
+                # test the fill_radius_w_other_source func
+                atcf_path = os.path.join(testdir, "data", "storm", "atcf.txt")
+                storm_atcf = storm.Storm(atcf_path, file_format='ATCF')
+                def fill_mwr(t, this_storm):
+                    return storm.fill_rad_w_other_source(t, this_storm, storm_atcf, 'max_wind_radius')
+                def fill_rad(t, this_storm):
+                    return storm.fill_rad_w_other_source(t, this_storm, storm_atcf, 'storm_radius')
             else:
                 kwargs = {}
+                fill_mwr = None
+                fill_rad = None
             test_storm = storm.Storm(input_path, file_format=file_format, **kwargs)
-            
+
             # Temporary testing thing to get around missing data in formats that
             # do not provide the proper radii
             if file_format in ['hurdat', 'jma']:
                 test_storm.max_wind_radius[:] = 0.0
                 test_storm.storm_radius[:] = 0.0
 
-            test_storm.write(out_path, file_format="geoclaw")
+            test_storm.write(out_path, file_format="geoclaw",
+                             max_wind_radius_fill = fill_mwr,
+                             storm_radius_fill = fill_rad)
 
             # Save new geoclaw test files into check_path if requested
             if save:
-                test_storm.write(check_path, file_format="geoclaw")
+                test_storm.write(check_path, file_format="geoclaw",
+                             max_wind_radius_fill = fill_mwr,
+                             storm_radius_fill = fill_rad)
 
             # Check geoclaw files
             check_geoclaw([out_path, check_path])

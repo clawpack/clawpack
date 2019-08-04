@@ -103,6 +103,7 @@ program amr2
     use regions_module, only: set_regions
     use fgmax_module, only: set_fgmax, FG_num_fgrids
     use multilayer_module, only: set_multilayer
+    use adjoint_module, only: read_adjoint_data
 
     implicit none
 
@@ -118,7 +119,7 @@ program amr2
     integer :: clock_start, clock_finish, clock_rate, ttotal
     real(kind=8) :: ttotalcpu
     integer, parameter :: timing_unit = 48
-    character(len=256) :: timing_line, timing_substr
+    character(len=512) :: timing_line, timing_substr
     character(len=*), parameter :: timing_base_name = "timing."
     character(len=*), parameter :: timing_header_format =                      &
                                                   "(' wall time (', i2,')," // &
@@ -480,6 +481,7 @@ program amr2
         call set_storm()                  ! Set storm parameters
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar, naux) ! Set gauge output
+        call read_adjoint_data()          ! Read adjoint solution
 
     else
 
@@ -516,6 +518,7 @@ program amr2
         call set_regions()                ! Set refinement regions
         call set_gauges(rest, nvar, naux) ! Set gauge output
         call set_fgmax()
+        call read_adjoint_data()          ! Read adjoint solution
 
         cflmax = 0.d0   ! otherwise use previously heckpointed val
 

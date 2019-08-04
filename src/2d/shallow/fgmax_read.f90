@@ -44,11 +44,10 @@ subroutine fgmax_read(fname,ifg)
     type(fgrid), pointer :: fg
     logical :: foundFile
 
-    open(unit=FG_UNIT,file=trim(fname),status='old')
     inquire(file=trim(fname),exist=foundFile)
     if (.not. foundFile) then
       write(*,*) 'Missing fgmax file...'
-      write(*,*) 'Looking for: xx',trim(fname),'xx'
+      write(*,*) 'Looking for: ',trim(fname)
       stop
       endif
 

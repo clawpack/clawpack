@@ -690,12 +690,14 @@ class Topography(object):
                                 z_var = key
 
                     if x_var is None or y_var is None or z_var is None:
-                        raise IOError("Could not automatically determine ",
-                                      "variable ids.  Please check if the file",
-                                      " has the 'axis' attribute attached to",
-                                      " the appropriate x and y variables or ",
-                                      "specify the variables directly via the",
-                                      " *nc_params* dictionary.")
+                        err_string = "".join(
+                                      ("Could not automatically determine ",
+                                       "variable ids.  Please check if the ",
+                                       "file has the 'axis' attribute attached",
+                                       " to the appropriate x and y variables ",
+                                       "or specify the variables directly via",
+                                       " the *nc_params* dictionary."))
+                        raise IOError(err_string)
 
 
                     self._x = nc_file.variables[x_var][::stride[0]]
@@ -1096,7 +1098,7 @@ class Topography(object):
             axes = fig.add_subplot(111)
         
         # Turn off annoying offset
-        axes.ticklabel_format(format="plain", useOffset=False)
+        axes.ticklabel_format(style="plain", useOffset=False)
         for label in axes.get_xticklabels():
             label.set_rotation(20)
 

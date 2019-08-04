@@ -1,5 +1,5 @@
 ! ============================================
-subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
+subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux,actualstep)
 ! ============================================
 !
 ! # called before each call to step
@@ -34,6 +34,7 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
     real(kind=8), intent(inout) :: xlower, ylower, dx, dy, t, dt
     real(kind=8), intent(inout) :: q(meqn,1-mbc:mx+mbc,1-mbc:my+mbc)
     real(kind=8), intent(inout) :: aux(maux,1-mbc:mx+mbc,1-mbc:my+mbc)
+    logical, intent (in) :: actualstep
 
     ! Local storage
     integer :: index,i,j,k,dummy
@@ -51,7 +52,7 @@ subroutine b4step2(mbc,mx,my,meqn,q,xlower,ylower,dx,dy,t,dt,maux,aux)
     end forall
 
 
-    if (aux_finalized < 2) then
+    if (aux_finalized < 2 .and. actualstep) then
         ! topo arrays might have been updated by dtopo more recently than
         ! aux arrays were set unless at least 1 step taken on all levels
         aux(1,:,:) = NEEDS_TO_BE_SET ! new system checks this val before setting

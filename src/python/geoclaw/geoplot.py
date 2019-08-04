@@ -1,14 +1,23 @@
 """
 Useful things for plotting GeoClaw results.
+
+DEPRECATED - use the version in visclaw instead
 """
 
+from __future__ import print_function
 from __future__ import absolute_import
 from clawpack.visclaw import colormaps
 from matplotlib.colors import Normalize 
 from clawpack.geoclaw import topotools
 from numpy import ma
 from six.moves import zip
+import warnings
 
+w = """
+*** WARNING: clawpack.geoclaw.geoplot is deprecated
+             Use clawpack.visclaw.geoplot instead"""
+
+warnings.warn(w, UserWarning)
 
 # Colormaps from geoclaw
 # Color attributes, single instance per run
