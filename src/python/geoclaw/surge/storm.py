@@ -147,6 +147,10 @@ class Storm(object):
      - *time_offset* (datetime.datetime) A date time that as an offset for the
        simulation time.  This will default to the beginning of the first of the
        year that the first time point is found in.
+     - *wind_intensity* (ndarray(:)) Wind intensity for the radii defined in 
+       the record: 30, 50, 51 or 68 kt. Default units are knots.
+     - *wind_intensity_radius* (ndarray(:)) Radius of every record wind 
+       intensity. Default units are kilometers.
 
     :Initialization:
      1. Read in existing file at *path*.
@@ -183,6 +187,8 @@ class Storm(object):
         self.max_wind_radius = None
         self.central_pressure = None
         self.storm_radius = None
+	self.wind_intensity = None
+	self.wind_intensity_radius = None
 
         # Storm descriptions - not all formats provide these
         self.name = None
@@ -313,6 +319,8 @@ class Storm(object):
         self.central_pressure = numpy.empty(num_lines)
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
+	self.wind_intensity = numpy.empty(num_lines)
+	self.wind_intensity_radius = numpy.empty(num_lines)
 
         for (i, data) in enumerate(data_block):
             # End at an empty lines - skips lines at the bottom of a file
@@ -373,6 +381,26 @@ class Storm(object):
                 self.max_wind_radius[i] = units.convert(float(data[19]), 'nmi', 'm')
             except (ValueError, IndexError):
                 self.max_wind_radius[i] = -1
+		
+	    # Wind profile (occasionally missing for older ATCF storms)    
+            try:
+                self.wind_intensity[i] = float(data[11])
+            except (ValueError, IndexError):
+                self.wind_intensity[i] = -1
+            try:
+                average = 0
+                n = 0
+                for j in range(13, 17):
+                    if float(data[j]) != 0:
+                        n = n + 1
+                        average = average + float(data[j])
+                if n != 0:
+                    average = average / float(n)
+                else:
+                    average = 0
+                self.wind_intensity_radius[i] = average
+            except (ValueError, IndexError):
+                self.wind_intensity_radius[i] = -1
                 
             if self.max_wind_speed.min() == -1:
                 warnings.warn('Some timesteps have missing max wind speed. These will not be written'
