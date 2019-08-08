@@ -116,7 +116,7 @@ program amr2
     logical :: vtime, rest, output_t0    
 
     ! Timing variables
-    integer(kind=8) :: clock_start, clock_finish, clock_rate, ttotal
+    integer(kind=8) :: clock_start, clock_finish, clock_rate, ttotal, count_max
     real(kind=8) :: ttotalcpu
     integer, parameter :: timing_unit = 48
     character(len=512) :: timing_line, timing_substr
@@ -642,7 +642,7 @@ program amr2
     
     
 
-    call system_clock(clock_finish,clock_rate)
+    call system_clock(clock_finish,clock_rate,count_max)
     
     !output timing data
     open(timing_unit, file=timing_base_name//"txt", status='unknown',       &
@@ -652,7 +652,7 @@ program amr2
     format_string="('============================== Timing Data ==============================')"
     write(timing_unit,format_string)
     write(*,format_string)
-    
+
     write(*,*)
     write(timing_unit,*)
     
@@ -668,8 +668,6 @@ program amr2
     ttotalcpu=0.d0
     ttotal=0
 
-    call system_clock(clock_finish,clock_rate)  ! just to get clock_rate
-    write(*,*) "clock_rate ",clock_rate
 
     do level=1,mxnest
         format_string="(i3,'           ',1f15.3,'        ',1f15.3,'    ', e17.3)"
@@ -760,10 +758,21 @@ program amr2
     write(timing_unit, "('Note: timings are also recorded for each output step')")
     write(timing_unit, "('      in the file timing.csv.')")
     
-    
-    !end of timing data
+
     write(*,*)
     write(timing_unit,*)
+
+    ! output clock_rate etc. useful in debugging or if negative time reported
+    format_string="('clock_rate = ',i10, ' per second,  count_max = ',i23)"
+    !write(*,format_string) clock_rate, count_max
+    write(timing_unit,format_string) clock_rate, count_max
+
+    format_string="('clock_start = ',i20, ',  clock_finish = ',i20)"
+    !write(*,format_string) clock_start, clock_finish
+    write(timing_unit,format_string) clock_start, clock_finish
+    
+    
+    !end of timing data
     format_string="('=========================================================================')"
     write(timing_unit,format_string)
     write(*,format_string)
