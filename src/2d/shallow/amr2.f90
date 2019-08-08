@@ -620,6 +620,7 @@ program amr2
     ! Timing
     ! moved inside tick, so timers can be checkpoint for
     ! possible restart
+    ! call here only for timing debug info at end
     call system_clock(clock_start,clock_rate)
 
     if (output_t0) then
@@ -763,6 +764,8 @@ program amr2
     write(timing_unit,*)
 
     ! output clock_rate etc. useful in debugging or if negative time reported
+
+    call system_clock(clock_finish,clock_rate,count_max)
     format_string="('clock_rate = ',i10, ' per second,  count_max = ',i23)"
     !write(*,format_string) clock_rate, count_max
     write(timing_unit,format_string) clock_rate, count_max
