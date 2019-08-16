@@ -79,6 +79,8 @@ module topo_module
     integer, allocatable :: i0topo0(:),topo0ID(:)
     integer :: mtopo0size,mtopo0files
 
+    real(kind=8) topo_missing
+
 contains
 
     ! ========================================================================
@@ -125,6 +127,9 @@ contains
             else
                 call opendatafile(iunit, 'topo.data')
             endif
+
+            ! Read in value to use in place of no_data_value in topofile
+            read(iunit,*) topo_missing
 
             ! Read in topography specification type
             read(iunit,"(i1)") test_topography
@@ -447,7 +452,7 @@ contains
 
         ! Locals
         integer, parameter :: iunit = 19, miss_unit = 17
-        real(kind=8), parameter :: topo_missing = -150.d0
+        !real(kind=8), parameter :: topo_missing = -150.d0 ! now read in
         logical, parameter :: maketype2 = .false.
         integer :: i,j,num_points,missing,status,topo_start,n
         real(kind=8) :: no_data_value,x,y,z,topo_temp
