@@ -1,19 +1,4 @@
 ! ============================================================================
-!  Program:     topo_module
-!  File:        topo_mod.f90
-!  Created:     2010-04-22
-!  Author:      Kyle Mandli
-! ============================================================================
-!      Copyright (C) 2010-04-22 Kyle Mandli <mandli@amath.washington.edu>
-!
-!  Distributed under the terms of the Berkeley Software Distribution (BSD)
-!  license
-!                     http://www.opensource.org/licenses/
-!  this module has been significantly modified to accomodate the
-!  new method of moving topography.
-!  it now contains the previous dtopo module among other changes
-!  David George, Vancouver WA December 2013
-! ============================================================================
 !  Module for topography data
 ! ============================================================================
 module topo_module
