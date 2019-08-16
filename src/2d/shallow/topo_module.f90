@@ -539,8 +539,8 @@ contains
  602                format('WARNING... ',i6, &
                            ' missing data values in this topofile')
                     write(6,603) topo_missing
- 603                format('   These values have been set to ',f13.3, &
-                           ' in read_topo_file')
+ 603                format('   These values have been set to topo_missing = ',&
+                           f13.3, ' in read_topo_file')
                     if (topo_missing == 99999.d0) then
                         print *, 'ERROR... do not use this default value'
                         print *, 'Fix your topofile or set'
