@@ -141,7 +141,7 @@ class TopographyData(clawpack.clawutil.data.ClawData):
         super(TopographyData,self).__init__()
 
         # Topography data
-        self.add_attribute('topo_missing',100.)
+        self.add_attribute('topo_missing',99999.)
         self.add_attribute('test_topography',0)
         self.add_attribute('topofiles',[])
         
