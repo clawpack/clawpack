@@ -187,8 +187,8 @@ class Storm(object):
         self.max_wind_radius = None
         self.central_pressure = None
         self.storm_radius = None
-	self.wind_intensity = None
-	self.wind_intensity_radius = None
+        self.wind_intensity = None
+        self.wind_intensity_radius = None
 
         # Storm descriptions - not all formats provide these
         self.name = None
@@ -319,8 +319,8 @@ class Storm(object):
         self.central_pressure = numpy.empty(num_lines)
         self.max_wind_radius = numpy.empty(num_lines)
         self.storm_radius = numpy.empty(num_lines)
-	self.wind_intensity = numpy.empty(num_lines)
-	self.wind_intensity_radius = numpy.empty(num_lines)
+        self.wind_intensity = numpy.empty(num_lines)
+        self.wind_intensity_radius = numpy.empty(num_lines)
 
         for (i, data) in enumerate(data_block):
             # End at an empty lines - skips lines at the bottom of a file
