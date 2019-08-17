@@ -666,8 +666,13 @@ program amr2
     format_string="('Level           Wall Time (seconds)    CPU Time (seconds)   Total Cell Updates')"
     write(timing_unit,format_string)
     write(*,format_string)
-    ttotalcpu=0.d0
-    ttotal=0
+    if (rest) then
+        ttotalcpu=timeTickCPU
+        ttotal=timeTick
+      else
+        ttotalcpu=0.d0
+        ttotal=0
+      endif
 
 
     do level=1,mxnest
