@@ -725,7 +725,7 @@ class Storm(object):
             # Extract header
             data = JMA_file.readline()
             self.ID = data[6:10]
-            num_lines = int(data[13:15])
+            num_lines = int(data[12:14])
             self.name = data[30:51].strip()
 
             data_block = JMA_file.readlines()
