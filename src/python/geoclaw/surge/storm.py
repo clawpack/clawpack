@@ -731,7 +731,7 @@ class Storm(object):
             data_block = JMA_file.readlines()
         print("self.ID =", self.ID)
         print("num_lines = ", num_lines)
-	print("len(data_block) =", len(data_block))
+        print("len(data_block) =", len(data_block))
         assert(num_lines == len(data_block))
 
         # Parse data block
