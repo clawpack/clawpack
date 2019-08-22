@@ -112,6 +112,15 @@ missing_data_warning_str = """*** Cannot yet automatically determine the
     `max_wind_radius_fill` function passed as argument
     to the `write` function."""
 
+# Warning for not having any time points with both a max wind speed and central
+# pressure observation
+missing_necessary_data_warning_str = """No storm points in the input file 
+    had both a max wind speed and a central pressure observation."""
+
+class NoDataError(ValueError):
+    """Exception to raise when no valid data in input file"""
+    pass
+
 
 # =============================================================================
 #  Basic storm class
@@ -615,6 +624,8 @@ class Storm(object):
             ## THESE CANNOT BE MISSING SO DROP
             ## IF EITHER MISSING
             valid = pref_vals['wind'].notnull() & pref_vals['pres'].notnull()
+            if not valid.any():
+                raise NoDataError(missing_necessary_data_warning_str)
             ds = ds.sel(date_time=valid)
             for i in ['wind','pres']:
                 pref_vals[i] = pref_vals[i].sel(date_time=valid)

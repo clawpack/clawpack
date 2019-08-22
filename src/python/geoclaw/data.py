@@ -141,6 +141,7 @@ class TopographyData(clawpack.clawutil.data.ClawData):
         super(TopographyData,self).__init__()
 
         # Topography data
+        self.add_attribute('topo_missing',99999.)
         self.add_attribute('test_topography',0)
         self.add_attribute('topofiles',[])
         
@@ -162,6 +163,8 @@ class TopographyData(clawpack.clawutil.data.ClawData):
     def write(self,data_source='setrun.py', out_file='topo.data'): 
 
         self.open_data_file(out_file, data_source)
+        self.data_write(name='topo_missing',
+                        description='replace no_data_value in topofile')
         self.data_write(name='test_topography',description='(Type topography specification)')
         if self.test_topography == 0:
             ntopofiles = len(self.topofiles)

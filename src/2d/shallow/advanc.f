@@ -247,7 +247,7 @@ c     the very last gauge time at end of run.
 
       if (num_gauges > 0) then
            call update_gauges(alloc(locnew:locnew+nvar*mitot*mjtot),
-     .                       alloc(locaux:locnew+nvar*mitot*mjtot),
+     .                       alloc(locaux:locaux+naux*mitot*mjtot),
      .                       xlow,ylow,nvar,mitot,mjtot,naux,mptr)
            endif
 
