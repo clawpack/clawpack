@@ -147,7 +147,7 @@ class Storm(object):
      - *time_offset* (datetime.datetime) A date time that as an offset for the
        simulation time.  This will default to the beginning of the first of the
        year that the first time point is found in.
-     - *wind_speeds* (ndarray(:, :)) Wind speed defined in every record, such
+     - *wind_speeds* (ndarray(:, :)) Wind speeds defined in every record, such
        as 34kt, 50kt, 64kt, etc and their radii. Default units are meters/second 
        and meters.
 
