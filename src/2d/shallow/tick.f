@@ -51,8 +51,6 @@ c          each step) to keep track of when that level should
 c          have its error estimated and finer levels should be regridded.
 c ::::::::::::::::::::::::::::::::::::;::::::::::::::::::::::::::
 c
-      call system_clock(tick_clock_start,tick_clock_rate)
-      call cpu_time(tick_cpu_start)
 
 
       ncycle         = nstart
