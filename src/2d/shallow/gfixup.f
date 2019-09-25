@@ -15,7 +15,7 @@ c
       integer mythread/0/, maxthreads/1/
       integer newnumgrids(maxlv),listnewgrids(maxnumnewgrids)
 
-      integer clock_start, clock_finish, clock_rate
+      integer(kind=8) :: clock_start, clock_finish, clock_rate
       integer mbad
 c
 c ::::::::::::::::::::::::: GFIXUP ::::::::::::::::::::::::::::::::;

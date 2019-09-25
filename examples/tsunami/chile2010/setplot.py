@@ -160,6 +160,29 @@ def setplot(plotdata=None):
     plotaxes.afteraxes = add_zeroline
 
 
+    #-----------------------------------------
+    # Plots of timing (CPU and wall time):
+
+    def make_timing_plots(plotdata):
+        from clawpack.visclaw import plot_timing_stats
+        import os,sys
+        try:
+            timing_plotdir = plotdata.plotdir + '/_timing_figures'
+            os.system('mkdir -p %s' % timing_plotdir)
+            # adjust units for plots based on problem:
+            units = {'comptime':'seconds', 'simtime':'hours', 
+                     'cell':'millions'}
+            plot_timing_stats.make_plots(outdir=plotdata.outdir, 
+                                          make_pngs=True,
+                                          plotdir=timing_plotdir, 
+                                          units=units)
+        except:
+            print('*** Error making timing plots')
+
+    otherfigure = plotdata.new_otherfigure(name='timing plots',
+                    fname='_timing_figures/timing.html')
+    otherfigure.makefig = make_timing_plots
+
 
     #-----------------------------------------
     
