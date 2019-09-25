@@ -82,7 +82,7 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_eqn = 6
 
     # Number of auxiliary variables in the aux array (initialized in setaux)
-    clawdata.num_aux = 4 + rundata.multilayer_data.num_layers
+    clawdata.num_aux = 1 + rundata.multilayer_data.num_layers
 
     # Index of aux array corresponding to capacity function, if there is one:
     clawdata.capa_index = 0
