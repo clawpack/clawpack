@@ -1,0 +1,36 @@
+package:
+  name: clawpack
+  version: 5.5.0
+
+source:
+  path: ..
+
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('fortran') }}
+
+  host:
+    - python
+    - numpy
+
+  run:
+    - python
+    - six
+    - numpy
+    - scipy
+    - matplotlib
+    - mpi4py
+    - petsc4py
+    - h5py-parallel
+
+build:
+  number: 0
+
+test:
+    imports:
+        - clawpack.pyclaw
+        - clawpack.petclaw
+        - clawpack.pyclaw.fileio.hdf5
+        - clawpack.riemann.euler_4wave_2D
