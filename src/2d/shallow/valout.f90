@@ -12,7 +12,7 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
     use amr_module, only: node, rnode, ndilo, ndihi, ndjlo, ndjhi
     use amr_module, only: cornxlo, cornylo, levelptr, mxnest
     use amr_module, only: timeValout, timeValoutCPU, tvoll, tvollCPU, rvoll
-    use amr_module, only: timeTick, tick_clock_start, t0
+    use amr_module, only: timeTick, tick_clock_start, t0, timeTickCPU
 
     use storm_module, only: storm_specification_type, output_storm_location
     use storm_module, only: output_storm_location
@@ -49,8 +49,8 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
 #endif
 
     ! Timing
-    integer :: clock_start, clock_finish, clock_rate
-    integer    tick_clock_finish, tick_clock_rate, timeTick_int
+    integer(kind=8) :: clock_start, clock_finish, clock_rate
+    integer(kind=8) ::    tick_clock_finish, tick_clock_rate, timeTick_int
     real(kind=8) :: cpu_start, cpu_finish, t_CPU_overall, timeTick_overall
     character(len=128) :: console_format
     character(len=512) :: timing_line, timing_substr
@@ -402,6 +402,9 @@ subroutine valout(level_begin, level_end, time, num_eqn, num_aux)
         timeTick_overall = 0.d0
     else
         call cpu_time(t_CPU_overall)
+        ! if this is a restart, need to adjust add in time from previous run:
+        t_CPU_overall = t_CPU_overall + timeTickCPU
+
         call system_clock(tick_clock_finish,tick_clock_rate)
         timeTick_int = timeTick + tick_clock_finish - tick_clock_start
         timeTick_overall = real(timeTick_int, kind=8)/real(clock_rate,kind=8)

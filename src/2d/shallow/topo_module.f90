@@ -1,19 +1,4 @@
 ! ============================================================================
-!  Program:     topo_module
-!  File:        topo_mod.f90
-!  Created:     2010-04-22
-!  Author:      Kyle Mandli
-! ============================================================================
-!      Copyright (C) 2010-04-22 Kyle Mandli <mandli@amath.washington.edu>
-!
-!  Distributed under the terms of the Berkeley Software Distribution (BSD)
-!  license
-!                     http://www.opensource.org/licenses/
-!  this module has been significantly modified to accomodate the
-!  new method of moving topography.
-!  it now contains the previous dtopo module among other changes
-!  David George, Vancouver WA December 2013
-! ============================================================================
 !  Module for topography data
 ! ============================================================================
 module topo_module
@@ -79,6 +64,8 @@ module topo_module
     integer, allocatable :: i0topo0(:),topo0ID(:)
     integer :: mtopo0size,mtopo0files
 
+    real(kind=8) topo_missing
+
 contains
 
     ! ========================================================================
@@ -125,6 +112,9 @@ contains
             else
                 call opendatafile(iunit, 'topo.data')
             endif
+
+            ! Read in value to use in place of no_data_value in topofile
+            read(iunit,*) topo_missing
 
             ! Read in topography specification type
             read(iunit,"(i1)") test_topography
@@ -447,7 +437,6 @@ contains
 
         ! Locals
         integer, parameter :: iunit = 19, miss_unit = 17
-        real(kind=8), parameter :: topo_missing = -150.d0
         logical, parameter :: maketype2 = .false.
         integer :: i,j,num_points,missing,status,topo_start,n
         real(kind=8) :: no_data_value,x,y,z,topo_temp
@@ -546,11 +535,19 @@ contains
 
                 ! Write a warning if we found and missing values
                 if (missing > 0)  then
-                    print *, '   WARNING...some missing data values this file'
-                    print *, '       ',missing,' missing data values'
-                    print *, '   These values have arbitrarily been set to ',&
-                        topo_missing
-                    print *, '   See read_topo_file in topo_module.f90'
+                    write(6,602) missing
+ 602                format('WARNING... ',i6, &
+                           ' missing data values in this topofile')
+                    write(6,603) topo_missing
+ 603                format('   These values have been set to topo_missing = ',&
+                           f13.3, ' in read_topo_file')
+                    if (topo_missing == 99999.d0) then
+                        print *, 'ERROR... do not use this default value'
+                        print *, 'Fix your topofile or set'
+                        print *, '  rundata.topo_data.topo_missing in setrun.py'
+                        stop
+                        endif
+                    print *, ' '
                 endif
 
                 close(unit=iunit)
