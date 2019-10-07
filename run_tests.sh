@@ -2,7 +2,7 @@
 
 set -e
 
-cd /clawpack
+cd $CLAW
 
 cat /proc/cpuinfo
 gfortran -v
@@ -33,3 +33,9 @@ cd $CLAW/geoclaw
 nosetests
 
 cd $CLAW
+
+for failed_test_path in *_output
+do
+  cat $failed_test_path/run_output.txt
+  cat $failed_test_path/error_output.txt
+done
