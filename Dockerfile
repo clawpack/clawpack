@@ -13,7 +13,7 @@ ENV MPLBACKEND=Agg
 WORKDIR /clawpack
 
 RUN pip install -e . && \
-    pip install yolk3k \
+    pip install yolk3k nose \
       git+https://github.com/maritimeplanning/pytides.git@master \
       --no-cache-dir
 
