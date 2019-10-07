@@ -32,7 +32,7 @@ echo "testing geoclaw"
 cd $CLAW/geoclaw
 nosetests
 
-cd $CLAW
+cd /
 
 for failed_test_path in *_output
 do

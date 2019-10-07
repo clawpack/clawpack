@@ -22,9 +22,14 @@ install:
 
 script:
   - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT /usr/bin/env bash /clawpack/run_tests.sh
-  - docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
 
 deploy:
+  - provider: script
+    script: docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
+    skip_cleanup: true
+    on:
+      all_branches: true
+
   - provider: script
     script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
     skip_cleanup: true
