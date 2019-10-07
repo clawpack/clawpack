@@ -1,44 +1,45 @@
+sudo: required
+
 language: python
 python:
   - 3.6
-env:
-  - BUILD_TYPE="Release"
-  
-before_install:
-  - sudo apt-get update
-  - sudo apt-get install gfortran liblapack-pic liblapack-dev
-  - pip install netCDF4
-  - pip install xarray
-  - pip install scipy
-  - git clone --branch=master --depth=100 --quiet git://github.com/ClimateImpactLab/clawpack
-  - cd clawpack
-  - git submodule init
-  - git submodule update -j 6
-  - rm -rf geoclaw
-  - ln -s ../ geoclaw
-  # Print NumPy version being used
-  - python -c "import numpy; print(numpy.__version__)"
-  
-install:
-  - pip install -e .
-  - export CLAW=${PWD}
-  - export FC=gfortran
-  
-before_script:
-  # Print CPU info for debugging purposes:
-  - cat /proc/cpuinfo
-  - gfortran -v
-  - /usr/bin/f95 -v
-  - echo "PYTHONPATH="$PYTHONPATH
-  - echo "CLAW="$CLAW
-  - echo "FC="$FC
-  
-script:
-  - cd $CLAW/geoclaw
-  - nosetests -sv
 
-after_failure:
- - for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
-  
+services:
+  - docker
+
+env:
+  matrix:
+    - DOCKER_ORG=climateimpactlab
+      IMAGE_NAME=clawpack-image
+      SOURCE_IMAGE=rhodium/worker:v0.2.5
+
 notifications:
   email: false
+
+install:
+  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+  - docker build --build-arg SOURCE_IMAGE=rhodium/worker:v0.2.5 -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
+
+script:
+  - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT /usr/bin/env bash /clawpack/run_tests.sh
+  - docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
+
+deploy:
+  - provider: script
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
+    skip_cleanup: true
+    on:
+      all_branches: true
+      condition: $TRAVIS_BRANCH != master
+
+  - provider: script
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+    skip_cleanup: true
+    on:
+      branch: master
+
+  - provider: script
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
+    skip_cleanup: true
+    on:
+      tags: true
