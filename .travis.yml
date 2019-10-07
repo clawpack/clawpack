@@ -18,7 +18,7 @@ notifications:
 
 install:
   - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-  - docker build --build-arg SOURCE_IMAGE=rhodium/worker:v0.2.5 -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
+  - docker build --build-arg SOURCE_IMAGE=$SOURCE_IMAGE -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
 
 script:
   - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT /usr/bin/env bash /clawpack/run_tests.sh
