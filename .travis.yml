@@ -21,7 +21,7 @@ install:
   - docker build --build-arg SOURCE_IMAGE=$SOURCE_IMAGE -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
 
 script:
-  - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT /usr/bin/env bash /clawpack/run_tests.sh
+  - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT /usr/bin/env bash "/clawpack/run_tests.sh && for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done"
 
 deploy:
   - provider: script
