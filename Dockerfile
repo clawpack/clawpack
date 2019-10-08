@@ -9,6 +9,8 @@ ENV CLAW=/clawpack
 ENV NETCDF4_DIR=/opt/conda
 ENV FC=gfortran
 ENV MPLBACKEND=Agg
+
+# this is needed to find libraries when building geoclaw (particularly lapack)
 ENV LIB_PATHS=/opt/conda/lib
 
 WORKDIR /clawpack
@@ -16,6 +18,13 @@ WORKDIR /clawpack
 # need these to pass tests (and maybe we need them for our geoclaw runs but not
 # sure)
 RUN conda install -y -c conda-forge lapack nose h5py
+
+# install clawpack
+RUN pip install -e .
+
+# install pytides
+RUN pip install git+https://github.com/maritimeplanning/pytides.git@master \
+      --no-cache-dir
 
 WORKDIR /
 
