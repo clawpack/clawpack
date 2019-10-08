@@ -11,17 +11,19 @@ env:
   matrix:
     - DOCKER_ORG=climateimpactlab
       IMAGE_NAME=clawpack-image
-      SOURCE_IMAGE=rhodium/worker:d48911d47226e82fb43bf136343cd7ededb15f8f
+      SOURCE_IMAGE=rhodium/worker:1364e7c20d72a2493d4b5f4dc2cec34f0ec2b220
 
 notifications:
   email: false
 
 install:
   - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-  - docker build --build-arg SOURCE_IMAGE=$SOURCE_IMAGE -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
+  - docker build --build-arg SOURCE_IMAGE=$SOURCE_IMAGE -t
+    $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
 
 script:
-  - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT bash /clawpack/run_tests.sh
+  - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT bash
+    /clawpack/run_tests.sh
 
 deploy:
   - provider: script
@@ -31,20 +33,26 @@ deploy:
       all_branches: true
 
   - provider: script
-    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT
+                       $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH &&
+                       docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
     skip_cleanup: true
     on:
       all_branches: true
       condition: $TRAVIS_BRANCH != master
 
   - provider: script
-    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT
+                       $DOCKER_ORG/$IMAGE_NAME:latest &&
+                       docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
     skip_cleanup: true
     on:
       branch: master
 
   - provider: script
-    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT
+                       $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG &&
+                       docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
     skip_cleanup: true
     on:
       tags: true

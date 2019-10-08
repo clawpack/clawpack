@@ -18,7 +18,6 @@ gfortran -v
 echo "DEBUGGING --------------------"
 echo "CLAW="$CLAW
 echo "PYTHONPATH="$PYTHONPATH
-yolk -l
 echo "------------------------------"
 
 echo
