@@ -2,6 +2,14 @@
 
 set -e
 
+print_errors () {
+  for failed_test_path in *_output
+  do
+    cat $failed_test_path/run_output.txt
+    cat $failed_test_path/error_output.txt
+  done
+}
+
 cd $CLAW
 
 cat /proc/cpuinfo
@@ -18,18 +26,16 @@ echo "------------------------------"
 
 echo "testing pyclaw"
 cd $CLAW/pyclaw/examples
-nosetests || for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
+nosetests || print_errors
 
 echo "testing classic"
 cd $CLAW/classic
-nosetests || for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
-
+nosetests || print_errors
 
 echo "testing amrclaw"
 cd $CLAW/amrclaw
-nosetests || for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
-
+nosetests || print_errors
 
 echo "testing geoclaw"
 cd $CLAW/geoclaw
-nosetests || for failed_test_path in *_output ; do cat $failed_test_path/run_output.txt ; cat $failed_test_path/error_output.txt ; done
+nosetests || print_errors

@@ -12,8 +12,10 @@ ENV MPLBACKEND=Agg
 
 WORKDIR /clawpack
 
+RUN conda install nose liblapack
+
 RUN pip install -e . && \
-    pip install yolk3k nose \
+    pip install yolk3k \
       git+https://github.com/maritimeplanning/pytides.git@master \
       --no-cache-dir
 
