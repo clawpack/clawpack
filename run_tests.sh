@@ -31,5 +31,3 @@ nosetests
 echo "testing geoclaw"
 cd $CLAW/geoclaw
 nosetests
-
-cd $CLAW
