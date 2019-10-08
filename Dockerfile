@@ -2,6 +2,12 @@
 ARG SOURCE_IMAGE=$SOURCE_IMAGE
 FROM $SOURCE_IMAGE
 
+RUN apt-get update -qq && \
+    apt-get install -y \
+        liblapack-pic \
+        liblapack-dev \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 COPY . /clawpack
 
 ## install Clawpack
@@ -12,7 +18,7 @@ ENV MPLBACKEND=Agg
 
 WORKDIR /clawpack
 
-RUN conda install nose liblapack
+RUN conda install -c conda-forge nose
 
 RUN pip install -e . && \
     pip install yolk3k \

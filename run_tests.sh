@@ -8,6 +8,7 @@ print_errors () {
     cat $failed_test_path/run_output.txt
     cat $failed_test_path/error_output.txt
   done
+  exit 1
 }
 
 cd $CLAW
