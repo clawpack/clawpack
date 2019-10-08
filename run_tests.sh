@@ -32,4 +32,4 @@ echo "testing geoclaw"
 cd $CLAW/geoclaw
 nosetests
 
-cd /
+cd $CLAW
