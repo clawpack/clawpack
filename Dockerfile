@@ -2,11 +2,11 @@
 ARG SOURCE_IMAGE=$SOURCE_IMAGE
 FROM $SOURCE_IMAGE
 
-RUN apt-get update -qq && \
-    apt-get install -y \
+RUN sudo apt-get update -qq && \
+    sudo apt-get install -y \
         liblapack-pic \
-        liblapack-dev \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+        liblapack-dev && \
+    sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/*
 
 COPY . /clawpack
 
