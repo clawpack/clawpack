@@ -12,7 +12,6 @@ ENV MPLBACKEND=Agg
 
 # this is needed to find libraries when building geoclaw (particularly lapack)
 ENV LIB_PATHS=/opt/conda/lib
-ENV INCLUDE=/opt/conda/include
 
 WORKDIR /clawpack
 
