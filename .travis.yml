@@ -9,6 +9,9 @@ before_install:
   - sudo apt-get install gfortran liblapack-pic liblapack-dev
   - pip install matplotlib
   - pip install yolk3k
+  - pip install netCDF4
+  - pip install xarray
+  - pip install scipy
   
 install:
   - pip install -e .
