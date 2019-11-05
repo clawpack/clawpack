@@ -16,10 +16,6 @@ ENV INCLUDE=/opt/conda/include
 
 WORKDIR /clawpack
 
-# need these to pass tests (and maybe we need them for our geoclaw runs but not
-# sure)
-RUN conda install -y -c conda-forge lapack nose h5py
-
 # install clawpack
 RUN pip install -e .
 
