@@ -23,7 +23,6 @@ RUN pip install git+https://github.com/maritimeplanning/pytides.git@master \
       --no-cache-dir
 
 # install nose
-# can drop this once nose is installed by default in worker IMAGE
 RUN conda install -yc conda-forge nose
 
 WORKDIR /
