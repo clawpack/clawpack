@@ -26,16 +26,16 @@ echo "------------------------------"
 
 echo "testing pyclaw"
 cd $CLAW/pyclaw/examples
-nosetests || print_errors
+nosetests -sv || print_errors
 
 echo "testing classic"
 cd $CLAW/classic
-nosetests || print_errors
+nosetests -sv || print_errors
 
 echo "testing amrclaw"
 cd $CLAW/amrclaw
-nosetests || print_errors
+nosetests -sv || print_errors
 
 echo "testing geoclaw"
 cd $CLAW/geoclaw
-nosetests || print_errors
+nosetests -sv || print_errors
