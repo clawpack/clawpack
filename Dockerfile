@@ -9,6 +9,8 @@ ENV CLAW=/clawpack
 ENV NETCDF4_DIR=/opt/conda
 ENV FC=gfortran
 ENV MPLBACKEND=Agg
+# to combat the default flags from condas fortran-compiler
+ENV LDFLAGS=
 
 # this is needed to find libraries when building geoclaw (particularly lapack)
 ENV LIB_PATHS=/opt/conda/lib
