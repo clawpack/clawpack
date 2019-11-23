@@ -25,6 +25,7 @@ RUN pip install git+https://github.com/maritimeplanning/pytides.git@master \
       --no-cache-dir
 
 # install nose
+RUN conda update -n base conda
 RUN conda install -yc conda-forge nose
 
 WORKDIR /
