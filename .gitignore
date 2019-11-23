@@ -19,6 +19,8 @@ _plots/
 *.xyz
 scratch/*
 !scratch/README.txt
+clawpack/version.py
+*.egg-info
 
 # log files
 *.log

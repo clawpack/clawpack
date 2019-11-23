@@ -18,28 +18,41 @@ notifications:
 
 install:
   - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-  - docker build --build-arg SOURCE_IMAGE=rhodium/worker:v0.2.5 -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
+  - docker build --build-arg SOURCE_IMAGE=$SOURCE_IMAGE -t
+    $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT .
 
 script:
-  - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT /usr/bin/env bash /clawpack/run_tests.sh
-  - docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
+  - docker run -t $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT bash
+    /clawpack/run_tests.sh
 
 deploy:
   - provider: script
-    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
+    script: docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT"
+    skip_cleanup: true
+    on:
+      all_branches: true
+
+  - provider: script
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT
+                       $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH &&
+                       docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_BRANCH"
     skip_cleanup: true
     on:
       all_branches: true
       condition: $TRAVIS_BRANCH != master
 
   - provider: script
-    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:latest && docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT
+                       $DOCKER_ORG/$IMAGE_NAME:latest &&
+                       docker push "$DOCKER_ORG/$IMAGE_NAME:latest"
     skip_cleanup: true
     on:
       branch: master
 
   - provider: script
-    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG && docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
+    script: docker tag $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_COMMIT
+                       $DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG &&
+                       docker push "$DOCKER_ORG/$IMAGE_NAME:$TRAVIS_TAG"
     skip_cleanup: true
     on:
       tags: true
