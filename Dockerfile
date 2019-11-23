@@ -9,6 +9,8 @@ ENV CLAW=/clawpack
 ENV NETCDF4_DIR=/opt/conda
 ENV FC=gfortran
 ENV MPLBACKEND=Agg
+# to make sure cython flags get appended rather than overwritten
+ENV NPY_DISTUTILS_APPEND_FLAGS=1
 
 # this is needed to find libraries when building geoclaw (particularly lapack)
 ENV LIB_PATHS=/opt/conda/lib

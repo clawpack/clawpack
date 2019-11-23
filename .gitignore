@@ -30,3 +30,6 @@ __pycache__
 
 # ipython
 .ipynb_checkpoints
+
+# macOS
+*.DS_Store
