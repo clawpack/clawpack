@@ -11,7 +11,7 @@ env:
   matrix:
     - DOCKER_ORG=climateimpactlab
       IMAGE_NAME=clawpack-image
-      SOURCE_IMAGE=rhodium/worker:dev-merge-octave
+      SOURCE_IMAGE=rhodium/worker:6d35766b6b86daedbbb55115682fcf6070ce1a81
 
 notifications:
   email: false
