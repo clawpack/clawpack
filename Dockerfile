@@ -2,6 +2,13 @@
 ARG SOURCE_IMAGE=$SOURCE_IMAGE
 FROM $SOURCE_IMAGE
 
+# install pytides
+RUN pip install git+https://github.com/maritimeplanning/pytides.git@master \
+    --no-cache-dir
+
+# install nose
+RUN conda install -yc conda-forge nose
+
 COPY . /clawpack
 
 ## install Clawpack
@@ -24,16 +31,7 @@ RUN rm -f /opt/conda/compiler_compat/ld
 SHELL ["/bin/bash", "-c"]
 
 # install clawpack
-RUN source activate worker && pip install -e .
-
-# install pytides
-RUN source activate worker && \
-  pip install git+https://github.com/maritimeplanning/pytides.git@master \
-    --no-cache-dir
-
-# install nose
-RUN conda update -n base conda
-RUN conda install -n worker -yc conda-forge nose
+RUN pip install -e .
 
 WORKDIR /
 
