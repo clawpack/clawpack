@@ -20,15 +20,20 @@ WORKDIR /clawpack
 # see https://github.com/ContinuumIO/anaconda-issues/issues/11152
 RUN rm -f /opt/conda/compiler_compat/ld
 
+# need to change shell in order for source command to work
+SHELL ["/bin/bash", "-c"]
+
 # install clawpack
-RUN pip install -e .
+RUN source activate worker && pip install -e .
 
 # install pytides
-RUN pip install git+https://github.com/maritimeplanning/pytides.git@master \
-      --no-cache-dir
+RUN source activate worker && \
+  pip install git+https://github.com/maritimeplanning/pytides.git@master \
+    --no-cache-dir
 
 # install nose
-RUN conda install -yc conda-forge nose
+RUN conda update -n base conda
+RUN conda install -n worker -yc conda-forge nose
 
 WORKDIR /
 
