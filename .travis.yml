@@ -1,7 +1,7 @@
 language: python
 python:
   - 2.7
-  - 3.5
+  - 3.6.10
 before_install:
   # Print NumPy version that is already installed by Travis CI:
   - python -c "import numpy; print(numpy.__version__)"
