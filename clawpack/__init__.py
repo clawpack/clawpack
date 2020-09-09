@@ -21,4 +21,4 @@ __path__.extend(_sdir for _sdir in _path
                 if _os.path.isdir(_sdir))
 del _root, _path
 
-__version__ = '5.7.0'   # must also be changed in setup.py
+__version__ = '5.7.1'   # must also be changed in setup.py
