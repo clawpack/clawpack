@@ -20,6 +20,7 @@ _plots/
 scratch/*
 !scratch/README.txt
 clawpack/version.py
+build/
 *.egg-info
 
 # log files
