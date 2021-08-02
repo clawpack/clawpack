@@ -56,8 +56,8 @@ Operating System :: MacOS
 # version must also be changed in clawpack/__init__.py
 MAJOR               = 5
 MINOR               = 8
-MICRO               = 0
-TYPE                = ''
+MICRO               = 1
+TYPE                = 'test'
 VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
 
 package_path       = os.path.join(os.path.dirname(__file__),'clawpack')
