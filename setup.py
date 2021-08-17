@@ -22,6 +22,8 @@ import os
 import sys
 import subprocess
 import time
+import io
+import six
 from contextlib import contextmanager
 
 join = os.path.join
@@ -190,16 +192,29 @@ def stdout_redirected(new_stdout='install.log'):
         finally:
             return
 
-    old = os.dup(1)
-    os.close(1)
-    os.open(new_stdout, os.O_WRONLY | os.O_CREAT)
+    install_log_file_fid = os.open(new_stdout, os.O_WRONLY | os.O_CREAT) 
+    original_stdout_fid = sys.stdout.fileno()
+    copied_stdout_fid = os.dup(original_stdout_fid)
+
+    def _redirect(to_fid):    
+        # Flush and close the Python-level file object, not the C file descriptor
+        sys.stdout.close() 
+        # Point original_stdout_fid to to_fid
+        os.dup2(to_fid,original_stdout_fid)
+        # Create sys.stdout
+        if six.PY3:
+            sys.stdout = io.TextIOWrapper(os.fdopen(original_stdout_fid,'wb'))
+        else:    
+            sys.stdout = os.fdopen(original_stdout_fid,'wb')
 
     try:
-        yield None
-    finally:
-        os.close(1)
-        os.dup2(old,1)
-        os.close(old)
+        _redirect(install_log_file_fid)
+        yield
+        _redirect(copied_stdout_fid)
+    finally:    
+        os.fsync(install_log_file_fid)
+        os.close(install_log_file_fid)
+        os.close(copied_stdout_fid)
 
 
 def setup_package(setup_dict, subpackages):
