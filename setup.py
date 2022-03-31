@@ -241,6 +241,8 @@ if __name__ == '__main__':
         license = 'BSD',
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms = ["Linux", "Solaris", "Mac OS-X", "Unix"],
+        # explicitly declare packages so setuptools >= 61 does not attempt auto discovery
+        packages=[]
         )
 
     # python setup.py git-dev sets up subpackages
