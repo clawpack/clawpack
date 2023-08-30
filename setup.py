@@ -23,7 +23,6 @@ import sys
 import subprocess
 import time
 import io
-import six
 from contextlib import contextmanager
 
 join = os.path.join
@@ -132,20 +131,6 @@ git_revision = '%(git_revision)s'
 ###  END BOILERPLATE  ###
 #########################
 
-def configuration(parent_package='',top_path=None):
-    from numpy.distutils.misc_util import Configuration
-
-    config = Configuration(None, parent_package, top_path)
-
-    config.set_options(ignore_setup_xxx_py=True,
-                       assume_default_configuration=True,
-                       delegate_options_to_subpackages=True,
-                       quiet=True)
-
-    config.add_subpackage('clawpack')
-    config.get_version(os.path.join('clawpack','version.py'))
-    return config
-
 
 def initialize_submodules(subpackages):
     """Clawpack developer environment setup.
@@ -202,10 +187,7 @@ def stdout_redirected(new_stdout='install.log'):
         # Point original_stdout_fid to to_fid
         os.dup2(to_fid,original_stdout_fid)
         # Create sys.stdout
-        if six.PY3:
-            sys.stdout = io.TextIOWrapper(os.fdopen(original_stdout_fid,'wb'))
-        else:    
-            sys.stdout = os.fdopen(original_stdout_fid,'wb')
+        sys.stdout = io.TextIOWrapper(os.fdopen(original_stdout_fid,'wb'))
 
     try:
         _redirect(install_log_file_fid)
@@ -218,7 +200,7 @@ def stdout_redirected(new_stdout='install.log'):
 
 
 def setup_package(setup_dict, subpackages):
-    from numpy.distutils.core import setup
+    from setuptools import setup, find_packages
 
     # Rewrite the version file every time we install
     write_version_py()
@@ -226,7 +208,8 @@ def setup_package(setup_dict, subpackages):
     with stdout_redirected(): # Don't print f2py warnings to screen
         if os.path.exists('.git'):
             initialize_submodules(subpackages)
-        setup(configuration=configuration, **setup_dict)
+        setup(name='clawpack', packages=find_packages())
+
 
 
 if __name__ == '__main__':
