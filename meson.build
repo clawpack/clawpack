@@ -25,11 +25,21 @@ incdir_f2py = run_command(py,
     check : true
 ).stdout().strip()
 
+fc = meson.get_compiler('fortran')
+add_project_arguments(
+  fc.get_supported_arguments(
+    '-Wno-unused-dummy-argument',
+    '-Wno-unused-variable',
+    '-Wno-unused-label',
+  ),
+  language : 'fortran',
+)
+
 subpackages = {
   'clawutil':   'clawutil/src/python',
+  'pyclaw':     'pyclaw/src',
   'riemann':    'riemann',
   'visclaw':    'visclaw/src/python',
-  'pyclaw':     'pyclaw/src',
   'petclaw':    'pyclaw/src',
   'forestclaw': 'pyclaw/src',
   'classic':    'classic/src/python',
