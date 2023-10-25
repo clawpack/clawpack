@@ -25,7 +25,18 @@ incdir_f2py = run_command(py,
     check : true
 ).stdout().strip()
 
+inc_np = include_directories(incdir_numpy, incdir_f2py)
+
+f2py = [
+  py, '-m', 'numpy.f2py',
+  '--lower',
+  '--build-dir', '@OUTDIR@',
+  '@INPUT@',
+  '-m', # <extension-name>
+]
+
 fc = meson.get_compiler('fortran')
+
 add_project_arguments(
   fc.get_supported_arguments(
     '-Wno-unused-dummy-argument',
@@ -34,6 +45,11 @@ add_project_arguments(
   ),
   language : 'fortran',
 )
+
+#add_project_arguments(
+#  '-DNPY_NO_DEPRECATED_API=NPY_API_VERSION',
+#  language : 'c',
+#)
 
 subpackages = {
   'clawutil':   'clawutil/src/python',
