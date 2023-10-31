@@ -14,7 +14,11 @@ _subpackages = {
 
 __all__ = list(_subpackages.keys())
 
-_root = _os.path.dirname(__path__[0])
+CLAW_dir = _os.environ.get('CLAW')
+if CLAW_dir == None:
+    raise Exception('You must set the CLAW environment to use an editable install.')
+
+_root = _os.path.dirname(_os.path.join(CLAW_dir, 'clawpack'))
 _path = (_os.path.join(_root, *_sdir.split('/'))
          for _sdir in set(_subpackages.values()))
 __path__.extend(_sdir for _sdir in _path
