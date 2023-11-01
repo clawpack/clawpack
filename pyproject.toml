@@ -1,5 +1,8 @@
 #[build-system]
-#requires = ["meson-python"]
+#requires = [
+#  "meson-python",
+#  "numpy",
+#]
 #build-backend = "mesonpy"
 
 
