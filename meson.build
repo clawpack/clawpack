@@ -36,6 +36,7 @@ f2py = [
 ]
 
 fc = meson.get_compiler('fortran')
+cc = meson.get_compiler('c')
 
 add_project_arguments(
   fc.get_supported_arguments(
@@ -45,11 +46,13 @@ add_project_arguments(
   ),
   language : 'fortran',
 )
-
-#add_project_arguments(
-#  '-DNPY_NO_DEPRECATED_API=NPY_API_VERSION',
-#  language : 'c',
-#)
+add_project_arguments(
+  '-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION',
+  cc.get_supported_arguments(
+    '-Wno-unused-but-set-variable',
+  ),
+  language : 'c',
+)
 
 subpackages = {
   'clawutil':   'clawutil/src/python',

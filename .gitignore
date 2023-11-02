@@ -12,6 +12,7 @@ clawpack/version.py
 
 # ignore build directory
 build
+build-install
 
 # ignore silly .pyc, log, and egg files
 *.pyc
