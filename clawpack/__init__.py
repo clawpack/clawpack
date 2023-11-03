@@ -23,4 +23,4 @@ _path = (
 __path__.extend(filter(_os.path.isdir, _path))
 del _os, _init, _root, _path
 
-__version__ = '5.9.1'   # must also be changed in setup.py
+__version__ = '5.9.2'   # must also be changed in setup.py
