@@ -35,6 +35,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
 ]
+
 [project.urls]
 Homepage      = "https://www.clawpack.org/"
 Documentation = "https://www.clawpack.org/"
