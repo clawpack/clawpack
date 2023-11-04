@@ -47,7 +47,7 @@ add_project_arguments(
   language : 'fortran',
 )
 add_project_arguments(
-  '-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION',
+#  '-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION',
   cc.get_supported_arguments(
     '-Wno-unused-but-set-variable',
   ),
