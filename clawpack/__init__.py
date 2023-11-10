@@ -10,6 +10,7 @@ _subpackages = {
     'classic':    'classic/src/python',
     'amrclaw':    'amrclaw/src/python',
     'geoclaw':    'geoclaw/src/python',
+    'dclaw':      'dclaw/src/python',
 }
 
 __all__ = list(_subpackages.keys())
