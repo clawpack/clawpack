@@ -1,3 +1,20 @@
+# ignore symlinked in-place builds
+
+clawpack/clawutil
+clawpack/petclaw
+clawpack/pyclaw
+clawpack/riemann
+clawpack/visclaw
+clawpack/amrclaw
+clawpack/geoclaw
+clawpack/classic
+clawpack/version.py
+
+# ignore build directory
+build
+build-install
+
+# ignore silly .pyc, log, and egg files
 *.pyc
 *.o
 *.mod

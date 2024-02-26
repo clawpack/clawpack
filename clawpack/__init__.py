@@ -10,15 +10,18 @@ _subpackages = {
     'classic':    'classic/src/python',
     'amrclaw':    'amrclaw/src/python',
     'geoclaw':    'geoclaw/src/python',
+    'dclaw':      'dclaw/src/python',
 }
 
 __all__ = list(_subpackages.keys())
 
-_root = _os.path.dirname(__path__[0])
-_path = (_os.path.join(_root, *_sdir.split('/'))
-         for _sdir in set(_subpackages.values()))
-__path__.extend(_sdir for _sdir in _path
-                if _os.path.isdir(_sdir))
-del _root, _path
+_init = _os.path.abspath(__file__)
+_root = _os.path.dirname(_os.path.dirname(_init))
+_path = (
+    _os.path.join(_root, *_sdir.split('/'))
+    for _sdir in set(_subpackages.values())
+)
+__path__.extend(filter(_os.path.isdir, _path))
+del _os, _init, _root, _path
 
-__version__ = '5.8.2'   # must also be changed in setup.py
+__version__ = '5.9.2'   # must also be changed in setup.py

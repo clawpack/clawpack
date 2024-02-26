@@ -1,0 +1,66 @@
+[project]
+name = "Clawpack"
+version = "5.9.2"
+description = "Finite volume methods for hyperbolic conservation laws"
+requires-python = ">=3.6"
+license = {text = 'BSD-3-Clause'}
+keywords = [
+  "scientific computing",
+  "numerical methods",
+  "partial differential equations",
+]
+
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: MacOS",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX",
+  "Operating System :: POSIX :: BSD",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Unix",
+  "Programming Language :: C",
+  "Programming Language :: Fortran",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+]
+
+[project.urls]
+Homepage      = "https://www.clawpack.org/"
+Documentation = "https://www.clawpack.org/"
+Source        = "https://github.com/clawpack/"
+Issues        = "https://github.com/clawpack/clawpack/issues"
+Downloads     = "https://github.com/clawpack/clawpack/releases"
+
+
+[build-system]
+requires = [
+  "meson-python",
+  "numpy",
+]
+build-backend = "mesonpy"
+
+
+[tool.spin]
+package = "clawpack"
+[tool.spin.commands]
+"Build" = [
+  "spin.cmds.meson.build",
+]
+"Environments" = [
+  "spin.cmds.meson.ipython",
+  "spin.cmds.meson.python",
+  "spin.cmds.meson.shell",
+  "spin.cmds.meson.run"
+]
