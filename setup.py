@@ -23,7 +23,6 @@ import sys
 import subprocess
 import time
 import io
-import six
 from contextlib import contextmanager
 
 join = os.path.join
@@ -202,10 +201,7 @@ def stdout_redirected(new_stdout='install.log'):
         # Point original_stdout_fid to to_fid
         os.dup2(to_fid,original_stdout_fid)
         # Create sys.stdout
-        if six.PY3:
-            sys.stdout = io.TextIOWrapper(os.fdopen(original_stdout_fid,'wb'))
-        else:    
-            sys.stdout = os.fdopen(original_stdout_fid,'wb')
+        sys.stdout = io.TextIOWrapper(os.fdopen(original_stdout_fid,'wb'))
 
     try:
         _redirect(install_log_file_fid)
