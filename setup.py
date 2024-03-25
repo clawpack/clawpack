@@ -14,8 +14,6 @@ http://github.com/clawpack/clawpack
 
 # some of the functionality of this file is reused from the SciPy setup.py script.
 
-from __future__ import absolute_import
-from __future__ import print_function
 DOCLINES = __doc__.split("\n")
 
 import os
@@ -56,8 +54,8 @@ Operating System :: MacOS
 
 # version must also be changed in clawpack/__init__.py
 MAJOR               = 5
-MINOR               = 9
-MICRO               = 2
+MINOR               = 10
+MICRO               = 0
 TYPE                = ''
 VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
 
