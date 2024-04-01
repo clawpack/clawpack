@@ -14,8 +14,6 @@ http://github.com/clawpack/clawpack
 
 # some of the functionality of this file is reused from the SciPy setup.py script.
 
-from __future__ import absolute_import
-from __future__ import print_function
 DOCLINES = __doc__.split("\n")
 
 import os
@@ -23,7 +21,6 @@ import sys
 import subprocess
 import time
 import io
-import six
 from contextlib import contextmanager
 
 join = os.path.join
@@ -57,8 +54,8 @@ Operating System :: MacOS
 
 # version must also be changed in clawpack/__init__.py
 MAJOR               = 5
-MINOR               = 9
-MICRO               = 2
+MINOR               = 10
+MICRO               = 0
 TYPE                = ''
 VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
 
@@ -202,10 +199,7 @@ def stdout_redirected(new_stdout='install.log'):
         # Point original_stdout_fid to to_fid
         os.dup2(to_fid,original_stdout_fid)
         # Create sys.stdout
-        if six.PY3:
-            sys.stdout = io.TextIOWrapper(os.fdopen(original_stdout_fid,'wb'))
-        else:    
-            sys.stdout = os.fdopen(original_stdout_fid,'wb')
+        sys.stdout = io.TextIOWrapper(os.fdopen(original_stdout_fid,'wb'))
 
     try:
         _redirect(install_log_file_fid)
