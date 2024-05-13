@@ -25,7 +25,7 @@ inc_np = include_directories(incdir_numpy, incdir_f2py)
 
 f2py = [
   py, '-m', 'numpy.f2py',
-  '--lower',
+  '--lower', '--quiet',
   '--build-dir', '@OUTDIR@',
   '@INPUT@',
   '-m', # <extension-name>
@@ -45,6 +45,7 @@ add_project_arguments(
 add_project_arguments(
 #  '-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION',
   cc.get_supported_arguments(
+    '-Wno-misleading-indentation',
     '-Wno-unused-but-set-variable',
   ),
   language : 'c',
