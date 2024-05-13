@@ -51,6 +51,11 @@ add_project_arguments(
   language : 'c',
 )
 
+add_project_link_arguments(
+  cc.get_supported_link_arguments('-Wl,-no_compact_unwind'),
+  language: 'c',
+)
+
 subpackages = {
   'clawutil':   'clawutil/src/python',
   'pyclaw':     'pyclaw/src',
