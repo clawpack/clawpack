@@ -23,6 +23,9 @@ incdir_f2py = run_command(py,
 
 inc_np = include_directories(incdir_numpy, incdir_f2py)
 
+f2py_version = run_command([py, '-m', 'numpy.f2py', '-v'], check: true).stdout().strip()
+message(f'f2py version: @f2py_version@')
+
 f2py = [
   py, '-m', 'numpy.f2py',
   '--lower', '--quiet',
