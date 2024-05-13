@@ -1,18 +1,14 @@
 project(
   'clawpack',
   'c', 'fortran',
-  version: run_command(
-    find_program('python3'),
-    files('metadata.py'), 'version',
-    check: true,
-  ).stdout().strip(),
+  version: run_command([find_program('metadata.py'), 'version'], check: true).stdout().strip(),
   license: 'BSD-3-Clause',
   license_files: ['LICENSE'],
   meson_version: '>=1.1.0',
 )
 
 fs = import('fs')
-py = import('python').find_installation('python3', pure: false)
+py = import('python').find_installation(pure: false)
 py_dep = py.dependency()
 
 incdir_numpy = run_command(py,
