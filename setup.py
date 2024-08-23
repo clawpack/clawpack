@@ -54,7 +54,7 @@ Operating System :: MacOS
 
 # version must also be changed in clawpack/__init__.py
 MAJOR               = 5
-MINOR               = 10
+MINOR               = 11
 MICRO               = 0
 TYPE                = ''
 VERSION             = '%d.%d.%d%s' % (MAJOR, MINOR, MICRO, TYPE)
