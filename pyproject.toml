@@ -1,6 +1,6 @@
 [project]
 name = "Clawpack"
-version = "5.10.0"
+version = "5.11.0"
 description = "Finite volume methods for hyperbolic conservation laws"
 requires-python = ">=3.6"
 license = {text = 'BSD-3-Clause'}
