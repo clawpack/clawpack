@@ -2,7 +2,7 @@
 name = "Clawpack"
 version = "5.14.0"
 description = "Finite volume methods for hyperbolic conservation laws"
-requires-python = ">=3.6"
+requires-python = ">=3.10"
 license = {text = 'BSD-3-Clause'}
 keywords = [
   "scientific computing",
@@ -26,15 +26,59 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.6",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering",
 ]
+
+# What `import clawpack.<subpackage>` needs to work at all.  The list is not a
+# guess: it is what the library imports at module scope, counted across every
+# installed module (examples excluded).  tools/check_installed_imports.py
+# reports anything that is imported but undeclared as a skip, so the two stay
+# honest about each other.
+#
+# No version floors.  The ones inherited from the old setup.py were
+# `numpy >= 1.14` and `matplotlib >= 1.0.1`, which no longer exclude anything;
+# a floor nobody has tested against is worse than none.
+dependencies = [
+  # 63 modules, every subpackage.  Also a build requirement (f2py).
+  "numpy",
+  # 16 modules across visclaw, geoclaw, amrclaw and riemann -- and the
+  # top-level `pylab` shim that five of them still import.
+  "matplotlib",
+  # geoclaw.nonuniform_grid_tools at module scope; topotools, dtopotools,
+  # fgmax_tools, fgout_tools and visclaw.gauge_interp inside functions, which
+  # is most of the GeoClaw topography path.
+  "scipy",
+]
+
+# Optional, one extra per capability, each naming the modules that need it.
+# Deliberately absent: pyweno (unmaintained, and clawpack.pyclaw.sharpclaw.weno
+# additionally needs an extension this project does not build) and nose (does
+# not run on any supported Python; clawpack.forestclaw.fileio.test is dead).
+# Declaring either would dress up a broken module as a working one.
+#
+# There is no aggregate `all` extra on purpose: petsc4py, mpi4py and vtk are
+# not reliably installable from wheels, so an aggregate would either exclude
+# them and misname itself, or fail on most machines.
+[project.optional-dependencies]
+met = ["pandas"]                    # clawpack.geoclaw.met.* -- storm tracks
+netcdf = ["netCDF4"]                # pyclaw.fileio.netcdf, geoclaw.fgout_tools
+hdf5 = ["h5py"]                     # pyclaw.fileio.hdf5, petclaw.fileio.hdf5
+xarray = ["xarray", "dask"]         # geoclaw.netcdf_utils
+# geoclaw.xarray_backends.  Separate from `xarray` because rioxarray pulls in
+# the GDAL/rasterio stack, which nobody who just wants xarray should pay for.
+geotiff = ["xarray", "rioxarray"]
+vtk = ["vtk"]                       # pyclaw.fileio.claw_vtk
+dtopo = ["utm", "pyproj", "pooch"]  # geoclaw.dtopotools fetch/convert paths
+# six is a Python-2 shim three petclaw modules still import; it is here only
+# because the code asks for it.  Removing those imports is the real fix.
+petclaw = ["petsc4py", "mpi4py", "six"]
+# riemann.riemann_tools, riemann.riemann_interactive, clawutil.nbtools
+interactive = ["ipython", "ipywidgets", "jinja2", "mpld3", "sympy"]
+test = ["pytest"]
 
 [project.urls]
 Homepage      = "https://www.clawpack.org/"
