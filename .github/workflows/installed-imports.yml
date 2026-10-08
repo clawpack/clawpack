@@ -1,0 +1,96 @@
+# Check that a Clawpack *install* can import everything it ships.
+#
+# This repository owns the meson project and every subpackage's
+# `python_sources` list, and until now had no CI at all.  A module that is
+# tracked and imported but missing from those lists works for every developer
+# (the shim in clawpack/__init__.py puts the source trees on __path__) and
+# fails for every user.  riemann shipped exactly that bug on master for
+# months.  See tools/check_installed_imports.py for the details.
+#
+# The `pins` leg tests the tree as this repository records it -- what a release
+# would ship.  The `tips` leg tests each subrepo's master, which is where such
+# a bug actually lands; it runs nightly because the pins here can lag the
+# subrepos by months, and because most subrepos have no CI of their own.
+
+name: Installed imports
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+  schedule:
+    # Nightly, so a bad merge in any subrepo surfaces within a day.
+    - cron: '17 7 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  imports:
+    name: ${{ matrix.tree }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tree: >-
+          ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+              && fromJSON('["pins", "tips"]')
+              || fromJSON('["pins"]') }}
+    env:
+      MPLBACKEND: Agg
+      # amrclaw/classic/geoclaw `test` and clawutil `make_all`, `run_examples`
+      # and `clawcode2html` refuse to import without $CLAW.  They are tools for
+      # a $CLAW-based workflow, so setting it here is honest; making them check
+      # at call time instead of import time is the real fix.
+      CLAW: ${{ github.workspace }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Move submodules to their own master
+        if: matrix.tree == 'tips'
+        run: |
+          git submodule foreach 'git fetch --depth=1 origin master && git checkout FETCH_HEAD'
+          git submodule status
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran
+          python -m pip install --upgrade pip
+          pip install meson-python ninja numpy
+
+      - name: Install Clawpack
+        # A real wheel, not --editable: an editable install resolves through a
+        # meta-path finder that can behave differently from what users get.
+        #
+        # The extras come from pyproject.toml rather than a list written out
+        # here, so the two cannot drift.  Every extra installed turns reported
+        # skips into modules actually imported.  Omitted on purpose: geotiff
+        # (pulls the GDAL/rasterio stack), vtk and petclaw (not reliably
+        # installable from wheels).  Those stay skips, which is honest.
+        run: pip install --no-build-isolation ".[met,netcdf,hdf5,xarray,interactive,test]"
+
+      - name: Import every installed module
+        # From a directory that is not the checkout.  If the source tree were
+        # importable the check would pass unconditionally and guard nothing --
+        # the script refuses to run in that case, and this keeps it honest.
+        working-directory: ${{ runner.temp }}
+        run: python "$GITHUB_WORKSPACE/tools/check_installed_imports.py"
+
+      - name: Report tracked modules that no install ships (advisory)
+        # Never fails: some files are deliberately unshipped.  It is the only
+        # check that can see a module nobody imports, which is how seven
+        # library modules across amrclaw, clawutil and geoclaw stayed missing.
+        run: python tools/check_installed_imports.py --drift
