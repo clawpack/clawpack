@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Keep GitHub Actions pinned in .github/workflows/ up to date.  The workflows
+  # pin exact patch versions (e.g. actions/checkout@v6.0.2), which do not update
+  # on their own; this raises PRs when newer releases are available.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
