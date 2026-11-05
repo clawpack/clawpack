@@ -60,7 +60,7 @@ jobs:
           git submodule foreach 'git fetch --depth=1 origin master && git checkout FETCH_HEAD'
           git submodule status
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
