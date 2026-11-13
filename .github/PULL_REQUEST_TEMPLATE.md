@@ -1,8 +1,21 @@
 ## Summary
-<!-- A few sentences in your own words, in Clawpack's terminology: what problem does this solve, and how? Link the issue. Write this by hand. -->
 
-<!-- Optional longer description below. If AI-assisted, mark the heading, e.g. "## Details (AI-assisted)". -->
+<!-- In your own words and Clawpack's terms: what problem does this solve, and how? Link the issue (e.g. "Closes #123").
+Anything a reviewer must know goes here: breaking changes, numerical changes and how you verified them.
+If AI tools helped, the commits need an Assisted-by: trailer and a sign-off, e.g.
+  git commit -s --trailer "Assisted-by: Claude Code (claude-opus-5-5)"
+See AI_POLICY.md. -->
 
-### AI assistance
-- [ ] No AI assistance, **or** AI-assisted commits carry an `Assisted-by:` trailer and are signed off (`git commit -s`). See [AI_POLICY.md](https://github.com/clawpack/clawpack/blob/master/AI_POLICY.md).
-- [ ] Any numerical decisions are mine, and results-affecting changes include verification evidence, not only example output.
+<!-- Optional AI-written details: delete the two lines marked "remove" to use the block below.
+Name the tool in <summary>; that label is the disclosure. Keep the blank lines so Markdown renders inside. -->
+
+<!-- remove
+---
+
+<details>
+<summary>Details (AI-assisted: Claude Code, claude-opus-5-5)</summary>
+
+Longer AI-written description here.
+
+</details>
+remove -->

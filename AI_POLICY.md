@@ -5,7 +5,7 @@
 > - You are responsible for the numerical decisions and verification that they are correct.
 > - You disclose AI help with `git commit -s` plus an `Assisted-by:` trailer, and your PR opens with your own summary, followed by AI content clearly marked.
 
-> _Drafted with AI assistance (Claude), directed and edited by Kyle Mandli; under review by the Clawpack maintainers._
+> _Drafted with AI assistance (Claude), directed and edited by Kyle Mandli; adopted by the Clawpack maintainers, November 2026._
 
 Clawpack welcomes AI-assisted contributions. Using an AI tool never absolves a contributor of their responsibility for their contributions, however they are produced. This applies to code, tests, docs, examples, and build/CI configuration in any Clawpack repository.
 
@@ -18,10 +18,10 @@ Clawpack welcomes AI-assisted contributions. Using an AI tool never absolves a c
 **3. Attribute: be transparent.** When AI meaningfully helped with a commit, disclose it with an `Assisted-by:` trailer and sign off (`-s`) to certify that you own that help:
 
 ```
-git commit -s --trailer "Assisted-by: Claude Code (claude-opus-4-8)"
+git commit -s --trailer "Assisted-by: Claude Code (claude-opus-5-5)"
 ```
 
-Autocomplete in otherwise hand-written code doesn't need disclosing; generated or agentic work does. Tools never sign off or appear as co-authors. Your PR description opens with a short summary you wrote, in Clawpack's terminology, of what problem is solved and how; any longer AI-written detail goes below it, clearly marked. Disclosure informs review and is never held against you.
+Autocomplete in otherwise hand-written code doesn't need disclosing; generated or agentic work does. Tools never sign off or appear as co-authors. Your PR description opens with a short summary you wrote, in Clawpack's terminology, of what problem is solved and how, including anything a reviewer must know. Any longer AI-written detail goes below it, collapsed in a `<details>` block whose `<summary>` names the tool (the PR template shows how). Disclosure informs review and is never held against you.
 
 **4. Protect: license and IP.** Clawpack is BSD. Methods come from cited papers, not code an AI reproduced from memory. Don't submit output that may derive from copyleft or license-incompatible sources, check that your tool's terms don't conflict with BSD, and never put proprietary, embargoed, or NDA'd material into a prompt.
 
@@ -31,4 +31,4 @@ AI use doesn't by itself change how a PR is reviewed. Scrutiny scales, as it alw
 
 ---
 
-Sign-off is currently required only on AI-assisted commits and is on the honor system; a project-wide [DCO](https://developercertificate.org/) or a check bot can be revisited later. This policy will be revisited as tools and norms change.
+This policy is a starting point, not a final word. Tools and community practice are changing quickly, and we expect to revise it as they do; propose changes with a pull request. For example, sign-off is currently required only on AI-assisted commits and is on the honor system; a project-wide [DCO](https://developercertificate.org/) or a check bot may come later.

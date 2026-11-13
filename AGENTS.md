@@ -11,7 +11,10 @@ same rules legible to tooling.
   human adds the sign-off.
 - Do not write the human summary at the top of a PR description, or draft
   review replies for the human to paste back. You may draft a detailed
-  description below the summary, marked as AI-generated.
+  description below the summary, inside a `<details>` block whose
+  `<summary>` names you and your model, e.g.
+  `<summary>Details (AI-assisted: Claude Code, claude-opus-5-5)</summary>`.
+  Leave a blank line after `</summary>` and before `</details>`.
 - Numerical core (Riemann solvers, fluxes, limiters, source terms,
   well-balancing, time stepping, AMR flagging and interpolation): you may
   implement a decision the human has made, write tests, build verification
