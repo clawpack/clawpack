@@ -9,10 +9,10 @@ same rules legible to tooling.
 - Never add `Signed-off-by:` or list yourself as an author or co-author. When
   you meaningfully assist a commit, add `Assisted-by: <tool> <model>`; the
   human adds the sign-off.
-- Do not write the human summary at the top of a PR description, or draft
-  review replies for the human to paste back. You may draft a detailed
-  description below the summary, inside a `<details>` block whose
-  `<summary>` names you and your model, e.g.
+- Do not open issues or PRs on your own. Do not write the human summary at
+  the top of an issue or PR description, or draft replies for the human to
+  paste back. You may draft a detailed description below the summary, inside
+  a `<details>` block whose `<summary>` names you and your model, e.g.
   `<summary>Details (AI-assisted: Claude Code, claude-opus-5-5)</summary>`.
   Leave a blank line after `</summary>` and before `</details>`.
 - Numerical core (Riemann solvers, fluxes, limiters, source terms,

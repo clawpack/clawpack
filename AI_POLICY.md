@@ -3,7 +3,7 @@
 > **TL;DR:** We are responsible for any contributions and interactions, especially those that touch core numerical code.
 > - AI-assisted contributions are welcome, and you are fully responsible for their content.
 > - You are responsible for the numerical decisions and verification that they are correct.
-> - You disclose AI help with `git commit -s` plus an `Assisted-by:` trailer, and your PR opens with your own summary, followed by AI content clearly marked.
+> - You disclose AI help with `git commit -s` plus an `Assisted-by:` trailer, and your issues and PRs open with your own summary, followed by AI content clearly marked.
 
 > _Drafted with AI assistance (Claude), directed and edited by Kyle Mandli; adopted by the Clawpack maintainers, November 2026._
 
@@ -11,7 +11,7 @@ Clawpack welcomes AI-assisted contributions. Using an AI tool never absolves a c
 
 ## The four commitments
 
-**1. Vet: you own it and can explain it.** Submit only what you understand and could defend yourself. A human who understands the change is always in the loop; we don't accept unattended agent PRs or "please review what the agent wrote." Keep PRs small and focused, and for anything non-trivial start from an issue that says what problem is being solved. Answer review questions in your own words, not by relaying them to a model.
+**1. Vet: you own it and can explain it.** Submit only what you understand and could defend yourself. A human who understands the change is always in the loop; we don't accept unattended agent issues or PRs, or "please review what the agent wrote." Keep PRs small and focused, and for anything non-trivial start from an issue that says what problem is being solved. Answer questions on your issues and PRs in your own words, not by relaying them to a model.
 
 **2. You do the numerics.** You make every numerical decision: any mathematical choice that changes what the code computes (scheme, derivation, formulation, flux, limiter, source-term or well-balancing treatment, AMR flagging and interpolation). AI can help you implement a decision you've made, learn a method, check your understanding, write tests, or refactor with the math held fixed, but it doesn't make the decision. Going from Cartesian to spherical brings new metric and source terms, so it's yours to derive; an affine relabeling isn't. Results-affecting changes ship with verification evidence: a manufactured or exact solution, a convergence rate at design order, or conservation/well-balancing/positivity checks. A plausible-looking plot is not verification.
 
@@ -21,7 +21,7 @@ Clawpack welcomes AI-assisted contributions. Using an AI tool never absolves a c
 git commit -s --trailer "Assisted-by: Claude Code (claude-opus-5-5)"
 ```
 
-Autocomplete in otherwise hand-written code doesn't need disclosing; generated or agentic work does. Tools never sign off or appear as co-authors. Your PR description opens with a short summary you wrote, in Clawpack's terminology, of what problem is solved and how, including anything a reviewer must know. Any longer AI-written detail goes below it, collapsed in a `<details>` block whose `<summary>` names the tool (the PR template shows how). Disclosure informs review and is never held against you.
+Autocomplete in otherwise hand-written code doesn't need disclosing; generated or agentic work does. Tools never sign off or appear as co-authors. Issues and PR descriptions open with a short summary you wrote, in Clawpack's terminology, of what problem is solved and how, including anything a reviewer must know. Any longer AI-written detail goes below it, collapsed in a `<details>` block whose `<summary>` names the tool (the PR template shows how). The same applies to substantial AI-written comments. Disclosure informs review and is never held against you.
 
 **4. Protect: license and IP.** Clawpack is BSD. Methods come from cited papers, not code an AI reproduced from memory. Don't submit output that may derive from copyleft or license-incompatible sources, check that your tool's terms don't conflict with BSD, and never put proprietary, embargoed, or NDA'd material into a prompt.
 
